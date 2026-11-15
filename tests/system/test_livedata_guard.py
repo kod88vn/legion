@@ -56,6 +56,9 @@ class PlantedLeak(unittest.TestCase):
         "orders.orders_path": ("tools/puppet", "import orders; orders.orders_path()"),
         "orders.log_path": ("tools/puppet", "import orders; orders.log_path()"),
         "bugq.extra_paths (Ayla's queue)": ("tools/system", "import bugq; bugq.extra_paths()"),
+        "aylalog.default_log": ("tools/system", "import aylalog; aylalog.default_log()"),
+        "dispatch.wd_queue_path": ("tools/puppet", "import dispatch; dispatch.wd_queue_path()"),
+        "dispatch.wd_console_path": ("tools/puppet", "import dispatch; dispatch.wd_console_path()"),
     }
 
     def test_planted_leaks_raise(self):
