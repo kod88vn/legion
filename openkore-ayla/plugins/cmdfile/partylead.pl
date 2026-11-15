@@ -1819,9 +1819,28 @@ sub lockmap_guard {
 	}
 	$lmSet = $config{lockMap} || '';
 }
+our (%leftTown, $prevMap);
+my $tbgLogAt = 0;
+sub town_back_guard {
+	return unless $field && $char;
+	my $here = $field->baseName;
+	$leftTown{$prevMap} = time if defined $prevMap && $prevMap ne $here && is_townmap($prevMap) && !is_townmap($here) && $prevMap !~ /_in\d*$/;
+	$prevMap = $here;
+	return if $rally || is_townmap($here) || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'teleport');
+	my ($dm, $nm) = route_maps();
+	foreach my $t ($nm, $dm) {
+		next unless $t ne '' && $leftTown{$t} && time - $leftTown{$t} < 300;
+		AI::clear('route', 'move');
+		message "[partylead] PT04: not going back into $t (left it " . int(time - $leftTown{$t}) . " s ago) - holding here
+", 'system' if time - $tbgLogAt > 20;
+		$tbgLogAt = time;
+		return;
+	}
+}
 sub tick_guarded {
 	lockmap_guard();
 	tick(@_);
+	town_back_guard() if $net && $net->getState() == 5;
 	$lmSet = $config{lockMap} || '' if defined $lmSet;
 }
 sub cmd_guarded {
@@ -2074,8 +2093,8 @@ sub pack_decide {
 	my ($nearest) = sort { $sameD->($a) <=> $sameD->($b) } @f;
 	my $an = $pr || $nearest;
 	return ('ok', $an) if $ok;
-	return ('back', $an) if $s->{farm} && $an->[2] eq $here && defined $an->[3];
-	return ('goto', $an) if ($s->{waited} || 0) >= 180;
+	# owner 2026-11-14 "wait for the party to come over, stop going back": she holds where she is - no walking back
+	# to the priest, no "coming to u" (the party comes to her: engine follow + party commands)
 	return ('wait', $an);
 }
 # waiting for the party she fights instead of standing (owner 2026-11-14 "fighting is her main priority"): on the map
@@ -2112,7 +2131,7 @@ sub pt32_ok {
 }
 # ---- pack end
 our %WAIT_FIELDS = (geffen => ['gef_fild13', 'gef_fild07'], prontera => ['prt_fild08', 'prt_fild05', 'prt_fild06', 'prt_fild01']);
-sub wait_fields_for { my $t = shift || ''; return $WAIT_FIELDS{$t} ? 1 : 0 }
+sub wait_fields_for { return 0 } # owner 2026-11-14: rally / departure waits hold at the meeting point (no field trips)
 my %pk = (waitAt => 0, sayAt => 0, logAt => 0, goName => '', routeAt => 0, crossSaid => '', wf => undef);
 my @crossWings; # [time, map]
 sub cross_danger { my $m = shift || ''; return $CROSS_DANGER{$m} && transit_fit_lv() < $CROSS_DANGER{$m} + 10 ? 1 : 0 }
@@ -2196,11 +2215,11 @@ sub pack_tick {
 	$pk{waitAt} ||= time;
 	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
 	if (time - $pk{logAt} > 20) { $pk{logAt} = time; message "[partylead] PT04: $act - " . ($cross ? "crossing ($cross) needs the priest within 10, " : '') . "anchor $an->[0] on $an->[2]" . (defined $an->[3] ? " $an->[3] cells" : '') . "\n", 'system' }
-	if ($act ne 'back' && !$farm) {
+	if (!$town) {
 		if (!$pk{wf}) {
 			my (%tops, %danger);
 			foreach my $m ($here, @{$WAIT_FIELDS{$here} || []}) { $tops{$m} = map_top($m); $danger{$m} = cross_danger($m) }
-			my $wm = pack_wait_map($here, $town, $WAIT_FIELDS{$here}, transit_fit_lv(), \%tops, \%danger);
+			my $wm = pack_wait_map($here, 0, undef, transit_fit_lv(), \%tops, \%danger); # only where she stands
 			if ($wm ne '') {
 				$pk{wf} = {map => $wm, meet => $here, spot => ($wm eq $here ? {x => $cx, y => $cy} : undef), at => time};
 				message "[partylead] PT04: waiting for the party - fighting on $wm meanwhile (meeting point $here)\n", 'system';
@@ -2233,7 +2252,11 @@ sub pack_tick {
 	}
 	# wait: stand where she is (OpenKore's sitAuto still sits her under its HP / SP marks)
 	AI::clear('route', 'move') if AI::inQueue('route', 'move');
-	if (time - $pk{sayAt} >= 60) { $pk{sayAt} = time; psay("waiting for u at $here $cx,$cy", 1, 0) }
+	if (time - $pk{sayAt} >= 60) {
+		$pk{sayAt} = time;
+		my $out = $here =~ /^(.+?)_in\d*$/ ? $1 : $here; # indoors (geffen_in): name the town, not the room
+		psay($out ne $here ? "waiting for u in $out, at the kafra" : "waiting for u at $here $cx,$cy", 1, 0);
+	}
 	return 1;
 }
 # PT32 runtime: the monster against pt32_ok with her live surroundings (conf partylead_pt32 0 turns it off)
@@ -2277,33 +2300,24 @@ sub wait_fight {
 	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
 	my ($rdm) = route_maps();
 	if ($rdm ne '' && $rdm ne $here && $rdm ne $w->{map}) { AI::clear('route', 'move') } # no leaving for the hunt alone
-	if ($here ne $w->{map}) {
-		if ($here ne $w->{meet}) { $pk{wf} = undef; return 0 } # winged / respawned elsewhere: start over
-		if (!AI::inQueue('route', 'move') || time - $pk{routeAt} > 15) {
-			$pk{routeAt} = time;
-			Commands::run('stand') if $char->{sitting};
-			AI::clear('route', 'move');
-			main::ai_route($w->{map}, undef, undef, attackOnRoute => 1);
-		}
-		return 1;
-	}
-	$w->{spot} ||= {x => $cx, y => $cy}; # the cell she arrived on: next to the way back to the meeting point
-	if (time - $pk{sayAt} >= 90) { $pk{sayAt} = time; psay("farming at $w->{map} near the kafra, come here", 1, 0) }
+	if ($here ne $w->{map}) { $pk{wf} = undef; return 0 } # she holds one map: elsewhere (a wing) -> start over
+	$w->{spot} ||= {x => $cx, y => $cy};
+	if (time - $pk{sayAt} >= 90) { $pk{sayAt} = time; psay("waiting for u at $here $w->{spot}{x},$w->{spot}{y}, come here", 1, 0) }
 	return 1 if AI::inQueue('attack') || $char->{sitting};
 	my ($best, $bd);
 	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
 		next unless $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead};
-		next if blockDistance($w->{spot}, $mo->{pos_to}) > 14 || !pt32_target($mo);
+		next if blockDistance($w->{spot}, $mo->{pos_to}) > 6 || !pt32_target($mo); # only what comes to her
 		my $d = blockDistance($char->{pos_to}, $mo->{pos_to});
 		($best, $bd) = ($mo, $d) if !defined $bd || $d < $bd;
 	}
 	if ($best) { AI::clear('route', 'move'); main::attack($best->{ID}); return 1 }
 	if (AI::inQueue('route', 'move') && time - $pk{routeAt} < 8) { return 1 }
-	$pk{routeAt} = time;
-	my ($tx, $ty) = blockDistance($char->{pos_to}, $w->{spot}) > 10 ? ($w->{spot}{x}, $w->{spot}{y}) : free_cell($w->{spot}{x}, $w->{spot}{y}, 3, 8);
-	($tx, $ty) = ($w->{spot}{x}, $w->{spot}{y}) unless defined $tx;
-	AI::clear('route', 'move');
-	main::ai_route($here, $tx, $ty, distFromGoal => 2, maxRouteTime => 8, noMapRoute => 1, attackOnRoute => 2);
+	if (blockDistance($char->{pos_to}, $w->{spot}) > 4) { # after a fight: back to her spot (same map, a few cells)
+		$pk{routeAt} = time;
+		AI::clear('route', 'move');
+		main::ai_route($here, $w->{spot}{x}, $w->{spot}{y}, distFromGoal => 1, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 1);
+	}
 	return 1;
 }
 sub stick_on { return !defined $config{partylead_stick} || $config{partylead_stick} ne '0' }
