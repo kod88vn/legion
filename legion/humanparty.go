@@ -233,11 +233,8 @@ func (b *Bot) humanPartySync(now time.Time) {
 			// a strong party follows HER map by map (m stays her current map: the same portals she takes) - routing
 			// to the lock map on its own sent the friends down another road (QA 20:23Z: she went via pay_fild08, they
 			// planned pay_fild01/07 and posted "lost u"); a weaker party waits at the Kafra town nearest the lock map
-			if !partyStrong(p) {
-				if cp := nearestTown(st.LockMap); cp != "" {
-					m = cp
-				}
-			}
+			// (2026-11-15: the weaker party no longer waits at the Kafra town nearest the lock map while she walks the
+			// fields - it sat in geffen while she crossed gef_fild10 alone; partydest.go humanMemberTarget: follow her)
 		}
 	}
 	// PT30 (partydest.go): she said where to be - head for her destination (or its meeting town) by our own route, not

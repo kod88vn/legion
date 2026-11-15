@@ -48,6 +48,10 @@ type BotSummary struct {
 	PrevError string `json:"prev_error,omitempty"` // loginready.go: the error before the last good login
 	// the guild's one leader (guilds.go pickGuildLeaders / in-game master); its Guild is the guild it leads
 	GuildLeader bool `json:"guild_leader,omitempty"`
+	// healerstick.go: the engine party (who it follows) and the in-game party the server put it in. The field was missing,
+	// so tools read "party: None" for Ayla's priest although it was in her party (2026-11-14)
+	Party       string `json:"party,omitempty"`
+	GameParty   string `json:"game_party,omitempty"`
 }
 
 func (b *Bot) summary() BotSummary {
@@ -59,7 +63,8 @@ func (b *Bot) summary() BotSummary {
 	defer b.mu.Unlock()
 	return BotSummary{Name: b.charName(), Player: b.P.Name, Role: b.charRole(), Class: className(b.Class), Level: b.BaseLvOr(), Guild: guild, GuildLeader: lead,
 		Archetype: b.P.Archetype, Online: b.Online, State: b.State, Map: b.MapName, X: b.X, Y: b.Y,
-		HP: strconv.Itoa(b.HP) + "/" + strconv.Itoa(b.MaxHP), Weight: weightStr(b.Weight, b.MaxWeight), Goal: b.Goal, Kills: b.Kills, Deaths: b.Deaths, Error: b.LastErr, PrevError: b.PrevErr}
+		HP: strconv.Itoa(b.HP) + "/" + strconv.Itoa(b.MaxHP), Weight: weightStr(b.Weight, b.MaxWeight), Goal: b.Goal, Kills: b.Kills, Deaths: b.Deaths, Error: b.LastErr, PrevError: b.PrevErr,
+		Party: partyNameOf(b), GameParty: b.PartyName}
 }
 
 // weightStr: "cur/max" raw weight, "" when the limit isn't known yet.

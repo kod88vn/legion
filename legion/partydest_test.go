@@ -37,8 +37,15 @@ func TestHumanMemberTarget(t *testing.T) {
 	if got := humanMemberTarget("gl_church", "izlude", "payon", "geffen", true, true); got != "geffen" {
 		t.Fatalf("dungeon destination: meet in its Kafra town, got %q", got)
 	}
-	if got := humanMemberTarget("gef_fild07", "izlude", "payon", "geffen", true, false); got != "gef_fild07" {
-		t.Fatalf("strong party, open ground: straight to the map, got %q", got)
+	if got := humanMemberTarget("gef_fild07", "izlude", "payon", "geffen", true, false); got != "geffen" {
+		t.Fatalf("strong party, she is in a town: the meeting town (no own long walk), got %q", got)
+	}
+	// QA 2026-11-15 03:55Z: she left the meeting town geffen for gef_fild10 on her way to orcsdun02 - follow her there
+	if got := humanMemberTarget("orcsdun02", "gef_fild10", "geffen", "geffen", true, true); got != "gef_fild10" {
+		t.Fatalf("she left the meeting town: her current map, got %q", got)
+	}
+	if got := humanMemberTarget("gef_fild07", "gef_fild00", "payon", "geffen", false, false); got != "gef_fild00" {
+		t.Fatalf("she is on open ground: her current map, got %q", got)
 	}
 	if got := humanMemberTarget("gef_fild07", "izlude", "payon", "geffen", false, false); got != "geffen" {
 		t.Fatalf("weaker party: the meeting town, got %q", got)
