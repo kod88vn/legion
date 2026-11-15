@@ -16,7 +16,26 @@ import time
 
 WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO", "Ubuntu-24.04")
 DB_CONTAINER = "ro-db"
-DB_USER, DB_PASS, DB_NAME = "ragnarok", "ragnarok", "ragnarok"   # docker-compose.yml (db service)
+DB_NAME = "ragnarok"
+# The dashboard's own SELECT-only user (bug b17947709689gf): its name and password live in the git-ignored local
+# config tools/.state/dashboard.json {"db_user", "db_pass"}, so the database itself refuses any write. Without that
+# file it falls back to the game's user from docker-compose.yml (still read-only through run()'s guard).
+LOCAL_CONFIG = os.environ.get("DASH_CONFIG") or os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".state", "dashboard.json")
+
+
+def _db_login():
+    try:
+        with open(LOCAL_CONFIG, encoding="utf-8") as f:
+            c = json.load(f)
+        if c.get("db_user") and c.get("db_pass"):
+            return c["db_user"], c["db_pass"]
+    except (OSError, ValueError):
+        pass
+    return "ragnarok", "ragnarok"
+
+
+DB_USER, DB_PASS = _db_login()
 KEEP = 3
 
 ITEM_COLS = "char_id, nameid, amount, equip, identify, refine, attribute, card0, card1, card2, card3"
@@ -107,7 +126,7 @@ def take(snap_dir):
     names = list(SNAP_TABLES)
     t0 = time.time()
     res = run([SNAP_TABLES[n] for n in names], timeout=300)
-    doc = {"t": t0, "source": "ro-db (read-only SELECT)", "took_s": round(time.time() - t0, 1),
+    doc = {"t": t0, "source": "ro-db (read-only SELECT as %s)" % DB_USER, "took_s": round(time.time() - t0, 1),
            "tables": {n: r for n, r in zip(names, res)}}
     os.makedirs(snap_dir, exist_ok=True)
     path = os.path.join(snap_dir, time.strftime("snap-%Y%m%d-%H%M%S.json.gz", time.localtime(t0)))
