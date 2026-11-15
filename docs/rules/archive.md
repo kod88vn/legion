@@ -1951,6 +1951,11 @@ Resolved by newest owner word per PR41; see coverage.md.
 "although remember it's been doing a good job of assigning 1 middle step of a goal for bot, keeps doing that. But I want to see endgoal"
 ```
 
+## EC40 / EC41 / EC42 / EC43
+```text
+"end build does not list out gear upgrade or alternative gears, fix it. Important notes, card is 1 time bound, must upgrade gears to a certain level before adding card. But it cost a lot to upgrade so rare cards are for end game build with affordable upgrades, must balance this out. A usable card is better than waiting for the upgrade that never comes. Usually +7/8 is ideal for weapons depending on grade. +7 is good for gears. More popular cards can be used any time. There also seem to be a lot of wrong calculation for build. I need you to add tests to make sure those numbers are realistic. These build information should tell the market agents to tell guild leaders what to farm and where to farm depending on the progress of the server"
+```
+
 ## DB09
 ```text
 "I need to review the build agent. In dashboard, list the end goal of each class/build path, including items, stats, and skills, as well as playstyle for farming solo, in a party, MVP, PVP"

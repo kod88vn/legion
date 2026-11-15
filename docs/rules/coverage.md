@@ -211,6 +211,10 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | AY24 | Ayla played by the Legion engine; OpenKore retired for her; Haiku watcher, code improved for her first (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
 | AY25 | Owner overrides puppet-master directives for Ayla, logged, with expiry (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
 | DB10 | Dashboard tool to guide Ayla (farm map, guild direction, party orders) and override puppet masters (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| EC40 | End builds list gear upgrades and alternatives per slot (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC41 | Cards are one-time bound: refine first, but balance rare cards against refine cost; +7/+8 weapons, +7 gear; a usable card beats a refine that never comes (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC42 | Build numbers must be realistic, checked by tests (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC43 | Build information goes to the market agents, who tell guild leaders what and where to farm by server progress (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC39 | Build milestones per level range (stats, gear, skills); map choice gated by meeting the gear milestone (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC38 | Bots take one middle step of their end goal at a time; keep it; show the end goal (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | DB09 | Dashboard Builds tab: end goal per class/build with items, stats, skills and playstyle (solo, party, MVP, PvP) (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
