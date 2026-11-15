@@ -1463,7 +1463,8 @@ my @FIT_MAPS = ( # preference order: the highest band she qualifies for first (a
 my %MAP_TOP = (pay_dun00 => 32, pay_dun01 => 48, pay_dun02 => 60, pay_dun03 => 70, pay_arche => 30, payon => 1,
 	moc_fild01 => 34, moc_fild02 => 34, moc_fild03 => 55, mjolnir_01 => 35, mjolnir_02 => 42, mjolnir_06 => 36,
 	mjolnir_07 => 68, mjolnir_08 => 66, mjolnir_09 => 22, mjolnir_10 => 58, mjo_dun01 => 36, mjo_dun02 => 50, mjo_dun03 => 56,
-	orcsdun01 => 60, orcsdun02 => 66, gef_dun00 => 56, gef_dun01 => 72, glast_01 => 70);
+	orcsdun01 => 60, orcsdun02 => 66, gef_dun00 => 56, gef_dun01 => 72, glast_01 => 70,
+	gef_fild10 => 60); # aggressive orc packs (live 2026-11-14: 12 orcs, 100% -> 19% HP in 8 s while "crossing" it)
 foreach my $r (@FIT_MAPS) { $MAP_TOP{$r->[2]} = $r->[1] if !$MAP_TOP{$r->[2]} || $MAP_TOP{$r->[2]} < $r->[1] }
 sub map_top {
 	my $m = shift || '';
@@ -1479,6 +1480,7 @@ sub trivial_transit {
 	my $top = map_top($here);
 	return 0 if !$top || is_townmap($here);
 	return 0 unless ($char->{lv} || 0) >= $top + 15;
+	return 0 unless transit_fit_lv() >= $top + 15; # the party's gear-rated level, not her base level (58 vs 81, live 2026-11-14)
 	foreach my $f (online_friends()) { my $a = $apiPos{$f->[0]}; return 0 if $a && $a->{lv} && $a->{lv} < $top + 8 } # a low friend still needs her here
 	my $dest = $gotoMap ne '' ? $gotoMap : ($config{lockMap} || '');
 	$dest = $homeMap if $dest eq '' && !$rally;
@@ -1898,6 +1900,7 @@ sub restore {
 # escape rules (teleportAuto 35% / 6 monsters). Her targets stay within 20 cells of the friends near her
 # (stick_target, from area_target). conf partylead_stick 0 turns it off.
 use constant STICK_DEADLY => 0.20;
+my $stickLowAt = 0; # since when HP reads under STICK_DEADLY
 my ($stickHelpAt, $stickRunAt, $stickWingAt, $stickBossAt, $stickHp, $stickHitAt, $stickDeadly) = (0, 0, 0, 0, 1, 0, undef);
 our $stickWinged; # {town, back, at}: her last announced wing (the town-run line says the same)
 sub stick_on { return !defined $config{partylead_stick} || $config{partylead_stick} ne '0' }
@@ -1944,6 +1947,9 @@ sub stick_target {
 	my $m = shift;
 	return 1 unless stick_on() && $char->{party} && !is_townmap($field->baseName);
 	return 1 if $m->{dmgToYou} || $m->{missedYou} || $m->{dmgToParty} || $m->{castOnToParty} || $m->{missedToParty};
+	# on the way to another map (travel mode): no new pulls at all - only what hits her or a friend (live 2026-11-14: 6
+	# orcs pulled on gef_fild10 on the way to orcsdun02)
+	return 0 if %travelSaved;
 	foreach my $f (stick_mates()) {
 		my $now = blockDistance($char->{pos_to}, $f->[1]);
 		next if $now > TOGETHER; # a lost friend: the fetch logic, not the target choice
@@ -1964,21 +1970,25 @@ sub stick_tick {
 	$config{teleportAuto_minAggressivesInLock} = 0 if $config{teleportAuto_minAggressivesInLock};
 	if ($config{teleportAuto_deadly}) { $stickDeadly = $config{teleportAuto_deadly}; $config{teleportAuto_deadly} = 0 }
 	return 0 if is_townmap($here);
+	# a real HP reading only (0 / over max = a stale or half-updated status right after a map change or reload)
+	return 0 unless ($char->{hp} || 0) > 0 && $char->{hp} <= $char->{hp_max};
 	my $hpp = $char->{hp} / $char->{hp_max};
 	$stickHitAt = time if $hpp < $stickHp - 0.004;
 	$stickHp = $hpp;
+	# deadly must hold on readings at least 0.4 s apart (live 2026-11-14: a wing "nearly dead" at ~53% HP)
+	if ($hpp < STICK_DEADLY) { $stickLowAt ||= time } else { $stickLowAt = 0 }
 	my $aggr = scalar(AI::ai_getAggressives());
 	my @mates = stick_mates();
 	my $an = stick_anchor(@mates);
 	my $ad = $an ? blockDistance($char->{pos_to}, $an->[1]) : -1;
 	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
 	# about to die and still being hit: Butterfly Wing to the save Kafra (not a random cell), and say where and what next
-	if ($hpp < STICK_DEADLY && $aggr >= 1 && time - $stickHitAt < 3 && time - $stickWingAt > 10 && $char->inventory->getByName('Butterfly Wing')) {
+	if ($hpp < STICK_DEADLY && $stickLowAt && time - $stickLowAt >= 0.4 && $aggr >= 1 && time - $stickHitAt < 3 && time - $stickWingAt > 10 && $char->inventory->getByName('Butterfly Wing')) {
 		$stickWingAt = time;
 		my $town = $config{saveMap} || 'town';
 		my $back = $homeMap ne '' ? $homeMap : $here;
 		$stickWinged = {town => $town, back => $back, at => time};
-		message sprintf("[partylead] PT31: about to die (HP %d%%, %d monsters on her): Butterfly Wing to %s\n", $hpp * 100, $aggr, $town), 'system';
+		message sprintf("[partylead] PT31: about to die (HP %d/%d = %d%%, under 20%% for %.1f s, %d monsters on her): Butterfly Wing to %s\n", $char->{hp}, $char->{hp_max}, $hpp * 100, time - $stickLowAt, $aggr, $town), 'system';
 		AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto');
 		AI::ai_useTeleport(2); # 2 = the respawn point (Butterfly Wing), never 1 (a random cell)
 		psay(pick("almost died, winged to $town kafra. meet me there, then we go back to $back",
@@ -2017,8 +2027,27 @@ sub stick_tick {
 			message sprintf("[partylead] PT31: falling back to %s (%d cells; HP %d%%, %d monsters on her)\n", $an->[0], $ad, $hpp * 100, $aggr), 'system';
 			return 1;
 		}
+		# swarmed with no friend on this map (she got ahead of them on a crossing): back to the map the friends are on
+		if (!$an && $aggr >= 4 && time - $stickRunAt > 5) {
+			my %on; $on{$_->[1]}++ foreach grep { $_->[1] ne '' && $_->[1] ne $here } @friends;
+			my ($fm) = sort { $on{$b} <=> $on{$a} } keys %on;
+			if ($fm) {
+				$stickRunAt = time;
+				AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
+				main::ai_route($fm, undef, undef, attackOnRoute => 0);
+				psay(pick("too many here, falling back to u in $fm", "$aggr on me on $here, coming back to $fm"), 0, 20);
+				message sprintf("[partylead] PT31: %d monsters on her on %s with no friend here (HP %d%%): falling back to the friends on %s\n", $aggr, $here, $hpp * 100, $fm), 'system';
+				return 1;
+			}
+		}
 	}
 	return 0;
+}
+# party_fit_lv cached for 10 s (trivial_transit runs several times a tick)
+my ($tflv, $tflvAt) = (0, 0);
+sub transit_fit_lv {
+	($tflv, $tflvAt) = (party_fit_lv(), time) if time - $tflvAt > 10;
+	return $tflv;
 }
 
 sub tick {
