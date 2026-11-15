@@ -47,6 +47,11 @@ Economy
   alchemists                     every guild's alchemist: path progress (Novice -> Merchant -> Alchemist), Pharmacy,
                                  guide/bowls/bottles/herbs, potion stock, what it brewed, its next step
   potions                        potion + alchemy material market: standard price, offers, wants, trades
+Meter (kills/min, zeny/h, deaths, time budget; windows 10m | 1h | session; par = p75 of the cohort)
+  meter [--window W] [--top N] [--sort kpm] [--json]    server totals + cohorts ranked by prize (gap to par x n)
+  meter bots [--cohort KEY] [--sort zph|kpm|gap_zph|gap_kpm|deaths|min|name] [--asc] [--limit N] [--window W] [--json]
+  meter bot <name> [--json]      one bot: every window, time shares, its cohort's par and its gap
+  meter neo [--window W] [--json]   Ayla, her party and Starveil against their cohorts' par
 Minds bus (the owner watches these on the dashboard and can send orders)
   orders <mind>                  owner's unread messages to this mind (marks them read); "(no new orders)" if none
   think <mind> <text...> [--kind thought|decision|action|summary] [--status "short status line"]
@@ -405,6 +410,81 @@ def puppet_cmd(cmd, args):
             print("notes saved")
         else:
             print(open(path, encoding="utf-8").read() if os.path.exists(path) else "(no notes)")
+def _shares(sh):
+    return " ".join(f"{k[:5]} {round(v * 100)}%" for k, v in sorted((sh or {}).items(), key=lambda x: -x[1]))
+
+
+def _botline(b):
+    return (f"{b['name'][:18]:<18} {b['class'][:12]:<12} {b['lv']:>2} {b['cohort']:<22} {b['min']:>5}m "
+            f"kpm {b['kpm']:>5} (own {b['kpm_own']:>5}, par {b['par_kpm']:>5})  "
+            f"z/h {int(b['zph']):>7} (own {int(b['zph_own']):>7}, par {int(b['par_zph']):>7})  "
+            f"d/h {b['deaths_h']:<4}{'' if b['counted'] else ' (not counted)'}")
+
+
+def meter_cmd(args):
+    sub = args.pop(0) if args and not args[0].startswith("--") else ""
+    win = opt(args, "--window", "1h")
+    raw = opt(args, "--json", flag=True)
+    if sub == "":
+        top = int(opt(args, "--top", "15"))
+        srt = opt(args, "--sort", "")
+        r = call(f"/api/meter?window={q(win)}" + ("&sort=kpm" if srt == "kpm" else ""))
+        if raw:
+            return out(r)
+        s = r["server"]
+        print(f"meter {r['window']} @ {r['t'][11:19]}  bots counted {s['bots']}/{s['seen']} (online {s['online']}, core rows {r['core_rows']})  fair = mob lv >= bot lv - {r['fair_lv_gap']}")
+        print(f"server: kpm {s['kpm']} (median {s['kpm_median']})  z/h {int(s['zph'])} (median {int(s['zph_median'])})  deaths/h {s['deaths_h']}  "
+              f"income {s['income']} = loot {s['loot']} - cons {s['cons']} - travel {s['travel']}")
+        print("time:", _shares(s.get("shares")))
+        print(f"{'cohort':<24}{'n':>4} {'kpm mean/med/par':>20} {'z/h mean/med/par':>26} {'z prize':>9} {'k prize':>8} {'d/h':>5}  time")
+        for c in r["cohorts"][:top]:
+            k, z = c["kpm"], c["zph"]
+            print(f"{c['key']:<24}{c['n']:>4} {k['mean']:>6}/{k['median']:>6}/{k['par']:>6} "
+                  f"{int(z['mean']):>8}/{int(z['median']):>8}/{int(z['par']):>8} {int(z['prize']):>9} {k['prize']:>8} {c['deaths_h']:>5}  {_shares(c.get('shares'))}")
+    elif sub == "bots":
+        coh = opt(args, "--cohort", "")
+        srt = opt(args, "--sort", "zph")
+        lim = opt(args, "--limit", "30")
+        asc = opt(args, "--asc", flag=True)
+        r = call(f"/api/meter/bots?window={q(win)}&cohort={q(coh)}&sort={q(srt)}&limit={q(str(lim))}" + ("&order=asc" if asc else ""))
+        if raw:
+            return out(r)
+        print(f"{r['total']} bots ({r['window']}), showing {len(r['bots'])}")
+        for b in r["bots"]:
+            print(_botline(b))
+    elif sub == "bot":
+        if not args:
+            sys.exit("usage: meter bot <name>")
+        r = call(f"/api/meter/bot/{q(args[0])}")
+        if raw:
+            return out(r)
+        print(f"{r['name']} {r['class']} lv{r['lv']} [{r['instance']}] {r['cohort']}  {r.get('map') or 'offline'}  bucket {r.get('bucket')}  state: {r.get('state')}")
+        for w in ("10m", "1h", "session"):
+            x = r["windows"][w]
+            st, rw = x["stats"], x["raw"]
+            print(f"  {w:<8} {_botline(st)}")
+            print(f"           kills {rw['kills']} fair {rw['fair']} deaths {rw['deaths']}  loot {rw['loot']} cons {rw['cons']} travel {rw['travel']}  "
+                  f"purse +{rw['zeny_in']}/-{rw['zeny_out']}  duty {rw['duty_min']:.0f}m  time: {_shares(st.get('shares'))}")
+    elif sub == "neo":
+        r = call(f"/api/meter/neo?window={q(win)}")
+        if raw:
+            return out(r)
+        a = r.get("ayla")
+        if a:
+            aw = a["windows"].get(r["window"], {})
+            print(f"Ayla: {a['name']} {a['class']} lv{a['lv']} {a['map']} online={a['online']} zeny {a['zeny']}  cohort {a['cohort']}")
+            print(f"  {r['window']}: {aw.get('min')}m  purse z/h {int(aw.get('zph_purse', 0))} (cohort par z/h {int(aw.get('par_zph', 0))}, par kpm {aw.get('par_kpm')})  time: {_shares(aw.get('shares'))}")
+            print(f"  ({a['note']})")
+        else:
+            print("Ayla: no status.json")
+        for label, key, lst in (("party", "party_summary", "party"), ("Starveil", "starveil_summary", "starveil")):
+            g = r[key]
+            print(f"{label}: {g['n']} counted, above par kpm {g['above_par_kpm']} / z/h {g['above_par_zph']}, "
+                  f"mean ratio to par kpm {g['ratio_kpm']} z/h {g['ratio_zph']}")
+            for b in r[lst][:25]:
+                print("  " + _botline(b))
+    else:
+        sys.exit("usage: meter [bots|bot <name>|neo] [--window 10m|1h|session]")
 
 
 def main(argv):
@@ -657,6 +737,8 @@ def main(argv):
             lt = (m.get("last_thought") or {}).get("text", "")
             print(f"{m['name']:<10} {m['status']:<7} seen {ago:<10} unread {m['unread']:<3} {lt[:90]}")
 
+    elif cmd == "meter":
+        meter_cmd(args)
     elif cmd in PUPPET_CMDS:
         puppet_cmd(cmd, args)
 

@@ -147,6 +147,7 @@ func (b *Bot) think() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	now := time.Now()
+	b.meterTick(now) // meter.go: time budget (the last tick's state gets the time since)
 	if left := b.MoveUntil.Sub(now); left > 30*time.Second {
 		// no walk of ours lasts 30 s (segments are ~11 cells): a bogus move time would keep `moving` true and every
 		// walker (tripThink, kafraThink, travel) waiting for it - QA 2026-11-14 bots frozen at prontera 47,226

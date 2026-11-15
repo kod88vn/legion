@@ -563,6 +563,7 @@ func (b *Bot) noteKafraHop(newMap string, now time.Time) {
 	}
 	b.kafraHops = append(hops, now)
 	b.event("info", "", fmt.Sprintf("Kafra teleport %s -> %s", k.Town, k.Dest.Name))
+	b.meterTravel(k.Dest.Price) // meter.go: travel cost
 }
 
 // kafraNeed (b.mu held): a real reason for a Kafra teleport the limits would otherwise refuse.
