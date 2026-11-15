@@ -1,9 +1,10 @@
 package main
 
 import (
-	"os"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 )
@@ -92,19 +93,55 @@ func TestRegenGuildWantedNotDropped(t *testing.T) {
 	}
 }
 
-// The party loot loop (party.go partyThink) skips the bot's own drop too: a regression guard on the loop, since
-// partyThink needs the whole world to run. The loop must call regenOwnDrop before picking up.
+// The party loot loop (party.go partyThink) skips the bot's own drop too. partyThink needs the whole world to run, so the
+// check parses party.go: inside partyThink, the body of the range over b.items must call regenOwnDrop.
 func TestPartyLootSkipsOwnDrop(t *testing.T) {
-	src, err := os.ReadFile("party.go")
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "party.go", nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := strings.ReplaceAll(string(src), "\r\n", "\n")
-	loop := strings.Index(s, "\t\tfor _, it := range b.items {\n")
-	if loop < 0 {
-		t.Fatal("party loot loop not found")
+	var think *ast.FuncDecl
+	for _, d := range f.Decls {
+		if fd, ok := d.(*ast.FuncDecl); ok && fd.Name.Name == "partyThink" {
+			think = fd
+		}
 	}
-	if !strings.Contains(s[loop:loop+400], "b.regenOwnDrop(it, now)") {
-		t.Fatal("the party loot loop must skip the bot's own drops (regenOwnDrop)")
+	if think == nil {
+		t.Fatal("partyThink not found")
 	}
+	loops, skipping := 0, 0
+	ast.Inspect(think.Body, func(n ast.Node) bool {
+		rs, ok := n.(*ast.RangeStmt)
+		if !ok || !isSelectorOn(rs.X, "b", "items") {
+			return true
+		}
+		loops++
+		ast.Inspect(rs.Body, func(m ast.Node) bool {
+			if c, ok := m.(*ast.CallExpr); ok && isSelectorOn(c.Fun, "b", "regenOwnDrop") {
+				skipping++
+			}
+			return true
+		})
+		return true
+	})
+	if loops == 0 {
+		t.Fatal("no range over b.items in partyThink")
+	}
+	if skipping == 0 {
+		t.Fatal("the party loot loop must skip the bot's own drops: regenOwnDrop must be called in its body")
+	}
+}
+
+// isSelectorOn: e is recv.name (for b.items, b.regenOwnDrop(...)'s function part).
+func isSelectorOn(e ast.Expr, recv, name string) bool {
+	if c, ok := e.(*ast.CallExpr); ok {
+		e = c.Fun
+	}
+	sel, ok := e.(*ast.SelectorExpr)
+	if !ok || sel.Sel.Name != name {
+		return false
+	}
+	id, ok := sel.X.(*ast.Ident)
+	return ok && id.Name == recv
 }
