@@ -131,6 +131,7 @@ func (g *farmGoal) desc() string {
 var lfgStats = struct {
 	sync.Mutex
 	started   time.Time
+	counted   time.Time // when counting first started (lfgstats.go keeps it across restarts)
 	set       map[string]int
 	met       map[string]int
 	expired   map[string]int
@@ -142,7 +143,17 @@ var lfgStats = struct {
 	local     int // parties formed through local chat
 	dissolved map[string]int
 	leaves    map[string]int
-}{started: time.Now(), set: map[string]int{}, met: map[string]int{}, expired: map[string]int{}, changed: map[string]int{},
+	join      [nJoin][nBands]int // join checks (pairs), lfgstats.go
+	gate      [nGate][nBands]int // gate checks (bots per tick), lfgstats.go
+	party     [nParty]int        // party checks (parties per tick), lfgstats.go
+	inParty   int                // bots already in a party (skipped, not counted per band)
+	leftCD    int                // bots in the 3 min pause after leaving a party
+	gauge     lfgGauge           // the latest tick
+	tickLast  time.Duration      // duration of the last lfgTick
+	tickSum   time.Duration      // sum of lfgTick durations since start (not saved)
+	ticks     int                // lfgTick count since start (not saved)
+	tickRing  [lfgCostWindow]time.Duration // the last lfgCostWindow tick durations (lfgstats.go guard)
+}{started: time.Now(), counted: time.Now(), set: map[string]int{}, met: map[string]int{}, expired: map[string]int{}, changed: map[string]int{},
 	posts: map[string]int{}, dissolved: map[string]int{}, leaves: map[string]int{}}
 
 func lfgCount(m map[string]int, k string) {
@@ -1036,6 +1047,15 @@ func healerLeaveWhy(lv int, levels []int, pm string) string {
 // lfgLvFit: lfgFits' level check (injectable: the PT35 snapshot test compares the old +-10 band)
 var lfgLvFit = lfgLvFits
 
+// lfgLvWhy: why lfgLvFit refused c (jSpread: the party's levels with c would leave the PT35 band; otherwise jExpPoor:
+// the map gives c no real exp). Only called after lfgLvFit said no.
+func lfgLvWhy(c *lfgCand, P *lfgParty) int {
+	if !partyLvOK(min(P.lo, c.lv), max(P.hi, c.lv), 0) {
+		return jSpread
+	}
+	return jExpPoor
+}
+
 // lfgCand: a free bot looking for (or open to) a party, snapshot without locks
 type lfgCand struct {
 	b              *Bot
@@ -1076,40 +1096,47 @@ func isMonkClass(c int) bool {
 }
 
 // lfgFits: candidate c may join party/anchor P (pure; no locks besides the map helpers).
-func lfgFits(c *lfgCand, P *lfgParty) bool {
+func lfgFits(c *lfgCand, P *lfgParty) bool { return lfgFitWhy(c, P) < 0 }
+
+// lfgFitWhy: why candidate c may not join party/anchor P ("" = it fits). The same checks in the same order as
+// lfgFits, so the join-rejection counter says which one failed (lfgstats.go).
+func lfgFitWhy(c *lfgCand, P *lfgParty) int {
 	if c.healer {
 		if P.healer || P.size >= lfgMaxMembers+1 {
-			return false
+			return jFull
 		}
 	} else if P.nonHealers >= lfgMaxMembers {
-		return false
+		return jFull
 	}
 	if !lfgLvFit(c, P) {
-		return false
+		return lfgLvWhy(c, P)
 	}
 	if !c.healer && c.g != nil && !c.g.serves(P.m) {
-		return false
+		return jServes
 	}
 	switch c.role { // what makes sense: a healer, up to 2 tanks, 3 ranged, 2 melee
 	case roleTank:
 		if P.roles[roleTank] >= 2 {
-			return false
+			return jRole
 		}
 	case roleRanged:
 		if P.roles[roleRanged] >= 3 {
-			return false
+			return jRole
 		}
 	case roleMelee:
 		if P.roles[roleMelee] >= 2 {
-			return false
+			return jRole
 		}
 	case roleNone:
-		return false
+		return jRole
 	}
 	if c.beginner && (townHops(c.home, P.m) > 3 || lfgHops(c.at, c.x, c.y, P.m) > 2) {
-		return false // beginners party in their own area, near home (RULES.md 2)
+		return jBeginner // beginners party in their own area, near home (RULES.md 2)
 	}
-	return lfgHops(c.at, c.x, c.y, P.m) <= lfgMaxHops
+	if lfgHops(c.at, c.x, c.y, P.m) > lfgMaxHops {
+		return jHops
+	}
+	return -1
 }
 
 // lfgScore: how much party P wants candidate c (a healer first, then a Monk, then a missing role)
@@ -1190,6 +1217,7 @@ func lfgTake(now time.Time) bool {
 
 // lfgGather: the free candidates and the open parties right now.
 func lfgGather(bots []*Bot, now time.Time) ([]*lfgCand, []*lfgParty) {
+	t := &lfgTally{} // lfgstats.go: this tick's gate and party checks (flushed at the end)
 	lfg.Lock()
 	for b, p := range lfg.posts {
 		if now.Sub(p.At) > lfgPostLife {
@@ -1211,16 +1239,55 @@ func lfgGather(bots []*Bot, now time.Time) ([]*lfgCand, []*lfgParty) {
 	}
 	lfg.Unlock()
 	var cs []*lfgCand
+	var online, inParty int
 	for _, b := range bots {
 		if partyOf(b) != nil || now.Sub(left[b]) < 3*time.Minute {
+			b.mu.Lock() // only for the online gauge
+			if b.Online {
+				online++
+			}
+			b.mu.Unlock()
+			if partyOf(b) != nil {
+				inParty++
+				t.inParty++
+			} else {
+				t.leftCD++
+			}
 			continue
 		}
 		b.mu.Lock()
+		if b.Online {
+			online++
+		}
 		g := b.fgoal
-		ok := b.Online && b.BaseLv > 0 && g != nil && b.pin == nil && b.vend == nil && b.trip == nil && !b.Dead &&
-			b.charRole() != "vendor" && b.basicLv() >= 5 && b.Goal.Mode == "hunt" && strings.HasPrefix(b.Goal.Set, "auto") &&
-			b.MapName != ""
-		if !ok {
+		// the candidate gate, one reason per bot (the first check it fails)
+		why := -1
+		switch {
+		case !b.Online || b.BaseLv <= 0:
+			why = gOffline
+		case g == nil:
+			why = gNoGoal
+		case b.pin != nil:
+			why = gPinned
+		case b.vend != nil:
+			why = gVending
+		case b.trip != nil:
+			why = gTrip
+		case b.Dead:
+			why = gDead
+		case b.charRole() == "vendor":
+			why = gVendor
+		case b.basicLv() < 5:
+			why = gLowLv
+		case b.Goal.Mode != "hunt":
+			why = gGoalMode
+		case !strings.HasPrefix(b.Goal.Set, "auto"):
+			why = gGoalSet
+		case b.MapName == "":
+			why = gNoMap
+		}
+		if why >= 0 {
+			t.gate[why][lfgBandIdx(b.BaseLvOr())]++
 			b.mu.Unlock()
 			continue
 		}
@@ -1243,7 +1310,12 @@ func lfgGather(bots []*Bot, now time.Time) ([]*lfgCand, []*lfgParty) {
 			c.m = b.Goal.Map
 		}
 		b.mu.Unlock()
-		if !c.social || ((!c.healer || c.leader) && (c.m == "" || isTown(c.m))) {
+		if !c.social {
+			t.gate[gSocial][lfgBandIdx(c.lv)]++
+			continue
+		}
+		if (!c.healer || c.leader) && (c.m == "" || isTown(c.m)) {
+			t.gate[gTownGoal][lfgBandIdx(c.lv)]++
 			continue
 		}
 		cs = append(cs, c)
@@ -1259,18 +1331,32 @@ func lfgGather(bots []*Bot, now time.Time) ([]*lfgCand, []*lfgParty) {
 	}
 	var raws []praw
 	for _, p := range parties.byName {
-		if p.Human != "" || p.Leader == nil || p.Map == "" || isTown(p.Map) || len(p.Members) >= lfgMaxMembers+1 {
-			continue
+		switch {
+		case p.Human != "":
+			t.party[pHuman]++
+		case p.Leader == nil || p.Map == "":
+			t.party[pNoMap]++
+		case isTown(p.Map):
+			t.party[pTown]++
+		case len(p.Members) >= lfgMaxMembers+1:
+			t.party[pFull]++
+		default:
+			raws = append(raws, praw{p, append([]*Bot(nil), p.Members...), p.Leader, p.Map, p.Anchor, p.AnchorItem})
 		}
-		raws = append(raws, praw{p, append([]*Bot(nil), p.Members...), p.Leader, p.Map, p.Anchor, p.AnchorItem})
 	}
 	parties.Unlock()
 	var ps []*lfgParty
 	for _, r := range raws {
-		if isRestoring(r.p) || r.p.bossActive() {
+		switch {
+		case isRestoring(r.p):
+			t.party[pRestoring]++
+			continue
+		case r.p.bossActive():
+			t.party[pBoss]++
 			continue
 		}
 		if s, ok := peek(r.lead.P.Name); !ok || !s.Online {
+			t.party[pLeaderOffline]++
 			continue
 		}
 		P := &lfgParty{p: r.p, lead: r.lead, ms: r.ms, m: r.m, anchor: r.anchor, item: r.item, lo: 999, posted: pposted[r.p]}
@@ -1293,11 +1379,17 @@ func lfgGather(bots []*Bot, now time.Time) ([]*lfgCand, []*lfgParty) {
 			}
 		}
 		if n == 0 {
+			t.party[pNoLevels]++
 			continue
 		}
 		P.avg = sum / n
 		ps = append(ps, P)
 	}
+	lfgStats.Lock()
+	lfgStats.gauge = lfgGauge{At: now, Online: online, InParty: inParty, Free: len(bots) - inParty,
+		Candidates: len(cs), OpenParties: len(ps)}
+	lfgStats.Unlock()
+	t.flush()
 	return cs, ps
 }
 
@@ -1324,6 +1416,9 @@ const lfgCrossMax = 60
 // fill the last places). Live 2026-11-14 12:00-12:13: gated by posts (6/min) only 43 parties re-formed in 11 min,
 // 80% of the bots soloed and solo deaths doubled. Returns how many joined and how many parties formed.
 func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) (joins, formed int) {
+	t := &lfgTally{} // lfgstats.go: this tick's join checks (flushed at the end)
+	defer t.flush()
+	countAll := lfgCountMaps() // every fitting pair's map check counted (costs a partyMapOK per pair; lfgstats.go guard)
 	// 1. open parties take candidates: no-healer parties first; up to 2 per party per tick
 	sort.SliceStable(ps, func(i, j int) bool {
 		if ps[i].healer != ps[j].healer {
@@ -1361,11 +1456,21 @@ func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) 
 			var best *lfgCand
 			bs := -1 << 30
 			for _, c := range cs {
-				if used[c.b] || c.leader || !lfgFits(c, P) {
+				if used[c.b] || c.leader {
 					continue
 				}
-				if s := lfgScore(c, P); s > bs && lfgMapOK(P, c) {
-					best, bs = c, s
+				if why := lfgFitWhy(c, P); why >= 0 {
+					t.addJoin(why, c.lv)
+					continue
+				}
+				if s := lfgScore(c, P); s > bs || countAll {
+					if !lfgMapOK(P, c) {
+						t.addJoin(jMap, c.lv)
+						continue
+					}
+					if s > bs {
+						best, bs = c, s
+					}
 				}
 			}
 			if best == nil {
@@ -1380,7 +1485,7 @@ func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) 
 		}
 	}
 	// 2. same map (local chat), then across maps (whispers): posters anchor first, then item-goal farmers
-	formed += lfgLocal(cs, used, now)
+	formed += lfgLocal(cs, used, now, t)
 	order := append([]*lfgCand(nil), cs...)
 	sort.SliceStable(order, func(i, j int) bool {
 		pi, pj := order[i].posted, order[j].posted
@@ -1427,11 +1532,21 @@ func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) 
 			var best *lfgCand
 			bs := -1 << 30
 			for _, o := range cs {
-				if used[o.b] || o.leader || o == anchor || o == c || !lfgFits(o, P) {
+				if used[o.b] || o.leader || o == anchor || o == c {
 					continue
 				}
-				if s := lfgScore(o, P); s > bs && lfgMapOK(P, o) {
-					best, bs = o, s
+				if why := lfgFitWhy(o, P); why >= 0 {
+					t.addJoin(why, o.lv)
+					continue
+				}
+				if s := lfgScore(o, P); s > bs || countAll {
+					if !lfgMapOK(P, o) {
+						t.addJoin(jMap, o.lv)
+						continue
+					}
+					if s > bs {
+						best, bs = o, s
+					}
 				}
 			}
 			if best == nil {
@@ -1456,6 +1571,10 @@ func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) 
 
 // lfgTick: matching first, then new posts within the #global budget (flavour: they also fill the last places).
 func lfgTick(bots []*Bot, now time.Time) {
+	start := time.Now()
+	defer func() { // /api/lfg tick_ms_*: what one matching tick costs (lfg_count_maps included); lfgstats.go guard
+		lfgNoteTick(time.Since(start))
+	}()
 	cs, ps := lfgGather(bots, now)
 	used := map[*Bot]bool{}
 	lfgMatch(cs, ps, used, now)
@@ -1532,7 +1651,7 @@ const lfgLocalMax = 15
 
 // lfgLocal: free candidates standing on the same map form parties through local chat. The anchor (a farmer whose
 // goal map is this map, an item goal first) asks; a healer and the roles that make sense answer.
-func lfgLocal(cs []*lfgCand, used map[*Bot]bool, now time.Time) int {
+func lfgLocal(cs []*lfgCand, used map[*Bot]bool, now time.Time, t *lfgTally) int {
 	byMap := map[string][]*lfgCand{}
 	for _, c := range cs {
 		if !used[c.b] && c.at != "" && !isTown(c.at) {
@@ -1560,11 +1679,21 @@ func lfgLocal(cs []*lfgCand, used map[*Bot]bool, now time.Time) int {
 				var best *lfgCand
 				bs := -1 << 30
 				for _, o := range list {
-					if used[o.b] || o == a || o.leader || !lfgFits(o, P) {
+					if used[o.b] || o == a || o.leader {
 						continue
 					}
-					if s := lfgScore(o, P); s > bs && lfgMapOK(P, o) {
-						best, bs = o, s
+					if why := lfgFitWhy(o, P); why >= 0 {
+						t.addJoin(why, o.lv)
+						continue
+					}
+					if s := lfgScore(o, P); s > bs || lfgCountMaps() {
+						if !lfgMapOK(P, o) {
+							t.addJoin(jMap, o.lv)
+							continue
+						}
+						if s > bs {
+							best, bs = o, s
+						}
 					}
 				}
 				if best == nil {
@@ -1844,12 +1973,22 @@ func lfgManager(bots []*Bot, stop <-chan struct{}) {
 	boot := time.Now()
 	if coreInstance() {
 		loadTurns() // lfg_human.go: the human party's turn order and the human's goal survive a core restart
+	} else {
+		lfgStatsLoad() // lfgstats.go: the LFG counters continue from the last save (measured across restarts)
 	}
+	savedAt := time.Now()
 	for {
 		select {
 		case <-stop:
+			if !coreInstance() {
+				lfgStatsSave(time.Now())
+			}
 			return
 		case <-t.C:
+		}
+		if !coreInstance() && time.Since(savedAt) >= lfgStatsEvery {
+			lfgStatsSave(time.Now())
+			savedAt = time.Now()
 		}
 		if coreInstance() {
 			// the core instance runs only the human-led party: goals for its bots + the party's goal turns, whatever
@@ -2030,6 +2169,7 @@ func registerLFG(mux *http.ServeMux) {
 		}
 		lfg.Unlock()
 		sort.Slice(posts, func(i, j int) bool { return posts[i].Age < posts[j].Age })
+		perf := lfgPerfHistogram(now) // outside the lfgStats lock: it takes parties and the bots
 		lfgStats.Lock()
 		perMin := 0
 		for _, t := range lfgStats.postTimes {
@@ -2045,14 +2185,24 @@ func registerLFG(mux *http.ServeMux) {
 			return o
 		}
 		out := map[string]interface{}{
-			"on": goalPartiesOn(), "since_min": int(now.Sub(lfgStats.started).Minutes()),
-			"goals_now": kinds, "fixed_goal_bots": fixedN, "fixed_goal_on_goal_map": fixedServed,
+			"on": goalPartiesOn(), "since_min": int(now.Sub(lfgStats.counted).Minutes()), "process_min": int(now.Sub(lfgStats.started).Minutes()),
+			"counted_since": lfgStats.counted, // lfgstats.go: counting began here (kept across restarts, data/lfgstats.json); since_min counts from here
+			"goals_now":     kinds, "fixed_goal_bots": fixedN, "fixed_goal_on_goal_map": fixedServed,
 			"zeny_goals_farming_sellable": sellN, "mapped_goal_bots": mappedN, "mapped_goal_on_own_map": mappedOn,
 			"goals_set": cp(lfgStats.set), "goals_met": cp(lfgStats.met), "goals_expired": cp(lfgStats.expired),
 			"goals_changed": cp(lfgStats.changed), "posts": cp(lfgStats.posts), "posts_per_min_10m": float64(perMin) / 10,
 			"joins": lfgStats.joins, "parties_formed": lfgStats.formed, "parties_formed_local": lfgStats.local, "parties_dissolved": cp(lfgStats.dissolved),
 			"members_left": cp(lfgStats.leaves), "open_posts": posts,
 		}
+		for k, v := range lfgCountsReport() { // lfgstats.go: join / gate / party checks, the gauge
+			out[k] = v
+		}
+		out["perf_step_by_band"] = perf
+		out["tick_ms_last"] = float64(lfgStats.tickLast.Microseconds()) / 1000
+		out["tick_ms_avg"] = avgMs(lfgStats.tickSum, lfgStats.ticks)
+		out["ticks_since_start"] = lfgStats.ticks
+		out["count_maps_on"] = lfgCountMaps()
+		out["count_maps_auto_off"] = lfgMapAutoOff.Load()
 		lfgStats.Unlock()
 		writeJSON(w, out)
 	})

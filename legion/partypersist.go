@@ -547,6 +547,9 @@ func (b *Bot) leaveGameParty() {
 	b.mu.Lock()
 	b.PartyName, b.PartyID, b.partyLeader = "", 0, ""
 	b.roster = map[string]string{}
+	if partyGoalEnds(b.Goal) { // the party it was in is gone: pick its own ground again (as disband does)
+		b.Goal, b.route, b.path = Goal{}, nil, nil
+	}
 	b.mu.Unlock()
 }
 
