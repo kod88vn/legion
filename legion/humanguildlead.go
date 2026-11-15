@@ -288,6 +288,28 @@ func guildPlan(guild, human string, ms []guildMemberInfo, recruits []guildRecrui
 // memberParties: online main-instance members without a party, grouped by level (within 10) into parties of 3-5
 // with a map that fits them all (guildlead.go bestPartySpot). The leader is the highest level.
 func memberParties(bots []*Bot, guild string) []guildAction {
+	var acts []guildAction
+	for _, g := range memberPartyGroups(bots, guild) {
+		var names []string
+		for _, n := range g.names {
+			names = append(names, fmt.Sprintf("%q", n))
+		}
+		acts = append(acts, guildAction{"party", fmt.Sprintf("form a Starveil party on %s: %s", g.spot, strings.Join(names, ", ")),
+			fmt.Sprintf("python tools/legionctl.py party %s --map %s", strings.Join(names, " "), g.spot)})
+	}
+	return acts
+}
+
+// memberPartyGroup: free Starveil members who fit one party (members[0], the highest level, leads) and its map
+type memberPartyGroup struct {
+	members []*Bot
+	names   []string
+	spot    string
+}
+
+// memberPartyGroups: memberParties' grouping (also formed by starveillead.go). Free = online, in the guild, no
+// party, not on a guild block, a town errand, a vendor shop or dead; never Ayla's party friends.
+func memberPartyGroups(bots []*Bot, guild string) []memberPartyGroup {
 	type fb struct {
 		b    *Bot
 		lv   int
@@ -299,15 +321,16 @@ func memberParties(bots []*Bot, guild string) []guildAction {
 			continue
 		}
 		b.mu.Lock()
-		ok := b.Online && b.MapName != "" && strings.EqualFold(b.GuildName, guild)
+		ok := b.Online && b.MapName != "" && strings.EqualFold(b.GuildName, guild) && !b.Dead && b.trip == nil &&
+			b.mkt == nil && b.kafra == nil && !(b.vend != nil && b.vend.Opened) && !(b.fgoal != nil && b.fgoal.Kind == "guild")
 		lv, name := b.BaseLvOr(), b.charName()
 		b.mu.Unlock()
-		if ok {
+		if ok && !b.alwaysOnline() {
 			free = append(free, fb{b, lv, name})
 		}
 	}
 	sort.Slice(free, func(i, j int) bool { return free[i].lv > free[j].lv })
-	var acts []guildAction
+	var out []memberPartyGroup
 	for len(free) >= 3 {
 		g := []fb{free[0]}
 		rest := []fb{}
@@ -322,20 +345,17 @@ func memberParties(bots []*Bot, guild string) []guildAction {
 		if len(g) < 3 {
 			continue
 		}
-		var gb []*Bot
-		var names []string
+		var mg memberPartyGroup
 		for _, x := range g {
-			gb = append(gb, x.b)
-			names = append(names, fmt.Sprintf("%q", x.name))
+			mg.members = append(mg.members, x.b)
+			mg.names = append(mg.names, x.name)
 		}
-		spot := bestPartySpot(gb)
-		if spot == "" {
+		if mg.spot = bestPartySpot(mg.members); mg.spot == "" {
 			continue
 		}
-		acts = append(acts, guildAction{"party", fmt.Sprintf("form a Starveil party on %s: %s", spot, strings.Join(names, ", ")),
-			fmt.Sprintf("python tools/legionctl.py party %s --map %s", strings.Join(names, " "), spot)})
+		out = append(out, mg)
 	}
-	return acts
+	return out
 }
 
 // guildFundLocal: this instance's members mail zeny to a member (RODEX). Returns the amount pledged and the donors.
@@ -430,6 +450,7 @@ func guildFundLocal(bots []*Bot, to string, amount int, why string, now time.Tim
 
 // registerHumanGuildLead: /api/human-guild and /api/human-guild/fund (both instances; main merges the core).
 func registerHumanGuildLead(mux *http.ServeMux, bots []*Bot) {
+	registerStarveilOrders(mux) // starveillead.go: /api/human-guild/orders for Ayla's plugin
 	mux.HandleFunc("/api/human-guild/fund", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "POST {\"to\",\"amount\",\"why\"}", 405)

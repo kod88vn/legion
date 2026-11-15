@@ -51,6 +51,8 @@ package main
 //   guild_duty_kick_days      2    short days after the warning before the kick (/ strictness)
 //   guild_kicks_per_hour      2    server-wide expel cap (15 min between two, 2 h per guild)
 //   guild_kick_cooldown_h     24   hours a kicked bot refuses every guild invitation
+//   starveil_auto_lead        true Starveil is led with no AI (starveillead.go, AY19): duty warnings/kicks through Ayla's
+//                                  plugin, guild-pool funding, keep gifts, member parties (main instance)
 //
 //   Kafra (kafra.go)
 //   kafra_min_saving          3    teleport only if it saves at least this many map changes
@@ -178,6 +180,8 @@ type Tuning struct {
 	GuildDutyKickDays  int  `json:"guild_duty_kick_days"`   // short days after the warning before the kick (same)
 	GuildKicksPerHour  int  `json:"guild_kicks_per_hour"`   // server-wide expel cap (plus 15 min between two, 2 h per guild)
 	GuildKickCooldownH int  `json:"guild_kick_cooldown_h"`  // hours a kicked bot refuses every guild invitation
+	// starveillead.go (owner rule AY19): Starveil runs like a bot guild with no AI around (default on, owner order)
+	StarveilAutoLead bool `json:"starveil_auto_lead"`
 	// Kafra
 	KafraMinSaving    int `json:"kafra_min_saving"`
 	KafraKeepBeginner int `json:"kafra_keep_zeny_beginner"`
@@ -249,7 +253,7 @@ var defaultTuning = Tuning{
 	RoamGiveUpSec: 120, CrowdSpawnsPerBot: 5, CrowdRoamPct: 30, RoamCrowdSec: 75, GhostTargetSec: 10, LeaderCollectSec: 90, TripUrgentWeightPct: 90, TripBagPct: 70, TripMinIntervalMin: 45,
 	WeightRegenPct: 50, PotWeightCapPct: 45, PotHPAcolyte: 8, PotSPTarget: 15,
 
-	GuildDutyMinPerDay: 120, GuildDutyWarnDays: 3, GuildDutyKickDays: 2, GuildKicksPerHour: 2, GuildKickCooldownH: 24,
+	GuildDutyMinPerDay: 120, GuildDutyWarnDays: 3, GuildDutyKickDays: 2, GuildKicksPerHour: 2, GuildKickCooldownH: 24, StarveilAutoLead: true,
 
 	KafraMinSaving: 3, KafraKeepBeginner: 1000, KafraKeep: 200, KafraCooldownMin: 50, KafraMaxPerHour: 3, KafraMinSaveSec: 120,
 
