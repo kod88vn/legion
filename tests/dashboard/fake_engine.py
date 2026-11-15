@@ -259,6 +259,76 @@ def sample_data(d, now=None, alive=True):
                    "minds": {n: {"last_seen": iso(hb - 60 * i), "status_line": "saved status of %s" % n} for i, n in enumerate(MINDS)}}, f)
 
 
+def engine_files(d, ayla_logs=None):
+    """sample engine files (legion/data) and Ayla's status.json, in the shapes the engine writes them"""
+    now = time.time()
+    ayla_logs = ayla_logs or os.environ.get("DASH_AYLA_LOGS")
+    w = lambda name, obj: json.dump(obj, open(os.path.join(d, name), "w", encoding="utf-8"))
+    os.makedirs(os.path.join(d, "memory"), exist_ok=True)
+    w("levels.json", {"Silent Heals": {"name": "Silent Heals", "player": "Silent.smith", "account": "lg0001", "class": "Priest",
+                                       "level": 80, "job_level": 36, "exp": 100, "seen": int(now)},
+                      "Zendancer84": {"name": "Zendancer84", "player": "Zendancer84", "account": "lg2745", "class": "Priest",
+                                      "level": 80, "job_level": 37, "exp": 50, "seen": int(now)}})
+    w("personas.json", [{"account": "lg0001", "password": "legion", "name": "Silent.smith", "archetype": "grinder",
+                         "characters": [{"name": "Silent.smith", "role": "main", "plan": "knight_pierce"},
+                                        {"name": "Silent Heals", "role": "support", "plan": "priest"}]},
+                        {"account": "lg2745", "password": "legion", "name": "Zendancer84", "archetype": "explorer",
+                         "characters": [{"name": "Zendancer84", "role": "main", "plan": "priest", "target_class": 8}]}])
+    w(os.path.join("memory", "lg2745.json"), {"player": "Zendancer84", "facts": ["sample fact"], "goals": [{"text": "sample goal", "status": "active"}],
+                                             "progress": {"Zendancer84": "plan: priest"}, "people": {"Ayla": {"relation": "party", "times_met": 9}},
+                                             "diary": [{"t": "2026-11-15T10:00:00Z", "text": "[Zendancer84] sample diary"}], "maps_visited": {"payon": 4}})
+    w("guild_leaders.json", {"guild01": "lg0001"})
+    w("guild_roster.json", {"lg0001": "Crimson Oath"})
+    w("guild_rank.json", {"saved": "2026-11-15T13:40:00Z", "history": {"guild01": [{"guild": "guild01", "name": "Crimson Oath", "place": 1,
+                          "score": 192.2, "wealth": 4700, "stock_value": 1126, "funds": 3574, "guild_level": 5, "members": 38, "avg_top10_level": 83.7}]}})
+    w("guild_duty.json", {"saved": "2026-11-15T13:40:00Z", "directions": {"guild01": [{"kind": "supply", "map": "pay_fild02", "note": "sample"}]},
+                          "members": [{"char": "Zendancer84", "guild": "guild01", "standing": "good"}], "counters": {"blocks done": 4}})
+    w("friends.json", {"pairs": [{"a": "Zendancer84", "b": "Silent Heals", "score": 70, "partied_min": 10, "last": "2026-11-15T10:00:00Z"}],
+                       "counters": {"greetings": 3}, "loyalty": [], "loyalty_counters": {"asked gear": 2, "answered gear": 1}})
+    w("human-parties.json", [{"human": "Ayla", "members": ["Zendancer84"], "alumni": []}])
+    w("parties.json", [{"name": "Echo pt", "leader": "Silent Heals", "members": ["Silent Heals"], "map": "mjolnir_12",
+                        "formed": "2026-11-15T13:16:09.201825185Z"}])
+    w("partychat.json", {"ayla": [{"ts": int(now) - 60, "from": "Zendancer84", "text": "sample line"}]})
+    w("econ_counters.json", {"since": "2026-11-15T01:45:12Z", "trades": 1140, "failed": 123, "counts": {"deal done: fetch": 3}})
+    with open(os.path.join(d, "meter.jsonl"), "w") as f:
+        for r in ({"t": "2026-11-15T13:00:00Z", "kind": "server", "window": "1h", "n": 961, "totals": {"bots": 961, "kpm": 0.67, "zph": 6900}},
+                  {"t": "2026-11-15T13:00:00Z", "kind": "neo", "window": "1h", "neo": {"party": {"n": 4}, "starveil": {"n": 15}}},
+                  {"t": "2026-11-15T13:00:00Z", "kind": "cohort", "window": "1h", "key": "archer|21-40|solo", "n": 97,
+                   "kpm": {"mean": 1, "median": 1, "par": 1.2}, "zph": {"mean": 900, "median": 800, "par": 1000}, "deaths_h": 0.04}):
+            f.write(json.dumps(r) + "\n")
+    with open(os.path.join(d, "health.log"), "w") as f:
+        for i in range(5):
+            f.write(json.dumps({"t": time.strftime("%H:%M:%S", time.localtime(now - 60 * (5 - i))), "online": 966 + i,
+                                "kills": 3000, "lvups": 50, "deaths": 5, "avg_lv": 57, "problems": []}) + "\n")
+    if ayla_logs:
+        os.makedirs(ayla_logs, exist_ok=True)
+        json.dump({"name": "Ayla", "online": True, "job_id": 12, "base_level": 84, "job_level": 41, "map": "pay_dun02", "x": 1, "y": 2,
+                   "kpm": 6.9, "exp_h": 296614, "zeny": 50700, "ts": int(now) - 3600}, open(os.path.join(ayla_logs, "status.json"), "w"))
+
+
+def snapshot(snap_dir):
+    """a sample database snapshot in the dbsnap format"""
+    import gzip
+    t = lambda cols, rows: {"cols": cols, "rows": rows}
+    doc = {"t": time.time() - 120, "source": "sample", "tables": {
+        "char": t(["char_id", "account_id", "char_num", "name", "class", "base_level", "job_level", "zeny", "online", "last_map", "guild_id", "party_id"],
+                  [[172745, 2102745, 0, "Zendancer84", 8, 81, 37, 6113, 0, "pay_dun01", 11, 2],
+                   [150020, 2000001, 0, "Wanderer", 0, 1, 1, 0, 0, "prontera", 0, 0]]),
+        "inventory": t(["char_id", "nameid", "amount", "equip", "identify", "refine", "attribute", "card0", "card1", "card2", "card3"],
+                       [[172745, 2216, 1, 256, 1, 0, 0, 0, 0, 0, 0], [172745, 602, 3, 0, 1, 0, 0, 0, 0, 0, 0]]),
+        "cart_inventory": t(["char_id", "nameid", "amount"], []), "storage": t(["account_id", "nameid", "amount"], [[2102745, 501, 10]]),
+        "skill": t(["char_id", "id", "lv", "flag"], [[172745, 28, 10, 0]]),
+        "guild": t(["guild_id", "name", "master", "guild_lv"], [[11, "Starveil", "Ayla", 3]]),
+        "guild_member": t(["guild_id", "char_id"], []), "party": t(["party_id", "name", "leader_char"], [[2, "Ayla pt", 150010]]),
+        "login": t(["account_id", "userid", "sex", "group_id", "logincount", "lastlogin"],
+                   [[2102745, "lg2745", "F", 0, 140, "2026-11-15 13:39:50"], [2000001, "wander", "M", 99, 3, "2026-11-15 10:00:00"]])}}
+    os.makedirs(snap_dir, exist_ok=True)
+    with gzip.open(os.path.join(snap_dir, "snap-20261115-120000.json.gz"), "wt", encoding="utf-8") as f:
+        json.dump(doc, f)
+    with open(os.path.join(os.environ.get("DASH_AYLA_LOGS", snap_dir), "items_lut.tsv"), "w", encoding="utf-8") as f:
+        f.write("2216\tBiretta\t0\n602\tButterfly Wing\t0\n501\tRed Potion\t0\n")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=18090)

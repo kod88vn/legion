@@ -28,6 +28,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -36,6 +37,9 @@ REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "tools", "system"))
 import common as C  # noqa: E402
 import bugq  # noqa: E402
+sys.path.insert(0, HERE)
+import dbsnap  # noqa: E402
+import offline  # noqa: E402
 
 PAGE = os.path.join(REPO, "legion", "dashboard.html")
 WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO", "Ubuntu-24.04")
@@ -43,6 +47,8 @@ ENGINE = "http://127.0.0.1:8090"
 CACHE_DIR = os.environ.get("DASH_CACHE") or os.path.join(REPO, "tools", ".state", "dashcache")
 ENGINE_TIMEOUT = 8
 CACHE_MAX_BYTES = 8 << 20
+SNAP_DIR = os.environ.get("DASH_SNAP") or os.path.join(REPO, "tools", ".state", "dbsnap")
+SNAP_EVERY = 600   # seconds between database snapshots while ro-db runs
 
 # container name, what it is, host ports that answer when it is up (docker-compose.yml)
 CONTAINERS = [
@@ -159,6 +165,7 @@ class ContainerWatch(threading.Thread):
         self.enabled, self.engine = enabled, engine
         self.lock = threading.Lock()
         self.ps, self.ps_t, self.why, self.probes = None, 0.0, "not asked yet", {}
+        self.snap_enabled, self.snap_busy, self.snap_err, self.skill_try = enabled, False, "", 0.0
 
     def poll(self):
         ps = docker_ps() if self.enabled else None
@@ -181,6 +188,39 @@ class ContainerWatch(threading.Thread):
             self.ps, self.ps_t, self.why, self.probes = ps, time.time(), why, res
         if self.engine:
             self.engine.probe()
+        if ps is not None:
+            self.snapshots(ps)
+
+    def running(self, name):
+        with self.lock:
+            ps = self.ps
+        return bool(ps) and ps.get(name, ("",))[0] == "running"
+
+    def snapshots(self, ps):
+        """a read-only database snapshot every SNAP_EVERY s while ro-db runs; skill names once from ro-rathena"""
+        if not self.snap_enabled:
+            return
+        if ps.get("ro-db", ("",))[0] == "running" and not self.snap_busy:
+            last = dbsnap.latest(SNAP_DIR)
+            if not last or time.time() - (mtime(last) or 0) >= SNAP_EVERY:
+                self.snap_busy = True
+                threading.Thread(target=self._snap, daemon=True).start()
+        sk = os.path.join(SNAP_DIR, "skills.tsv")
+        if ps.get("ro-rathena", ("",))[0] == "running" and not os.path.exists(sk) and time.time() - self.skill_try > 600:
+            self.skill_try = time.time()
+            try:
+                dbsnap.fetch_skill_names(sk)
+            except Exception as e:
+                self.snap_err = "skill names: %s" % e
+
+    def _snap(self):
+        try:
+            dbsnap.take(SNAP_DIR)
+            self.snap_err = ""
+        except Exception as e:
+            self.snap_err = str(e)[:200]
+        finally:
+            self.snap_busy = False
 
     def run(self):
         while True:
@@ -482,6 +522,80 @@ def minds_from_file(path):
 
 
 # ----------------------------------------------------------------- status
+# engine route -> (stand-in from files, the file whose time is the data's age)
+FILE_ROUTES = {
+    "/api/leaderboard": (lambda q: offline.leaderboard(int(q.get("limit", ["0"])[0] or 0)), "levels.json"),
+    "/api/guild-rank": (lambda q: offline.guild_rank(), "guild_rank.json"),
+    "/api/guilds/detail": (lambda q: offline.guilds_detail(), "guild_rank.json"),
+    "/api/friends": (lambda q: offline.friends(int(q.get("n", ["15"])[0] or 15)), "friends.json"),
+    "/api/meter": (lambda q: offline.meter(), "meter.jsonl"),
+    "/api/meter/neo": (lambda q: offline.meter_neo(), "meter.jsonl"),
+    "/api/overview/history": (lambda q: offline.history(), "health.log"),
+    "/api/parties/detail": (lambda q: offline.parties_detail(PLAYERS[0].current() if PLAYERS else None), "parties.json"),
+}
+
+
+PLAYERS = []   # the server's Players object, for stand-ins that use the database snapshot
+
+
+def from_files(path):
+    """(file time, bytes) for an engine route the files can stand in for, else None"""
+    route, _, qs = path.partition("?")
+    hit = FILE_ROUTES.get(route.rstrip("/"))
+    if not hit:
+        return None
+    try:
+        obj = hit[0](urllib.parse.parse_qs(qs))
+    except Exception:
+        obj = None
+    if obj is None:
+        return None
+    return mtime(C.dpath(hit[1])) or time.time(), json.dumps(obj).encode()
+
+
+class Players:
+    """the newest database snapshot (reloaded when a newer one appears) and the Players tab's answers (DB07)"""
+
+    def __init__(self, watch):
+        self.watch, self.lock, self.snap, self.err = watch, threading.Lock(), None, ""
+        PLAYERS[:] = [self]
+
+    def current(self):
+        p = dbsnap.latest(SNAP_DIR)
+        with self.lock:
+            if p and (self.snap is None or self.snap.path != p):
+                try:
+                    self.snap = dbsnap.Snapshot(p)
+                    self.err = ""
+                except Exception as e:
+                    self.err = "snapshot unreadable: %s" % e
+            return self.snap
+
+    def info(self):
+        s = self.current()
+        return {"snapshot": {"t": s.t, "file": os.path.basename(s.path), "counts": s.counts, "source": s.source} if s else None,
+                "db_up": self.watch.running("ro-db"), "snap_error": self.watch.snap_err or self.err,
+                "snap_every_s": SNAP_EVERY, "skill_names": bool(offline.skills(SNAP_DIR)),
+                "item_names": len(offline.items())}
+
+    def search(self, q, limit):
+        out = offline.search(self.current(), q, limit)
+        out.update(self.info())
+        return out
+
+    def char(self, char_id, name):
+        live, err = None, ""
+        if char_id and self.watch.running("ro-db"):
+            try:
+                live = dbsnap.live_char(char_id)
+            except Exception as e:
+                err = str(e)[:200]
+        out = offline.character(self.current(), live, char_id, name, offline.skills(SNAP_DIR))
+        out["live_error"] = err
+        out.update(self.info())
+        return out
+
+
 def build_status(engine, watch, started):
     now = C.now()
     containers, docker_why = watch.rows()
@@ -535,6 +649,21 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(200, build_status(self.server.engine, self.server.watch, self.server.started))
             except Exception as e:  # the page must still get an answer
                 return self.send_json(500, {"error": repr(e)[:300]})
+        if route == "/offline":
+            try:
+                return self.send_json(200, offline.summary())
+            except Exception as e:
+                return self.send_json(500, {"error": repr(e)[:300]})
+        if route in ("/players", "/players/char"):
+            q = urllib.parse.parse_qs(self.path.partition("?")[2])
+            g = lambda k, d="": (q.get(k) or [d])[0]
+            try:
+                if route == "/players":
+                    return self.send_json(200, self.server.players.search(g("q"), min(500, int(g("limit", "60") or 60))))
+                cid = g("id")
+                return self.send_json(200, self.server.players.char(int(cid) if cid.isdigit() else None, g("name") or None))
+            except Exception as e:
+                return self.send_json(500, {"error": repr(e)[:300]})
         if route == "/favicon.ico":
             return self.send(204, "image/x-icon", b"")
         if route.startswith("/api/"):
@@ -568,6 +697,8 @@ class Handler(BaseHTTPRequestHandler):
             hit, src = minds_from_file(self.path), "file"
             if hit is None:
                 hit, src = cache_get(self.path), "cache"
+            if hit is None:
+                hit, src = from_files(self.path), "files"
             if hit is not None:
                 t, old = hit
                 return self.send(200, "application/json; charset=utf-8", old,
@@ -602,6 +733,7 @@ def main(argv=None):
     srv.engine = Engine(a.engine)
     srv.watch = ContainerWatch(enabled=not a.no_docker, engine=srv.engine)
     srv.watch.start()
+    srv.players = Players(srv.watch)
     if not a.no_heartbeat:
         threading.Thread(target=beat, daemon=True).start()
     print("dashboard on http://%s:%d/  (engine %s, data %s)" % (a.bind, a.port, a.engine, C.data_dir()), flush=True)

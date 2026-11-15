@@ -13,6 +13,8 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+os.environ["DASH_AYLA_LOGS"] = tempfile.mkdtemp()   # never the real OpenKore logs
+os.environ["DASH_SNAP"] = tempfile.mkdtemp()        # never the real snapshots
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "tools", "dashboard"))
 sys.path.insert(0, HERE)
@@ -52,6 +54,7 @@ class Base(unittest.TestCase):
         self.srv.engine = dashserve.Engine("http://127.0.0.1:%d" % self.fake_port)
         self.srv.watch = dashserve.ContainerWatch(enabled=False, engine=self.srv.engine)
         self.srv.watch.poll()
+        self.srv.players = dashserve.Players(self.srv.watch)
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
         self.url = "http://127.0.0.1:%d" % self.srv.server_address[1]
 
@@ -104,7 +107,7 @@ class StackStopped(Base):
         self.assertEqual((b["total"], b["open"], b["unassigned"], b["assigned"], b["closed"]), (12, 11, 9, 2, 1))
         self.assertEqual(st["deploy"]["last"]["tag"], "ro-legion:deploy-sample-2")
         self.assertEqual(st["dispatcher"]["roles"]["ayla"]["last_call"]["exit"], 0)
-        self.assertTrue(all(not c["up"] for c in st["containers"]))
+        self.assertTrue(all(c["source"] == "ports" for c in st["containers"] if c["ports"]))
 
     def test_minds_from_the_save_file(self):
         code, hdr, body = get(self.url + "/api/minds")
@@ -149,12 +152,59 @@ class StackUp(Base):
         self.assertIsNotNone(self.ds.cache_key("/api/minds/all/thoughts?since=0&limit=500"))
 
 
+class FromFiles(Base):
+    """engine down: the engine's files stand in for its endpoints, and the Players tab reads a snapshot"""
+
+    def test_stand_ins(self):
+        self.fe.engine_files(self.d)
+        code, hdr, body = get(self.url + "/api/leaderboard?limit=0")
+        self.assertEqual(code, 200)
+        self.assertEqual(hdr.get("X-Dash-Source"), "files")
+        top = json.loads(body)["top"]
+        self.assertEqual([r["name"] for r in top[:2]], ["Silent Heals", "Zendancer84"])
+        for route in ("/api/guild-rank", "/api/guilds/detail", "/api/friends?n=15", "/api/meter", "/api/meter/neo",
+                      "/api/overview/history", "/api/parties/detail"):
+            code, hdr, body = get(self.url + route)
+            self.assertEqual((route, code), (route, 200))
+        parties = json.loads(get(self.url + "/api/parties/detail")[2])
+        self.assertEqual(parties[0]["members"][0]["detail"]["kpm"], 6.9)
+        self.assertEqual(get(self.url + "/api/overview")[0], 503)   # no file has the full overview
+        off = json.loads(get(self.url + "/offline")[2])
+        self.assertEqual(off["population"]["characters"], 2)
+        self.assertEqual(off["health"]["online"], 970)
+
+    def test_players(self):
+        self.fe.engine_files(self.d)
+        self.fe.snapshot(os.environ["DASH_SNAP"])
+        r = json.loads(get(self.url + "/players?q=zen")[2])
+        self.assertEqual(r["rows"][0]["name"], "Zendancer84")
+        self.assertEqual(r["rows"][0]["kind"], "Ayla's party")
+        self.assertFalse(r["db_up"])
+        d = json.loads(get(self.url + "/players/char?id=172745&name=Zendancer84")[2])
+        self.assertEqual(d["source"], "snapshot")
+        self.assertEqual(d["equipment"][0]["name"], "Biretta")
+        self.assertEqual(d["char"]["zeny"], 6113)
+        self.assertNotIn("password", json.dumps(d))
+        self.assertEqual(d["engine"]["persona"]["account"], "lg2745")
+        gm = json.loads(get(self.url + "/players?q=wander")[2])["rows"][0]
+        self.assertEqual(gm["kind"], "GM")
+        only_files = json.loads(get(self.url + "/players/char?name=Silent%20Heals")[2])
+        self.assertIsNone(only_files["source"])
+        self.assertEqual(only_files["char"]["base_level"], 80)
+
+
 class Small(unittest.TestCase):
     def test_go_time(self):
         import dashserve
         self.assertAlmostEqual(dashserve.go_time("2026-11-15T01:06:12.123456789Z"), 1794704772.123456, places=3)
         self.assertAlmostEqual(dashserve.go_time("2026-11-15T09:06:12.5+08:00"), 1794704772.5, places=3)
         self.assertIsNone(dashserve.go_time("0001-01-01T00:00:00Z"))
+
+    def test_read_only_guard(self):
+        import dbsnap
+        for bad in ("UPDATE `char` SET zeny = 0", "SELECT 1; DELETE FROM login", "delete from login", "INSERT INTO x VALUES (1)"):
+            with self.assertRaises(ValueError):
+                dbsnap.run([bad])
 
 
 if __name__ == "__main__":

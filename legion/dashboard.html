@@ -179,6 +179,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
       <button type="button" data-tab="economy">Economy<span class="tb" id="tb-economy" hidden></span></button>
       <button type="button" data-tab="puppet">Puppet master decisions<span class="tb" id="tb-puppet" hidden></span></button>
       <button type="button" data-tab="leaderboard">Leaderboard<span class="tb" id="tb-leaderboard" hidden></span></button>
+      <button type="button" data-tab="players">Players<span class="tb" id="tb-players" hidden></span></button>
       <button type="button" data-tab="system">System<span class="tb" id="tb-system" hidden></span></button>
     </nav>
   </div>
@@ -193,6 +194,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
     <div class="card"><h2>Ayla's party <small id="partyNoteAyla"></small></h2><div class="tbl" id="partiesAyla"><div class="empty">loading...</div></div>
       <div style="margin-top:8px;font-size:12.5px"><a class="lnk" data-openmind="ayla">Talk to Ayla (her chat is on the Puppet master decisions tab)</a></div></div>
     <details class="more" id="dAylaMeter"><summary>Meter: the party against par <small id="aylaMeterNote"></small></summary><div class="in tbl" id="aylaMeter"><div class="empty">loading...</div></div></details>
+    <details class="more"><summary>Ayla's own files <small>status.json and her OpenKore logs</small></summary><div class="in" id="aylaFiles"><div class="empty">loading...</div></div></details>
   </section>
 
   <!-- ============ Legion ============ -->
@@ -208,6 +210,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
       </div>
     </div>
     <div class="card sec"><h2>Guilds <small id="guildNote"></small></h2><div class="tbl" id="guilds"><div class="empty">loading guilds...</div></div></div>
+    <details class="more"><summary>Guild duty and directions <small>legion/data/guild_duty.json</small></summary><div class="in" id="guildDuty"><div class="empty">loading...</div></div></details>
     <details class="more" open><summary>Parties <small id="partyNote"></small></summary><div class="in tbl" id="parties"><div class="empty">loading parties...</div></div></details>
     <details class="more"><summary>Population, levels and what they are doing</summary><div class="in"><div class="sub2">
       <div><h2 style="font-size:13px;margin:0 0 8px">Base level, online <small id="lvNote" style="color:var(--muted);font-weight:400"></small></h2><div id="chLevels"></div></div>
@@ -251,6 +254,19 @@ td.wrapc { white-space: normal; max-width: 640px; }
     <details class="more" open><summary>Guild ranking <small id="grNote"></small></summary><div class="in tbl" id="guildRank"><div class="empty">loading...</div></div></details>
     <details class="more"><summary>Top by kills per minute <small id="topKpmNote"></small></summary><div class="in tbl" id="topKpm"><div class="empty">loading...</div></div></details>
     <details class="more"><summary>Top by zeny per hour <small id="topZphNote"></small></summary><div class="in tbl" id="topZph"><div class="empty">loading...</div></div></details>
+    <details class="more"><summary>Last league report <small id="leagueNote"></small></summary><div class="in" id="league"><div class="empty">loading...</div></div></details>
+  </section>
+
+  <!-- ============ Players (DB07) ============ -->
+  <section class="tab" id="tab-players">
+    <section class="kpis" id="kpisPl"></section>
+    <div class="card">
+      <h2>Find a player <small id="plNote"></small></h2>
+      <div class="send" style="max-width:720px"><input type="text" id="plQ" placeholder="name, account (e.g. lg0001), account id or char id; empty = everyone" autocomplete="off"></div>
+      <div class="chips" id="plKinds"></div>
+      <div class="tbl" id="plList" style="margin-top:8px;max-height:420px;overflow-y:auto"><div class="empty">loading...</div></div>
+    </div>
+    <div id="plDetail"></div>
   </section>
 
   <!-- ============ System ============ -->
@@ -270,6 +286,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
     <div class="card sec"><h2>Deploys <small id="depNote"></small></h2><div id="deploys"><div class="empty">loading...</div></div></div>
     <div class="sub2 sec">
       <div class="card"><h2>Engine runtime</h2><div class="kvs" id="runtime" style="grid-template-columns:auto 1fr"><span>Legion</span><span id="uptime">–</span><span>runtime</span><span id="rt">–</span></div></div>
+      <div class="card"><h2>Logs</h2><div id="sysLogs"><div class="empty">loading...</div></div></div>
       <div class="card"><h2>Dashboard server and markers</h2><div class="kvs" id="dashsrv" style="grid-template-columns:auto 1fr"><span class="empty">loading...</span></div></div>
     </div>
   </section>
@@ -408,11 +425,11 @@ const ageTxt = s => s == null ? '' : s < 90 ? Math.round(s) + ' s' : s < 5400 ? 
 const agoE = t => t ? ageTxt(Math.max(0, Date.now() / 1000 - t)) + ' ago' : 'never';
 const clock = t => t ? new Date(t * 1000).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false}) : '–';
 // text for a panel that has nothing to show, and a suffix for a panel that shows saved data
-const downMsg = (res, what) => `<div class="empty">${SRC.engine === false ? 'Engine down: no saved ' + what + ' to show.' : esc(what) + ' not available (' + esc(res.err || 'HTTP ' + res.status) + ')'}</div>`;
+const downMsg = (res, what) => `<div class="empty">${SRC.engine === false ? 'Engine down, and no file on disk has the ' + what + '.' : esc(what) + ' not available (' + esc(res.err || 'HTTP ' + res.status) + ')'}</div>`;
 const staleSfx = res => res && res.stale != null ? ` · saved data, ${ageTxt(res.stale)} old` : '';
 
 // ======================= tabs (DB05) =======================
-const TABS = ['ayla', 'legion', 'economy', 'puppet', 'leaderboard', 'system'];
+const TABS = ['ayla', 'legion', 'economy', 'puppet', 'leaderboard', 'players', 'system'];
 let curTab = 'ayla';
 const onShow = {};  // tab -> function that redraws what depends on the visible width
 function showTab(t, keepHash) {
@@ -426,7 +443,7 @@ function showTab(t, keepHash) {
   if (onShow[t]) onShow[t]();
 }
 $('tabs').addEventListener('click', ev => { const b = ev.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
-window.addEventListener('hashchange', () => showTab(location.hash.slice(1), true));
+window.addEventListener('hashchange', () => showTab(location.hash.slice(1).split('?')[0], true));
 function tabBadge(t, text, bad) { const e = $('tb-' + t); e.hidden = !text; e.textContent = text || ''; e.className = 'tb' + (bad ? ' bad' : ''); }
 document.addEventListener('toggle', ev => { if (ev.target.tagName === 'DETAILS' && ev.target.open && onShow[curTab]) onShow[curTab](); }, true);
 
@@ -535,21 +552,23 @@ function renderHistory() {
   lineChart($('chOnline'), pts, [{key: 'online', color: s1, label: 'online', area: true}]);
   lineChart($('chKD'), pts, [{key: 'kills', color: s1, label: 'kills/min'}, {key: 'deaths', color: s2, label: 'deaths/min'}]);
   lineChart($('chLv'), pts, [{key: 'avg_level', color: s3, label: 'avg level'}], {zoom: true, minSpan: 2});
-  lineChart($('chLU'), pts, [{key: 'levelups', color: s3, label: 'level-ups/min'}, {key: 'jobchanges', color: s7, label: 'job changes/min'}]);
+  // a series the source does not have (health.log has no job changes) is left out, not drawn as zero
+  lineChart($('chLU'), pts, [{key: 'levelups', color: s3, label: 'level-ups/min'}, {key: 'jobchanges', color: s7, label: 'job changes/min'}].filter(x => !pts.length || pts[0][x.key] != null));
   const last = pts[pts.length - 1];
   $('tOnline').textContent = last ? fmt(last.online) : '';
   $('tLv').textContent = last ? fmt1(last.avg_level) : '';
-  $('trendNote').textContent = pts.length ? `one point per minute · ${pts.length} min of history (max 6 h)` : 'one point per minute, last 6 h';
+  $('trendNote').textContent = pts.length ? (HIST.source ? `from ${HIST.source}: ${pts.length} points over ${ageTxt(pts[pts.length - 1].t - pts[0].t)}, last ${agoE(pts[pts.length - 1].t)}` : `one point per minute · ${pts.length} min of history (max 6 h)`) : 'one point per minute, last 6 h';
 }
 
 let lastO = null, lastORes = null;
+const HIST = {source: ''};
 const O_PANELS = ['kpis', 'chLevels', 'states', 'pop', 'classes', 'maps', 'plans', 'activity', 'deaths', 'econ', 'humans', 'kpisEcon'];
 async function refresh() {
   const [o, h] = await Promise.all([eget('/api/overview'), eget('/api/overview/history')]);
   lastORes = o;
   if (o.ok) { lastO = o.data; render(o.data); }
-  else if (!lastO) for (const id of O_PANELS) $(id).innerHTML = downMsg(o, 'world data');
-  if (h.ok) history = h.data.points || [];
+  else if (!lastO) { for (const id of O_PANELS) $(id).innerHTML = downMsg(o, 'world data'); renderOffline(); }
+  if (h.ok) { history = h.data.points || []; HIST.source = h.data.source || ''; }
   renderHistory();
   if (h.stale != null) $('trendNote').textContent += staleSfx(h);
   renderEconKpis(); renderTop();
@@ -1132,8 +1151,19 @@ function renderAylaKpis() {
 
 // ======================= Economy tab: key numbers =======================
 function renderEconKpis() {
-  if (!lastO) return;
-  const o = lastO, e = o.economy, m60 = o.activity.m60, mt = MT.lastMeter ? MT.lastMeter.data : null, s = mt ? (mt.server || {}) : null;
+  const mt = MT.lastMeter ? MT.lastMeter.data : null, s = mt ? (mt.server || {}) : null;
+  if (!lastO) {   // engine down: the meter's last hourly row and the economy counters (files)
+    const E = OFF.d && OFF.d.econ, none = '<span class="st-unk">–</span>';
+    $('kpisEcon').innerHTML =
+      kpi('Zeny / h per bot', s && s.bots > 0 ? fmt(Math.round(s.zph)) : none, s && s.bots > 0 ? `${fmt(s.bots)} bots · ${esc(mt.window)}` : 'no meter row on disk') +
+      kpi('Kills / min per bot', s && s.bots > 0 ? fmt1(s.kpm) : none, s && s.bots > 0 ? 'fair kills, same hour' : '') +
+      kpi('Income in that hour', s && s.income != null ? fmt(s.income) : none, s && s.loot != null ? `loot value ${fmt(s.loot)} · consumables ${fmt(s.cons)}` : '') +
+      kpi('Player trades', E ? fmt(E.trades) : none, E ? `${fmt(E.failed)} failed · since ${esc((E.since || '').slice(5, 16).replace('T', ' '))} UTC` : 'no counters file') +
+      kpi('Vending sales', E ? fmt(E.vend_sales) : none, E ? `${fmt(E.vend_zeny)} zeny` : '') +
+      kpi('Gear gifts', E ? fmt(E.gear_gifts) : none, E ? `${fmt(E.cards)} cards` : '');
+    return;
+  }
+  const o = lastO, e = o.economy, m60 = o.activity.m60;
   $('kpisEcon').innerHTML =
     kpi('Zeny / h per bot', s && s.bots > 0 ? fmt(Math.round(s.zph)) : '<span class="st-unk">–</span>', s && s.bots > 0 ? `${fmt(s.bots)} bots counted · window ${mt.window}` : 'meter not reading') +
     kpi('Open shops', fmt(e.open_shops), `${fmt(e.vendors_online)} vendors online`) +
@@ -1163,7 +1193,7 @@ function renderTop() {
   // one line: is the world data live?
   if (SRC.engine === true && ores && ores.ok && ores.stale == null && o) $('status').innerHTML = `<span class="dot"></span>live, updated ${new Date(o.time * 1000).toLocaleTimeString([], {hour12: false})}`;
   else if (SRC.engine === false) $('status').innerHTML = `<span class="dot stale"></span><span class="err">ENGINE DOWN</span> ` +
-    (ores && ores.ok && ores.stale != null ? `· showing the data saved ${clock(Date.now() / 1000 - ores.stale)} (${ageTxt(ores.stale)} old)` : '· no saved world data');
+    (ores && ores.ok && ores.stale != null ? `· showing the data saved ${clock(Date.now() / 1000 - ores.stale)} (${ageTxt(ores.stale)} old)` : OFF.d ? "· showing the engine's files on disk, each with its age" : '· no saved world data');
   else if (ores && !ores.ok) $('status').innerHTML = `<span class="dot stale"></span><span class="err">engine answers with an error (${esc(ores.err)})</span>`;
   let g = '';
   // stack marker
@@ -1311,9 +1341,222 @@ function renderPM(ds, pm) {
     }).join('') + '</tbody></table>';
 }
 
+
+// ======================= Players (DB07): /players and /players/char on the dashboard server =======================
+// Read-only: the rAthena tables come from ro-db (live, SELECT only) or the newest snapshot; the engine's view from its files.
+const PL = {q: '', kind: 'all', res: null, sel: null, det: null, t: 0};
+const EQP = [[256, 'head top'], [512, 'head mid'], [1, 'head low'], [16, 'armor'], [2, 'right hand'], [32, 'left hand'], [4, 'garment'], [64, 'shoes'], [8, 'accessory L'], [128, 'accessory R']];
+const eqSlot = m => EQP.filter(([b]) => m & b).map(([, n]) => n).join(' + ') || (m ? 'equip ' + m : '');
+async function refreshPlayers() {
+  try {
+    const r = await fetch(`/players?q=${encodeURIComponent(PL.q)}&limit=200`, {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    PL.res = await r.json();
+  } catch (e) { PL.res = null; $('plList').innerHTML = `<div class="empty">${SRC.statusOK === false ? statusMissing() : 'player search failed (' + esc(e.message) + ')'}</div>`; renderPlKpis(); return; }
+  renderPlayers();
+}
+function renderPlKpis() {
+  const d = PL.det || PL.res, s = d && d.snapshot;
+  $('kpisPl').innerHTML =
+    kpi('Database', d ? (d.db_up ? '<span class="st-up">up</span>' : '<span class="st-down">down</span>') : '–', d ? (d.db_up ? 'a selected player is read live (SELECT only)' : 'the Players tab uses the last snapshot') : '') +
+    kpi('Last snapshot', s ? ageTxt(Date.now() / 1000 - s.t) + ' old' : '<span class="st-unk">none</span>', s ? clock(s.t) + ' · every ' + Math.round(d.snap_every_s / 60) + ' min while the database runs' : 'no snapshot yet: one is taken when ro-db runs') +
+    kpi('Characters', s ? fmt(s.counts.char) : '–', s ? `${fmt(s.counts.login)} accounts · ${fmt(s.counts.guild)} guilds · ${fmt(s.counts.party)} parties` : '') +
+    kpi('Items on record', s ? fmt(s.counts.inventory + s.counts.cart_inventory + s.counts.storage) : '–', s ? `inventory ${fmt(s.counts.inventory)} · cart ${fmt(s.counts.cart_inventory)} · storage ${fmt(s.counts.storage)}` : '') +
+    kpi('Names', d ? `${fmt(d.item_names)} items` : '–', d ? (d.skill_names ? 'skill names from the game server' : 'skill names: none yet (read from ro-rathena when it runs)') : '') +
+    (d && d.snap_error ? kpi('Snapshot error', '<span class="st-down" style="font-size:16px">' + esc(d.snap_error) + '</span>', '') : '');
+}
+function renderPlayers() {
+  const d = PL.res;
+  renderPlKpis();
+  if (!d) return;
+  const kinds = {};
+  for (const r of d.rows) kinds[r.kind] = (kinds[r.kind] || 0) + 1;
+  $('plKinds').innerHTML = ['all', ...Object.keys(kinds).sort()].map(k => `<button class="chip" type="button" data-kind="${esc(k)}" style="${PL.kind === k ? 'border-color:var(--s1);color:var(--text)' : ''}">${esc(k)}${k === 'all' ? '' : ' ' + kinds[k]}</button>`).join('');
+  const rows = d.rows.filter(r => PL.kind === 'all' || r.kind === PL.kind);
+  $('plNote').textContent = `${fmt(d.total)} match${d.total === 1 ? '' : 'es'}${d.total > d.rows.length ? ', first ' + d.rows.length + ' shown' : ''} · ${d.snapshot ? 'database snapshot ' + ageTxt(Date.now() / 1000 - d.snapshot.t) + ' old + engine files' : 'no database snapshot yet: engine files only'}`;
+  $('plList').innerHTML = rows.length ? '<table><thead><tr><th>name</th><th>kind</th><th>class</th><th class="r">lv</th><th class="r">job</th><th>account</th><th>last map</th><th>online</th><th>from</th></tr></thead><tbody>' +
+    rows.map(r => `<tr data-cid="${r.char_id ?? ''}" data-name="${esc(r.name)}" style="cursor:pointer${PL.sel && PL.sel.name === r.name ? ';background:var(--surface-2)' : ''}"><td><b>${esc(r.name)}</b></td><td>${esc(r.kind)}</td><td>${esc(r.class || '')}</td>` +
+      `<td class="r">${esc(r.level ?? '')}</td><td class="r">${esc(r.job_level ?? '')}</td><td>${esc(r.account || '')}${r.account_id ? ' <span style="color:var(--muted)">' + r.account_id + '</span>' : ''}</td><td>${esc(r.map || '')}</td>` +
+      `<td>${r.online == null ? '<span style="color:var(--muted)">?</span>' : r.online ? '<span class="st-up">online</span>' : '<span style="color:var(--muted)">offline</span>'}</td><td style="color:var(--muted)">${esc(r.source)}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="empty">no player matches</div>';
+}
+$('plQ').addEventListener('input', ev => { clearTimeout(PL.t); PL.t = setTimeout(() => { PL.q = ev.target.value.trim(); refreshPlayers(); }, 250); });
+$('plKinds').addEventListener('click', ev => { const b = ev.target.closest('[data-kind]'); if (b) { PL.kind = b.dataset.kind; renderPlayers(); } });
+$('plList').addEventListener('click', ev => {
+  const tr = ev.target.closest('tr[data-name]');
+  if (!tr) return;
+  PL.sel = {id: tr.dataset.cid, name: tr.dataset.name};
+  renderPlayers(); loadPlayer(true);
+});
+async function loadPlayer(scroll) {
+  if (!PL.sel) return;
+  if (scroll) $('plDetail').innerHTML = '<div class="card sec"><div class="empty">loading ' + esc(PL.sel.name) + '...</div></div>';
+  try {
+    const r = await fetch(`/players/char?id=${encodeURIComponent(PL.sel.id || '')}&name=${encodeURIComponent(PL.sel.name)}`, {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    PL.det = await r.json();
+  } catch (e) { $('plDetail').innerHTML = `<div class="card sec"><div class="empty">could not load ${esc(PL.sel.name)} (${esc(e.message)})</div></div>`; return; }
+  renderPlayer();
+  if (scroll) $('plDetail').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+const kvRows = pairs => '<div class="kvs" style="grid-template-columns:auto 1fr">' + pairs.filter(p => p).map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join('') + '</div>';
+const pct = (a, b) => b ? Math.max(0, Math.min(1, a / b)) : null;
+function itemTable(list, slots) {
+  if (!list || !list.length) return '<div class="empty">empty</div>';
+  return '<table><thead><tr>' + (slots ? '<th>slot</th>' : '') + '<th>item</th><th class="r">id</th><th class="r">amount</th><th class="r">refine</th><th>cards</th><th></th></tr></thead><tbody>' +
+    list.map(i => `<tr>${slots ? `<td style="color:var(--text-2)">${esc(eqSlot(i.equip))}</td>` : ''}<td>${i.name ? esc(i.name) : '<span style="color:var(--muted)">item ' + esc(i.id) + '</span>'}</td><td class="r" style="color:var(--muted)">${esc(i.id)}</td>` +
+      `<td class="r">${fmt(i.amount)}</td><td class="r">${i.refine ? '+' + esc(i.refine) : ''}</td><td>${(i.cards || []).map(esc).join(', ')}</td><td style="color:var(--muted)">${i.identify === 0 ? 'unidentified' : ''}${i.broken ? ' broken' : ''}</td></tr>`).join('') + '</tbody></table>';
+}
+function renderPlayer() {
+  const d = PL.det, c = d.char || {}, e = d.engine || {}, a = d.account || {};
+  renderPlKpis();
+  const src = d.source === 'snapshot' ? `database snapshot, ${ageTxt(Date.now() / 1000 - d.snapshot_t)} old (${clock(d.snapshot_t)})` : d.source ? d.source : 'no database row: engine files only';
+  let h = `<div class="card sec"><h2><span><b style="font-size:16px">${esc(c.name || PL.sel.name)}</b> <span style="color:var(--text-2);font-weight:400">${esc(c.class_name || '')} · lv ${esc(c.base_level ?? '?')} / job ${esc(c.job_level ?? '?')} · ${esc(d.kind || '')}</span></span><small>${esc(src)}${d.live_error ? ' · live read failed: ' + esc(d.live_error) : ''}</small></h2>`;
+  if (d.source) {
+    h += '<div class="sub2">';
+    h += '<div>' + kvRows([
+      ['HP', `${hpBar(pct(c.hp, c.max_hp))} ${fmt(c.hp)} / ${fmt(c.max_hp)}`], ['SP', `${hpBar(pct(c.sp, c.max_sp), true)} ${fmt(c.sp)} / ${fmt(c.max_sp)}`],
+      ['zeny', fmt(c.zeny)], ['base exp', fmt(c.base_exp)], ['job exp', fmt(c.job_exp)],
+      ['stats', `STR ${c.str} · AGI ${c.agi} · VIT ${c.vit} · INT ${c.int} · DEX ${c.dex} · LUK ${c.luk}`],
+      ['unused points', `${fmt(c.status_point)} status · ${fmt(c.skill_point)} skill`]]) + '</div>';
+    h += '<div>' + kvRows([
+      ['online', c.online ? '<span class="st-up">yes (server flag)</span>' : 'no'], ['last map', `${esc(c.last_map || '?')} ${c.last_x},${c.last_y}`],
+      ['save point', `${esc(c.save_map || '?')} ${c.save_x},${c.save_y}`], ['last login', esc(c.last_login || '–')],
+      ['guild', d.guild ? `${esc(d.guild.name)} <span style="color:var(--muted)">lv ${esc(d.guild.guild_lv)} · master ${esc(d.guild.master)}</span>` : (c.guild_id ? 'id ' + c.guild_id : 'none')],
+      ['party', d.party ? `${esc(d.party.name)} <span style="color:var(--muted)">leader char ${esc(d.party.leader_char)}</span>` : (c.party_id ? 'id ' + c.party_id : 'none')],
+      ['account', `${esc(a.userid || '?')} <span style="color:var(--muted)">id ${esc(a.account_id)} · group ${esc(a.group_id)} · ${fmt(a.logincount)} logins · last ${esc(a.lastlogin || '–')}</span>`],
+      ['char id', `${esc(c.char_id)} · slot ${esc(c.char_num)}`]]) + '</div></div>';
+    h += `<div class="sec"><h2 style="font-size:13px">Equipment <small>${(d.equipment || []).length} worn</small></h2><div class="tbl">${itemTable(d.equipment, true)}</div></div>`;
+    h += `<details class="more" open><summary>Inventory <small>${(d.inventory || []).length} stacks</small></summary><div class="in tbl">${itemTable(d.inventory)}</div></details>`;
+    h += `<details class="more"><summary>Cart <small>${(d.cart || []).length} stacks</small></summary><div class="in tbl">${itemTable(d.cart)}</div></details>`;
+    h += `<details class="more"><summary>Storage <small>${(d.storage || []).length} stacks, shared by the account</small></summary><div class="in tbl">${itemTable(d.storage)}</div></details>`;
+    h += `<details class="more"><summary>Skills <small>${(d.skills || []).length} learned</small></summary><div class="in tbl">${(d.skills || []).length ? '<table><thead><tr><th class="r">id</th><th>skill</th><th class="r">level</th><th></th></tr></thead><tbody>' +
+      d.skills.map(s => `<tr><td class="r" style="color:var(--muted)">${esc(s.id)}</td><td>${s.name ? esc(s.name) + ' <span style="color:var(--muted)">' + esc(s.code || '') + '</span>' : '<span style="color:var(--muted)">skill ' + esc(s.id) + '</span>'}</td><td class="r">${esc(s.lv)}</td><td style="color:var(--muted)">${s.flag ? 'flag ' + esc(s.flag) : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">none</div>'}</div></details>`;
+  } else h += `<div class="empty">${d.snapshot_t ? 'This character is not in the database snapshot.' : 'No database snapshot yet: the rAthena tables (stats, gear, inventory, skills) show once ro-db has run with the dashboard server up.'}</div>`;
+  // the engine's view
+  const P = e.persona, M = e.memory, L = e.level_book;
+  h += `<details class="more" open><summary>Engine's view <small>persona, plan, memory, friends, guild duty (engine files)</small></summary><div class="in">`;
+  if (!P && !M && !L && !(e.friends || []).length) h += '<div class="empty">the engine\'s files have nothing on this character (not a Legion bot)</div>';
+  if (P || e.character_plan) {
+    const cp = e.character_plan || {};
+    h += '<div class="sub2"><div>' + kvRows([
+      ['plan', cp.plan ? `${esc(cp.plan)} → ${esc(cp.target_class ?? '')} <span style="color:var(--muted)">build ${esc(cp.build || '')} · role ${esc(cp.role || '')}</span>` : '–'],
+      P && ['persona', `${esc(P.archetype || '')} · ${esc(P.bio || '')} · ${esc(P.age)} · ${esc(P.country || '')}`],
+      P && ['play time', `from ${esc(P.session_start_hour)}:00 for ${esc(P.session_hours)} h · home ${esc(P.home_town || '')} · guild ${esc(P.guild || '')}`],
+      P && ['traits', ['aggression', 'risk', 'patience', 'greed', 'sociability', 'helpfulness', 'loyalty', 'skill'].map(k => `${k} ${fmt1(P[k])}`).join(' · ')],
+      P && ['typing', esc(P.typing_style || '')],
+      (e.other_characters || []).length && ['other characters', e.other_characters.map(o => `${esc(o.name)} <span style="color:var(--muted)">${esc(o.role || '')} ${esc(o.plan || '')}</span>`).join(', ')],
+      L && ['level book', `lv ${esc(L.level)} / ${esc(L.job_level)} ${esc(L.class || '')} · exp ${fmt(L.exp)} · seen ${agoE(L.seen)}`]]) + '</div><div>';
+    if (M) h += kvRows([
+      ['progress', `<span style="white-space:normal">${esc(typeof M.progress === 'string' ? M.progress : JSON.stringify(M.progress || ''))}</span>`],
+      ['goals', (M.goals || []).map(g => `<div>${esc(g.text)} <span style="color:var(--muted)">${esc(g.status || '')}</span></div>`).join('') || '–'],
+      ['facts', (M.facts || []).map(esc).join('<br>') || '–'], ['saved town', esc(M.saved_town || '–')],
+      ['maps visited', (M.maps_visited || []).map(([m, n]) => `${esc(m)} <span style="color:var(--muted)">${n}</span>`).join(', ')],
+      ['memory saved', esc((M.updated || '').slice(0, 16).replace('T', ' '))]]);
+    h += '</div></div>';
+  }
+  if (M && (M.people || []).length) h += `<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--text-2)">People they know <small style="color:var(--muted)">${M.people_total}</small></summary><div class="tbl"><table><thead><tr><th>name</th><th>relation</th><th class="r">times met</th><th>last seen</th><th>where</th></tr></thead><tbody>` +
+    M.people.map(p => `<tr><td><a class="lnk" data-player="${esc(p.name)}">${esc(p.name)}</a>${p.human ? ' <span style="color:var(--muted)">(human)</span>' : ''}</td><td>${esc(p.relation || '')}</td><td class="r">${fmt(p.times_met)}</td><td>${esc((p.last_seen || '').slice(0, 16).replace('T', ' '))}</td><td>${esc(p.last_map || '')}</td></tr>`).join('') + '</tbody></table></div></details>';
+  if ((e.friends || []).length) h += `<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--text-2)">Friendships <small style="color:var(--muted)">${e.friends_total} pairs, raw score</small></summary><div class="tbl"><table><thead><tr><th>with</th><th class="r">score</th><th class="r">partied min</th><th class="r">fight min</th><th class="r">chats</th><th class="r">trades</th><th>last</th></tr></thead><tbody>` +
+    e.friends.map(f => `<tr><td><a class="lnk" data-player="${esc(f.with)}">${esc(f.with)}</a></td><td class="r">${esc(f.score)}</td><td class="r">${fmt(f.partied_min)}</td><td class="r">${fmt(f.fight_min)}</td><td class="r">${fmt(f.chats)}</td><td class="r">${fmt(f.trades)}</td><td>${esc(f.last)}</td></tr>`).join('') + '</tbody></table></div></details>';
+  if (e.guild_duty || e.loyalty) h += '<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--text-2)">Guild duty and loyalty</summary>' + kvRows([
+    e.guild_duty && ['duty', `${esc(e.guild_duty.guild)} · standing ${esc(e.guild_duty.standing)} · short days ${esc(e.guild_duty.short_days)} · last check: ${esc(e.guild_duty.last_fit || '–')}`],
+    e.guild_duty && e.guild_duty.block && ['current block', esc(JSON.stringify(e.guild_duty.block))],
+    e.loyalty && ['loyalty', `${fmt1(e.loyalty.loyalty)} in ${esc(e.loyalty.guild)} · gifts ${esc(e.loyalty.gifts)} · asked ${esc(e.loyalty.asked)} / answered ${esc(e.loyalty.answered)}`]]) + '</details>';
+  if (M && (M.diary || []).length) h += `<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--text-2)">Diary <small style="color:var(--muted)">newest 40</small></summary><div class="feed big">` +
+    M.diary.map(x => `<div class="ln" style="grid-template-columns:96px 1fr"><span class="tm">${esc((x.t || '').slice(5, 16).replace('T', ' '))}</span><span class="tx">${esc(x.text)}</span></div>`).join('') + '</div></details>';
+  h += `<div style="color:var(--muted);font-size:11.5px;margin-top:8px">Recent kills, deaths and the meter per bot are not on disk; they show while the engine runs (Leaderboard tab, top by kills/min and zeny/h).</div></div></details></div>`;
+  $('plDetail').innerHTML = h;
+}
+$('plDetail').addEventListener('click', ev => {
+  const a = ev.target.closest('[data-player]');
+  if (a) { PL.sel = {id: '', name: a.dataset.player}; const hit = PL.res && PL.res.rows.find(r => r.name === a.dataset.player); if (hit) PL.sel.id = hit.char_id ?? ''; loadPlayer(true); }
+});
+onShow.players = () => { if (!PL.res) refreshPlayers(); };
+
+// ======================= From files (DB08): /offline on the dashboard server =======================
+// Fills what the engine would show when it is down: the sentinel's last health line, the level book, the economy
+// counters, guild duty, the last league report, Ayla's own files and the logs. Each block says which file and how old.
+const OFF = {d: null};
+async function refreshOffline() {
+  try {
+    const r = await fetch('/offline', {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    OFF.d = await r.json();
+  } catch (e) { OFF.d = null; }
+  renderOffline();
+}
+const fileAge = (name, t) => `<span style="color:var(--muted);font-size:11.5px">${esc(name)}, ${t ? 'written ' + agoE(t) + ' (' + clock(t) + ')' : 'missing'}</span>`;
+const pre = lines => `<pre style="white-space:pre-wrap;font-size:12px;max-height:320px;overflow-y:auto;margin:6px 0;color:var(--text-2)">${esc((lines || []).join('\n'))}</pre>`;
+function renderOffline() {
+  const d = OFF.d;
+  if (!d) return;
+  const live = lastO && lastORes && lastORes.ok && lastORes.stale == null;
+  const H = d.health, pop = d.population;
+  // Legion: the overview panels from the sentinel's last health line and the level book, while there is no overview
+  if (!lastO) {
+    $('kpis').innerHTML = (H ? kpi('Online at last check', fmt(H.online), 'sentinel, ' + agoE(d.health_t)) +
+      kpi('Kills / min', fmt1(H.kills), 'last 5 min at that check') + kpi('Deaths / min', fmt1(H.deaths), 'last 5 min at that check') +
+      kpi('Level-ups / min', fmt1(H.lvups), 'last 5 min at that check') + kpi('Avg base level', fmt1(H.avg_lv), 'online, at that check') +
+      kpi('Party', `${fmt(H.party_tog)} / ${fmt(H.party_on)}`, "Ayla's party together / online") +
+      kpi('Problems', (H.problems || []).length ? esc(H.problems.join(', ')) : 'none', 'what the sentinel flagged') : '') +
+      (pop ? kpi('Characters known', fmt(pop.characters), `${fmt(pop.profiles)} profiles · avg lv ${fmt1(pop.avg_level)} (level book)`) : '');
+    if (pop) {
+      vbars($('chLevels'), pop.levels.map(b => ({v: b.count, label: b.from, tip: `level ${b.from}-${b.to}`})));
+      $('lvNote').textContent = 'every known character, from the level book · ' + agoE(pop.t);
+      hbars($('classes'), pop.classes.slice(0, 18).map(([k, v]) => ({label: k, v})).concat(pop.classes.length > 18 ? [{label: `other (${pop.classes.length - 18})`, v: pop.classes.slice(18).reduce((s, x) => s + x[1], 0), color: '#6b6a64'}] : []));
+      $('clsNote').textContent = `${pop.classes.length} classes · every known character (level book), not only online`;
+      $('pop').innerHTML = '<div class="kvs">' + `<span>profiles</span><span>${fmt(pop.profiles)}</span><span>characters in the level book</span><span>${fmt(pop.characters)}</span><span>average base level</span><span>${fmt1(pop.avg_level)}</span>` + '</div>' + fileAge('legion/data/levels.json', pop.t);
+    }
+    if (H) $('states').innerHTML = '<div class="kvs">' + `<span>online</span><span>${fmt(H.online)}</span><span>bots making town trips</span><span>${fmt(H.trippers)}</span><span>bad trips</span><span>${fmt(H.bad_trips)}</span><span>chat lines / min</span><span>${fmt1(H.chat)}</span><span>engine up then</span><span>${H.up != null ? dur(H.up) : '–'}</span>` + '</div>' + fileAge('legion/data/health.log (sentinel)', d.health_t);
+  }
+  // Economy: the economy counters
+  const E = d.econ;
+  if (E && !live) {
+    const top = (o, n) => Object.entries(o || {}).sort((a, b) => b[1] - a[1]).slice(0, n);
+    $('econ').innerHTML = '<div class="kvs">' +
+      `<span>player trades done / failed</span><span>${fmt(E.trades)} / ${fmt(E.failed)}</span><span>vending sales</span><span>${fmt(E.vend_sales)} for ${fmt(E.vend_zeny)} z</span>` +
+      `<span>gear gifts</span><span>${fmt(E.gear_gifts)}</span><span>cards</span><span>${fmt(E.cards)}</span>` + '</div>' +
+      `<div style="margin-top:8px;color:var(--text-2);font-size:12.5px">counted since ${esc((E.since || '').slice(0, 16).replace('T', ' '))} UTC · ${fileAge('legion/data/econ_counters.json', d.econ_t)}</div>` +
+      `<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--text-2)">Deals done (${Object.keys(E.counts || {}).length} kinds)</summary><div class="keys">${top(E.counts, 40).map(([k, v]) => `<span>${esc(k)} <b>${fmt(v)}</b></span>`).join('')}</div></details>` +
+      `<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--text-2)">Why deals did not happen</summary><div class="keys">${top(E.misses, 30).map(([k, v]) => `<span>${esc(k)} <b>${fmt(v)}</b></span>`).join('')}</div></details>` +
+      `<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--text-2)">Items most wanted without a deal</summary><div class="keys">${top(E.miss_items, 40).map(([k, v]) => `<span>${esc(k)} <b>${fmt(v)}</b></span>`).join('')}</div></details>`;
+  }
+  // guild duty (Legion) and the league report (Leaderboard)
+  const G = d.guild_duty || {};
+  $('guildDuty').innerHTML = G.counters ? '<div class="keys">' + Object.entries(G.counters).map(([k, v]) => `<span>${esc(k)} <b>${fmt(v)}</b></span>`).join('') + '</div>' +
+    `<div style="margin-top:6px;color:var(--text-2);font-size:12.5px">${fmt(G.members)} members on duty · kicked ${G.kicked ? fmt(G.kicked.length) : 0} · ${esc((G.saved || '').slice(0, 16).replace('T', ' '))} UTC</div>` +
+    '<div class="tbl" style="margin-top:6px"><table><thead><tr><th>guild</th><th>kind</th><th>map</th><th>levels</th><th>classes</th><th>note</th><th>expires</th></tr></thead><tbody>' +
+    Object.entries(G.directions || {}).flatMap(([g, ds]) => (ds || []).map(x => `<tr><td>${esc(M.guildNames[g] || g)}</td><td>${esc(x.kind || '')}</td><td>${esc(x.map || '')}</td><td>${esc(x.min_lv ?? '')}-${esc(x.max_lv ?? '')}</td><td>${esc((x.classes || []).join(', '))}</td><td class="wrapc">${esc(x.note || '')}</td><td>${esc((x.expires || '').slice(5, 16).replace('T', ' '))}</td></tr>`)).join('') + '</tbody></table></div>'
+    : '<div class="empty">no guild duty file</div>';
+  $('league').innerHTML = d.league ? fileAge('docs/reports/' + d.league.file, d.league.t) + pre(d.league.text.split('\n')) : '<div class="empty">no league report on disk</div>';
+  $('leagueNote').textContent = d.league ? d.league.file : '';
+  // Ayla's files
+  const A = d.ayla || {}, blk = (title, f) => f ? `<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--text-2)">${title} <small style="color:var(--muted)">${esc(f.file)}, ${agoE(f.t)}</small></summary>${pre(f.lines)}</details>` : '';
+  const mx = A['ayla_mapexp.json'], tu = A['topups.json'];
+  $('aylaFiles').innerHTML = (A.status ? kvRows([['status.json', `written ${agoE(A.status.ts)} (${clock(A.status.ts)}) · ${A.status.online ? 'online then' : 'offline then'}`],
+    ['HP / SP', `${fmt(A.status.hp)} / ${fmt(A.status.max_hp)} · ${fmt(A.status.sp)} / ${fmt(A.status.max_sp)}`], ['kills', `${fmt(A.status.kills)} since ${clock(A.status.kills_since)} (${esc(A.status.kills_src || '')})`],
+    ['rally', `${esc(A.status.rally_town || '–')} ${A.status.rally_x ?? ''},${A.status.rally_y ?? ''}${A.status.departing ? ' · departing' : ''}`], ['save point', esc(A.status.save_map || '–')]]) : '<div class="empty">no status.json</div>') +
+    (mx ? `<div style="margin-top:6px;font-size:12.5px;color:var(--text-2)">exp by map: ${Object.entries(mx.maps || {}).map(([m, v]) => `${esc(m)} <b>${fmt(v.e)}</b> exp in ${fmt(Math.round(v.s / 60))} min`).join(' · ')}</div>` : '') +
+    (tu ? `<div style="margin-top:4px;font-size:12.5px;color:var(--text-2)">top-ups: ${Object.entries(tu).map(([n, v]) => `${esc(n)} ${esc(v.item || '')} ${v.zeny != null ? fmt(v.zeny) + 'z' : ''}`).join(' · ')}</div>` : '') +
+    blk('Chat log (last 60 lines)', A.chat) + blk('Deaths', A.deaths) + blk('Storage (her last storage list)', A.storage) + blk('Deals log', A.deals) + blk('Alerts', A.alerts);
+  // logs (System)
+  const Lg = d.logs || {};
+  $('sysLogs').innerHTML = `<details><summary style="cursor:pointer;color:var(--text-2)">health.log (sentinel), last 30 lines</summary>${pre(Lg.health)}</details>` +
+    `<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--text-2)">watchdog.log, last 30 lines</summary>${pre(Lg.watchdog)}</details>`;
+  renderEconKpis();
+}
+
 // ======================= start =======================
 {
-  let t = location.hash.slice(1);
+  // #players?name=X (or ?q=X) opens the Players tab on that player, so a link can point at one character
+  const [h0, hq] = location.hash.slice(1).split('?');
+  let t = h0;
+  if (t === 'players' && hq) {
+    const u = new URLSearchParams(hq);
+    if (u.get('q')) { PL.q = u.get('q'); $('plQ').value = PL.q; }
+    if (u.get('name')) { PL.sel = {id: u.get('id') || '', name: u.get('name')}; if (!PL.q) { PL.q = u.get('name'); $('plQ').value = PL.q; } }
+  }
   if (!TABS.includes(t)) { try { t = localStorage.getItem('dashTab') || 'ayla'; } catch (e) { t = 'ayla'; } }
   showTab(t, true);
 }
@@ -1327,6 +1570,9 @@ every(refreshLeaderboard, 30000);
 every(refreshGuildRank, 60000);
 every(refreshMeter, 30000);
 every(refreshFriends, 60000);
+if (PL.sel) { refreshPlayers().then(() => { const hit = PL.res && PL.res.rows.find(r => r.name === PL.sel.name); if (hit && !PL.sel.id) PL.sel.id = hit.char_id ?? ''; loadPlayer(false); }); }
+every(refreshOffline, 60000);
+setInterval(() => { if (curTab === 'players') { refreshPlayers(); if (PL.sel) loadPlayer(false); } }, 30000);
 </script>
 </body>
 </html>
