@@ -82,6 +82,7 @@ Misc
   wait <seconds>                 sleep (use between agent cycles)
 """
 import collections
+import datetime
 import json
 import os
 import re
@@ -120,10 +121,39 @@ def opt(args, name, default=None, flag=False):
         if flag:
             args.pop(i)
             return True
+        if i + 1 >= len(args):
+            # a shell comment eats "#trade" in `--channel #trade` (bash): quote it, or write trade
+            sys.exit(f"{name} needs a value (in bash quote it: {name} '#trade', or write {name} trade)")
         v = args[i + 1]
         del args[i:i + 2]
         return v
     return False if flag else default
+
+
+def norm_channel(ch):
+    """'trade' / 'global' mean the public channels #trade / #global"""
+    if ch is None:
+        return None
+    ch = ch.strip()
+    return "#" + ch.lower() if ch.lower() in ("trade", "global") else ch
+
+
+def local_hms(ts):
+    """HH:MM:SS on this machine's clock for a Go RFC 3339 time (the engine's UTC or offset; nanoseconds allowed)"""
+    m = re.match(r"(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?", str(ts))
+    if not m:
+        return str(ts)[11:19]
+    if not m.group(3):
+        return m.group(2)
+    z = m.group(3)
+    if z == "Z":
+        zone = datetime.timezone.utc
+    else:
+        sign = 1 if z[0] == "+" else -1
+        zone = datetime.timezone(sign * datetime.timedelta(hours=int(z[1:3]), minutes=int(z[4:6])))
+    # the timestamp's own date, so this machine's DST rule for that day applies
+    t = datetime.datetime.strptime(m.group(1) + " " + m.group(2), "%Y-%m-%d %H:%M:%S")
+    return t.replace(tzinfo=zone).astimezone().strftime("%H:%M:%S")
 
 
 def cursor(role, key, value=None):
@@ -478,7 +508,17 @@ def main(argv):
             print(f"{m['name']:<24} {'LEADER' if m.get('guild_leader') else m['role']:<8} {m['class']:<14} lv{m['level']:<3} {m['map']:<12} {m['state'][:38]:<38} k{m['kills']} d{m['deaths']} [{m['archetype']}]")
 
     elif cmd == "bot":
-        out(call(f"/api/bots/{q(args[0])}"))
+        if not args:
+            sys.exit("usage: bot <name>")
+        r = try_call(f"/api/bots/{q(args[0])}")
+        if r is None and args and args[0].lower() == "ayla":
+            # Ayla is played by OpenKore, the engine has no record of her: her status feed (meter neo) does
+            a = (call("/api/meter/neo") or {}).get("ayla")
+            if not a:
+                sys.exit("Ayla: no status feed (is she online? see legionctl status)")
+            out(dict(a, source="status feed (status.json)"))
+        else:
+            out(r if r is not None else call(f"/api/bots/{q(args[0])}"))
 
     elif cmd == "memory":
         n = opt(args, "--diary", 30)
@@ -700,13 +740,24 @@ def main(argv):
             peek, recent, as_json = opt(args, "--peek", flag=True), opt(args, "--recent", flag=True), opt(args, "--json", flag=True)
             qs = "&".join(x for x in ("peek=1" if peek else "", "recent=1" if recent else "") if x)
             r = call("/api/chat-jobs" + ("?" + qs if qs else ""))
+            # paging: the queue can hold 180+ jobs (65 KB); oldest first, --limit 0 = all
+            limit, page = int(opt(args, "--limit", 20)), int(opt(args, "--page", 1))
+            if limit < 0 or page < 1:
+                sys.exit("usage: chat-jobs list [--limit N (0 = all)] [--page P]")
+            all_jobs = r.get("jobs") or []
+            total = len(all_jobs)
+            start = (page - 1) * limit if limit > 0 else 0
+            jobs = all_jobs[start:start + limit] if limit > 0 else all_jobs
+            first, last = (start + 1, start + len(jobs)) if jobs else (0, 0)
             if as_json:
-                out(r)
+                out(dict(r, jobs=jobs, total=total, page=page, limit=limit))
                 return
-            print(f"chat jobs {'ON' if r['on'] else 'off'}; waiting {len(r.get('jobs') or [])}; wait {r.get('wait_sec')}s")
-            for j in r.get("jobs") or []:
+            print(f"chat jobs {'ON' if r['on'] else 'off'}; waiting {total}, showing {first}-{last}"
+                  f"{' (page ' + str(page) + ', --limit ' + str(limit) + ' --page N, --limit 0 = all)' if limit else ''}; "
+                  f"wait {r.get('wait_sec')}s")
+            for j in jobs:
                 print(f"[{j['id']}] {j['kind']} {j['channel']}{' -> ' + j['to'] if j.get('to') else ''} speaker {j['speaker']} "
-                      f"hears {','.join(j.get('hearers') or [])} deadline {str(j['deadline'])[11:19]}")
+                      f"hears {','.join(j.get('hearers') or [])} deadline {local_hms(j['deadline'])}")
                 print(f"    facts {json.dumps(j.get('facts') or {}, ensure_ascii=False)}")
                 for l in j.get("template_lines") or []:
                     print(f"    template: {l['speaker']} ({l['channel']}{' -> ' + l['to'] if l.get('to') else ''}): {l['text']}")
@@ -719,7 +770,7 @@ def main(argv):
             out(call(f"/api/chat-jobs/{q(args[0])}/lines", []))
         else:
             raw = opt(args, "--json")
-            ch, to = opt(args, "--channel"), opt(args, "--to")
+            ch, to = norm_channel(opt(args, "--channel")), opt(args, "--to")
             if raw:
                 if not args:
                     sys.exit("usage: chat-jobs answer <id> --json '[...]'")

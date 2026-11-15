@@ -82,13 +82,37 @@ func writeJSON(w http.ResponseWriter, v interface{}) {
 	e.Encode(v)
 }
 
-func serveAPI(addr string, bots []*Bot) {
-	byName := map[string]*Bot{}
+// charIndex: lower-case character name -> bot. A bot's main character (Chars[0]) always wins over an alt that another
+// bot carries under the same name, whatever the order of the bots (bug queue b1794747409002-388: 'bot kaiz72' gave a
+// Priest alt's record instead of the Monk main).
+func charIndex(bots []*Bot) map[string]*Bot {
+	return charIndexBy(bots, strings.ToLower)
+}
+
+// charIndexBy: name -> bot under key(name), mains first (see charIndex). registerGuilds uses it with an exact-name key
+// so chat lookups (botByCharName) and the API agree on who owns a name.
+func charIndexBy(bots []*Bot, key func(string) string) map[string]*Bot {
+	idx := map[string]*Bot{}
 	for _, b := range bots {
-		for _, c := range b.P.Chars {
-			byName[strings.ToLower(c.Name)] = b
+		if len(b.P.Chars) > 0 {
+			idx[key(b.P.Chars[0].Name)] = b
 		}
 	}
+	for _, b := range bots {
+		for i, c := range b.P.Chars {
+			if i == 0 {
+				continue
+			}
+			if k := key(c.Name); idx[k] == nil {
+				idx[k] = b
+			}
+		}
+	}
+	return idx
+}
+
+func serveAPI(addr string, bots []*Bot) {
+	byName := charIndex(bots)
 	start := time.Now()
 	mux := http.NewServeMux()
 	registerTraceAPI(mux)

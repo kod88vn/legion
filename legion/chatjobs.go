@@ -35,6 +35,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -75,6 +76,7 @@ type ChatJobSpec struct {
 	To       string // whisper target of the main line
 	Speaker  *Bot   // optional; Template[0].Speaker names the speaker otherwise
 	Hearers  []string
+	Group    string // the guild or party this ask is for ("guild:<id>" / "party:<id>"), for the dedupe
 	Facts    map[string]any
 	Template []ChatLine // first line: the speaker's; more lines = a scripted exchange (other speakers allowed)
 }
@@ -87,6 +89,7 @@ type ChatJob struct {
 	To       string         `json:"to,omitempty"`
 	Speaker  string         `json:"speaker"`
 	Hearers  []string       `json:"hearers,omitempty"`
+	Group    string         `json:"group,omitempty"`
 	Facts    map[string]any `json:"facts,omitempty"`
 	Template string         `json:"template_line"`
 	Lines    []ChatLine     `json:"template_lines"`
@@ -149,7 +152,8 @@ func ChatJobLine(kind string, speaker *Bot, channel, text string, facts map[stri
 }
 
 // EnqueueChatJob: the entry point for social lines. Returns the job id when it waits for a chat agent, "" when the
-// template was said at once (no agent, flag off, or the queue is full). Never blocks; safe with any lock held.
+// template was said at once (no agent, flag off, or the queue is full); the id of the waiting ask when this one is a
+// duplicate of it (same group, channel, hearers and item). Never blocks; safe with any lock held.
 func EnqueueChatJob(s ChatJobSpec) string {
 	return enqueueChatJobAt(s, time.Now())
 }
@@ -174,11 +178,20 @@ func enqueueChatJobAt(s ChatJobSpec, now time.Time) string {
 			s.Template[i].Channel = s.Channel
 		}
 	}
-	j := &ChatJob{T: now, Kind: s.Kind, Channel: s.Channel, To: s.To, Speaker: speaker, Hearers: s.Hearers, Facts: s.Facts,
+	j := &ChatJob{T: now, Kind: s.Kind, Channel: s.Channel, To: s.To, Speaker: speaker, Hearers: s.Hearers, Group: s.Group, Facts: s.Facts,
 		Template: s.Template[0].Text, Lines: s.Template}
 	chatJobs.Lock()
 	wait := chatJobsOn() && !chatJobs.agentSeen.IsZero() && now.Sub(chatJobs.agentSeen) <= chatAgentFresh &&
 		len(chatJobs.open) < chatJobsMaxOpen && !chatJobByCode(s.Kind) // chatjobs_wait.go: PR38 kinds the code says itself
+	if wait && s.Kind == ChatKindAsk && chatJobDedupeOn() {
+		if same := chatAskOpenLocked(j); same != nil {
+			// the same ask (same group, channel, hearers, item) is already waiting: one ask is enough (bug queue
+			// b1794750152316-420). Returns the waiting job's id, so the caller can tell it from "said at once" ("").
+			chatJobs.counts["ask dropped: same ask waiting"]++
+			chatJobs.Unlock()
+			return same.ID
+		}
+	}
 	chatJobs.nextID++
 	j.ID = fmt.Sprintf("%s%d", chatJobPrefix(), chatJobs.nextID)
 	if !wait {
@@ -201,6 +214,36 @@ func enqueueChatJobAt(s ChatJobSpec, now time.Time) string {
 		chatJobs.loop.Do(func() { go chatJobsLoop() })
 	}
 	return j.ID
+}
+
+func chatJobDedupeOn() bool { return tune().ChatJobDedupeOn }
+
+// chatAskKey: two asks are the same ask when they are for the same group (guild or party), channel, whisper target,
+// hearers and item (facts item_id, else the #trade line, else the template text). Asks of two groups never share a key.
+func chatAskKey(j *ChatJob) string {
+	k := strings.ToLower(strings.TrimSpace(j.Template))
+	if id, ok := j.Facts["item_id"]; ok {
+		k = fmt.Sprint(id)
+	} else if l, ok := j.Facts["line"].(string); ok {
+		k = strings.ToLower(strings.TrimSpace(l))
+	}
+	hs := make([]string, 0, len(j.Hearers))
+	for _, h := range j.Hearers {
+		hs = append(hs, strings.ToLower(h))
+	}
+	sort.Strings(hs)
+	return j.Group + "|" + j.Channel + "|" + j.To + "|" + strings.Join(hs, ",") + "|" + k
+}
+
+// chatAskOpenLocked (chatJobs.mu held): the waiting ask with the same key, or nil.
+func chatAskOpenLocked(j *ChatJob) *ChatJob {
+	key := chatAskKey(j)
+	for _, o := range chatJobs.open {
+		if o.Kind == ChatKindAsk && chatAskKey(o) == key {
+			return o
+		}
+	}
+	return nil
 }
 
 // chatWhyTemplate (chatJobs.mu held): why a job went straight to its template (for the counters).
