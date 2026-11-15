@@ -1,0 +1,23 @@
+//===== Legion: market crier (server-wide notices, EC44) ======================
+//= A floating NPC with no character taking part: it announces the oldest unsent row of legion_notice
+//= (written by tools/system/crier.py) to every online player, then marks the row sent. The text is a
+//= ready-made server notice; the NPC adds no name and no numbers.
+//= Window: announces only between 08:00 and 22:59 server time (checked in the script below).
+//= Table: rathena/sql/legion_notice.sql. Script loaded by rathena/npc-custom/scripts_custom.conf.
+//============================================================================
+-	script	MarketCrier	-1,{
+	end;
+
+OnInit:
+	initnpctimer;
+	end;
+
+OnTimer60000:
+	.@hour = gettime(DT_HOUR);
+	if (.@hour >= 8 && .@hour < 23 && query_sql("SELECT id, `text` FROM legion_notice WHERE sent = 0 ORDER BY id LIMIT 1", .@id, .@msg$)) {
+		query_sql("UPDATE legion_notice SET sent = 1 WHERE id = " + .@id);
+		announce .@msg$, bc_all|bc_blue;
+	}
+	initnpctimer;
+	end;
+}
