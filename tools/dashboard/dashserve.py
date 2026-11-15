@@ -830,8 +830,20 @@ class Handler(BaseHTTPRequestHandler):
             return 403, "a write must be application/json"
         return None
 
+    def body_length(self):
+        """Content-Length as a byte count: 0 when absent, None when malformed (negative, signed or not a number).
+        rfile.read(-1) would wait for the peer to close, so a bad value is refused, never passed on."""
+        raw = (self.headers.get("Content-Length") or "").strip()
+        if not raw:
+            return 0
+        return int(raw) if re.fullmatch(r"[0-9]{1,12}", raw) else None
+
+    def refuse_bad_length(self):
+        self.close_connection = True   # the body is not read, so the connection cannot be reused
+        return self.send_json(400, {"error": "bad Content-Length"})
+
     def refuse_write(self, code, why):
-        n = int(self.headers.get("Content-Length") or 0)
+        n = self.body_length() or 0
         if n > 0:
             self.rfile.read(min(n, 1 << 20))   # drain the body so the connection stays in step
         self.close_connection = True
@@ -839,7 +851,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def request_status(self, rid):
         """POST /api/ayla/requests/{id}/status {"status":"confirmed"|"declined"}: appends the status row (guarded)."""
-        n = int(self.headers.get("Content-Length") or 0)
+        n = self.body_length()
+        if n is None:
+            return self.refuse_bad_length()
         if n > 4096:
             return self.refuse_write(413, "too large")
         try:
@@ -879,7 +893,9 @@ class Handler(BaseHTTPRequestHandler):
     def proxy(self, method):
         body = None
         if method == "POST":
-            n = int(self.headers.get("Content-Length") or 0)
+            n = self.body_length()
+            if n is None:
+                return self.refuse_bad_length()
             if n > 1 << 20:
                 return self.send(413, "text/plain; charset=utf-8", b"too large")
             body = self.rfile.read(n) if n else b""

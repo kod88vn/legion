@@ -511,6 +511,31 @@ class OwnerRequests(Base):
         self.assertEqual(self.status("r_fresh", "declined", headers={"Origin": "http://evil.example",
                                                                     "Content-Type": "application/json"})[0], 403)
 
+    def raw_post(self, path, length_header):
+        """one raw HTTP POST, so the header can say anything (urllib would fix Content-Length itself)"""
+        import socket
+        host, port = self.srv.server_address
+        head = ("POST %s HTTP/1.1\r\nHost: 127.0.0.1:%d\r\nOrigin: %s\r\nContent-Type: application/json\r\n"
+                "Content-Length: %s\r\nConnection: close\r\n\r\n" % (path, port, self.url, length_header)).encode()
+        with socket.create_connection((host, port), timeout=5) as s:
+            s.sendall(head + b'{"status":"declined"}')
+            data = b""
+            while True:   # a hung handler shows up as socket.timeout here, not as a silent pass
+                chunk = s.recv(65536)
+                if not chunk:
+                    return data
+                data += chunk
+
+    def test_negative_content_length_is_refused_not_hung(self):
+        """rfile.read(-1) waits for the peer to close: a negative Content-Length must get a 400, never a hang"""
+        before = len(self.lines())
+        for bad in ("-1", "+5", "abc"):
+            data = self.raw_post("/api/ayla/requests/r_dec/status", bad)
+            self.assertTrue(data.startswith(b"HTTP/1.1 400"), (bad, data[:40]))
+            self.assertIn(b"bad Content-Length", data)
+        self.assertEqual(len(self.lines()), before)            # nothing was recorded
+        self.assertEqual(self.status("r_dec", "declined")[0], 200)   # the request is still pending and answerable
+
     def test_guards_on_the_request_routes(self):
         before = len(self.lines())
         evil = {"Origin": "http://evil.example", "Content-Type": "text/plain"}
