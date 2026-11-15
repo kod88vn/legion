@@ -1157,6 +1157,31 @@ sub say_dest {
 	}
 	psay($line, 1, 0);
 }
+# every ~5 min while a friend is on another map (not the spot): say again where to go and where to meet, with a hint
+# for a friend stuck in a dungeon of another area (live 2026-11-15 02:57Z: the priest walked pay_dun01 while she
+# waited in Geffen, nobody said a word)
+sub dest_remind_tick {
+	return unless pt30_on() && $char && $field;
+	return if time - $destSaidAt < 300;
+	my $here = $field->baseName;
+	my $dest = $homeMap ne '' ? $homeMap : (($config{lockMap} || '') ne '' ? $config{lockMap} : ($saved ? ($saved->{lockMap} || '') : ''));
+	return if $dest eq '' || is_townmap($dest);
+	my @far = grep { $_->[1] ne '' && $_->[1] ne $here && $_->[1] ne $dest } online_friends();
+	return unless @far;
+	my $kt = town_of_map($dest);
+	my $line;
+	if ($rally) {
+		$line = "going $dest - meet at the kafra in $rally->{town} ($rally->{x},$rally->{y})";
+	} elsif ($here eq $dest) {
+		$line = pick("im on $dest, come here", "we're on $dest, come straight here");
+	} else {
+		$line = "going $dest - meet me there" . ($KAFRA{$kt} ? ", kafra to $kt is fastest" : '');
+	}
+	my ($stuck) = grep { is_dungeon($_->[1]) && town_of_map($_->[1]) ne $kt } @far;
+	$line .= ". $stuck->[0], wing out and kafra to $kt" if $stuck && $KAFRA{$kt};
+	($destSaid, $destSaidAt) = ($dest, time);
+	psay($line, 1, 0);
+}
 # statusout.pl: where she is heading ("" = there / nothing) and whether she is on a town run
 sub status_dest {
 	return '' unless $field;
@@ -1871,6 +1896,7 @@ sub tick {
 	}
 
 	goto_tick();
+	dest_remind_tick(); # PT30: where to go / meet, again every ~5 min while friends are elsewhere
 	return if portal_guard();
 	travel_mode_tick();
 	protect_tick();
