@@ -1667,7 +1667,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		now.Sub(b.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second {
 		for _, m := range p.Members {
 			if s, ok := peek(m.P.Name); ok && m != b && s.Name == b.collectName && (!partyStrong(p) || memberInDanger(s)) &&
-				needsCollect(b.MapName, lx, ly, s, true) && b.sameWalkRegion(gm, s.X, s.Y) { // together.go; a strong party's members come to us
+				needsCollect(b.MapName, lx, ly, s, true) && b.sameWalkRegion(gm, s.X, s.Y) && !leftAloneOnTrip(p, s) { // together.go; a strong party's members come to us
 				b.target = 0
 				b.setState("collecting " + s.Name)
 				if !moving && gm != nil {
@@ -1771,13 +1771,17 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 				if m == b {
 					continue
 				}
-				if s, ok := peek(m.P.Name); ok && (!strong || memberInDanger(s)) && needsCollect(b.MapName, lx, ly, s, false) && b.sameWalkRegion(gm, s.X, s.Y) && // together.go: beyond together_cells, not busy fighting; a strong party's members walk to us themselves
+				if s, ok := peek(m.P.Name); ok && (!strong || memberInDanger(s)) && needsCollect(b.MapName, lx, ly, s, false) && b.sameWalkRegion(gm, s.X, s.Y) && !leftAloneOnTrip(p, s) && // together.go: beyond together_cells, not busy fighting; a strong party's members walk to us themselves
 					!bossSpotNear(b.MapName, s.X, s.Y, 12, b.powerLv()) { // nav.go: not across a river (the member goes round); bossnote.go: not into a boss spot
 					sx, sy := livePosOf(s)
 					if d := dist(lx, ly, sx, sy); d < bd {
 						tgt, bd, found = s, d, true
 					}
 				}
+			}
+			// AY23 (engine parties): a lagging member gets about 10 s to catch up on its own before the leader goes back
+			if found && ovEngineParty(p) && !memberInDanger(tgt) && !b.collectLagDue(tgt.Name, now) {
+				found = false
 			}
 			if found {
 				b.collectName, b.collectAt = tgt.Name, now
