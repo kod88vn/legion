@@ -125,18 +125,92 @@ var townInteriors = map[string][]string{
 	"lighthalzen": {"lhz_in02", "lhz_in03"}, "rachel": {"ra_in01"}, "veins": {"ve_in"}, "hugel": {"hu_in01"},
 }
 
-// potionShop: a shop selling Red Potions in the town or one of its buildings
+// potWorthPct: an HP potion is worth carrying when it heals at least this share of max HP (3% of 3,000 = 90 HP)
+const potWorthPct = 3
+
+// potStockMin: the stock a restock must be able to pay for before a potion tier is bought (pickHPPotion)
+const potStockMin = 5
+
+// potPickReserve: zeny kept back from a potion restock (as potBuyPlan keeps it)
+const potPickReserve = 500
+
+// hpPotOrder: the HP potions, strongest first
+var hpPotOrder = []int{itemWhitePotion, itemYellowPotion, itemOrangePotion, itemRedPotion}
+
+// potLevelOK: the lowest level a bot buys each HP potion at (Red at any level)
+func potLevelOK(id, lv int) bool {
+	switch id {
+	case itemOrangePotion:
+		return lv >= 30
+	case itemYellowPotion:
+		return lv >= 60
+	case itemWhitePotion:
+		return lv >= 80
+	}
+	return id == itemRedPotion
+}
+
+// pickHPPotion: the HP potion a restock buys from a shop's list (pk, the NPC sell packet), strongest first among the
+// potions the level allows and the shop lists: (1) one that heals at least potWorthPct of max HP and whose potStockMin
+// stock is affordable, (2) the strongest with an affordable potStockMin stock, (3) the strongest the bot can buy at all.
+// 0, 0 when nothing is affordable. QA 2026-11-15: lv60-85 bots restocked Red Potions (+45 HP) against 3,000-9,700 max HP
+// because they could not afford a full Orange/Yellow stock; a Red stock does almost nothing at that HP.
+func pickHPPotion(pk []byte, lv, maxHP, zeny int) (id, price int) {
+	var ids, prices []int
+	for _, c := range hpPotOrder {
+		if pr := listedPrice(pk, c); pr > 0 && potLevelOK(c, lv) {
+			ids, prices = append(ids, c), append(prices, pr)
+		}
+	}
+	afford := func(pr int) int { return (zeny - potPickReserve) / pr }
+	for i, c := range ids {
+		if potHeal(c)*100 >= maxHP*potWorthPct && afford(prices[i]) >= potStockMin {
+			return c, prices[i]
+		}
+	}
+	for i, c := range ids {
+		if afford(prices[i]) >= potStockMin {
+			return c, prices[i]
+		}
+	}
+	for i, c := range ids {
+		if afford(prices[i]) >= 1 {
+			return c, prices[i]
+		}
+	}
+	return 0, 0
+}
+
+// potTierFor: the HP potion this bot restocks from its level and max HP, whatever the shop lists: the strongest the
+// level allows that heals at least potWorthPct of max HP, else the strongest the level allows.
+func potTierFor(lv, maxHP int) int {
+	for _, c := range hpPotOrder {
+		if potLevelOK(c, lv) && potHeal(c)*100 >= maxHP*potWorthPct {
+			return c
+		}
+	}
+	for _, c := range hpPotOrder {
+		if potLevelOK(c, lv) {
+			return c
+		}
+	}
+	return itemRedPotion
+}
+
+// potionShop: the shop in the town (or one of its buildings) that sells the strongest HP potion (Red..White)
 func potionShop(m string) *Shop {
+	var best *Shop
+	bestTier := 0
 	for _, mm := range append([]string{m}, townInteriors[m]...) {
 		for _, s := range shopsByMap[mm] {
 			for _, id := range s.Items {
-				if id == itemRedPotion {
-					return s
+				if id >= itemRedPotion && id <= itemWhitePotion && id > bestTier {
+					best, bestTier = s, id
 				}
 			}
 		}
 	}
-	return nil
+	return best
 }
 
 // needTrip decides whether it's time to go to town.
@@ -327,12 +401,13 @@ func (b *Bot) fareHome(town string) int {
 
 // gearKeep: zeny gear never spends on a town run: the fare home plus the cost of the missing potion minimum
 func (b *Bot) gearKeep(town string) int {
-	red := 50
-	if x := items[itemRedPotion]; x != nil && x.Buy > 0 {
-		red = x.Buy
+	// the potion this bot restocks (potTierFor): an Orange or Yellow stock costs more than Red, and gear must not eat it
+	pot := 50
+	if x := items[potTierFor(b.BaseLvOr(), b.MaxHP)]; x != nil && x.Buy > 0 {
+		pot = x.Buy
 	}
 	// batch 16: an hour's HP stock (hpPotTarget), not only the survival minimum, comes before gear
-	return b.fareHome(town) + max(0, max(b.potMin(), b.hpPotTarget())-b.realPotCount())*red + b.wingKitCost()
+	return b.fareHome(town) + max(0, max(b.potMin(), b.hpPotTarget())-b.realPotCount())*pot + b.wingKitCost()
 }
 
 // wingKitCost (b.mu held): zeny for the missing utility wings (Butterfly to bwTarget, Fly to fwTarget). Owner: potions
@@ -1236,27 +1311,17 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 			b.npcDeal = nil
 			return
 		}
-		best, price := 0, 0
 		spBest, spPrice := 0, 0
 		lv := b.BaseLvOr()
 		for o := 4; o+13 <= len(pk); o += 13 {
 			pr, id := int(le.Uint32(pk[o+4:])), int(le.Uint32(pk[o+9:]))
-			want := id == itemRedPotion || (id == itemOrangePotion && lv >= 30) || (id == itemYellowPotion && lv >= 60) ||
-				(id == itemWhitePotion && lv >= 80)
-			if want && id >= best {
-				best, price = id, pr
-			}
 			if isSPPotion(id) && pr > 0 && (spBest == 0 || pr < spPrice) {
 				spBest, spPrice = id, pr
 			}
 		}
-		// a bot that can't afford an hour's stock (hpPotTarget) in Orange/Yellow takes Red Potions: ~2x the HP per
-		// zeny. Batch 16 (was: the survival minimum): lv30+ bought 12-20 Orange at 200z and ran dry within the hour
-		// (06:33 sample: median 15 HP potions, a quarter <= 9)
-		if rp := listedPrice(pk, itemRedPotion); best > itemRedPotion && rp > 0 && price > 0 &&
-			(b.Zeny-500)/price < max(b.potMin(), b.hpPotTarget())-b.realPotCount() {
-			best, price = itemRedPotion, rp
-		}
+		// the HP potion to buy from this list: the strongest one that suits the bot's level and max HP and that it can
+		// afford in a real stock (pickHPPotion). Red Potions (+45 HP) are no restock for a 5,000 HP bot.
+		best, price := pickHPPotion(pk, lv, b.MaxHP, b.Zeny)
 		// HP potions up to the target count, SP potions for SP users; neither pushes the bag past the weight cap
 		p := newPkt(0x00c8).u16(0)
 		vendorPots := townOf(b.MapName) == "prontera" && best > 0 && price > 0 && b.realPotCount() >= b.potMin() &&
@@ -1264,7 +1329,7 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 		bought := 0
 		// order (potBuyPlan): the survival minimum of real HP potions, arrows, SP potions, then the HP top-up; gear
 		// (tripGear) only gets what is left. One failed total = nothing bought.
-		ap := listedPrice(pk, itemArrow)
+		arrID, ap := arrowChoice(pk, b.huntMap(), b.Zeny) // ammo.go: the arrow that fits the hunting map
 		hpN, spN, arrN := b.potBuyPlan(best, price, spBest, spPrice, ap)
 		if vendorPots && hpN > 0 {
 			shopPotPick.Store(b, best)
@@ -1273,7 +1338,7 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 		}
 		budget := b.Zeny - 500 - arrN*ap - spN*spPrice
 		if arrN > 0 {
-			p.u16(uint16(arrN)).u32(itemArrow)
+			p.u16(uint16(arrN)).u32(uint32(arrID))
 			bought++
 		}
 		if hpN > 0 {

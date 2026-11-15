@@ -63,10 +63,12 @@ func TestRealPotionsFirst(t *testing.T) {
 // QA 2026-11-14 Star claw: the town-run gear chain keeps the potion minimum (and the Kafra fare home)
 func TestGearKeep(t *testing.T) {
 	items[501] = &Item{ID: 501, Name: "Red Potion", Type: "Healing", Buy: 50, Weight: 70}
+	items[502] = &Item{ID: 502, Name: "Orange Potion", Type: "Healing", Buy: 200, Weight: 100}
 	b := &Bot{P: &Persona{BaseLevel: 52, Chars: []CharSpec{{Name: "keeptest"}}}, invSeen: true, Zeny: 5000,
-		inv: map[int]*InvItem{}, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
-	// batch 16: an hour's stock (hpPotTarget), not only the survival minimum, is kept from gear
-	if want := max(b.potMin(), b.hpPotTarget()) * 50; b.gearKeep("prontera") != want {
+		MaxHP: 1600, inv: map[int]*InvItem{}, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+	// batch 16: an hour's stock (hpPotTarget), not only the survival minimum, is kept from gear; priced at the bot's
+	// potion (a lv52 with 1,600 HP restocks Orange)
+	if want := max(b.potMin(), b.hpPotTarget()) * 200; b.gearKeep("prontera") != want {
 		t.Fatalf("gearKeep %d, want %d", b.gearKeep("prontera"), want)
 	}
 	b.inv[1] = &InvItem{Index: 1, ItemID: 501, Count: 30}
