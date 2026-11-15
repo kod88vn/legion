@@ -10,6 +10,8 @@ G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/legion/tools/deploy/gua
 LOG=/tmp/legion-core-build.log
 NAME=ro-legion-core
 
+parse_deploy_args "$@"
+deploy_gate
 guard_core
 snapshot_build "$LOG" || { echo "BUILD FAILED - nothing deployed"; exit 1; }
 [ "$DRY_RUN" = 1 ] || guard_core   # again after the build
@@ -36,4 +38,5 @@ if [ "$RUNIMG" != "$WANT" ]; then
 fi
 echo "image:   $DEPLOY_TAG ($WANT)"
 echo "started: $(docker inspect -f '{{.State.StartedAt}}' "$NAME")"
+record_deploy "$DEPLOY_TAG" legion-core
 echo "core redeployed (--no-deps; rathena/db/openkore untouched)"

@@ -10,6 +10,8 @@ G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/legion/tools/deploy/gua
 LOG=/tmp/legion-core-build.log
 NAME=ro-legion-core
 
+parse_deploy_args "$@"
+set -- "${POS_ARGS[@]}"
 guard_core
 DEPLOY_TAG=${1:-$(cat "$DEPLOY_TAG_FILE" 2>/dev/null || true)}
 [ -n "$DEPLOY_TAG" ] || { echo "no deploy tag (run dep3.sh first, or pass ro-legion:deploy-<time>) - nothing deployed"; exit 1; }
@@ -17,6 +19,7 @@ if ! docker image inspect "$DEPLOY_TAG" >/dev/null 2>&1; then
   echo "image $DEPLOY_TAG not found - nothing deployed"; exit 1
 fi
 echo "deploy image: $DEPLOY_TAG"
+deploy_gate "$DEPLOY_TAG"
 if [ "$DRY_RUN" = 1 ]; then deploy_up_img "${DEPLOY_TAG:-ro-legion:deploy-DRYRUN}" legion-core; echo "DRY_RUN: nothing built or deployed"; exit 0; fi
 
 WANT=$(docker image inspect -f '{{.Id}}' "$DEPLOY_TAG")
@@ -40,4 +43,5 @@ if [ "$RUNIMG" != "$WANT" ]; then
 fi
 echo "image:   $DEPLOY_TAG ($WANT)"
 echo "started: $(docker inspect -f '{{.State.StartedAt}}' "$NAME")"
+record_deploy "$DEPLOY_TAG" legion-core
 echo "core redeployed (--no-deps; rathena/db/openkore untouched)"

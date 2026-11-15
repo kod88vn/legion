@@ -10,6 +10,8 @@ G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/legion/tools/deploy/gua
 . "$G"
 LOG=/tmp/legion-build.log
 
+parse_deploy_args "$@"
+deploy_gate
 guard_core
 snapshot_build "$LOG" || { echo "BUILD FAILED - nothing deployed"; exit 1; }
 [ "$DRY_RUN" = 1 ] || guard_core   # again: compose may have changed during the build
@@ -19,5 +21,6 @@ tail -1 "$LOG"
 RUNIMG=$(docker inspect -f '{{.Image}}' ro-legion)
 WANT=$(docker image inspect -f '{{.Id}}' "$DEPLOY_TAG")
 [ "$RUNIMG" = "$WANT" ] || { echo "ERROR: ro-legion runs ${RUNIMG:7:12}, deploy image $DEPLOY_TAG is ${WANT:7:12}"; exit 1; }
+record_deploy "$DEPLOY_TAG" legion
 echo "legion redeployed on $DEPLOY_TAG (${WANT:7:12}; --no-deps; rathena/db/openkore untouched)"
 echo "core: bash /mnt/g/RO/legion/tools/deploy/depcore_nobuild.sh   (uses $DEPLOY_TAG)"

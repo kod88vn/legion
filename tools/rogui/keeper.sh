@@ -3,11 +3,20 @@
 # so the watch client (ai-client.sh) is only a camera and is never killed from here.
 # Offline (char.online=0 in the DB) for ~5 min -> restart the container once; if that does not help, only log
 # (investigate instead of looping restarts).
+# HOLD marker (2026-11-14): while legion/data/stack.hold exists the owner has the stack stopped and this loop does
+# nothing at all - it never starts, restarts or queries a container (a leftover keeper once restarted the stack
+# during the migration). `python tools/system/stackctl.py down` creates it, `... up` removes it.
+HOLD=/mnt/g/RO/legion/legion/data/stack.hold
 LOG=/mnt/g/RO/legion/legion/data/watchdog.log
 cd /mnt/g/RO/legion
 strikes=0; restarts=0
 log() { echo "$(date '+%F %T') keeper: $*" | tee -a "$LOG"; }
 while true; do
+  if [ -e "$HOLD" ]; then
+    [ "${held:-0}" = 1 ] || { log "stack.hold present: keeper idle until it is removed"; held=1; }
+    strikes=0; restarts=0; sleep 20; continue
+  fi
+  held=0
   if ! docker ps --format '{{.Names}}' | grep -qx ro-openkore-ayla; then
     log "ro-openkore-ayla not running -> starting it"
     docker compose up -d openkore-ayla >/dev/null 2>&1
