@@ -78,6 +78,11 @@ services:
     volumes:
       - ./openkore/control:/openkore/control
       - ./openkore/logs:/openkore/logs
+      # PR16: same map truth as Ayla on every start (openkore/overlay.sh: fields-re, Renewal Izlude + server portals,
+      # Kafra lines), even with a stale image
+      - ./openkore:/ok-src:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/ok-kafras.txt:ro
+    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "if [ -f /ok-src/overlay.sh ]; then exec sh /ok-src/overlay.sh; fi; exec /entrypoint.sh"]
     stdin_open: true
     tty: true
     restart: unless-stopped
@@ -114,8 +119,8 @@ services:
 
   openkore-qa:
     # travel/services QA (owner 2026-11-14: "Use a GM account with unlimited money to move around maps and use all
-    # service"): account qatest (id 2000002, group 99), char Trailmark. Same image/code as Ayla; on start it overlays
-    # the RE field files (openkore/fields-re) and the QA table copies (openkore-qa/tables: portals.txt, npcs.txt ...).
+    # service"): account qatest (id 2000002, group 99), char Trailmark. Same image/code as Ayla; on start it copies
+    # the QA tables (openkore-qa/tables: portals.txt, npcs.txt ...), then runs openkore/overlay.sh like Ayla.
     # Profile "qa": never started by a plain `up`. Start: docker compose --profile qa up -d --no-deps openkore-qa
     # Steer it by writing OpenKore commands to openkore-qa/control/commands.txt (plugin cmdfile).
     image: ro-openkore:latest
@@ -131,7 +136,11 @@ services:
       - ./openkore-qa/plugins/qa:/openkore/plugins/qa
       - ./openkore-qa/tables:/qa-tables:ro
       - ./openkore/fields-re:/qa-fields:ro
-    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "cp /qa-fields/*.fld2.gz /openkore/fields/ 2>/dev/null; for f in /qa-fields/*.fld2.gz; do b=$$(basename $$f .fld2.gz); rm -f /openkore/fields/$$b.dist /openkore/fields/$$b.weight; done; cp /qa-tables/*.txt /openkore/tables/ 2>/dev/null; exec /entrypoint.sh"]
+      # PR16: the QA table copies first, then the same overlay as Ayla (openkore/overlay.sh: fields-re + self-check,
+      # fix_re_portals.sh, portals-srv.txt server warps, Kafra lines) so QA tests the map truth every bot uses
+      - ./openkore:/ok-src:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/ok-kafras.txt:ro
+    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "cp /qa-tables/*.txt /openkore/tables/ 2>/dev/null; if [ -f /ok-src/overlay.sh ]; then exec sh /ok-src/overlay.sh; fi; cp /qa-fields/*.fld2.gz /openkore/fields/ 2>/dev/null; for f in /qa-fields/*.fld2.gz; do b=$$(basename $$f .fld2.gz); rm -f /openkore/fields/$$b.dist /openkore/fields/$$b.weight; done; cp /qa-tables/*.txt /openkore/tables/ 2>/dev/null; exec /entrypoint.sh"]
     stdin_open: true
     tty: true
     restart: "no"
@@ -147,6 +156,8 @@ services:
     volumes:
       - ./legion/data:/data
       - ./rathena/npc-custom:/rathena/npc/custom-local:ro   # Legion reads the custom shops (legion_shops.txt)
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro   # srvwarps.go: the npc files the server loads (delnpc)
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro   # kafraload.go: the server's Kafra teleport table
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro   # item price overrides (data.go loadItemOverrides)
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro   # drop rates (droprate.go)
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
@@ -170,6 +181,8 @@ services:
     volumes:
       - ./legion/data:/data
       - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro   # srvwarps.go (as legion)
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro   # kafraload.go (as legion)
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro   # drop rates (droprate.go)
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard

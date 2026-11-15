@@ -53,8 +53,12 @@ func loadGameData() {
 		log.Fatal("mob db: ", err)
 	}
 	loadMobSkillPoison(filepath.Join(*rathena, "db", "re", "mob_skill_db.txt")) // poison.go: which monsters poison
-	loadNPCs(filepath.Join(*rathena, "npc", "re", "mobs"), filepath.Join(*rathena, "npc", "re", "warps"),
-		filepath.Join(*rathena, "npc", "warps"))
+	loadNPCs(filepath.Join(*rathena, "npc", "re", "mobs"))
+	if !loadServerWarps(*rathena) { // srvwarps.go: the warps of the npc files the map server loads
+		loadNPCs(filepath.Join(*rathena, "npc", "re", "warps"), filepath.Join(*rathena, "npc", "warps"))
+	}
+	loadFerries()                                                                    // ferry.go: Sailor boats (Izlude <-> Byalan Island) as route edges
+	loadKafraTable(filepath.Join(*rathena, "npc", "kafras", "functions_kafras.txt")) // kafraload.go: the server's F_KafSet
 	loadItemDB(filepath.Join(*rathena, "db", "re", "item_db_usable.yml"), filepath.Join(*rathena, "db", "re", "item_db_etc.yml"),
 		filepath.Join(*rathena, "db", "re", "item_db_equip.yml"))
 	loadItemOverrides(filepath.Join(*rathena, "db", "import", "item_db.yml")) // rathena db-import (docker-compose mount)

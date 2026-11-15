@@ -467,7 +467,6 @@
 + alde_dun04 215 192 c_tower2 148 283
 + alde_dun04 80 273 alde_dun03 263 26
 + alde_gld 225 188 te_alde_gld 228 185
-+ aldebaran 35 140 te_alde_gld 280 160
 + amatsu 149 140 que_ng 20 142
 + amatsu 217 116 ama_in01 162 25
 + amicitia1 248 244 ein_fild08 152 95
@@ -564,10 +563,6 @@
 + bat_a01 208 164 bat_a01 200 171
 + bat_a02 169 227 bat_a02 178 228
 + bat_a02 208 164 bat_a02 200 171
-+ bat_b01 10 290 bat_b01 87 73
-+ bat_b01 389 10 bat_b01 312 225
-+ bat_b02 10 290 bat_b02 87 73
-+ bat_b02 389 10 bat_b02 312 225
 + bat_room 113 81 bat_room 154 149
 + bat_room 113 90 bat_room 154 149
 + bat_room 141 211 bat_room 154 150
@@ -1680,7 +1675,6 @@
 + que_job01 11 4 que_job01 52 50
 + que_job01 144 61 que_job01 52 50
 + que_job01 17 48 que_job01 68 92
-+ que_job01 51 44 que_job01 80 23
 + que_job01 6 94 morocc 45 103
 + que_job01 65 50 que_job01 84 77
 + que_job01 68 96 que_job01 17 53
@@ -1757,9 +1751,7 @@
 + spl_fild01 291 28 spl_fild02 292 377
 + spl_fild02 293 379 spl_fild01 289 30
 + spl_in02 236 86 splendide 285 139
-+ sword_2-1 223 205 sword_1-1 216 168
 + te_alde_gld 225 188 alde_gld 228 185
-+ te_alde_gld 284 160 aldebaran 39 140
 + te_aldecas1 104 112 te_aldecas1 45 224
 + te_aldecas1 126 61 te_aldecas1 62 191
 + te_aldecas1 171 175 te_aldecas1 35 197
@@ -1838,8 +1830,6 @@
 + te_aldecas5 5 187 te_aldecas5 151 62
 + te_aldecas5 70 189 te_aldecas5 166 81
 + te_prt_gld 120 153 prt_gld 120 149
-+ te_prt_gld 159 25 prt_cas 82 171
-+ te_prt_gld 159 298 prt_fild01 199 30
 + te_prtcas01 103 32 te_prt_gld 134 65
 + te_prtcas01 109 163 te_prtcas01 202 183
 + te_prtcas01 147 120 te_prtcas01 75 187

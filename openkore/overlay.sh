@@ -1,5 +1,5 @@
 #!/bin/sh
-# overlay.sh - start step for OpenKore containers (openkore-ayla): make the server-matching field files and portal
+# overlay.sh - start step for every OpenKore container (openkore-ayla, openkore-qa, legacy openkore; PR16): make the server-matching field files and portal
 # patches part of every container start, so they survive any recreate even when the ro-openkore image is stale.
 # 2026-11-14/15: the fields-re + portals fixes were in openkore/Dockerfile but the image (built 2026-11-12) was never
 # rebuilt; the docker-cp hotfix died with the next recreate and Ayla was stranded on izlude 24,98 again

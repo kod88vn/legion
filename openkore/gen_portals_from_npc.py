@@ -8,7 +8,10 @@ missing from portals.txt (indoor doors, dungeon floors) and ~270 had the wrong l
 
 Usage (python3 -I): gen_portals_from_npc.py <rathena root with npc/> <portals.txt after fix_re_portals.sh>
                     <db/map_cache.dat> <db/re/map_cache.dat> <out portals-srv.txt>
-Loaded npc files: npc/re/scripts_main.conf + npc/scripts_custom.conf (npc:/import:/delete:), plus custom-local.
+Loaded npc files: npc/re/scripts_main.conf + npc/scripts_custom.conf (npc:/import:/delete:/delnpc:), plus custom-local.
+/* block comments */ are blanked first (rAthena skips them: e.g. the commented-out te_alde_gld gate in
+npc/re/warps/guildcastles.txt), keeping line numbers.
+The Go engine (legion/srvwarps.go) implements the same rules for its warp graph; keep the two in step.
 Warps: `warp`/`warp2` lines, duplicate()s of them, and unconditional OnTouch WARPNPC scripts with a single warp.
 Rules (plain 6-field portals.txt lines only; NPC talk lines are never touched):
   drop  - a plain line whose source cell has NO server NPC/warp of any kind within 3 cells (a removed warp)
@@ -33,7 +36,7 @@ def conf(root, path, files, seen):
     seen.add(path)
     for line in open(p, encoding='latin1'):
         line = line.split('//')[0].strip()
-        m = re.match(r'(npc|import|delete):\s*(\S+)', line)
+        m = re.match(r'(npc|import|delete|delnpc):\s*(\S+)', line)
         if not m:
             continue
         k, v = m.groups()
@@ -43,6 +46,41 @@ def conf(root, path, files, seen):
             conf(root, v, files, seen)
         elif v in files:
             files.remove(v)
+
+
+def strip_block_comments(text):
+    """Blank /* ... */ (newlines kept) the way rAthena's script parser skips them. A /* inside a // comment or a
+    "string" does not open a block. legion/srvwarps.go stripBlockComments is the same scanner."""
+    out, i, n, instr = [], 0, len(text), False
+    while i < n:
+        c = text[i]
+        if instr:
+            out.append(c)
+            if c == '\\' and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if c == '"' or c == '\n':
+                instr = False
+            i += 1
+        elif c == '"':
+            instr = True
+            out.append(c)
+            i += 1
+        elif text.startswith('//', i):
+            e = text.find('\n', i)
+            e = n if e < 0 else e
+            out.append(text[i:e])
+            i = e
+        elif text.startswith('/*', i):
+            e = text.find('*/', i + 2)
+            e = n if e < 0 else e + 2
+            out.append('\n' * text.count('\n', i, e))
+            i = e
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
 
 
 def server_warps(root):
@@ -57,7 +95,7 @@ def server_warps(root):
         p = os.path.join(root, f)
         if not os.path.exists(p) or not p.endswith('.txt'):
             continue
-        lines = open(p, encoding='latin1').read().split('\n')
+        lines = strip_block_comments(open(p, encoding='latin1').read()).split('\n')
         i = 0
         while i < len(lines):
             line = lines[i].rstrip('\r')
