@@ -2476,6 +2476,17 @@ sub route_maps {
 	$nm = $dm if $nm eq '' && $dm ne '' && $field && $dm ne $field->baseName;
 	return ($dm, $nm);
 }
+# the portal cell her route takes off this map ({x, y}) or undef (OpenKore's map solution: "map x y=...")
+sub route_portal {
+	my $here = shift;
+	my $ri = AI::findAction('route');
+	return undef unless defined $ri && $ri ne '';
+	my $ra = AI::args($ri);
+	return undef unless ref $ra && ref $ra->{mapSolution} eq 'ARRAY' && @{$ra->{mapSolution}};
+	my $st = $ra->{mapSolution}[0];
+	return undef unless ref $st && ($st->{portal} || '') =~ /^(\S+)\s+(\d+)\s+(\d+)/ && $1 eq $here;
+	return {x => $2, y => $3};
+}
 sub cross_wing {
 	my ($m, $dest) = @_;
 	@crossWings = grep { time - $_->[0] < 1800 && $_->[1] eq $m } @crossWings;
@@ -2574,6 +2585,18 @@ sub pack_tick {
 	# (live 00:51: "waiting for Zendancer84 ... 3 cells" with the priest and three friends next to her - the wait was for
 	# xXRinfangXx 124 cells back): with the priest within 6 and at least half the online party within 20 she goes on;
 	# otherwise only for a member on this map that is coming toward her (distance shrinking), 30 s at most, named
+	# the priest "coming" (live 68c1088 loop: she crossed first, for a moment the priest was on another map and she
+	# turned back): within 15 cells on her map in the last 20 s = coming, not away - no collect, no retreat, she waits
+	$pk{prLastNear} = time if defined $prD && $prD <= 15;
+	my $prComing = !defined $prD && time - ($pk{prLastNear} || 0) < 20;
+	($act) = ('wait') if $prComing && ($act eq 'goto' || $act eq 'ok');
+	# (1) before a portal into a dungeon / a dangerous map she stops on the near side until the priest is within 6
+	if ($act eq 'ok' && $nm ne '' && $nm ne $here && (is_dungeon($nm) || cross_danger($nm)) && !(defined $prD && $prD <= 6)) {
+		my $pp = route_portal($here);
+		if (!$pp || blockDistance($char->{pos_to}, $pp) <= 10) { $act = 'wait' }
+	}
+	# (3) after a retreat to the Kafra: back in only with the priest within 6, and not for 60 s
+	if ($act eq 'ok' && $nm ne '' && (is_dungeon($nm) || cross_danger($nm)) && time - ($pk{retreatAt} || 0) < 60 && !(defined $prD && $prD <= 6)) { $act = 'wait' }
 	if ($act eq 'ok' && is_dungeon($here)) {
 		my @live = grep { !friend_dead($_->[0]) } @fr;
 		my $near20 = grep { $_->[2] eq $here && defined $_->[3] && $_->[3] <= 20 } @live;
@@ -2621,7 +2644,8 @@ sub pack_tick {
 	# doesn't wait there (live 06:11: "help! 9 on me" in pay_dun01, winged out nearly dead) - back to the town's Kafra,
 	# wait there, and go in only with the priest within 6
 	if (($act eq 'wait' || $act eq 'goto') && (is_dungeon($here) || cross_danger($here))) {
-		my $prAway = !defined $prD || $prD > 20;
+		# away = not on her map / 20+ cells for 20 s (a priest crossing behind her is not away)
+		my $prAway = (!defined $prD || $prD > 20) && time - ($pk{prLastNear} || 0) >= 20;
 		my $t = town_of_map($here);
 		if ($prAway && $KAFRA{$t}) {
 			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
@@ -2631,6 +2655,7 @@ sub pack_tick {
 				my $k = $KAFRA{$t}[0];
 				AI::clear('route', 'move');
 				safe_route($t, $k->[0], $k->[1], distFromGoal => 3, attackOnRoute => 1);
+				$pk{retreatAt} = time;
 				message "[partylead] AY22: the priest is away - back to the $t Kafra to wait (not in $here)\n", 'system';
 			}
 			return 1;
