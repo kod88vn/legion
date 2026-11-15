@@ -20,6 +20,8 @@ Every call:
    `{AYLA_SH} lead`, `python {CTL} meter neo`, `python {CTL} bot Ayla`; her map against her party: `mapinfo <map>`.
 2. Doing fine (moving with her party, killing, a map that fits the party): change nothing.
 3. Stuck, crashed, idle or a poor decision: steer her with only these commands, exactly this prefix:
+   NEVER `map` or `rally` while she farms her committed plan map with kills coming and no deaths: the plan and the
+   map choice are her code's job (her plugin refuses them then: "[watchdog] PLAN_KEEP"); file a bug instead.
    - `{AYLA_SH} map <map>`   a hunting map that fits the party's GEAR-rated level (AY07): her party is lv74-81 in
      lv1-20 NPC gear, so it is rated about 58 - mjolnir_12, pay_dun02, gef_dun01 when it fits. Never gl_church for
      this party, never a map whose way crosses aggressive packs above the party (orcsdun01/02 through gef_fild10's

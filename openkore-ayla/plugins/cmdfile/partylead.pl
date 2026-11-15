@@ -162,6 +162,12 @@ sub cmd_partylead {
 	} elsif ($args =~ /^\s*rally\s+([a-z]+)(?:\s+(\S+))?/i) {
 		my ($town, $dest) = (lc $1, defined $2 ? $2 : '');
 		my $pc = plan_map();
+		# PT16: a committed plan (no real reason to leave it) refuses a rally to any town but the plan map's Kafra town -
+		# no rally, no party line (live: the helper's 'rally prontera mjolnir_12' pulled the party out of pay_dun02)
+		if (!$autoPick && $pc ne '' && plan_reason() eq '' && $town ne town_of_map($pc)) {
+			wd_report('PLAN_KEEP', $town, "rally $town refused: committed to $pc (PT16)", "stays on $pc");
+			return;
+		}
 		if ($dest ne '' && $pc ne '' && $dest ne $pc && plan_reason() eq '') { # PT16
 			wd_report('PLAN_KEEP', $dest, "rally $town $dest: destination kept as $pc (committed, PT16)", "rally, then $pc");
 			$dest = $pc;
@@ -2160,7 +2166,19 @@ sub force_repick {
 	} else { $forceRepick = 1 } # nothing chosen yet: try again next tick
 	step_save();
 }
+our $loadAnnounced = 0; # once per plugin load: the plan's meeting point said again, stale routes dropped
+sub load_announce {
+	return if $loadAnnounced || !($net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users});
+	my $pc = plan_map() || $homeMap;
+	return if ($pc || '') eq '';
+	$loadAnnounced = 1;
+	my ($rdm) = route_maps();
+	AI::clear('route', 'move') if $rdm ne '' && $rdm ne $pc && is_townmap($rdm) && town_of_map($pc) ne $rdm; # e.g. the old Prontera rally route
+	announce_plan($pc);
+	message "[partylead] load: plan $pc re-announced to the party\n", 'system';
+}
 sub tick_guarded {
+	load_announce();
 	force_repick();
 	tp_guard();
 	route_guard();
