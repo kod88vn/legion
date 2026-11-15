@@ -456,7 +456,7 @@ def chat_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
 # ----------------------------------------------------------------- Ayla
 def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
     snap = {"metrics": {}}
-    parts = [f"Role: Ayla's mind (leader of her party and of guild Starveil). Trigger: {trigger or 'schedule'}."]
+    parts = [f"Role: Ayla's helper (watch her; step in only when stuck or deciding badly; file the code gap every time). Trigger: {trigger or 'schedule'}."]
     neo = api.get("/api/meter/neo")
     if neo is not None:
         ps = dig(neo, "party_summary", default={}) or {}
@@ -476,9 +476,9 @@ def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
         if lazy >= 0.5:
             parts.append(section("IDLE ALERT (rule: Ayla has zero downtime)",
                                  f"Ayla spent {int(lazy * 100)}% of the last 10 min in town/idle/waiting (now on {amap}; shares {compact(sh, 200)}). "
-                                 "Your plan is not being carried out. Act now: say the plan in party chat and send the party to the plan map "
-                                 "(`ayla.sh rally <town> <map>` or `ayla.sh map <map>`), or pick a map that fits and farm. "
-                                 "Do not answer 'plan unchanged' while she stands in town."))
+                                 "Her code is failing her. Read her log (`ayla.sh log 120`: watchdog, [partylead] lines), find what "
+                                 "holds her, step in once if needed (`ayla.sh rally cancel`, `ayla.sh cmd respawn` or "
+                                 "`ayla.sh map <fitting map>`) and file the code gap (`bug ... --priority high` with the log lines)."))
         parts.append(section("You, your party and Starveil against comparable bots (par = p75, last hour)", body))
         for name, d in (("party", ps), ("starveil", ss)):
             for k in ("ratio_kpm", "ratio_zph", "above_par_kpm", "above_par_zph"):
@@ -494,7 +494,7 @@ def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
             parts.append(section("Party", compact(mine[0], 900, 10)))
     gd = api.get(f"/api/guild-direction/{STARVEIL}")
     if gd is not None:
-        parts.append(section("Starveil directions (set: guild-direction-set starveil <kind> ...)",
+        parts.append(section("Starveil directions (read only)",
                              compact(dig(gd, "active", default=gd), 600)))
     rank = api.get("/api/guild-rank")
     r = next((x for x in rank_rows(rank) if str(x.get("guild", "")).lower() in (STARVEIL, "starveil")), None) if rank else None
@@ -502,7 +502,7 @@ def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
         parts.append(section("Starveil rank and wealth", compact({k: v for k, v in r.items() if k != "t"}, 300)))
         if num(r.get("place")) is not None:
             snap["metrics"]["starveil_place"] = num(r["place"])
-    parts.append(section("Your last decisions", bus_lines(api, "ayla")))
+    parts.append(section("Your last reports", bus_lines(api, "ayla")))
     parts.append(section("Feedback", feedback(prev, snap, prev_ts)))
     parts.append(section("Your notes from earlier calls", read_notes(notes_dir, "ayla") or "(none yet)"))
     return finish(parts, api), snap
