@@ -405,6 +405,15 @@ def market_briefing(api, notes_dir, prev=None, prev_ts=None):
         parts.append(section("Zeny per hour by cohort (biggest prizes)",
                              "\n".join(cohort_line(c) for c in cohort_summary(meter, 4))))
         snap["metrics"].update(server_metrics(meter))
+    # EC43: how far the server has progressed on the build milestones, computed by plain code (tools/puppet/progress.py)
+    import progress
+    try:
+        prog_text = progress.compact_json(progress.collect(api))
+    except Exception as e:  # a bad data shape must not lose the whole market briefing (review m1)
+        prog_text = json.dumps({"status": "no_data", "notes": [
+            "progress block failed (" + type(e).__name__ + "): no numbers given"]}, separators=(",", ":"))
+    parts.append(section("Server progress and build information (plain code; status no_data = no numbers, invent none)",
+                         prog_text))
     parts.append(section("Your last decisions", bus_lines(api, "market")))
     parts.append(section("Feedback", feedback(prev, snap, prev_ts)))
     parts.append(section("Your notes from earlier calls", read_notes(notes_dir, "market") or "(none yet)"))

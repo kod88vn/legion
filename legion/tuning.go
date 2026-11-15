@@ -54,6 +54,7 @@ package main
 //
 //   Guild duty (guildduty.go)
 //   guild_duty_on             false guild blocks, duty warnings, kicks, kicked bots' guild search (ledger always on)
+//   market_directions_on      false the market puppet master may set guild directions (set_by market), never evicting a leader's
 //   guild_duty_min_per_day    120  minutes a member owes its guild per played day (at most half its time online)
 //   guild_duty_warn_days      3    short days before the leader's warning (/ the guild's strictness)
 //   guild_duty_kick_days      2    short days after the warning before the kick (/ strictness)
@@ -223,6 +224,9 @@ type Tuning struct {
 	// guildduty.go (redesign G): guild_duty_on switches on guild blocks, warnings, kicks and the kicked bots' search
 	// (default off; the ledger, rank, wealth and relations run regardless)
 	GuildDutyOn        bool `json:"guild_duty_on"`
+	// guildduty.go (EC43): market_directions_on lets the market puppet master set guild directions (set_by "market"):
+	// they fill a free slot only, never evict a leader's direction (default off: the engine refuses them)
+	MarketDirectionsOn bool `json:"market_directions_on"`
 	// engineparty.go (AY24, ayla-switch): comma-separated human names whose party runs bot-led on the engine, the human's
 	// own bot as Leader through formPartyOpt (default empty: every human-led party stays as it is)
 	EngineParties string `json:"engine_parties"`
