@@ -234,6 +234,10 @@ type Tuning struct {
 	ChatJobsOn           bool `json:"chat_jobs_on"`
 	ChatJobWaitMinSec    int  `json:"chat_job_wait_min_sec"`
 	ChatJobWaitMaxSec    int  `json:"chat_job_wait_max_sec"`
+	// shopannounce.go (EC35): vendors announce their shop's rare items on #trade (default on, owner's rule);
+	// shop_announce_gap_sec = server-wide seconds between two shop lines
+	ShopAnnounceOn     bool `json:"shop_announce_on"`
+	ShopAnnounceGapSec int  `json:"shop_announce_gap_sec"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -260,6 +264,7 @@ var defaultTuning = Tuning{
 	ChatGuildLeader: 0.5, ChatReactBase: 0.25, ChatReactChattiness: 0.5, ChatReactJobChange: 0.25, ChatReactDeath: 0.3,
 	LfgGlobalPerMin: 6,
 	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
+	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
 }
 
 var curTuning atomic.Value // *Tuning
