@@ -3,9 +3,10 @@
 General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 
 **Not available on this server (ST01 / G10, owner 2026-11-15: "change the server to not allow any rebirth").**
-No character can be reborn: the Valkyrie rebirth NPC, the Book of Ymir (1,285,000z) and the Valkyrie room warps are
-unloaded (`rathena/npc-custom/scripts_custom.conf`, `npc/jobs/valkyrie.txt`), and the Legion's class script no longer
-rebirths a 99/50 2nd job (`rathena/npc-custom/legion.txt`). No bot plans or seeks a transcendent class: every build ends
+No character can be reborn: the Valkyrie rebirth NPC and the paid Book of Ymir entry (1,285,000z) are gone. The stock
+`npc/jobs/valkyrie.txt` is unloaded and replaced by `rathena/npc-custom/valkyrie_norebirth.txt` (the way into Valhalla
+for reborn characters stays), and the Legion's class script no longer rebirths a 99/50 2nd job
+(`rathena/npc-custom/legion.txt`). No bot plans or seeks a transcendent class: every build ends
 at its 2nd job (`legion/builds.go`, `planForClass`). The section below is the data for characters that were reborn
 before ST01: they keep their class and their trans skills (`legion/transplans.go`). Nothing here is a new target.
 

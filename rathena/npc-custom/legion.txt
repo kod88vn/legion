@@ -67,9 +67,9 @@ OnPCBaseLvUpEvent:
 		if (!.@second) .@second = callfunc("F_LegionSecond", .@c - Job_Swordman_High + 1, legion_branch, Sex);
 		callsub S_Change, .@second + Job_Novice_High, 1; // rare: announce the transcendent class
 	}
-	// No rebirth on this server (ST01 / G10, owner 2026-11-15): a 2nd job stays a 2nd job at 99/50. The Book of Ymir
-	// and the Valkyrie rebirth NPC are unloaded (npc-custom/scripts_custom.conf, npc/jobs/valkyrie.txt), and the
-	// rebirth jump that used to sit here is gone. Characters reborn before that keep their class (above).
+	// No rebirth on this server (ST01 / G10, owner 2026-11-15): a 2nd job stays a 2nd job at 99/50. The stock
+	// valkyrie.txt is replaced by npc-custom/valkyrie_norebirth.txt (no rebirth NPC, no paid Book of Ymir entry), and
+	// the rebirth jump that used to sit here is gone. Characters reborn before that keep their class (above).
 	// No 3rd, expanded-3rd or 4th job change exists here either (their stock quest NPCs are unloaded too).
 	end;
 

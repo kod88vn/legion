@@ -100,10 +100,12 @@
   while casting are dropped WITHOUT a failure packet. Read rathena/src/map/packets_struct.hpp before parsing.
 
 ## 6f4. Server cap at transcendent classes (2026-11-14, owner: "cap server at trans class")
-- **2026-11-15 (ST01 / G10): no rebirth.** The Valkyrie file (`npc/jobs/valkyrie.txt`: rebirth NPC, Book of Ymir, Heart of
-  Ymir, valk01 warps) is unloaded with `delnpc:`; the Legion's rebirth jump in `rathena/npc-custom/legion.txt` is removed;
-  bots plan 2nd-job builds only (`baseLevelCap` 99, `levelGoalTarget` in `legion/progress.go`). Reborn characters keep
-  their class. The rest of this section is the 2026-11-14 state, kept for the reborn ones.
+- **2026-11-15 (ST01 / G10): no rebirth.** The stock `npc/jobs/valkyrie.txt` is `delnpc:`-ed and replaced by
+  `rathena/npc-custom/valkyrie_norebirth.txt` (loaded as `npc/custom-local/valkyrie_norebirth.txt`): the rebirth NPC and
+  the paid Metheus Sylphe / Book of Ymir rebirth branch are cut; the way into Valhalla for reborn characters (Book of Ymir
+  for ADVJOB/Upper, Heart of Ymir, Teleporter exit) stays. The Legion's rebirth jump in `rathena/npc-custom/legion.txt`
+  is removed. Bots plan 2nd-job builds only; a capped 2nd job (99) gets zeny goals (`levelCapped`, `capGoal` in
+  `legion/progress.go`), not level goals. The rest of this section is the 2026-11-14 state, kept for the reborn ones.
 - Progression: Novice -> 1st (job 10) -> 2nd (job 40) -> at base 99 / job 50 rebirth -> High Novice (base/job 1, 100
   status points) -> High 1st (job 10) -> transcendent 2nd (job 40; Lord Knight ... Gypsy, same branch as before) ->
   STOP. Trans caps: base 99, job 70 (stock `db/re/job_exp.yml`, kept).

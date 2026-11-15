@@ -55,6 +55,26 @@ func levelGoalTarget(class, lv, step int) int {
 	return min(lv+step, baseLevelCap)
 }
 
+// capZenyStep: the zeny a capped 2nd-job bot saves toward its next piece of gear before it picks again.
+const capZenyStep = 50000
+
+// levelCapped: a 2nd-job character at the base cap has no level left to aim at (ST01 / G10). Already-reborn classes
+// are not capped here (levelGoalTarget).
+func levelCapped(class, lv int) bool {
+	return lv >= baseLevelCap && !(class >= 4001 && class <= 4022)
+}
+
+// capGoal (b.mu held): the goal of a capped 2nd-job bot in place of a level goal: zeny for its gear and supplies, on
+// the money farm map when there is one. A level goal at 99 was met the moment it was set (lfg.go goalStatus), which
+// made the goal loop re-pick every tick; this goal is met only after capZenyStep more zeny.
+func (b *Bot) capGoal(now time.Time) *farmGoal {
+	g := &farmGoal{Kind: "zeny", Target: b.Zeny + capZenyStep, Set: now, Until: now.Add(2 * time.Hour)}
+	if mg := b.MoneyFarmGoal(now); mg != nil && len(mg.Maps) > 0 {
+		g.Sell, g.SellID, g.Mob, g.Map, g.Maps = mg.Item, mg.ItemID, mg.Mob, mg.Maps[0], mg.Maps
+	}
+	return g
+}
+
 func family(class int) int {
 	if f, ok := familyOf[class]; ok {
 		return f

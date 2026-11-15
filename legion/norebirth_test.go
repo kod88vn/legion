@@ -97,17 +97,39 @@ func TestLevelGoalStopsAt99(t *testing.T) {
 	}
 }
 
-// TestLevel99SecondJobKeepsGoal: a 99/50 Knight picks a job-and-gear goal (never a bogus level 100 goal, never a
-// rebirth), with no persona-level state needed beyond its plan.
+// TestLevel99SecondJobKeepsGoal: a 99/50 Knight gets a real goal (gear, card or zeny), never a level goal. A level goal
+// at 99 was "met" at once (lfg.go goalStatus), which made the goal loop re-pick every tick (churn, 2026-11-15 review).
 func TestLevel99SecondJobKeepsGoal(t *testing.T) {
 	b := &Bot{Class: 7, BaseLv: 99, JobLv: 50, rng: rand.New(rand.NewSource(7))}
 	b.P = &Persona{BaseLevel: 99, Chars: []CharSpec{{Name: "Kn", Role: "main", Plan: "knight", Class: 7, Build: "knight", BaseLevel: 99, JobLevel: 50}}}
 	b.skills = map[int]*SkillInfo{}
-	g := b.pickFarmGoal(time.Now(), "")
+	now := time.Now()
+	g := b.pickFarmGoal(now, "")
 	if g == nil {
 		t.Fatal("a 99 knight got no goal")
 	}
-	if g.Kind == "level" && g.Target > baseLevelCap {
-		t.Errorf("99 knight level goal aims at %d (above %d)", g.Target, baseLevelCap)
+	if g.Kind == "level" {
+		t.Errorf("99 knight got a level goal (target %d): it is met at once", g.Target)
+	}
+	if st := b.goalStatus(g, now); st == "met" {
+		t.Errorf("99 knight's %s goal is met at once", g.Kind)
+	}
+}
+
+// TestCapGoalNotMetAtOnce: the goal a capped bot gets instead of a level goal is zeny for gear, one capZenyStep away.
+func TestCapGoalNotMetAtOnce(t *testing.T) {
+	b := &Bot{Class: 7, BaseLv: 99, Zeny: 12345, rng: rand.New(rand.NewSource(3))}
+	b.P = &Persona{BaseLevel: 99, Chars: []CharSpec{{Name: "Kn", Role: "main", Plan: "knight", Class: 7, Build: "knight", BaseLevel: 99}}}
+	b.skills = map[int]*SkillInfo{}
+	now := time.Now()
+	g := b.capGoal(now)
+	if g.Kind != "zeny" || g.Target != 12345+capZenyStep {
+		t.Fatalf("capGoal = %s target %d, want zeny target %d", g.Kind, g.Target, 12345+capZenyStep)
+	}
+	if st := b.goalStatus(g, now); st != "ok" {
+		t.Errorf("capGoal status %q right after it was set, want ok", st)
+	}
+	if !levelCapped(7, 99) || levelCapped(7, 98) || levelCapped(4008, 99) {
+		t.Errorf("levelCapped: 2nd job at 99 must be capped, at 98 not, reborn never")
 	}
 }
