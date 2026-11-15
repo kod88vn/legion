@@ -62,6 +62,12 @@ Exchange and chat jobs (docs/design/exchange.md; flags exchange_tiers_on, chat_j
   chat-intent <from> <need|offer> <item...> [--count N] [--max P] [--price P] [--note T]   what a human (or a messy
                                  conversation) meant: the engine treats it like a want / an offer
   chat-intent list               registered intents and what happened to them
+Guild direction and duty (tools/legionctl_guild.py)
+  guild-direction [guildNN]      directions in force; guild-direction-set <guildNN> <kind> [--item X] [--map M]
+                                 [--min-lv N] [--max-lv N] [--classes a,b] [--note T] [--hours H] [--exclusive];
+                                 guild-direction-clear <guildNN> [--id ID]   (kinds: stock gear carry level supply wealth)
+  guild-duty [guildNN] [--all]   standings, today's minutes, blocks, kicked bots; guild-pardon / guild-kick <guildNN> <char>
+  guild-rank [--hours N]         rank and wealth + trend;  guild-relations   rival..ally table
 Minds bus (the owner watches these on the dashboard and can send orders)
   orders <mind>                  owner's unread messages to this mind (marks them read); "(no new orders)" if none
   think <mind> <text...> [--kind thought|decision|action|summary] [--status "short status line"]
@@ -87,6 +93,9 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import legionctl_guild  # noqa: E402  guild direction / duty / rank / relations commands
 
 API = os.environ.get("LEGION_API", "http://127.0.0.1:8090")
 STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".state")
@@ -822,6 +831,8 @@ def main(argv):
 
     elif cmd == "wait":
         time.sleep(float(args[0]))
+    elif cmd in legionctl_guild.COMMANDS:  # tools/legionctl_guild.py: guild direction, duty, rank, relations
+        legionctl_guild.guild_cmd(cmd, args, call, out, opt, q)
     else:
         sys.exit(f"unknown command {cmd!r} (try: help)")
 

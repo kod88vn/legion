@@ -1155,9 +1155,9 @@ func (b *Bot) handle(pk []byte) {
 		if len(pk) > 4 {
 			friendHeard(b, cstr(pk[4:]), true)
 		}
-	case 0x015a, 0x015c: // a member left / was expelled: name[24] ... - us: out of the guild (friends.go)
+	case 0x015a, 0x015c, 0x0839: // a member left / was expelled (0x0839 = ZC_ACK_BAN_GUILD_SSO, PACKETVER >= 20100803): name[24] ... - us: out of the guild (friends.go)
 		if len(pk) >= 26 && cstr(pk[2:26]) == b.charName() {
-			b.onGuildLeft(map[uint16]string{0x015a: "left", 0x015c: "was expelled from"}[op])
+			b.onGuildLeft(map[uint16]string{0x015a: "left", 0x015c: "was expelled from", 0x0839: "was expelled from"}[op])
 		}
 	case 0x016a: // guild invitation: guild id, name[24]
 		if len(pk) >= 30 {

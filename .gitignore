@@ -57,3 +57,5 @@ legion/data/puppet.pause
 legion/data/bugqueue.jsonl
 legion/data/neo.wake
 legion/data/build.wake
+legion/data/guild_duty.json
+legion/data/guild_rank.json
