@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "tools", "system"))
@@ -357,6 +357,52 @@ class TestDashboardReadsWatchdog(Env):
         w = dashserve.watchdog_block(T0)
         self.assertTrue(w["available"])
         self.assertEqual(w["status"]["summary"]["agents_ok"], 8)
+
+
+class TestSingleCopy(Env):
+    def test_fresh_lock_refuses_a_second_loop(self):
+        import watchdog
+        self.put("watchdog.lock", "pid 1 x", age=10)
+        orig = watchdog.run_pass
+        watchdog.run_pass = lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not run a pass"))
+        try:
+            with redirect_stderr(io.StringIO()):
+                rc = watchdog.main([])
+        finally:
+            watchdog.run_pass = orig
+        self.assertEqual(rc, watchdog.EXIT_LOCKED)
+        self.assertEqual(rc, 3)
+
+    def test_stale_lock_is_taken_over(self):
+        import watchdog
+        self.put("watchdog.lock", "pid 1 x", age=300)
+        self.assertTrue(watchdog.take_lock())
+        import common as C
+        self.assertAlmostEqual(C.marker_age("watchdog.lock"), 0.0)
+
+    def test_no_lock_is_taken_and_second_take_refused(self):
+        import watchdog
+        self.assertTrue(watchdog.take_lock())
+        self.assertFalse(watchdog.take_lock())
+
+    def test_pass_refreshes_the_lock(self):
+        import watchdog
+        import common as C
+        self.assertTrue(watchdog.take_lock(T0))
+        os.environ["LEGION_FAKE_NOW"] = str(T0 + 50)
+        self.assertAlmostEqual(C.marker_age("watchdog.lock"), 50.0)
+        watchdog.touch_lock(T0 + 50)
+        self.assertAlmostEqual(C.marker_age("watchdog.lock"), 0.0)
+
+    def test_keep_script_single_copy_and_restart_text(self):
+        path = os.path.join(REPO, "tools", "system", "watchdog-keep.cmd")
+        with open(path, encoding="utf-8", newline="") as f:
+            txt = f.read()
+        self.assertIn(r"python tools\system\watchdog.py", txt)
+        self.assertIn(r'if errorlevel 3 if "%first%"=="1"', txt)   # exits on a live lock at the first start
+        self.assertIn("exit /b 0", txt)
+        self.assertIn("timeout /t 3 /nobreak", txt)                      # restart 3 s after any exit
+        self.assertIn("goto loop", txt)
 
 
 if __name__ == "__main__":

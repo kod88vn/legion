@@ -43,6 +43,9 @@ STATUS_FILE = "watchdog.status.json"
 REPORTS_FILE = "watchdog-reports.jsonl"
 RESTART_LOG = "watchdog-restarts.log"
 WAITING = "waiting"
+LOCK_FILE = "watchdog.lock"  # one loop at a time: refreshed each pass; a lock older than LOCK_STALE is taken over
+LOCK_STALE = 90
+EXIT_LOCKED = 3              # another live watchdog holds the lock (tools/system/watchdog-keep.cmd exits on it)
 
 # the loop's scripts. "cmd" is the script (relative to the repo root) and its arguments, started with this python
 # (or with bash under WSL for keeper.sh). hb: heartbeat file names, the first that exists wins. stale: seconds.
@@ -326,12 +329,42 @@ def run_pass(now, ops, dry=False, containers="auto", queue=None):
     return out
 
 
+def take_lock(now=None):
+    """Single copy (the loop only): True when this process now holds legion/data/watchdog.lock, False when a lock
+    refreshed within LOCK_STALE seconds belongs to another loop. A stale lock (a crashed loop) is taken over."""
+    p = C.dpath(LOCK_FILE)
+    age = C.marker_age(LOCK_FILE)
+    if age is not None and age <= LOCK_STALE:
+        return False
+    try:
+        os.makedirs(C.data_dir(), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write("pid %d %s\n" % (os.getpid(), C.iso(now)))
+    except OSError:
+        return False
+    touch_lock(now)
+    return True
+
+
+def touch_lock(now=None):
+    """refresh the lock's time so the loop stays the owner (never raises)"""
+    t = C.now() if now is None else now
+    try:
+        os.utime(C.dpath(LOCK_FILE), (t, t))
+    except OSError:
+        pass
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--once", action="store_true", help="one pass, then exit")
+    ap.add_argument("--once", action="store_true", help="one pass, then exit (no lock: manual use)")
     ap.add_argument("--dry-run", action="store_true", help="print what a pass would do; change nothing")
     ap.add_argument("--interval", type=float, default=INTERVAL)
     a = ap.parse_args(argv)
+    if not (a.once or a.dry_run) and not take_lock():
+        print("another watchdog holds %s (refreshed within %d s); not starting" % (LOCK_FILE, LOCK_STALE),
+              file=sys.stderr, flush=True)
+        return EXIT_LOCKED
     ops = Ops()
     while True:
         try:
@@ -341,6 +374,7 @@ def main(argv=None):
                                   "summary": res["status"]["summary"]}, ensure_ascii=False, indent=1))
             if not a.dry_run:
                 C.heartbeat("watchdog")
+                touch_lock()
         except Exception as e:  # never die: the next pass tries again
             print("watchdog pass failed: %r" % (e,), file=sys.stderr, flush=True)
         if a.once or a.dry_run:
