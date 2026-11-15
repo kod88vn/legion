@@ -691,6 +691,11 @@ sub end_rally {
 # for Zombies the friends pulled. The two switches are changed in memory only and put back on arrival.
 my %travelSaved;
 our $trivSaved; # attackAuto saved while crossing a trivial map (no assignment: a plugin reload keeps it)
+# no fights on a crossing map while she is at half HP or more (b1794737139520-016)
+sub transit_hp_ok {
+	return 0 unless $char && $char->{hp_max} && defined $char->{hp};
+	return $char->{hp} / $char->{hp_max} >= 0.5 ? 1 : 0;
+}
 sub travel_mode_tick {
 	return unless $char && $field;
 	my $here = $field->baseName;
@@ -701,7 +706,9 @@ sub travel_mode_tick {
 	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here) && !trivial_transit() && !cross_danger($here); # a friend in danger here: she fights for it (no travel mode) - not on a map far below the party (QA: Zombies on pay_dun00 for a level 81), never on a dangerous crossing
 	# crossing a map far below her and the party (trivial_transit): no fights at all there, not even OpenKore's own
 	# attackAuto - a level 81 stopped for every pay_dun00 Zombie (12 exp). Saved in a package var: survives a reload.
-	my $triv = trivial_transit() && !scalar(AI::ai_getAggressives()) ? 1 : 0; # never attackAuto 0 with monsters on her
+	# b1794737139520-016: monsters on her no longer put the fights back on a crossing map (zombies, Storm Gust, Sonic Blow
+	# were fought there while it said "no fights here"): she walks on to the portal; fights only below 50% HP
+	my $triv = trivial_transit() && transit_hp_ok() ? 1 : 0;
 	if ($triv && !defined $trivSaved) { $trivSaved = $config{attackAuto}; $config{attackAuto} = 0; message "[partylead] crossing $here (far below the party): no fights here
 ", 'system' }
 	elsif (!$triv && defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef; message "[partylead] off the transit map ($here): attackAuto back
@@ -727,6 +734,11 @@ sub travel_mode_tick {
 }
 
 # drives the rally; true while it owns her movement
+# online friends on a map that is neither hers nor the rally town (their map unknown = not counted)
+sub rally_away {
+	my ($r, $here) = @_;
+	return grep { $_->[1] ne '' && $_->[1] ne $here && $_->[1] ne $r->{town} } online_friends();
+}
 sub rally_tick {
 	return 0 unless $rally;
 	my $r = $rally;
@@ -773,6 +785,26 @@ sub rally_tick {
 		AI::clear('route', 'move');
 		AI::ai_useTeleport(2);
 		return 1;
+	}
+	# b1794751481844-856: the walk to the rally town from a field waits up to 90 s for members on another map (not on
+	# this map, not in the town) - said once, then she goes on without them (the walk alone split the party)
+	if ($here ne $r->{town} && !is_townmap($here) && !$r->{goneAt}) {
+		my @away = rally_away($r, $here);
+		if (@away) {
+			$r->{gatherAt} ||= time;
+			my $names = join(', ', map { $_->[0] } @away);
+			if (time - $r->{gatherAt} < 90) {
+				AI::clear('route', 'move') if AI::inQueue('route', 'move');
+				if (($r->{gatherSaid} || '') ne $names) {
+					$r->{gatherSaid} = $names;
+					psay("$names where r u? i wait here, kafra in $r->{town} after", 1, 0);
+					message "[partylead] rally: waiting up to 90 s for $names (not on $here or in $r->{town})\n", 'system';
+				}
+				return 1;
+			}
+			$r->{goneAt} = time;
+			message "[partylead] rally: going to $r->{town} without $names after 90 s\n", 'system';
+		}
 	}
 	if ($here ne $r->{town} || $d > 4) {
 		if (time - $r->{routeAt} > 15 || !AI::inQueue('route', 'move')) {
@@ -2726,6 +2758,7 @@ sub restore {
 # escape rules (teleportAuto 35% / 6 monsters). Her targets stay within 20 cells of the friends near her
 # (stick_target, from area_target). conf partylead_stick 0 turns it off.
 use constant STICK_DEADLY => 0.20;
+use constant STICK_RUN_MAX => 40; # cells: a fall-back to an anchor further away than this is not run through a pack
 my $stickLowAt = 0; # since when HP reads under STICK_DEADLY
 my ($stickHelpAt, $stickRunAt, $stickWingAt, $stickBossAt, $stickHp, $stickHitAt, $stickDeadly) = (0, 0, 0, 0, 1, 0, undef);
 our $stickWinged; # {town, back, at}: her last announced wing (the town-run line says the same)
@@ -2918,6 +2951,15 @@ sub route_unsafe { my ($m, $plv) = @_; return gm_route_unsafe($m, defined $plv ?
 # ---- pack begin (pure: tested offline by tests/ayla/pack_test.pl)
 # $s: {here, friends => [[name, class, map, dist or undef]], farm, leaving, cross ('' | 'pre' | 'on'), waited (s)}
 # returns (action, anchor row): solo | ok | wait | back (walk to the anchor on this map) | goto (go to the anchor)
+# a wait that ends because a member is on another map is logged once per member per map (b1794751170937-396)
+our %waitEndSaid;
+sub wait_end_log_due {
+	my ($name, $map) = @_;
+	my $key = "$name\@$map";
+	return 0 if ($waitEndSaid{$name} || '') eq $key;
+	$waitEndSaid{$name} = $key;
+	return 1;
+}
 sub pack_decide {
 	my $s = shift;
 	my @f = @{$s->{friends} || []};
@@ -3315,8 +3357,9 @@ sub pack_tick {
 	# 'waiting for Zendancer84' while she was on pay_dun01) ends at once - she goes on, the member is not waited for
 	if ($act eq 'wait' && $an && ($an->[2] // '') ne $here) {
 		$pk{waitAt} = 0; $pk{act} = '';
+		# logged once per member per change of its map (b1794751170937-396: the same line every tick, dozens a minute)
 		message "[partylead] wait on $an->[0] ended: on $an->[2], not on our map
-", 'system';
+", 'system' if wait_end_log_due($an->[0], $an->[2] // '');
 		return 0;
 	}
 	# the wait cap (owner 2026-11-15: 'waiting for Zen.fox (178 s)' for minutes): a wait longer than 3 min goes on for 3 min
@@ -3502,12 +3545,29 @@ sub pt32_target {
 # sat in a Payon rally for minutes and the watchdog said nothing - a rally counted as productive). Reported every
 # 2 min ("[watchdog] IDLE <kind> wait N min ..."), which also wakes her helper.
 my ($wiSince, $wiExp, $wiKind, $wiSaid) = (0, 0, '', 0);
+our (%gatherDist, $gatherMoved);
+# true while a friend on her map came closer to her in the last 30 s (its best distance kept; reset after it drifts away)
+sub gather_closing {
+	my $here = $field ? $field->baseName : '';
+	foreach my $f (online_friends()) {
+		next unless $f->[1] eq $here;
+		my $d = seen_dist($f->[0]);
+		next unless defined $d;
+		my $b = $gatherDist{$f->[0]};
+		if (!defined $b) { $gatherDist{$f->[0]} = $d; next }
+		if ($d < $b) { $gatherDist{$f->[0]} = $d; $gatherMoved = time }
+		elsif ($d > $b + 3) { $gatherDist{$f->[0]} = $d }
+	}
+	return (time - ($gatherMoved || 0) < 30) ? 1 : 0;
+}
 sub wait_idle_check {
 	return unless $char && $field;
 	my $kind = $rally ? "rally ($rally->{town})" : $depart ? "departure ($depart->{town})" : $regroupTo ne '' ? "regroup to $regroupTo"
 		: $pk{waitAt} ? 'party' : $holding ? 'hold' : '';
 	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
 	if ($kind eq '' || $exp != $wiExp) { ($wiSince, $wiExp, $wiKind, $wiSaid) = ($kind eq '' ? 0 : time, $exp, $kind, 0); return }
+	# b1794749928950-584: a hold (come-here gather) is not idle while the party walks in: a friend on her map came closer lately
+	if (($kind eq 'hold' || $kind eq 'party') && gather_closing()) { $wiSince = time; return }
 	$wiSince ||= time;
 	my $n = time - $wiSince;
 	return if $n < 120 || time - $wiSaid < 120;
@@ -3639,14 +3699,16 @@ sub stick_tick {
 		$stickWingAt = time;
 		$wingOkUntil = time + 8; # tp_guard: this one teleport (the dying Butterfly Wing) is allowed
 		my $town = $config{saveMap} || 'town';
-		my $back = $homeMap ne '' ? $homeMap : $here;
+		# b1794731370342-616: the map that nearly killed her is not the way back (a new spot is picked instead)
+		my $back = ($homeMap ne '' && $homeMap ne $here) ? $homeMap : 'a new spot';
 		$stickWinged = {town => $town, back => $back, at => time};
-		cross_wing($here, $back) if $CROSS_DANGER{$here};
+		cross_wing($here, $back) if $CROSS_DANGER{$here} && $back ne 'a new spot';
 		message sprintf("[partylead] PT31: about to die (HP %d/%d = %d%%, under 20%% for %.1f s, %d monsters on her): Butterfly Wing to %s\n", $char->{hp}, $char->{hp_max}, $hpp * 100, time - $stickLowAt, $aggr, $town), 'system';
 		AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto');
 		AI::ai_useTeleport(2); # 2 = the respawn point (Butterfly Wing), never 1 (a random cell)
 		psay(pick("almost died, winged to $town kafra. meet me there, then we go back to $back",
 			"had to wing to the $town kafra (nearly dead) - regroup there, then back to $back"), 0, 0);
+		drop_map($here, "near-death wing with $aggr monsters on her") if $here ne '' && !is_townmap($here); # 2 h off (b1794731370342-616)
 		return 1;
 	}
 	if ($stickFlee) {
@@ -3702,7 +3764,8 @@ sub stick_tick {
 			$stickHelpAt = time;
 			psay(pick("help, $aggr on me", "help! $aggr on me ($here $cx,$cy)", "$aggr mobs on me, need help"), 0, 0);
 		}
-		if ($an && $ad > 3 && time - $stickRunAt > 3) { # 3+ on her: back toward the priest / tank (attack kept, attackOnRoute 1)
+		# b1794723174711-500: a fall-back to an anchor 40+ cells away (160 cells live, 9 monsters on her) is no retreat
+		if ($an && $ad > 3 && $ad <= STICK_RUN_MAX && time - $stickRunAt > 3) { # 3+ on her: back toward the priest / tank (attack kept, attackOnRoute 1)
 			$stickRunAt = time;
 			Commands::run('stand') if $char->{sitting};
 			AI::clear('route', 'move', 'items_take', 'take', 'items_gather'); # never the attack: she fights back what hits her
@@ -3713,7 +3776,7 @@ sub stick_tick {
 		# swarmed with no friend on this map (she got ahead of them on a crossing): back to the map the friends are on
 		# not across a portal while the priest was within 15 cells in the last 20 s (it is right behind her at the portal:
 		# live 09:14, a fall-back / rejoin loop pay_dun01 <-> pay_dun02) - she fights at the entrance and waits for it
-		if (!$an && $aggr >= 4 && time - $stickRunAt > 5 && !AI::inQueue('attack') && !$stickFlee && !pk_prnear_recent()) {
+		if ((!$an || $ad > STICK_RUN_MAX) && $aggr >= 4 && time - $stickRunAt > 5 && !AI::inQueue('attack') && !$stickFlee && !pk_prnear_recent()) {
 			my %on; $on{$_->[1]}++ foreach grep { $_->[1] ne '' && $_->[1] ne $here } @friends;
 			my ($fm) = sort { $on{$b} <=> $on{$a} } keys %on;
 			if ($fm) {
