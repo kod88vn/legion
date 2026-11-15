@@ -1694,6 +1694,9 @@ my %crowdedAt; # map -> when it was too crowded to farm (skipped for an hour)
 my $gmRecheck = 0; # gear maps: the measured step changed - fit_tick re-checks at once
 my %routeFailAt; # map -> until when its route counts as failing (STUCK twice): skipped like a crowded map
 our %farmedAt;   # map -> when a plan left it (drained / crowded / ...): not picked again for 30 min
+# kept in logs/ayla_farmed.json: a reload doesn't send her back to a drained map
+sub farmed_save { eval { open(my $f, '>', 'logs/ayla_farmed.json') or die; print $f JSON::PP->new->canonical->encode({map { $_ => int($farmedAt{$_}) } grep { time - $farmedAt{$_} < 1800 } keys %farmedAt}); close $f } }
+eval { if (open(my $f, '<', 'logs/ayla_farmed.json')) { local $/; my $d = JSON::PP->new->decode(<$f>); close $f; %farmedAt = (%farmedAt, %$d) if ref $d eq 'HASH' } };
 my ($turnAt, $turnMap, $turnWho) = (0, '', '');
 sub party_turn {
 	return ($turnMap, $turnWho) if time - $turnAt < 60;
@@ -1861,7 +1864,7 @@ eval {
 		$forceRepick = 1 if $d && ($d->{repick} || ($d->{v} || 0) < 5); # v4: a false STUCK dropped pay_dun02 - re-pick nearest (PLAN_RESTORE)
 	} else { $forceRepick = 1; step_save() }
 };
-sub gm_kill { $gmKills++ }
+sub gm_kill { $gmKills++; $partylead::planKillAt = time if $field && $field->baseName eq (plan_map() || '-') }
 sub gm_died {
 	$gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths;
 	# one death steps down at once (owner 2026-11-15); the hook fired twice for one death (-10 -> -15 -> -20): once per 30 s
@@ -2053,7 +2056,7 @@ sub plan_change {
 	my $c = plan_map();
 	return if $c eq '' || $c eq ($new || '');
 	wd_report('PLAN_CHANGE', $c, "$c -> " . ($new || '-') . ": $why", "new plan on arrival");
-	$farmedAt{$c} = time; # level_map skips it for 30 min
+	$farmedAt{$c} = time; farmed_save(); # level_map skips it for 30 min (also after a reload)
 	$plan = undef; plan_save();
 	announce_plan($new);
 }
@@ -2193,8 +2196,18 @@ sub kill_sample {
 	push @killSamples, [time, $gmKills, $here];
 	shift @killSamples while @killSamples > 120;
 }
+our $planKillAt = 0; # her last kill on the plan map
 sub map_drained {
 	my $c = shift;
+	# 8 min without a kill by her on the plan map while she sweeps there with the priest (not waiting / holding):
+	# drained at once (live 06:23: 0 kills in 5 min, IDLE 313 s on pay_dun02 - the 35-min check came too late)
+	if ($field && $field->baseName eq $c && !$holding && !$rally && !pk_waiting() && priest_dist() <= 20) {
+		my $since = $planKillAt;
+		my $ai = $partylead::arrInfo;
+		$since = $ai->{at} if $ai && $ai->{map} eq $c && $ai->{at} > $since;
+		$since = $plan->{at} if $plan && $plan->{at} && $plan->{at} > $since;
+		return sprintf("map drained: no kill for %d min", int((time - $since) / 60)) if $since && time - $since > 480;
+	}
 	my @s = grep { $_->[2] eq $c } @killSamples;
 	return '' unless @s >= 36; # 35+ min of samples: the first 20 and the last 15
 	my ($t0, $k0) = @{$s[0]}[0, 1];
