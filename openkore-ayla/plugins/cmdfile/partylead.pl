@@ -1008,12 +1008,28 @@ sub own_rest {
 	return 1 if $char->{sitting} && ($hpp < 0.8 || $spp < 0.4);
 	return 0;
 }
+# a friend's rest holds her only when that friend is on her map within TOGETHER cells (QA 2026-11-15: a rest announced
+# at any distance, or on another map, held her for the full 180 s). Position: fresh Legion API data, else the in-game
+# player list (only players on her screen have a pos_to). Unknown position = not near = no hold.
+sub rest_near {
+	my ($name, $here) = @_;
+	return 0 unless $char && $char->{pos_to} && defined $char->{pos_to}{x};
+	my $a = $apiPos{$name};
+	if ($a && time - $a->{at} < 10) {
+		return 0 unless defined $a->{x} && defined $a->{y} && ($a->{map} || '') eq $here;
+		return blockDistance({x => $a->{x}, y => $a->{y}}, $char->{pos_to}) <= TOGETHER ? 1 : 0;
+	}
+	my $pl = $playersList ? $playersList->getByName($name) : undef;
+	return 0 unless $pl && $pl->{pos_to} && defined $pl->{pos_to}{x};
+	return blockDistance($pl->{pos_to}, $char->{pos_to}) <= TOGETHER ? 1 : 0;
+}
 sub party_resting {
 	return 1 if own_rest();
 	return 0 unless $char && $char->{party} && $char->{party}{users} && $field;
 	foreach my $n (keys %restAnn) { delete $restAnn{$n} if time - $restAnn{$n} > 180 }
-	return 1 if %restAnn; # a friend announced a rest and hasn't said "ready" yet
 	my $here = $field->baseName;
+	# a friend announced a rest and hasn't said "ready" yet - only while that friend is near her (3-min cap above)
+	foreach my $n (keys %restAnn) { return 1 if rest_near($n, $here) }
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
 		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
@@ -1022,7 +1038,8 @@ sub party_resting {
 		# a friend sitting BECAUSE she rests ("sitting with the party (Ayla resting)", "guarding Ayla") is not a rest of
 		# its own - counting it kept both sides sitting forever (her sit -> status.json sitting -> they sit -> she sits)
 		next if defined $st && $st =~ /ayla/i;
-		return 1 if defined $st && ($a->{map} || '') eq $here && $st =~ /\b(rest|resting|sit|sitting)\b/i;
+		next unless rest_near($u->{name}, $here);
+		return 1 if defined $st && $st =~ /\b(rest|resting|sit|sitting)\b/i;
 		my $pl = $playersList ? $playersList->getByName($u->{name}) : undef;
 		return 1 if $pl && $pl->{sitting} && !defined $st;
 	}
