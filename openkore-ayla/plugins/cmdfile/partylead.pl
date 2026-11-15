@@ -736,9 +736,35 @@ sub rally_away {
 	my ($r, $here) = @_;
 	return grep { $_->[1] ne '' && $_->[1] ne $here && $_->[1] ne $r->{town} } online_friends();
 }
+# the walk to the rally town from a field waits up to 90 s for members on another map (not on this map, not in the
+# town) - said once, then she goes on without them. Each absence gets its own 90 s: once everyone is back on her map or in
+# the town the wait is reset (gatherAt, goneAt). Returns 1 while she holds (fightback 2026-11-15: goneAt per absence).
+sub rally_gather_hold {
+	my ($r, $here) = @_;
+	return 0 if $here eq $r->{town} || is_townmap($here);
+	my @away = rally_away($r, $here);
+	if (!@away) { $r->{gatherAt} = 0; $r->{goneAt} = 0; $r->{gatherSaid} = ''; return 0 }
+	return 0 if $r->{goneAt};
+	$r->{gatherAt} ||= time;
+	my $names = join(', ', map { $_->[0] } @away);
+	if (time - $r->{gatherAt} < 90) {
+		if (($r->{gatherSaid} || '') ne $names) {
+			$r->{gatherSaid} = $names;
+			psay("$names where r u? i wait here, kafra in $r->{town} after", 1, 0);
+			message "[partylead] rally: waiting up to 90 s for $names (not on $here or in $r->{town})
+", 'system';
+		}
+		return 1;
+	}
+	$r->{goneAt} = time;
+	message "[partylead] rally: going to $r->{town} without $names after 90 s
+", 'system';
+	return 0;
+}
 sub rally_tick {
 	return 0 unless $rally;
 	my $r = $rally;
+	attacker_sample(); # hits and misses of this tick, for the fight-back rule in the attack check below
 	if (time - $r->{at} > 720) { end_rally("timed out after 12 min", 0); return 0 }
 	# priority (main 2026-11-14): a friend on her map in danger > her own rally. A self-started rally pauses (the hold /
 	# collect logic below the rally goes to that friend); a rally the mind or the friends called keeps going.
@@ -754,7 +780,8 @@ sub rally_tick {
 		my $ai = AI::findAction('attack');
 		my $a = (defined $ai && $ai ne '') ? AI::args($ai) : undef;
 		my $t = ($a && $monstersList) ? $monstersList->getByID($a->{ID}) : undef;
-		return 1 if $t && ($t->{dmgToYou} || $t->{missedYou}) && $t->{pos_to} && blockDistance($char->{pos_to}, $t->{pos_to}) <= 3;
+		attacker_sample();
+		return 1 if current_attacker($t); # fightback: a monster hitting her is fought at any distance (ranged too)
 		AI::clear('attack');
 	}
 	# the rally owns her movement: a lockMap set meanwhile (the mind's 'conf lockMap', a restore) is kept for afterwards,
@@ -785,24 +812,7 @@ sub rally_tick {
 	}
 	# b1794751481844-856: the walk to the rally town from a field waits up to 90 s for members on another map (not on
 	# this map, not in the town) - said once, then she goes on without them (the walk alone split the party)
-	if ($here ne $r->{town} && !is_townmap($here) && !$r->{goneAt}) {
-		my @away = rally_away($r, $here);
-		if (@away) {
-			$r->{gatherAt} ||= time;
-			my $names = join(', ', map { $_->[0] } @away);
-			if (time - $r->{gatherAt} < 90) {
-				AI::clear('route', 'move') if AI::inQueue('route', 'move');
-				if (($r->{gatherSaid} || '') ne $names) {
-					$r->{gatherSaid} = $names;
-					psay("$names where r u? i wait here, kafra in $r->{town} after", 1, 0);
-					message "[partylead] rally: waiting up to 90 s for $names (not on $here or in $r->{town})\n", 'system';
-				}
-				return 1;
-			}
-			$r->{goneAt} = time;
-			message "[partylead] rally: going to $r->{town} without $names after 90 s\n", 'system';
-		}
-	}
+	if (rally_gather_hold($r, $here)) { AI::clear('route', 'move') if AI::inQueue('route', 'move'); return 1 }
 	if ($here ne $r->{town} || $d > 4) {
 		if (time - $r->{routeAt} > 15 || !AI::inQueue('route', 'move')) {
 			$r->{routeAt} = time;
@@ -2591,8 +2601,13 @@ sub tick_guarded {
 	tick(@_);
 	# PT33 root cause: tick() returns early on pack_tick / stick_tick (she is waiting or sweeping most of the time), so the
 	# queued party lines (flush_say) and the pending town-run check (town_req_tick) never ran. Both run on every tick now.
-	flush_say() if $net && $net->getState() == 5;
-	town_req_tick() if $net && $net->getState() == 5;
+	# post-mortem 20261115 cause 3: tick() returns early (fights, pack / stick / portal waits), and the party lines, the
+	# town-run request, her map choice and the watchdog must still run every tick - they are called here, never in tick()
+	if ($net && $net->getState() == 5 && $char && $field) {
+		foreach my $step (\&flush_say, \&town_req_tick, \&fit_tick, \&watchdog_tick) { # each runs even if another dies
+			eval { $step->(); 1 } or message "[partylead] tick tail failed: $@\n", 'system';
+		}
+	}
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
@@ -2945,15 +2960,77 @@ sub farm_sweep {
 	return 1;
 }
 # the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
-# the nearest monster that is attacking her (hit or missed her): the one she fights back (undef = none)
+# ---- fight back (fightback 2026-11-15): OpenKore's dmgToYou / missedYou are running totals, so "attacking her now" is read
+# from their change: a monster whose total rose within ATTACK_RECENT seconds hit or missed her, at any distance.
+use constant ATTACK_RECENT => 5;  # seconds since the last hit / miss that still counts as attacking her
+use constant ATTACK_RANGE => 12;  # cells: a monster this close is a new target (nearest_attacker)
+our (%attackSeen, %attackAt);
+our ($atkSeq, $atkDoneSeq) = (0, -1); # tick bumps $atkSeq; the sample runs once per value
+# once per tick (review 96e0953): a first sample with a total above 0 counts as a hit; monsters gone from the list and
+# hits older than 30 s are pruned (no growth over days, no old time inherited by a reused ID)
+sub attacker_sample {
+	return if $atkDoneSeq == $atkSeq;
+	$atkDoneSeq = $atkSeq;
+	my $now = time;
+	my %live;
+	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
+		next unless defined $mo->{ID};
+		$live{$mo->{ID}} = 1;
+		my $n = ($mo->{dmgToYou} || 0) + ($mo->{missedYou} || 0);
+		my $prev = $attackSeen{$mo->{ID}};
+		if (defined $prev ? $n > $prev : $n > 0) { $attackAt{$mo->{ID}} = $now }
+		$attackSeen{$mo->{ID}} = $n;
+	}
+	foreach my $id (keys %attackSeen) { delete $attackSeen{$id} unless $live{$id} }
+	foreach my $id (keys %attackAt) { delete $attackAt{$id} if !$live{$id} || $now - $attackAt{$id} > 30 }
+}
+# a live monster that hit or missed her within ATTACK_RECENT seconds (any distance)
+sub current_attacker {
+	my $mo = shift;
+	return 0 unless $mo && defined $mo->{ID} && $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead};
+	return (time - ($attackAt{$mo->{ID}} || 0) <= ATTACK_RECENT) ? 1 : 0;
+}
+# the nearest monster that is attacking her now, within ATTACK_RANGE: the one she fights back (undef = none)
 sub nearest_attacker {
+	attacker_sample();
 	my ($best, $bd);
 	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
-		next unless $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead} && ($mo->{dmgToYou} || $mo->{missedYou});
+		next unless current_attacker($mo);
 		my $d = blockDistance($char->{pos_to}, $mo->{pos_to});
+		next if $d > ATTACK_RANGE;
 		($best, $bd) = ($mo, $d) if !defined $bd || $d < $bd;
 	}
 	return $best;
+}
+# fightback (owner 2026-11-15; review 96e0953): a monster attacking her is fought in every mode. tick calls this before the
+# stick / pack / portal rules, so their waits never leave her standing and being hit. Priority kept: the PT31 Butterfly
+# Wing (dying, and just used), the PT31 fall-back (a commitment), the boss pull-back (a boss in sight). $retreatFirst (the
+# first call, before stick_tick): with 3+ monsters on her, or under 45% HP with one, stick_tick's retreat to the friends
+# goes first; the second call (after stick_tick did nothing) fights.
+our $fbMsgAt = 0;
+sub fight_tick {
+	my $retreatFirst = shift;
+	return 0 unless $char && $char->{hp_max};
+	return 0 if time - ($stickWingAt || 0) < 10;
+	my $hpp = $char->{hp} / $char->{hp_max};
+	return 0 if $hpp < STICK_DEADLY;
+	return 0 if $stickFlee;
+	return 0 if stick_boss();
+	my $aggr = scalar(AI::ai_getAggressives());
+	return 0 if $retreatFirst && online_friends() && ($aggr >= 3 || ($hpp < 0.45 && $aggr >= 1));
+	my $t = nearest_attacker() or return 0;
+	if (AI::inQueue('attack')) {
+		my $ai = AI::findAction('attack');
+		my $a = (defined $ai && $ai ne '') ? AI::args($ai) : undef;
+		return 1 if $a && defined $a->{ID} && $a->{ID} == $t->{ID};
+		AI::clear('attack');
+	}
+	AI::clear('route', 'move');
+	main::attack($t->{ID});
+	message "[partylead] fightback: $t->{name} is hitting her - fighting it
+", 'system' if time - $fbMsgAt > 10;
+	$fbMsgAt = time if time - $fbMsgAt > 10;
+	return 1;
 }
 sub fight_back {
 	return if AI::inQueue('attack');
@@ -3841,6 +3918,7 @@ sub tick {
 	return if time - $last < 0.5;
 	$last = time;
 	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
+	$atkSeq++; attacker_sample(); # one attacker sample per tick (fightback)
 	# dead: the plugin does nothing (QA 2026-11-14 20:14: it kept attacking / routing / fetching on her corpse, every
 	# action displaced OpenKore's 'dead' task, processDead re-queued it ~40 times and the respawn waited 70 s)
 	$diedAt = 0 if !$char->{dead} && $diedAt && time - $diedAt > 300; # queue b17947128005sb: next death is announced again
@@ -3855,8 +3933,11 @@ sub tick {
 		AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto') if AI::action() ne 'teleport';
 		return;
 	}
+	# fightback first (review 96e0953): a monster hitting her is fought before the stick / pack / portal waits below
+	return if fight_tick(1);
 	# PT31: with friends online no random Teleport - fall back to the party, ask for help, Butterfly Wing only when dying
 	return if stick_tick();
+	return if fight_tick(0);
 	# PT04 hard invariant: never travel or farm with no friend within 20 cells (crossing gef_fild10: priest within 10)
 	return if pack_tick();
 	# escape rules (main 2026-11-14), solo since PT31 (no friend online): at 6+ monsters or 35% HP; an MVP/boss in sight
@@ -3899,7 +3980,6 @@ sub tick {
 			message "[partylead] no looting now: $aggr monsters on her, HP " . int($hpp * 100) . "%\n", 'system' if time - $lastMsg > 10;
 		}
 	}
-	flush_say();
 	# aylagear.pl is buying a piece from a player vendor in Prontera (a short walk + the shop window): leave her alone
 	return if defined &aylagear::busy && aylagear::busy();
 	# a call for help counts for 2 min only (QA 2026-11-14 12:27: Echobunny's "help, cant find u" from 12:19 made her
@@ -3915,9 +3995,7 @@ sub tick {
 	$huntMap = $config{lockMap} ne '' ? $config{lockMap} : (($saved && $saved->{lockMap}) ? $saved->{lockMap} : '');
 	set_home($config{lockMap}) if ($config{lockMap} || '') ne ''; # a non-empty lockMap is always the current destination (QA 20:54: stale homeMap pay_fild08)
 	buff_ask_tick(); # PT29: ask the priest for missing buffs
-	town_req_tick(); # PT33: a pending town-run request starts once the gap since the last run is over
-	fit_tick(); # AY07/AY19: her own level / gear / turn map choice when the mind's order is stale
-	watchdog_tick();
+	# flush_say, town_req_tick, fit_tick and watchdog_tick run in tick_guarded, always (post-mortem 20261115 cause 3)
 	# never stand still (owner: "Never stand still, walk around a bit to unstuck yourself"): no movement for 20 s
 	# while not fighting, sitting or talking to an NPC -> step a few cells in a random direction
 	my $pk = "$char->{pos_to}{x},$char->{pos_to}{y}";
@@ -4065,6 +4143,7 @@ sub tick {
 
 	goto_tick();
 	dest_remind_tick(); # PT30: where to go / meet, again every ~5 min while friends are elsewhere
+	return if fight_tick(0);
 	return if portal_guard();
 	travel_mode_tick();
 	protect_tick();
