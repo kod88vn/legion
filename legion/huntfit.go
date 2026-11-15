@@ -152,6 +152,9 @@ func bestArrowStack(b *Bot, m string) *InvItem {
 	return best
 }
 
+// fitStackMin: arrows a carried stack needs before it counts as having the fit (fewer: the market still wants the fit)
+const fitStackMin = 100
+
 // fitArrowWant (b.mu held): an elemental arrow the market should sell this bow user, when its fit gain pays its price
 // over a plain Arrow (each extra zeny per arrow buys tuning arrow_gain_per_z percent of damage), and no carried arrow
 // already fits better. Only in the field, a bounded stock, a third of the purse at most. nil = no such want.
@@ -161,8 +164,8 @@ func (b *Bot) fitArrowWant() *Want {
 	}
 	cardBonOnce.Do(loadCardBonuses)
 	m := b.huntMap()
-	have := 1.0
-	if a := bestArrowStack(b, m); a != nil {
+	have := 1.0 // a carried stack counts as the fit it gives only from fitStackMin arrows up
+	if a := bestArrowStack(b, m); a != nil && a.Count >= fitStackMin {
 		have = ammoFit(a.ItemID, m)
 	}
 	per := tune().ArrowGainPerZ

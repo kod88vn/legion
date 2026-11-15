@@ -97,17 +97,53 @@ func TestPickHPPotionLevelGates(t *testing.T) {
 	}
 }
 
-// the emergency stock: the strongest tier the level allows, when it is not the bulk tier
-func TestEmergencyPotionIsStrongestTier(t *testing.T) {
+// the emergency stack (2026-11-15, third pass): the strongest tier above the bulk tier with at least 3 potions that fit
+// the potion budget (1,000z floor) and the zeny beyond the survival minimum. A lv85 bot at 3,000z: White (1,200z) does
+// not fit, so Yellow: the Red minimum plus 5 Yellow (900z). A lv60 bot at 9,700 HP and 2,000z: the same.
+func TestEmergencyStackLv85RichPoor(t *testing.T) {
 	setPotionItems()
-	if id, pr := emergencyPot(allPots, 80, itemOrangePotion); id != itemWhitePotion || pr != 1200 {
-		t.Fatalf("lv80 bulk Orange: emergency %d at %d, want White at 1200", id, pr)
+	b := &Bot{P: &Persona{BaseLevel: 85, Chars: []CharSpec{{Name: "emlv85"}}}, invSeen: true, Zeny: 3000,
+		MaxHP: 9700, HP: 9700, MaxWeight: 20000, inv: map[int]*InvItem{}, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+	bulk, _ := pickHPPotion(allPots, 85, 9700, 3000, b.potMin())
+	if bulk != itemRedPotion {
+		t.Fatalf("lv85 9700 HP 3000z bulk %d, want the Red minimum", bulk)
 	}
-	if id, _ := emergencyPot(allPots, 80, itemWhitePotion); id != 0 {
-		t.Fatalf("bulk already White: emergency %d, want none", id)
+	survival := b.potMin() * 10
+	id, pr, n := emergencyStack(b, allPots, 85, bulk, potBudgetFor(0), b.Zeny-potPickReserve-survival)
+	if id != itemYellowPotion || pr != 180 || n != potEmergencyN {
+		t.Fatalf("lv85 3000z emergency: %d at %d x%d, want Yellow at 180 x5", id, pr, n)
 	}
-	if id, _ := emergencyPot(allPots, 25, itemRedPotion); id != 0 {
-		t.Fatalf("lv25 bulk Red: emergency %d, want none", id)
+	// the planned spend: minimum Red + emergency Yellow stays inside the zeny (packet total never exceeds it)
+	hpN, spN, arrN := b.potBuyPlanEm(bulk, 10, 0, 0, 0, n*pr)
+	if total := hpN*10 + spN*0 + arrN*0 + n*pr; total > b.Zeny-500 || hpN < b.potMin() {
+		t.Fatalf("plan: %d Red + %d Yellow costs %d, zeny %d (minimum %d)", hpN, n, total, b.Zeny, b.potMin())
+	}
+}
+
+func TestEmergencyStackLv60Poor(t *testing.T) {
+	setPotionItems()
+	b := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "emlv60"}}}, invSeen: true, Zeny: 2000,
+		MaxHP: 9700, HP: 9700, MaxWeight: 20000, inv: map[int]*InvItem{}, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+	bulk, _ := pickHPPotion(allPots, 60, 9700, 2000, b.potMin())
+	if bulk != itemRedPotion {
+		t.Fatalf("lv60 9700 HP 2000z bulk %d, want the Red minimum", bulk)
+	}
+	id, pr, n := emergencyStack(b, allPots, 60, bulk, potBudgetFor(0), b.Zeny-potPickReserve-b.potMin()*10)
+	if id != itemYellowPotion || n != potEmergencyN || pr != 180 {
+		t.Fatalf("lv60 2000z emergency: %d at %d x%d, want Yellow x5", id, pr, n)
+	}
+}
+
+// too poor for 3 emergency potions of any stronger tier: no stack (the zeny goes to the bulk minimum)
+func TestEmergencyStackNoneWhenPoor(t *testing.T) {
+	setPotionItems()
+	b := &Bot{Zeny: 800, inv: map[int]*InvItem{}}
+	if id, _, n := emergencyStack(b, allPots, 85, itemRedPotion, potBudgetFor(0), 800-potPickReserve-250); id != 0 || n != 0 {
+		t.Fatalf("800z lv85: emergency %d x%d, want none", id, n)
+	}
+	// the strongest tier is the bulk tier: no stack above it
+	if id, _, _ := emergencyStack(b, allPots, 85, itemWhitePotion, 1000, 5000); id != 0 {
+		t.Fatalf("bulk White: emergency %d, want none", id)
 	}
 }
 
