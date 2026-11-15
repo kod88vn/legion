@@ -29,6 +29,27 @@ The rules that define it are in `RULES.md`:
 - **Leftover processes stopped**: about 100 orphan `tail`/`grep` monitors from the previous session, the watch
   client keeper loop, x11vnc and Xvfb (they held the old folder open).
 
+## Phase 2 - in progress (started 2026-11-14 late evening)
+The design brief is `docs/design/REDESIGN.md`. Seven subagents work in parallel, each on its own branch in a git
+worktree under `G:\RO\legion-wt\<name>` (toolchain works on `main`):
+
+| Package | Branch | What |
+|---|---|---|
+| T toolchain | `main` | portable Go in WSL (`~/go-toolchain`), `tools/dev/gocheck.sh` |
+| M meter | `feat/meter` | kills per minute, zeny per hour, time budget, cohorts, par |
+| G guild | `feat/guild` | guild directions, 2-hour daily duty, ledger, kicks, rank and wealth |
+| X exchange | `feat/exchange` | giving and discounts by relationship, chat jobs, intents |
+| P puppet | `feat/puppet` | dispatcher for one-shot puppet masters, briefings, role briefs, Neo line |
+| S system | `feat/system` | bug queue, new gate, sentinel, 3-hour deploy guard, analyst, agent definitions |
+| R rules | `feat/rules` | rules trim, gate register, archive, topic files |
+
+Still to do after they finish: merge the branches into `main`, compile and unit-test, an independent audit of the
+rules coverage, and the test checklist for the first live run. All new behaviour is behind tuning flags that default
+to off; the first live run is a baseline with the meter only.
+
+If this session ended before the merge: check `git -C G:\RO\legion branch -a` and `git worktree list`; each
+finished branch has a note in `docs/design/<name>.md` on that branch. Nothing may be started without the owner.
+
 ## Things that start the stack by themselves (know these before testing)
 - `tools/rogui/keeper.sh` starts `ro-openkore-ayla` (and with it rathena and the db) whenever Ayla's container is not
   running. During Phase 1 a leftover keeper loop restarted those three 26 seconds after the stop; the loop was killed
