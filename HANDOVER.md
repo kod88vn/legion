@@ -1,13 +1,10 @@
 # Handover: current state and index
 
-Engineering handover for an AI taking over. Read `STATUS.md` first (what runs, what is on hold, first start after the move),
-then `RULES.md` (core rules and hard gates). This page is the index; the long sections are in `docs/handover/` and were
+Engineering handover for an AI taking over. What runs and what is on hold: `STATUS.md`. This page is the index; the long sections are in `docs/handover/` and were
 moved unchanged (each file's first line says which lines of the old `HANDOVER.md` it holds; the old file is in git at
 commit 63ca923). Engineering history is not rewritten.
 
 ## Current state (2026-11-14, redesign in progress)
-- Nothing is running on purpose (owner's hold). The stack is stopped with `docker compose stop`; containers, images and the
-  database volume `ro_dbdata` still exist. First start only on the owner's word (STATUS.md).
 - The harness is `G:\RO\legion` (git, branch `main`); the Go engine is `G:\RO\legion\legion` (frozen tree of 2026-11-14,
   not deployed since 14:55). The redesign work packages are in `docs/design/REDESIGN.md`.
 - Old session start-up (sections 0.1 to 0.6: loops, 15 minds, standing agents) is superseded by RULES.md and the redesign; it
@@ -34,6 +31,5 @@ commit 63ca923). Engineering history is not rewritten.
 | `open-issues.md` | 7, 8 | open issues, quick checks, background loops |
 
 ## Other references
-- Rules: `RULES.md`, `docs/rules/*` (topics, `gates.md`, `coverage.md`, `archive.md`, `lessons-index.md`).
 - Classes and builds: `docs/classes/*`. Lessons: `legion/data/lessons.md` via `docs/rules/lessons-index.md`.
 - Engine internals and HTTP API: `legion/README.md`. Server and client details: `README.md`.
