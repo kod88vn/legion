@@ -1869,3 +1869,8 @@ Kind: process rule. First date: 2026-11-14.
 ## Conflict review 2026-11-15
 
 Resolved by newest owner word per PR41; see coverage.md.
+
+## AY15 (confirmed)
+```text
+"do rotate, keep priest and role functions, feel free to swap"
+```

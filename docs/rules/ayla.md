@@ -28,7 +28,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
 - AY13. As Starveil's leader Ayla plans resources (zeny, storage, member gear, alchemist potion supply), grows the membership,
   recruits a balanced roster (tanks, healers, AoE casters, ranged, support/crafting), forms parties from her members and keeps
   every member progressing. (2026-11-14)
-- AY15. Party members rotate through other jobs to find bugs in other classes; the priest stays. Rotation only by the owner swapping a character, never by resetting one (G20); on hold while the AY11 roster stands. (2026-11-14)
+- AY15. Ayla's party rotates members to test other jobs and builds: the priest stays and every role (healer, tank, melee, ranged, caster, support) stays covered; a member is rotated by swapping in another character of a fitting level, never by resetting a build (G20). (2026-11-15, owner confirmed)
 - AY16. Any dialog Ayla's OpenKore opens (NPC talk, storage, deal, mail) is closed as soon as the action is done. (2026-11-14)
 - AY17. Ayla runs like a normal bot with no watching client (no Wine client, no VNC window); the owner watches the world with his GM account, and Ayla's OpenKore log is shown in a plain terminal window. (2026-11-14, replaces "the owner watches Ayla live in the TigerVNC window")
 - AY18. Ayla has zero downtime: she is never idle or stuck for any length of time; any idle stretch is a bug whose root cause is fixed. (2026-11-14)
