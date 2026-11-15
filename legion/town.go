@@ -266,7 +266,11 @@ func (b *Bot) butterflyWingsWanted(pk []byte, budget, extraW int) int {
 	if pr > 0 && b.skillLv(skDiscount) == 0 {
 		wingPriceSeen.Store(int64(pr)) // the real price on this server, before or after the db-import change
 	}
-	budget -= wingSaveFloor(b.BaseLv)
+	floor := wingSaveFloor(b.BaseLv)
+	if partyWingStock(b.pin != nil || partyOf(b) != nil, b.countItem(itemButterflyWing)) {
+		floor = 1000 // a party member's first 2 wings come before the gear savings (queue b17947117209mo)
+	}
+	budget -= floor
 	if need <= 0 || pr <= 0 || budget < pr || b.MaxWeight <= 0 {
 		return 0
 	}
@@ -731,6 +735,7 @@ func (b *Bot) tripThink(gm *GameMap, moving bool, now time.Time) bool {
 		return true
 	case "done":
 		b.trip = nil
+		b.startKafraMeet(t.Why, now) // kaframeet.go (PT22): a bot party's town run ends at the Kafra, the party returns together
 		b.checkMarket(now)     // opportunity.go (run 8): what's missing in the market becomes the money goal
 		b.browseShops(now)     // vendbuy.go (economy batch 9): look over the south gate shops before going back
 		b.refineAfterTrip(now) // refine.go (batch 14): the weapon refined to its safe limit if the bag has the material
