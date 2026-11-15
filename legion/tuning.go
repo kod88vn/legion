@@ -28,6 +28,10 @@ package main
 //   priest_active_buffs       true PT29 (priestbuff.go): members ask for missing buffs, the priest buffs them on request and before expiry
 //   priest_buff_hold_sp_pct   30   ...down to this SP % (kept for Heal); replaces the 70% floor while priest_active_buffs is on
 //
+//   Map choice by level AND gear (gearscore.go, AY07)
+//   gear_score_on             true the effective level rates the whole kit (weapon+refine, all armor DEF/MDEF, cards, empty slots)
+//   gear_perf_on              true measured kills / deaths step a solo bot or a party down (easier map) or up
+//
 //   Solo / general AI (ai.go)
 //   beginner_lv               20   below this base level a bot stays near its home town and Kafra keeps more money
 //   stay_crowd                70   a bot stays on a fitting map while it holds at most this many bots
@@ -259,10 +263,15 @@ type Tuning struct {
 	// shop_announce_gap_sec = server-wide seconds between two shop lines
 	ShopAnnounceOn     bool `json:"shop_announce_on"`
 	ShopAnnounceGapSec int  `json:"shop_announce_gap_sec"`
+	// gearscore.go (AY07, 2026-11-14): the effective level rates the whole kit (gear_score_on) and measured kills /
+	// deaths step a solo bot or a party down / up (gear_perf_on); both default ON
+	GearScoreOn bool `json:"gear_score_on"`
+	GearPerfOn  bool `json:"gear_perf_on"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
 var defaultTuning = Tuning{
+	GearScoreOn: true, GearPerfOn: true,
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
 	PriestActiveBuffs: true, PriestBuffHoldSP: 30,

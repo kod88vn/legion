@@ -32,7 +32,7 @@ use constant RESUME => 12;   # hysteresis (= collect_stop_cells+4): once waiting
                              # when everyone is within 12 - stopping and going at 20/21 flip-flopped (QA 2026-11-14)
 
 Plugins::register('partylead', 'Ayla waits for, guards and talks to her party', \&unload);
-my $hooks = Plugins::addHooks(['AI_pre', \&tick], ['packet_partyMsg', \&heard], ['ai_processRandomWalk', \&short_walk], ['checkMonsterAutoAttack', \&area_target], ['npc_talk', \&npc_said]);
+my $hooks = Plugins::addHooks(['AI_pre', \&tick], ['packet_partyMsg', \&heard], ['ai_processRandomWalk', \&short_walk], ['checkMonsterAutoAttack', \&area_target], ['npc_talk', \&npc_said], ['target_died', \&gm_kill], ['self_died', \&gm_died]);
 my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', \&cmd_partylead]);
 
 my ($holding, $saved, $last, $lastMsg, $lastFetch) = (0, undef, 0, 0, 0);
@@ -324,7 +324,7 @@ sub api_refresh {
 	my $d = eval { JSON::PP::decode_json($body) } or return;
 	for my $m (@{$d->{members} || []}) {
 		next unless $m->{name} && $m->{online};
-		$apiPos{$m->{name}} = {map => $m->{map}, x => $m->{x}, y => $m->{y}, state => ($m->{state} || ''), lv => ($m->{level} || 0), saved => ($m->{saved_town} || ''), cls => ($m->{class} || ''), hpf => (($m->{hp} || '') =~ m{^(\d+)/(\d+)} && $2 ? $1 / $2 : undef), at => time};
+		$apiPos{$m->{name}} = {map => $m->{map}, x => $m->{x}, y => $m->{y}, state => ($m->{state} || ''), lv => ($m->{level} || 0), saved => ($m->{saved_town} || ''), cls => ($m->{class} || ''), power => ($m->{power} || 0), kills => $m->{kills}, deaths => $m->{deaths}, hpf => (($m->{hp} || '') =~ m{^(\d+)/(\d+)} && $2 ? $1 / $2 : undef), at => time};
 	}
 }
 
@@ -932,7 +932,9 @@ sub protect_tick {
 	# / Bongun every second pulled a crowd and killed her)
 	return if AI::inQueue('attack');
 	{ my $hpp = $char->{hp_max} ? $char->{hp} / $char->{hp_max} : 1; return if $hpp < 0.5 || scalar(AI::ai_getAggressives()) >= 3 }
-	return if trivial_transit(); # crossing a map far below the party: the friends handle its monsters
+	# crossing a map far below the party (trivial_transit): no farming there, but PT07 - a friend being hit right now
+	# (a monster that damaged / cast on a party member, within 10 cells) is still helped (2026-11-14: she walked past)
+	my $transit = trivial_transit();
 	my $leaving = $rally || $gotoMap ne '' || $depart;
 	my $cur = '';
 	my $ai = AI::findAction('attack');
@@ -941,11 +943,13 @@ sub protect_tick {
 	foreach my $m (@{$monstersList->getItems() || []}) {
 		next unless $m->{pos_to} && defined $m->{pos_to}{x} && !$m->{dead};
 		next unless $m->{dmgToParty} || $m->{missedToParty} || $m->{castOnToParty};
-		next if $leaving && !(($m->{dmgToYou} || $m->{missedYou}) && blockDistance($char->{pos_to}, $m->{pos_to}) <= 3);
+		my $onFriend = $transit && ($m->{dmgToParty} || $m->{castOnToParty}); # transit: a friend under attack is helped even when leaving
+		next if $leaving && !$onFriend && !(($m->{dmgToYou} || $m->{missedYou}) && blockDistance($char->{pos_to}, $m->{pos_to}) <= 3);
 		next if near_portal($field->baseName, $m->{pos_to}{x}, $m->{pos_to}{y});
 		my $d = blockDistance($char->{pos_to}, $m->{pos_to});
 		next if $d > 15;
-		next if %travelSaved && $d > 5; # in transit only what is right at her / the friends next to her (no detours)
+		next if $transit && !($onFriend && $d <= 10); # transit: only a friend under attack, close
+		next if %travelSaved && !$transit && $d > 5; # in transit only what is right at her / the friends next to her (no detours)
 		return if $cur ne '' && $m->{ID} eq $cur; # already on one of them
 		($best, $bd) = ($m, $d) if !defined $bd || $d < $bd;
 	}
@@ -1452,6 +1456,7 @@ sub trivial_transit {
 sub route_aor { return trivial_transit() ? 0 : 1 } # attackOnRoute for a map-to-map route
 
 my %crowdedAt; # map -> when it was too crowded to farm (skipped for an hour)
+my $gmRecheck = 0; # gear maps: the measured step changed - fit_tick re-checks at once
 my ($turnAt, $turnMap, $turnWho) = (0, '', '');
 sub party_turn {
 	return ($turnMap, $turnWho) if time - $turnAt < 60;
@@ -1471,15 +1476,160 @@ sub party_has_healer {
 	foreach my $f (online_friends()) { my $a = $apiPos{$f->[0]}; return 1 if $a && ($a->{cls} || '') =~ /priest|acolyte|monk|champion/i }
 	return 0;
 }
-# the party's farming level: her level, but at most 6 over the weakest online friend; a weak weapon costs 6 levels
+# the party's farming level. AY07 sharpened (2026-11-14): gear counts as much as level - with gear maps on (default;
+# config partylead_gearMaps 0 = the old rule) it is the weakest member's GEAR-RATED level (hers from her own kit, the
+# friends' from Legion's API "power", their base level when the API is down) plus the healer / tank bonus, capped at
+# the weakest base level, moved by the measured step (gm_step_offset). Old rule: her level, at most 6 over the weakest
+# online friend; a weak weapon costs 6 levels.
 sub party_fit_lv {
 	my $lv = $char->{lv} || 1;
+	my $gm = defined $config{partylead_gearMaps} ? $config{partylead_gearMaps} : 1;
+	if ($gm) {
+		my @m = ([gm_self_lv(), $lv, gm_fragile_job($char->{jobID} || 0)]);
+		my ($heal, $tank) = (party_has_healer(), gm_tank_job($char->{jobID} || 0));
+		foreach my $f (online_friends()) {
+			my $a = $apiPos{$f->[0]};
+			next unless $a && $a->{lv};
+			my $cls = $a->{cls} || '';
+			push @m, [($a->{power} || $a->{lv}), $a->{lv}, ($cls =~ /mage|wizard|sage|scholar|professor|alchemist|creator|genetic/i ? 1 : 0)];
+			$tank ||= $cls =~ /knight|crusader|paladin/i ? 1 : 0;
+		}
+		my $plv = gm_party_lv(\@m, $heal, $tank) + gm_step_offset();
+		return $plv < 1 ? 1 : $plv;
+	}
 	my $min;
 	foreach my $f (online_friends()) { my $a = $apiPos{$f->[0]}; next unless $a && $a->{lv}; $min = $a->{lv} if !defined $min || $a->{lv} < $min }
 	my $plv = defined $min && $min + 6 < $lv ? $min + 6 : $lv;
 	my $atk = ($char->{attack} || 0) + ($char->{attack_bonus} || 0);
 	$plv -= 6 if $atk > 0 && $lv >= 30 && $atk < $lv * 2;
 	return $plv < 1 ? 1 : $plv;
+}
+# ---- gearmaps begin (pure helpers, no globals: tested offline by tests/ayla/gearmaps_test.pl) ----
+# job families by OpenKore jobID (1st, 2nd, transcendent)
+sub gm_family {
+	my $j = shift || 0;
+	return 'mage' if $j =~ /^(2|9|16|4003|4010|4017)$/;
+	return 'archer' if $j =~ /^(3|11|19|20|4004|4012|4020|4021)$/;
+	return 'acolyte' if $j =~ /^(4|8|15|4005|4009|4016)$/;
+	return 'melee';
+}
+sub gm_fragile_job { my $j = shift || 0; return $j =~ /^(2|9|16|18|4003|4010|4017|4019)$/ ? 1 : 0 } # mage line + Alchemist line
+sub gm_tank_job { my $j = shift || 0; return $j =~ /^(7|14|4008|4015)$/ ? 1 : 0 }                    # Knight / Crusader lines
+# the weapon attack a character of family $f normally holds at level $lv (legion/gearpower.go expectedWeaponPower)
+sub gm_expected_atk { my ($f, $lv) = @_; return $f eq 'archer' ? 10 + $lv : $f eq 'mage' ? 20 + 1.2 * $lv : 15 + 1.5 * $lv }
+# legion/gearscore.go gearEffectiveLv: W / A = weapon / armor ratios (1 = at par); never under half the level, at most
+# +15% (max +8) for very good gear, beginners (< 12) not rated
+sub gm_eff_lv {
+	my ($f, $lv, $w, $a) = @_;
+	return $lv if $lv < 12;
+	my $k = $f eq 'archer' ? 0.35 : ($f eq 'mage' || $f eq 'acolyte') ? 0.25 : 0.4;
+	my $pen = (1 - $w) * $lv * $k + (1 - $a) * $lv * 0.18;
+	my $bonus = 0.15 * $lv < 8 ? 0.15 * $lv : 8;
+	$pen = -$bonus if $pen < -$bonus;
+	my $out = $lv - ($pen >= 0 ? int($pen + 0.5) : -int(-$pen + 0.5));
+	my $half = int(($lv + 1) / 2);
+	return $out < $half ? $half : $out;
+}
+# her kit: equipment ATK incl. refine (status attack_bonus) against the expected weapon, equipment DEF + half MDEF
+# against a full level-fitting set (legion/gearscore.go expectedArmorDef), +10% per weapon card, +4% per armor card,
+# -5% per empty core slot (body, garment, shoes, head). Casters: MATK is not split out in the status packet - neutral.
+sub gm_rate {
+	my ($f, $lv, $atkEq, $def, $mdef, $wCards, $aCards, $missing) = @_;
+	my $w = $atkEq / gm_expected_atk($f eq 'mage' ? 'melee' : $f, $lv);
+	$w = 0.7 if ($f eq 'mage' || $f eq 'acolyte') && $w < 0.7;
+	$w = $w * (1 + 0.10 * $wCards); $w = 1.5 if $w > 1.5; $w = 0 if $w < 0;
+	my $a = ($def + 0.5 * $mdef) / (18 + 1.1 * $lv) + 0.04 * $aCards - 0.05 * $missing;
+	$a = 1.4 if $a > 1.4; $a = 0 if $a < 0;
+	return ($w, $a);
+}
+# the party level from [effective lv, base lv, fragile] rows: the weakest (fragile -6) + healer 4 + tank 3 + 4 online 1,
+# capped at the weakest base level (legion/lfg.go partyStrength)
+sub gm_party_lv {
+	my ($rows, $heal, $tank) = @_;
+	my ($min, $minBase);
+	foreach my $r (@$rows) {
+		my $e = $r->[0] - ($r->[2] ? 6 : 0); $e = 1 if $e < 1;
+		$min = $e if !defined $min || $e < $min;
+		$minBase = $r->[1] if !defined $minBase || $r->[1] < $minBase;
+	}
+	return 1 unless defined $min;
+	my $b = 0;
+	if (@$rows >= 2) { $b += 4 if $heal; $b += 3 if $tank; $b += 1 if @$rows >= 4 }
+	my $p = $min + $b;
+	my $cap = $minBase > $min ? $minBase : $min;
+	return $p > $cap ? $cap : $p;
+}
+# one measured window (legion/gearscore.go perfVerdict; no fair-kill data here): n members, minutes, kills, deaths.
+# -3: deaths >= 1.5 per member-hour, or under 0.25 kills per member-minute with a death; +2: no deaths and >= 2 kills
+# per member-minute (the party farms it easily)
+sub gm_verdict {
+	my ($n, $min, $k, $d) = @_;
+	return 0 if $n <= 0 || $min <= 0;
+	my $bm = $n * $min;
+	my ($kpm, $dph) = ($k / $bm, $d / ($bm / 60));
+	return -3 if $dph >= 1.5 || $d > 0 && $kpm < 0.25;
+	return 0 if $d > 0;
+	return 2 if $kpm >= 2;
+	return 0;
+}
+# ---- gearmaps end ----
+sub gm_self_lv {
+	my $lv = $char->{lv} || 1;
+	my $f = gm_family($char->{jobID} || 0);
+	my ($wc, $ac, %have) = (0, 0);
+	foreach my $slot (keys %{$char->{equipment} || {}}) {
+		my $it = $char->{equipment}{$slot};
+		next unless $it && ref $it;
+		$have{$slot} = 1;
+		my $raw = $it->{cards} || '';
+		my $len = length($raw) >= 16 ? 4 : 2;
+		my $n = 0;
+		for my $i (0 .. 3) {
+			last if length($raw) < ($i + 1) * $len;
+			my $c = unpack($len == 4 ? 'V' : 'v', substr($raw, $i * $len, $len));
+			$n++ if $c >= 4001 && $c < 5000 || $c >= 27000 && $c < 32000;
+		}
+		if ($slot eq 'rightHand') { $wc += $n } elsif ($slot ne 'arrow') { $ac += $n }
+	}
+	my $missing = 0;
+	$missing++ for grep { !$have{$_} } qw(armor robe shoes);
+	$missing++ unless $have{topHead} || $have{midHead} || $have{lowHead};
+	my ($w, $a) = gm_rate($f, $lv, $char->{attack_bonus} || 0, $char->{def} || 0, $char->{def_magic} || 0, $wc, $ac, $missing);
+	return gm_eff_lv($f, $lv, $w, $a);
+}
+# measured step: the party's kills / deaths on one map over 8+ min (hers from OpenKore's hooks, the friends' from
+# Legion's API counters - without the API only hers count); a new map or member count starts a new window, the step
+# (-15..+10) is kept
+my ($gmKills, $gmDeaths) = (0, 0);
+my %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
+my $gmOff = 0;
+sub gm_kill { $gmKills++ }
+sub gm_died { $gmDeaths++ }
+sub gm_step_offset {
+	return $gmOff unless $char && $field;
+	my $here = $field->baseName;
+	return $gmOff if is_townmap($here);
+	my ($n, $k, $d) = (1, $gmKills, $gmDeaths);
+	foreach my $f (online_friends()) {
+		my $a = $apiPos{$f->[0]};
+		next unless $a && defined $a->{kills} && $f->[1] eq $here;
+		$n++; $k += $a->{kills}; $d += $a->{deaths} || 0;
+	}
+	if ($gmWin{map} ne $here || $gmWin{n} != $n || $k < $gmWin{k} || $d < $gmWin{d}) {
+		%gmWin = (map => $here, at => time, k => $k, d => $d, n => $n);
+		return $gmOff;
+	}
+	my $el = (time - $gmWin{at}) / 60;
+	return $gmOff if $el < 8;
+	my $v = gm_verdict($n, $el, $k - $gmWin{k}, $d - $gmWin{d});
+	if ($v) {
+		my $old = $gmOff;
+		$gmOff += $v; $gmOff = -15 if $gmOff < -15; $gmOff = 10 if $gmOff > 10;
+		message "[partylead] gear maps: party on $here " . sprintf('%.1f', ($k - $gmWin{k}) / ($n * $el)) . " kills/min each, " . ($d - $gmWin{d}) . " deaths in " . int($el) . " min -> step $old -> $gmOff\n", 'system';
+		$gmRecheck = 1; # fit_tick re-checks the map choice now
+	}
+	%gmWin = (map => $here, at => time, k => $k, d => $d, n => $n);
+	return $gmOff;
 }
 sub map_fits {
 	my ($m, $plv) = @_;
@@ -1515,7 +1665,8 @@ sub auto_goto {
 my $fitAt = 0;
 my $fitLoadAt = time;
 sub fit_tick {
-	return if time - $fitAt < FIT_EVERY;
+	return if time - $fitAt < FIT_EVERY && !$gmRecheck;
+	$gmRecheck = 0;
 	$fitAt = time;
 	return if mind_fresh();
 	# the party's levels and classes come from Legion's API: no choice before they are in (live 2026-11-15: the first

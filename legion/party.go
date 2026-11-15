@@ -44,6 +44,8 @@ type pubState struct {
 	DX, DY    int       // tanklead.go: where the bot's current walk ends (the group's direction, for the tank's front)
 	AoE       bool      // aoe.go: a Mage-line caster with an area spell - the tank gathers crowds in front of it (wizard lure)
 	CastUntil time.Time // aoe.go: casting an area spell until then - the tank holds the pack still
+	// gearscore.go: the meter's session counters (kills, fair kills, deaths) for the party performance step
+	MKills, MFair, MDeaths int
 }
 
 var pubs sync.Map // name -> *atomic.Value(pubState)
@@ -59,7 +61,7 @@ func (b *Bot) publish() {
 	v.(*atomic.Value).Store(pubState{Name: b.charName(), Map: b.MapName, X: b.X, Y: b.Y, LX: lx, LY: ly, HPFrac: b.hpFrac(),
 		Target: b.target, Online: b.Online, Support: b.isHealer(), Tank: partyRole(b) == roleTank, AID: b.aid, Lv: b.BaseLvOr(), Power: b.powerLv(), Known: b.BaseLv > 0, EscortAt: b.escWaitAt, Fragile: fragileClass(b.Class), Back: partyRole(b) == roleRanged || partyRole(b) == roleSupport, Mobbed: b.mobbedNow(), Help: time.Now().Before(b.buffAt["helpcall"]),
 		SavedTown: b.savedTown, Waiting: b.waitingAtCheckpoint, Collect: collect, Goal: b.Goal.Map, Roaming: b.State == "roaming", Trip: b.trip != nil, Errand: b.errand != nil || b.Goal.Set == "alchemy", Resting: b.restOn, DX: b.DestX, DY: b.DestY,
-		AoE: b.hasAoESpell(), CastUntil: b.aoeCastUntil})
+		AoE: b.hasAoESpell(), CastUntil: b.aoeCastUntil, MKills: int(b.meter.sess.Kills), MFair: int(b.meter.sess.Fair), MDeaths: int(b.meter.sess.Deaths)})
 }
 
 func peek(name string) (pubState, bool) {
