@@ -387,3 +387,11 @@ class IntegrationTests(unittest.TestCase):
                     self.assertIn(k, r)
             self.assertTrue(bugq.is_neo(rows[0]))
             self.assertFalse(bugq.is_neo(rows[1]))
+
+    def test_ayla_sh_through_wsl_on_windows(self):
+        self.assertEqual(dispatch.wsl_path("G:/RO/legion/tools/rogui/ayla.sh"), "/mnt/g/RO/legion/tools/rogui/ayla.sh")
+        self.assertTrue(dispatch.ayla_cmd(nt=True).startswith("wsl -d "))
+        self.assertTrue(dispatch.ayla_cmd(nt=True).endswith(" -- bash " + dispatch.wsl_path(dispatch.AYLA_SH)))
+        self.assertEqual(dispatch.ayla_cmd(nt=False), "bash " + dispatch.wsl_path(dispatch.AYLA_SH))
+        self.assertIn(dispatch.ayla_cmd(), dispatch.load_brief("ayla"))
+        self.assertIn(f"Bash({dispatch.ayla_cmd()}:*)", dispatch.allowed_tools("ayla"))

@@ -34,6 +34,25 @@ BRIEFS = os.path.join(HERE, "briefs")
 WORKDIR = os.path.join(HERE, "workdir")
 CTL = os.path.join(REPO, "tools", "legionctl.py").replace("\\", "/")
 AYLA_SH = os.path.join(REPO, "tools", "rogui", "ayla.sh").replace("\\", "/")
+WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO", "Ubuntu-24.04")
+
+
+def wsl_path(p):
+    """G:/RO/legion/x -> /mnt/g/RO/legion/x (a path already in WSL form is returned unchanged)"""
+    p = p.replace("\\", "/")
+    if len(p) > 1 and p[1] == ":":
+        return "/mnt/" + p[0].lower() + p[2:]
+    return p
+
+
+def ayla_cmd(nt=None):
+    """the command line Ayla's mind uses for her interface. ayla.sh needs WSL: it calls docker (in WSL) and writes
+    /mnt/g/... paths. From Windows (the CLI's Bash tool is Git Bash) it must go through wsl.exe; when the dispatcher
+    itself runs inside WSL, plain bash works."""
+    nt = (os.name == "nt") if nt is None else nt
+    if nt:
+        return f"wsl -d {WSL_DISTRO} -- bash {wsl_path(AYLA_SH)}"
+    return f"bash {wsl_path(AYLA_SH)}"
 
 HOUR = 3600.0
 GUILDS = [f"guild{i:02d}" for i in range(1, 11)]
@@ -62,7 +81,7 @@ def allowed_tools(role, python="python"):
     """Bash only, and only legionctl (Ayla's mind also gets ayla.sh, her own interface)."""
     tools = [f"Bash({python} {CTL}:*)"]
     if role == "ayla":
-        tools.append(f"Bash(bash {AYLA_SH}:*)")
+        tools.append(f"Bash({ayla_cmd()}:*)")
     return tools
 
 
@@ -82,7 +101,7 @@ def load_brief(role):
         with open(os.path.join(BRIEFS, name + ".md"), encoding="utf-8") as f:
             text += f.read().rstrip() + "\n\n"
     return (text.replace("{CTL}", CTL).replace("{ROLE}", role).replace("{MIND}", cfg["bus"])
-            .replace("{AYLA_SH}", AYLA_SH).replace("{NOTES}", os.path.join(NOTES, role + ".md").replace("\\", "/")))
+            .replace("{AYLA_SH}", ayla_cmd()).replace("{NOTES}", os.path.join(NOTES, role + ".md").replace("\\", "/")))
 
 
 def build_command(role, claude="claude", python="python", model=None, call_cap=None):

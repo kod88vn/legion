@@ -91,3 +91,8 @@ as the chat agent's poll in the engine's 2-minute check) and Starveil's guild id
   real poll, so the engine holds social lines for the agent; otherwise it peeks and every line goes out as its template.
   The job deadline is 20-40 s and the tick 30 s plus CLI start-up: for live chat use `--tick 10` and raise
   `chat_job_wait_min_sec`/`chat_job_wait_max_sec` (e.g. 45/75) in tuning.json, or most jobs fall back to templates.
+- Ayla's interface `tools/rogui/ayla.sh` needs WSL (it runs `docker logs` in WSL and writes `/mnt/g/...` files), while
+  the dispatcher runs on Windows Python and the CLI's Bash tool is Git Bash. Her allowed tool and her brief therefore use
+  `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ayla.sh <action>` (distro: env `LEGION_WSL_DISTRO`); a
+  dispatcher started inside WSL uses plain `bash /mnt/g/...`. Needs: `wsl.exe` on PATH (it is: `C:\Windows\system32`),
+  the distro's docker able to reach `ro-openkore-ayla`. The minds' `python` resolves to Python 3.12 in Git Bash.
