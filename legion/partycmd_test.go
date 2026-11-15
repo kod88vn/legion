@@ -29,6 +29,16 @@ func TestParsePartyCmdAylaLines(t *testing.T) {
 		{"Echobunny heal me", "heal", "", "Echobunny", 0, 0},
 		{"Echobunny buffs pls", "buff", "", "Echobunny", 0, 0},
 		{"stay close, we cross gef_fild10 now", "close", "gef_fild10", "", 0, 0},
+		// partycmd.pl's own lines
+		{"follow me guys, im on gef_fild10 64,307", "follow", "gef_fild10", "", 64, 307},
+		{"come to me at gef_fild10 64,307, stay close", "close", "gef_fild10", "", 64, 307},
+		{"all: follow me to gef_fild10 64,307", "follow", "gef_fild10", "", 64, 307},
+		{"Zen.fox come to me pls, gef_fild10 64,307", "come", "gef_fild10", "Zen.fox", 64, 307},
+		{"Zen.fox come here, im at gef_fild10 64,307", "come", "gef_fild10", "Zen.fox", 64, 307},
+		{"Echobunny heal pls", "heal", "", "Echobunny", 0, 0},
+		{"Echobunny bless + agi pls", "buff", "", "Echobunny", 0, 0},
+		{"wait here, short rest", "wait", "", "", 0, 0},
+		{"hold here, sitting a bit", "wait", "", "", 0, 0},
 	}
 	for _, c := range cases {
 		got, ok := parsePartyCmd(c.line, names)
