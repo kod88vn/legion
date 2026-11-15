@@ -2494,6 +2494,10 @@ sub tick_guarded {
 	route_guard();
 	lockmap_guard();
 	tick(@_);
+	# PT33 root cause: tick() returns early on pack_tick / stick_tick (she is waiting or sweeping most of the time), so the
+	# queued party lines (flush_say) and the pending town-run check (town_req_tick) never ran. Both run on every tick now.
+	flush_say() if $net && $net->getState() == 5;
+	town_req_tick() if $net && $net->getState() == 5;
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
