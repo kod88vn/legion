@@ -51,9 +51,15 @@ my $holdReleasedAt = 0;
 my ($travelWant, $travelWantAt) = (0, 0); # travel-mode hysteresis
 # owner rule (RULES 3, 2026-11-14: one hunting map for ~2 hours, no shifting directions): the map the mind chose last
 # (goto, 'rally <town> <map>', its own 'conf lockMap'). Every return after a hold / rally / town run goes back to it -
-# never to a stale earlier map - and the plugin itself never picks a different destination.
-our ($homeMap, $homeAt) = ((defined $config{lockMap} && $config{lockMap} =~ /\S/ && $config{lockMap} !~ /^(prontera|payon|geffen|morocc|alberta|izlude|aldebaran|yuno|comodo|umbala)$/) ? $config{lockMap} : '', time);
-sub set_home { my $m = shift || ''; return if $m eq '' || is_townmap($m); ($homeMap, $homeAt) = ($m, time) if $m ne $homeMap }
+# never to a stale earlier map. AY07/AY19 (2026-11-14): with no fresh order from the mind (none for HOME_STALE) she picks
+# the map herself (fit_tick: the party's gear turn, else the level / gear table) - a mind's order still wins while fresh.
+# $homeBy: who set homeMap ('mind' = an order or a lockMap set from outside, 'auto' = her own choice). $homeAt: when the
+# mind last gave (or repeated) it; the map loaded from config has an unknown age (0 = stale at once).
+our ($homeMap, $homeAt) = ((defined $config{lockMap} && $config{lockMap} =~ /\S/ && $config{lockMap} !~ /^(prontera|payon|geffen|morocc|alberta|izlude|aldebaran|yuno|comodo|umbala)$/) ? $config{lockMap} : '', 0);
+our $homeBy = 'mind';
+our $autoPick = 0; # true while her own choice runs the goto (set_home then marks the map 'auto')
+sub set_home { my $m = shift || ''; return if $m eq '' || is_townmap($m); ($homeMap, $homeAt, $homeBy) = ($m, ($autoPick ? $homeAt : time), ($autoPick ? 'auto' : 'mind')) if $m ne $homeMap }
+sub refresh_home { my $m = shift || ''; return if $m eq '' || is_townmap($m); ($homeMap, $homeAt, $homeBy) = ($m, time, 'mind') } # a mind's order, even for the same map
 my %mobSeen;                                  # sweep: monster spots seen lately ("x,y" -> time)
 my ($lastFightAt, $crowdSaidAt) = (time, 0);  # last fight; last "map too crowded" note
 my ($saveOkTown, $saveOkAt) = ('', 0); # the Kafra's "saved" line: town and time (npc_said)
@@ -130,7 +136,7 @@ sub cmd_partylead {
 		if ($rally) {
 			$rally->{mind} = 1;
 			$rally->{dest} = $dest;
-			set_home($dest) if $dest ne '';
+			refresh_home($dest) if $dest ne '';
 			$saved = {randomWalk => $config{route_randomWalk}} unless $saved;
 			$saved->{lockMap} = $dest;
 			$config{lockMap} = '';
@@ -148,8 +154,8 @@ sub cmd_partylead {
 		$holding = 0;
 		$config{route_randomWalk} = $saved->{randomWalk};
 		$gotoRouteAt = 0; # goto_tick stands her up and starts the route on the next tick
-		set_home($m);
-		message "[partylead] going to $m by order (lockMap $m)\n", 'system';
+		$autoPick ? set_home($m) : refresh_home($m);
+		message "[partylead] going to $m " . ($autoPick ? "(her own choice)" : "by order") . " (lockMap $m)\n", 'system';
 		# owner rule (RULES 2, enforced 2026-11-14): nobody enters a hunting ground before saving at the Kafra nearest it.
 		# If her save point is another town, the goto starts with a rally at that town's Kafra (save, everyone saves,
 		# "everyone saved at X? ok going in"), then the departure walks to $m (lockMap kept in $saved).
@@ -260,7 +266,7 @@ sub depart_tick {
 		$depart->{routeAt} = time;
 		Commands::run('stand') if $char->{sitting};
 		AI::clear('route', 'move');
-		main::ai_route($lm, undef, undef, attackOnRoute => 1, maxRouteTime => 6);
+		main::ai_route($lm, undef, undef, attackOnRoute => route_aor(), maxRouteTime => 6);
 	}
 	return 1;
 }
@@ -541,12 +547,20 @@ sub end_rally {
 # 13:03: 'goto gl_church' from pay_dun00 - attackAuto_routeToLock 1 + attackAuto_party 1 made her stop every few steps
 # for Zombies the friends pulled. The two switches are changed in memory only and put back on arrival.
 my %travelSaved;
+our $trivSaved; # attackAuto saved while crossing a trivial map (no assignment: a plugin reload keeps it)
 sub travel_mode_tick {
 	return unless $char && $field;
 	my $here = $field->baseName;
 	my $dest = $gotoMap ne '' ? $gotoMap : ($rally ? $rally->{town} : ($config{lockMap} || ''));
 	my $on = $dest ne '' && $here ne $dest && !is_townmap($here) ? 1 : 0;
-	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here); # a friend in danger here: she fights for it (no travel mode)
+	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here) && !trivial_transit(); # a friend in danger here: she fights for it (no travel mode) - not on a map far below the party (QA: Zombies on pay_dun00 for a level 81)
+	# crossing a map far below her and the party (trivial_transit): no fights at all there, not even OpenKore's own
+	# attackAuto - a level 81 stopped for every pay_dun00 Zombie (12 exp). Saved in a package var: survives a reload.
+	my $triv = trivial_transit() ? 1 : 0;
+	if ($triv && !defined $trivSaved) { $trivSaved = $config{attackAuto}; $config{attackAuto} = 0; message "[partylead] crossing $here (far below the party): no fights here
+", 'system' }
+	elsif (!$triv && defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef; message "[partylead] off the transit map ($here): attackAuto back
+", 'system' }
 	# hysteresis: the state must hold 5 s before switching (QA 20:05: travelling / travel over flipped ~10 times in 80 s)
 	if ($on != $travelWant) { ($travelWant, $travelWantAt) = ($on, time) }
 	return if time - $travelWantAt < 5 && !(!$on && friend_in_danger($here));
@@ -606,7 +620,7 @@ sub rally_tick {
 			$r->{routeAt} = time;
 			Commands::run('stand') if $char->{sitting};
 			AI::clear('route', 'move');
-			main::ai_route($r->{town}, $r->{x}, $r->{y}, distFromGoal => 3, attackOnRoute => 1);
+			main::ai_route($r->{town}, $r->{x}, $r->{y}, distFromGoal => 3, attackOnRoute => route_aor());
 		}
 		if (time - $lastMsg > 30) { $lastMsg = time; message "[partylead] rally: going to the Kafra in $r->{town} ($r->{x},$r->{y})\n", 'system' }
 		return 1;
@@ -917,6 +931,7 @@ sub protect_tick {
 	# / Bongun every second pulled a crowd and killed her)
 	return if AI::inQueue('attack');
 	{ my $hpp = $char->{hp_max} ? $char->{hp} / $char->{hp_max} : 1; return if $hpp < 0.5 || scalar(AI::ai_getAggressives()) >= 3 }
+	return if trivial_transit(); # crossing a map far below the party: the friends handle its monsters
 	my $leaving = $rally || $gotoMap ne '' || $depart;
 	my $cur = '';
 	my $ai = AI::findAction('attack');
@@ -1055,6 +1070,7 @@ sub crowd_check {
 ", 'system';
 	if (open(my $f, '>>', 'logs/alerts.log')) { my @l = localtime; printf $f "%02d:%02d:%02d %s
 ", @l[2, 1, 0], $line; close $f }
+	crowd_move($here); # AY19: with no fresh order she moves on herself
 }
 
 sub short_walk {
@@ -1321,8 +1337,145 @@ sub goto_tick {
 	$gotoRouteAt = time;
 	$idleSince = 0;
 	if ($char->{sitting}) { Commands::run('stand'); AI::clear('sitting') }
-	main::ai_route($tgt, undef, undef, attackOnRoute => 1);
+	main::ai_route($tgt, undef, undef, attackOnRoute => route_aor());
 	message "[partylead] " . ($tgt eq $gotoMap ? 'goto' : 'idle, not on lockMap') . ": route to $tgt started\n", 'system';
+}
+
+# ---- her own map choice (AY07 + AY19, 2026-11-14) ---------------------------------------------------------------------
+# With no AI around she still farms where a normal party of her level and gear would: the map fits the PARTY (its
+# weakest online member, from Legion's party list, may be at most 6 levels under the map's band), its make-up (a healer
+# online = the undead / aggro party dungeons, else the passive open fields) and her gear (a weak weapon for her level
+# counts 6 levels lower). During a member's gear turn (Legion's /api/party-turn, the engine picks a drop map safe for the
+# party's bots) the party goes to that member's map. A crowded map -> the next fitting one. A mind's order wins while it
+# is fresh (refreshed within HOME_STALE); after that her own choice wins (QA 2026-11-14: a stale 'pay_dun03' from the
+# mind kept a level 81 Assassin on Zombies for 12 exp each). Rows: [min lv, max lv, map, 1 = needs a healer]. Sources:
+# legion/strategy.go guideSpots (the engine's level -> map table) and legionctl mapinfo (mean monster level, aggro).
+use constant HOME_STALE => 1800;
+use constant FIT_EVERY => 60;
+my @FIT_MAPS = ( # preference order: the highest band she qualifies for first (a party farms the newest map it can)
+	# 60-99 with a healer: party dungeons (gl_church: Evil Druid / Wraith lv77-80, aggro undead - holy + fire party;
+	# c_tower: Clock / Punk lv81-82; alde_dun02: High Orc lv81 + Arclouze lv107; gl_prison: Zombie Prisoner / Injustice
+	# lv89-95; gl_chyard: Dark Priest lv98 + Dark Lord MVP)
+	[92, 99, 'gl_chyard', 1], [86, 99, 'gl_prison', 1], [84, 95, 'alde_dun02', 1], [72, 89, 'gl_church', 1],
+	[76, 92, 'c_tower2', 1], [72, 86, 'c_tower1', 1], [64, 75, 'mjolnir_11', 1], [60, 71, 'gef_dun01', 1], [58, 68, 'orcsdun02', 1],
+	# 58-99 with no healer online: passive / open fields (Juno, Mt. Mjolnir) a party clears without heals
+	[80, 99, 'yuno_fild04', 0], [76, 92, 'yuno_fild07', 0], [72, 86, 'yuno_fild11', 0], [70, 84, 'yuno_fild08', 0],
+	[62, 75, 'yuno_fild01', 0], [62, 75, 'yuno_fild12', 0], [58, 69, 'mjolnir_12', 0],
+	# under 60 (pay_dun03: Sohee lv64 but mean monster level 44 - only to 65)
+	[52, 65, 'pay_dun03', 0], [50, 61, 'prt_fild09', 0], [50, 61, 'pay_fild10', 0], [45, 59, 'pay_dun02', 1],
+	[40, 51, 'moc_fild03', 0], [40, 49, 'gef_fild03', 1], [32, 47, 'pay_dun01', 1], [25, 39, 'pay_fild09', 0],
+	[18, 31, 'pay_dun00', 1], [12, 24, 'prt_fild01', 0], [1, 11, 'prt_fild08', 0],
+);
+# highest level a map is worth (the transit check: a map 15+ levels under her is crossed, never farmed)
+my %MAP_TOP = (pay_dun00 => 32, pay_dun01 => 48, pay_dun02 => 60, pay_dun03 => 70, pay_arche => 30, payon => 1,
+	moc_fild01 => 34, moc_fild02 => 34, moc_fild03 => 55, mjolnir_01 => 35, mjolnir_02 => 42, mjolnir_06 => 36,
+	mjolnir_07 => 68, mjolnir_08 => 66, mjolnir_09 => 22, mjolnir_10 => 58, mjo_dun01 => 36, mjo_dun02 => 50, mjo_dun03 => 56,
+	orcsdun01 => 60, orcsdun02 => 66, gef_dun00 => 56, gef_dun01 => 72, glast_01 => 70);
+foreach my $r (@FIT_MAPS) { $MAP_TOP{$r->[2]} = $r->[1] if !$MAP_TOP{$r->[2]} || $MAP_TOP{$r->[2]} < $r->[1] }
+sub map_top {
+	my $m = shift || '';
+	return $MAP_TOP{$m} if $MAP_TOP{$m};
+	return 24 if $m =~ /^(prt|pay|gef|moc)_fild0[0-8]$/;
+	return 44 if $m =~ /^(prt|pay|gef|moc)_fild/;
+	return 0; # unknown: never treated as trivial
+}
+# she is crossing a map far below her level on the way somewhere else: no fights there but what blocks her
+sub trivial_transit {
+	return 0 unless $char && $field;
+	my $here = $field->baseName;
+	my $top = map_top($here);
+	return 0 if !$top || is_townmap($here);
+	return 0 unless ($char->{lv} || 0) >= $top + 15;
+	foreach my $f (online_friends()) { my $a = $apiPos{$f->[0]}; return 0 if $a && $a->{lv} && $a->{lv} < $top + 8 } # a low friend still needs her here
+	my $dest = $gotoMap ne '' ? $gotoMap : ($config{lockMap} || '');
+	$dest = $homeMap if $dest eq '' && !$rally;
+	return ($dest ne '' && $dest ne $here) || $rally || $depart ? 1 : 0;
+}
+sub route_aor { return trivial_transit() ? 0 : 1 } # attackOnRoute for a map-to-map route
+
+my %crowdedAt; # map -> when it was too crowded to farm (skipped for an hour)
+my ($turnAt, $turnMap, $turnWho) = (0, '', '');
+sub party_turn {
+	return ($turnMap, $turnWho) if time - $turnAt < 60;
+	$turnAt = time;
+	my $n = $char->{name}; $n =~ s/([^A-Za-z0-9._-])/sprintf("%%%02X", ord($1))/ge;
+	my $d = api_get("/api/party-turn?human=$n");
+	return ($turnMap, $turnWho) unless $d && ref $d eq 'HASH'; # unreachable: keep the last answer
+	($turnMap, $turnWho) = ('', '');
+	foreach my $p (@{$d->{parties} || []}) {
+		next unless ref $p eq 'HASH' && ($p->{human} || '') eq $char->{name};
+		($turnMap, $turnWho) = ($p->{map} || '', $p->{turn} || '') if ($p->{turn} || '') ne '' && ($p->{map} || '') ne '' && !is_townmap($p->{map});
+	}
+	return ($turnMap, $turnWho);
+}
+sub party_has_healer {
+	return 1 if ($char->{jobID} || 0) =~ /^(4|8|15|4009|4016)$/; # she is the healer
+	foreach my $f (online_friends()) { my $a = $apiPos{$f->[0]}; return 1 if $a && ($a->{cls} || '') =~ /priest|acolyte|monk|champion/i }
+	return 0;
+}
+# the party's farming level: her level, but at most 6 over the weakest online friend; a weak weapon costs 6 levels
+sub party_fit_lv {
+	my $lv = $char->{lv} || 1;
+	my $min;
+	foreach my $f (online_friends()) { my $a = $apiPos{$f->[0]}; next unless $a && $a->{lv}; $min = $a->{lv} if !defined $min || $a->{lv} < $min }
+	my $plv = defined $min && $min + 6 < $lv ? $min + 6 : $lv;
+	my $atk = ($char->{attack} || 0) + ($char->{attack_bonus} || 0);
+	$plv -= 6 if $atk > 0 && $lv >= 30 && $atk < $lv * 2;
+	return $plv < 1 ? 1 : $plv;
+}
+sub map_fits {
+	my ($m, $plv) = @_;
+	foreach my $r (@FIT_MAPS) { return 1 if $r->[2] eq $m && $plv >= $r->[0] - 2 && $plv <= $r->[1] + 3 }
+	return 0;
+}
+# the level / gear choice: the first row (table order = preference) that fits, isn't crowded, matches the healer state
+sub level_map {
+	my $plv = shift;
+	my $heal = party_has_healer();
+	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) };
+	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && $r->[3] == $heal }
+	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && !$r->[3] } # no healer row: a field
+	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) }
+	my ($best, $bd);
+	foreach my $r (@FIT_MAPS) { my $d = abs(($r->[0] + $r->[1]) / 2 - $plv); ($best, $bd) = ($r->[2], $d) if !defined $bd || $d < $bd }
+	return $best;
+}
+sub mind_fresh { return $homeBy eq 'mind' && $homeMap ne '' && time - $homeAt < HOME_STALE }
+# where the party should farm now, and why
+sub choose_map {
+	my ($tm, $who) = party_turn();
+	return ($tm, "$who\'s gear turn") if $tm ne '' && !(time - ($crowdedAt{$tm} || 0) < 3600);
+	my $plv = party_fit_lv();
+	return (level_map($plv), "fits the party (level $plv" . (party_has_healer() ? ', healer' : ', no healer') . ")");
+}
+sub auto_goto {
+	my ($m, $why) = @_;
+	message "[partylead] own map choice: $m - $why (was " . ($homeMap || '-') . ($homeBy eq 'mind' && $homeMap ne '' ? ", mind's order " . int((time - $homeAt) / 60) . " min old" : '') . ")\n", 'system';
+	local $autoPick = 1;
+	cmd_partylead(undef, "goto $m");
+}
+my $fitAt = 0;
+sub fit_tick {
+	return if time - $fitAt < FIT_EVERY;
+	$fitAt = time;
+	return if mind_fresh();
+	return if $rally || $depart || $holding || $collect || $fetchMap ne '' || $char->{dead};
+	return if (defined &aylagear::busy && aylagear::busy()) || AI::inQueue('NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal');
+	my ($m, $why) = choose_map();
+	return if !defined $m || $m eq '' || $m eq $homeMap && ($config{lockMap} || '') eq $m;
+	my ($tm) = party_turn();
+	# her current map still fits the party and no gear turn calls elsewhere: stay (one map for ~2 hours, RULES 3)
+	return if $homeMap ne '' && $tm eq '' && map_fits($homeMap, party_fit_lv()) && !(time - ($crowdedAt{$homeMap} || 0) < 3600) && ($config{lockMap} || $homeMap) eq $homeMap;
+	auto_goto($m, $why);
+}
+# crowd_check found her map too crowded: with no fresh order she moves on to the next fitting map herself
+sub crowd_move {
+	my $here = shift;
+	$crowdedAt{$here} = time;
+	return if mind_fresh() || $rally || $depart;
+	my ($m, $why) = choose_map();
+	return if !defined $m || $m eq '' || $m eq $here;
+	auto_goto($m, "$here is crowded; $why");
 }
 
 # ---- zero-downtime watchdog (owner rule AY18, 2026-11-14: Ayla is never idle for any length of time) -------------------
@@ -1335,19 +1488,12 @@ sub goto_tick {
 use constant WD_IDLE => 60;
 my ($wdProdAt, $wdExp, $wdPos, $wdAct, $wdFired) = (time, 0, '', 0, 0);
 sub wd_target {
-	my $here = $field->baseName;
-	foreach my $m ($homeMap, $huntMap, ($saved && $saved->{lockMap}), $config{lockMap}, $gotoMap) { return $m if defined $m && $m ne '' && !is_townmap($m) }
-	my %n;
-	foreach my $f (online_friends()) {
-		my $a = $apiPos{$f->[0]};
-		my $m = ($a && time - $a->{at} < 30 && $a->{map}) ? $a->{map} : $f->[1];
-		$m =~ s/\.gat$//;
-		$n{$m}++ if $m ne '' && !is_townmap($m);
-	}
-	my ($best) = sort { $n{$b} <=> $n{$a} || $a cmp $b } keys %n;
-	return $best if defined $best;
-	my $lv = $char->{lv} || 1;
-	return $lv < 12 ? 'prt_fild08' : $lv < 25 ? 'prt_fild01' : $lv < 40 ? 'pay_fild09' : $lv < 60 ? 'pay_dun01' : 'pay_dun03';
+	return $homeMap if mind_fresh();
+	my ($tm) = party_turn();
+	return $homeMap if $homeMap ne '' && $tm eq '' && map_fits($homeMap, party_fit_lv()) && !(time - ($crowdedAt{$homeMap} || 0) < 3600);
+	my ($m) = choose_map();
+	return $m if defined $m && $m ne '';
+	return $homeMap ne '' ? $homeMap : 'prt_fild08';
 }
 sub watchdog_tick {
 	my $now = time;
@@ -1375,6 +1521,7 @@ sub watchdog_tick {
 	Commands::run('stand') if $char->{sitting};
 	if ($holding) { restore() }       # a stalled hold never outlives a minute of nothing
 	$depart = undef if $depart;       # nor a stalled departure wait
+	if ($tgt ne $homeMap && !mind_fresh()) { auto_goto($tgt, 'the watchdog'); return } # her own choice: goto (Kafra save rule, lockMap)
 	set_home($tgt);
 	$config{lockMap} = $tgt if ($config{lockMap} || '') eq '' || is_townmap($config{lockMap});
 	AI::clear('route', 'move');
@@ -1382,7 +1529,7 @@ sub watchdog_tick {
 		my %a = (return => 0);
 		short_walk(undef, \%a);
 	} else {
-		main::ai_route($tgt, undef, undef, attackOnRoute => 1);
+		main::ai_route($tgt, undef, undef, attackOnRoute => route_aor());
 	}
 }
 
@@ -1466,6 +1613,7 @@ sub tick {
 	if ($sellTrigUntil && time > $sellTrigUntil) { $config{itemsMaxWeight_sellOrStore} = $sellTrigSaved; ($sellTrigSaved, $sellTrigUntil) = (0, 0) }
 	$huntMap = $config{lockMap} ne '' ? $config{lockMap} : (($saved && $saved->{lockMap}) ? $saved->{lockMap} : '');
 	set_home($config{lockMap}) if ($config{lockMap} || '') ne ''; # a non-empty lockMap is always the current destination (QA 20:54: stale homeMap pay_fild08)
+	fit_tick(); # AY07/AY19: her own level / gear / turn map choice when the mind's order is stale
 	watchdog_tick();
 	# never stand still (owner: "Never stand still, walk around a bit to unstuck yourself"): no movement for 20 s
 	# while not fighting, sitting or talking to an NPC -> step a few cells in a random direction
@@ -1912,6 +2060,7 @@ sub tick {
 }
 
 sub unload {
+	if (defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef }
 	Plugins::delHooks($hooks);
 	$config{route_randomWalk} = $restRW if defined $restRW && !$holding; # don't leave a rest's random-walk switch-off behind
 	$config{itemsMaxWeight_sellOrStore} = $sellTrigSaved if $sellTrigUntil; # don't leave the raised trigger behind
