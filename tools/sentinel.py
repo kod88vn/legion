@@ -29,9 +29,13 @@ DATA = os.environ.get('LEGION_DATA') or os.path.join(ROOT, 'legion', 'data')
 LOG = os.path.join(DATA, 'health.log')
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'system'))
 try:
-    import bugq as BUGQ, common as SYSC, meterlib as METER
+    import common as SYSC      # the single-instance lock needs it: without it the sentinel does not start (loud)
+except Exception as e:
+    sys.exit('sentinel: cannot import common, so its single-instance lock cannot be taken: %s' % e)
+try:
+    import bugq as BUGQ, meterlib as METER
 except Exception:          # the queue/meter helpers are optional: the sentinel still works without them
-    BUGQ = SYSC = METER = None
+    BUGQ = METER = None
 try:
     import apartwake as APARTWAKE
 except Exception:
@@ -328,7 +332,13 @@ def party_split_wake(aw, ap, now):
     return aw.any_wake()
 
 
+SENTINEL_LOCKED = False   # single instance: legion/data/sentinel.lock (common.take_lock), refreshed each cycle
+
+
 def heartbeat():
+    if SENTINEL_LOCKED and not SYSC.refresh_lock('sentinel.lock'):
+        print('sentinel: lock taken by another copy; exiting', flush=True)
+        sys.exit(3)
     try:
         os.makedirs(DATA, exist_ok=True)
         with open(os.path.join(DATA, 'sentinel.heartbeat'), 'w') as f:
@@ -338,6 +348,11 @@ def heartbeat():
 
 
 def main():
+    global SENTINEL_LOCKED
+    if not SYSC.take_lock('sentinel.lock', 300):
+        print('sentinel: another copy holds legion/data/sentinel.lock; not starting', flush=True)
+        sys.exit(3)
+    SENTINEL_LOCKED = True   # released on every exit (common._release_held), including the exit-2 wake
     P = Problems()
     F = FarmWatch()
     last_probe = time.time() - 420

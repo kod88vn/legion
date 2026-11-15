@@ -30,6 +30,8 @@ sys.path.insert(0, HERE)
 import briefing  # noqa: E402
 import orders  # noqa: E402  owner orders for Ayla (AY20)
 sys.path.append(os.path.join(HERE, "..", "system"))
+import common as LC  # noqa: E402  (single instance: legion/data/dispatch.lock)
+DISPATCH_LOCKED = False
 import constitution  # noqa: E402  the one loader of CONSTITUTION.md (PR42): first in every prompt, exactly once
 
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -677,6 +679,9 @@ def nap(seconds, step=1.0):
 
 # ----------------------------------------------------------------- main loop
 def heartbeat(state, sched, rows, api_ok, now):
+    if DISPATCH_LOCKED and not LC.refresh_lock("dispatch.lock"):
+        print("dispatcher: lock taken by another copy; exiting", file=sys.stderr, flush=True)
+        sys.exit(3)
     d = {"t": now, "iso": time.strftime("%Y-%m-%dT%H:%M:%S"), "pid": os.getpid(), "state": state, "api_ok": api_ok,
          "running": sorted(sched.running),
          "roles": {r: {"last": sched.last.get(r), "spent_1h": round(spent_last_hour(rows, r, now), 4)} for r in sched.roles}}
@@ -759,9 +764,16 @@ def main(argv=None):
         print(json.dumps(row, ensure_ascii=False, indent=1))
         return 0 if row.get("exit") == 0 else 1
 
+    global DISPATCH_LOCKED
     if other_instance_alive() and not args.force:
         print("another dispatcher heartbeat is fresh (<45 s); use --force to start anyway", file=sys.stderr)
         return 3
+    # the lock comes after the heartbeat check, so a refusal here leaves nothing held; --force still skips the
+    # heartbeat check, but a live copy's lock still refuses it
+    if not LC.take_lock("dispatch.lock", 180):
+        print("dispatcher: another copy holds legion/data/dispatch.lock; not starting", file=sys.stderr)
+        return 3
+    DISPATCH_LOCKED = True
     # 25 h of the log: the daily build review and QA's last call survive a restart
     sched = Scheduler({r: ROLES[r] for r in roles}, time.time(), read_log(since=time.time() - 25 * HOUR))
     day_rows, day_t = [], 0.0

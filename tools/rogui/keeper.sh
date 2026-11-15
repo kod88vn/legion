@@ -8,18 +8,29 @@
 # during the migration). `python tools/system/stackctl.py down` creates it, `... up` removes it.
 HOLD=/mnt/g/RO/legion/legion/data/stack.hold
 LOG=/mnt/g/RO/legion/legion/data/watchdog.log
+HB=/mnt/g/RO/legion/legion/data/keeper.heartbeat   # epoch each loop, read by the watchdog (tools/system/watchdog.py)
+. "$(dirname "$0")/keeper-lock.sh"   # single instance: KEEPER_LOCK (see keeper-lock.sh)
 cd /mnt/g/RO/legion
 strikes=0; restarts=0
 log() { echo "$(date '+%F %T') keeper: $*" | tee -a "$LOG"; }
+# every loop (and after each long docker step) refreshes the heartbeat and the lock; a keeper whose lock was taken exits
+beat() {
+  keeper_refresh_lock || { log "keeper lock now held by another keeper; this copy exits"; exit 0; }
+  echo "$(date +%s) $*" > "$HB" 2>/dev/null
+}
+keeper_take_lock || { log "another keeper holds $KEEPER_LOCK (fresh); this copy exits"; exit 0; }
 while true; do
   if [ -e "$HOLD" ]; then
+    beat "idle: stack.hold present"
     [ "${held:-0}" = 1 ] || { log "stack.hold present: keeper idle until it is removed"; held=1; }
     strikes=0; restarts=0; sleep 20; continue
   fi
   held=0
+  beat "running"
   if ! docker ps --format '{{.Names}}' | grep -qx ro-openkore-ayla; then
     log "ro-openkore-ayla not running -> starting it"
-    docker compose up -d openkore-ayla >/dev/null 2>&1
+    docker compose up -d --no-deps openkore-ayla >/dev/null 2>&1   # --no-deps (G15): never recreate rathena or the db
+    beat "started ayla"
     sleep 60; continue
   fi
   # the server's own online flag (OpenKore's status title is not printed while she sits idle -> false alarms)
@@ -31,7 +42,7 @@ while true; do
   if [ $strikes -ge 15 ]; then
     if [ $restarts -lt 1 ]; then
       log "Ayla not in game for ~5 min -> restarting ro-openkore-ayla"
-      docker compose restart openkore-ayla >/dev/null 2>&1; restarts=$((restarts+1))
+      docker compose restart openkore-ayla >/dev/null 2>&1; restarts=$((restarts+1)); beat "restarted ayla"
     else
       log "Ayla still not in game after a restart - needs investigation (last log: $(docker logs --tail 3 ro-openkore-ayla 2>&1 | tr '\n' ' ' | cut -c1-200))"
     fi

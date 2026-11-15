@@ -42,7 +42,7 @@ import dbsnap  # noqa: E402
 import offline  # noqa: E402
 
 PAGE = os.path.join(REPO, "legion", "dashboard.html")
-WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO", "Ubuntu-24.04")
+WSL_DISTRO = C.WSL_DISTRO   # one config for WSL (common.py, LEGION_WSL_DISTRO)
 ENGINE = "http://127.0.0.1:8090"
 CACHE_DIR = os.environ.get("DASH_CACHE") or os.path.join(REPO, "tools", ".state", "dashcache")
 ENGINE_TIMEOUT = 8
@@ -261,10 +261,16 @@ def loops(now):
             a = C.heartbeat_age(C.dpath(fn))
             if a is not None and (age is None or a < age):
                 age, used = a, fn
-        state = "missing" if age is None else ("ok" if age <= stale else "stale")
+        note = C.heartbeat_note(C.dpath(used)) if used else ""
+        if age is None:
+            state = "missing"
+        elif bugq.WAITING_NOTE in note:   # the bug queue watch exits on purpose after a wake: waiting, not dead
+            state = "waiting"
+        else:
+            state = "ok" if age <= stale else "stale"
         rows.append({"key": key, "label": label, "file": used or files[0], "age_s": None if age is None else int(age),
                      "last": None if age is None else int(now - age), "stale_after_s": stale, "state": state,
-                     "script": script, "up": state == "ok"})
+                     "note": note, "script": script, "up": state in ("ok", "waiting")})
     # heartbeat files nobody listed here: shown as they are, so a new script appears without a dashboard change
     for p in sorted(glob.glob(C.dpath("*.heartbeat"))):
         fn = os.path.basename(p)
@@ -276,6 +282,22 @@ def loops(now):
         rows.append({"key": fn[:-10], "label": fn[:-10], "file": fn, "age_s": int(age), "last": int(now - age),
                      "stale_after_s": 300, "state": "ok" if age <= 300 else "stale", "script": "", "up": age <= 300})
     return rows
+
+
+def watchdog_block(now):
+    """tools/system/watchdog.py: its live status (every pass) and the newest 30-minute record. A missing record is
+    an alarm here (Constitution 3.8)."""
+    status = read_json(C.dpath("watchdog.status.json"))
+    recs = tail_jsonl(C.dpath("watchdog-reports.jsonl"), 300_000)
+    last = recs[-1] if recs else None
+    age = None if not last or not isinstance(last.get("t"), (int, float)) else int(now - last["t"])
+    alarm = None
+    if last is None:
+        alarm = "no 30-minute report on record yet"
+    elif age is not None and age > 35 * 60:
+        alarm = "30-minute report missing: the newest is %d min old" % (age // 60)
+    return {"available": status is not None or last is not None, "status": status, "last_report": last,
+            "report_age_s": age, "report_every_s": 1800, "alarm": alarm}
 
 
 def markers():
@@ -628,7 +650,7 @@ def build_status(engine, watch, started):
         "containers": containers, "docker": {"asked": docker_why == "", "why": docker_why},
         "loops": lp, "markers": markers(),
         "bugq": bug_queue(now), "deploy": deploys(), "dispatcher": dispatcher(now),
-        "meter": meter_file(now), "reports": reports(), "ayla": ayla_file(now),
+        "meter": meter_file(now), "reports": reports(), "ayla": ayla_file(now), "watchdog": watchdog_block(now),
     }
     st["summary"] = {"containers_up": sum(1 for c in containers if c["up"]), "containers": len(containers),
                      "loops_up": sum(1 for l in lp if l["up"]), "loops": len(lp)}
@@ -728,8 +750,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(503, {"down": True, "source": "engine", "error": err})
 
 
+DASH_LOCK = [None]   # legion/data/dashboard-<port>.lock, set by main() once the port is bound
+
+
+def dash_lock_name(port):
+    return "dashboard-%d.lock" % port
+
+
 def beat():
     while True:
+        if DASH_LOCK[0] and not C.refresh_lock(DASH_LOCK[0]):   # another copy took the lock: stop serving
+            print("dashboard: lock taken by another copy; exiting", flush=True)
+            os._exit(3)
         C.heartbeat("dashboard")
         time.sleep(30)
 
@@ -747,7 +779,17 @@ def main(argv=None):
     ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args(argv)
     PAGE, CACHE_DIR = a.page, a.cache
-    srv = ThreadingHTTPServer((a.bind, a.port), Handler)
+    try:   # the port first: the single-instance lock is per port
+        srv = ThreadingHTTPServer((a.bind, a.port), Handler)
+    except OSError as e:
+        print("dashboard: cannot bind %s:%d (%s); not starting" % (a.bind, a.port, e), flush=True)
+        return 3
+    if not a.no_heartbeat:
+        DASH_LOCK[0] = dash_lock_name(a.port)
+        if not C.take_lock(DASH_LOCK[0], 120):   # the beat thread keeps it fresh
+            srv.server_close()
+            print("dashboard: another copy holds legion/data/%s; not starting" % DASH_LOCK[0], flush=True)
+            return 3
     srv.daemon_threads = True
     srv.verbose = a.verbose
     srv.started = time.time()
