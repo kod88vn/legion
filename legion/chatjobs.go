@@ -8,7 +8,7 @@ package main
 //   - chat_jobs_on false, or no chat agent polled GET /api/chat-jobs in the last 2 minutes: the template lines are said
 //     at once (the world behaves exactly as without the feature).
 //   - chat_jobs_on true and an agent polled recently: the job waits until its deadline (chat_job_wait_min_sec ..
-//     chat_job_wait_max_sec, default 20-40 s) for lines posted to POST /api/chat-jobs/{id}/lines; the posted lines are
+//     chat_job_wait_max_sec, default 45-90 s; a listed job gets at least chat_job_listed_grace_sec more) for lines posted to POST /api/chat-jobs/{id}/lines; the posted lines are
 //     said, else the template lines at the deadline.
 //
 // Nothing ever waits for a job: EnqueueChatJob returns at once (any lock may be held by the caller, it takes only the
@@ -117,7 +117,7 @@ func chatJobsOn() bool { return tune().ChatJobsOn }
 func chatJobWait() time.Duration {
 	lo, hi := tune().ChatJobWaitMinSec, tune().ChatJobWaitMaxSec
 	if lo <= 0 {
-		lo = 20
+		lo = 45
 	}
 	if hi < lo {
 		hi = lo
@@ -178,12 +178,12 @@ func enqueueChatJobAt(s ChatJobSpec, now time.Time) string {
 		Template: s.Template[0].Text, Lines: s.Template}
 	chatJobs.Lock()
 	wait := chatJobsOn() && !chatJobs.agentSeen.IsZero() && now.Sub(chatJobs.agentSeen) <= chatAgentFresh &&
-		len(chatJobs.open) < chatJobsMaxOpen
+		len(chatJobs.open) < chatJobsMaxOpen && !chatJobByCode(s.Kind) // chatjobs_wait.go: PR38 kinds the code says itself
 	chatJobs.nextID++
 	j.ID = fmt.Sprintf("%s%d", chatJobPrefix(), chatJobs.nextID)
 	if !wait {
 		j.State, j.Said, j.Done = "template", j.Lines, now
-		chatJobs.counts["template: "+chatWhyTemplate(now)]++
+		chatJobs.counts["template: "+chatWhyTemplate(now, j.Kind)]++
 		chatJobs.counts["kind: "+j.Kind]++
 		if chatJobsOn() {
 			chatRecentLocked(j)
@@ -204,10 +204,12 @@ func enqueueChatJobAt(s ChatJobSpec, now time.Time) string {
 }
 
 // chatWhyTemplate (chatJobs.mu held): why a job went straight to its template (for the counters).
-func chatWhyTemplate(now time.Time) string {
+func chatWhyTemplate(now time.Time, kind string) string {
 	switch {
 	case !chatJobsOn():
 		return "flag off"
+	case chatJobByCode(kind):
+		return "by code"
 	case chatJobs.agentSeen.IsZero() || now.Sub(chatJobs.agentSeen) > chatAgentFresh:
 		return "no agent"
 	}
@@ -359,6 +361,9 @@ func chatAnswer(id string, lines []ChatLine, knownChar func(string) bool, now ti
 		}
 	}
 	if idx < 0 {
+		if late := chatJobLateLocked(id); late != nil { // chatjobs_wait.go: said by code at its deadline
+			return late, nil, errChatLate
+		}
 		return nil, nil, fmt.Errorf("job %s is not waiting (already said or unknown)", id)
 	}
 	j := chatJobs.open[idx]
@@ -461,6 +466,7 @@ func registerChatJobs(mux *http.ServeMux) {
 		q := r.URL.Query()
 		if q.Get("peek") != "1" {
 			chatJobsPolled(time.Now())
+			chatJobsListed(time.Now()) // chatjobs_wait.go: the agent gets time to answer what it just listed
 		}
 		rep := chatJobsReport(q.Get("recent") == "1")
 		if q.Get("local") != "1" {
@@ -514,6 +520,10 @@ func registerChatJobs(mux *http.ServeMux) {
 		}
 		chatJobsPolled(time.Now()) // answering is polling too
 		j, use, err := chatAnswer(id, lines, func(n string) bool { return botByCharName(n) != nil }, time.Now())
+		if err == errChatLate {
+			writeJSON(w, chatLateReply(j)) // chatjobs_wait.go: too late, the fallback line was said; not an error
+			return
+		}
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)

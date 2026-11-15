@@ -45,7 +45,8 @@ type guildStockRow struct {
 	Needs     map[string]int            `json:"needs"`
 	Gaps      []string                  `json:"gaps"`
 	Farmers   []string                  `json:"farmers"`
-	Trader    string                    `json:"trader"` // the guild's merchant: sells surplus, buys what the stock lacks
+	Trader    string                    `json:"trader"`            // the guild's merchant: sells surplus, buys what the stock lacks
+	Storage   map[string]map[string]int `json:"storage,omitempty"` // guildstore.go: stock in the leader's / treasurer's Kafra storage (GD05)
 	UpdatedAt time.Time                 `json:"updated_at"`
 }
 
@@ -196,6 +197,11 @@ func guildStockRound(snaps []*econSnap, now time.Time) {
 			}
 		}
 		row.Trader = trader
+		var names []string
+		for _, s := range ss {
+			names = append(names, s.name)
+		}
+		row.Storage = guildStoreView(names) // guildstore.go (GD05)
 		gstock.Lock()
 		gstock.rows[g] = row
 		gstock.trader[g] = trader

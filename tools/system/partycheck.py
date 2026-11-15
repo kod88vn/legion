@@ -9,8 +9,10 @@ Checks (RULES parties / Ayla): apart (not within 20 cells of the leader for > 4 
 town), long sitting (leader, or half the party, resting > 5 min), back-and-forth between maps (4+ map changes among
 two maps in 15 min). A member on an announced errand / party town run is excused from "apart".
 Data: GET /api/parties/detail (party with human == "Ayla"), GET /api/events (deaths). Field names are read
-defensively (x, y, save_map|save|respawn, with_leader, dist_leader). The AI watcher is woken by the queue entries
-(source "partycheck"), not by this script.
+defensively (x, y, save_map|save|respawn, with_leader, dist_leader). Every violation is about Ayla's party, so it is
+filed at least "high" with the wake flag: bugq touches data/bugq.wake and the bug-queue watcher (bugq.py watch) exits on
+it, waking the main session within minutes. Dedupe stays: one entry per kind+member, a repeat only bumps its count and
+does not wake again.
 """
 import argparse
 import collections
@@ -153,11 +155,16 @@ def snapshot_from_api(base):
     return {"members": ms, "events": ev}
 
 
+def file_priority(prio):
+    """Ayla's party is the main priority (PR26): never below high"""
+    return prio if bugq.PRIO_W.get(str(prio), 0) >= bugq.PRIO_W["high"] or prio == "outage" else "high"
+
+
 def file_violations(vios):
     ids = []
     for kind, name, prio, text in vios:
-        i, new = bugq.add("partycheck", prio, "[party %s] %s" % (kind, text), evidence=text,
-                          key="partycheck:%s:%s" % (kind, name), metric="kpm", bump_min_secs=900)
+        i, new = bugq.add("partycheck", file_priority(prio), "[party %s] %s" % (kind, text), evidence=text,
+                          key="partycheck:%s:%s" % (kind, name), metric="kpm", bump_min_secs=900, wake=True)
         ids.append((i, new, text))
     return ids
 

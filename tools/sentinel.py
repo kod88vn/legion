@@ -7,12 +7,14 @@ system; every 10 minutes it also samples random bots for real progress. Each cyc
 G:\\RO\\legion\\legion\\data\\health.log. When a problem has lasted past its grace time it is FILED into the bug queue
 (legion/data/bugqueue.jsonl through tools/system/bugq.py, deduped: a repeat only bumps the count). Only an OUTAGE
 (OUTAGE_KEYS: API down, population collapsed, Ayla offline) also prints a report and EXITS, which wakes the main
-session; everything else waits in the queue for the next planning pass. Each cycle writes data/sentinel.heartbeat.
+session. Ayla's party and stuck bots (URGENT_KEYS) are filed high with the wake flag: bugq touches data/bugq.wake and
+the bug-queue watcher (bugq.py watch) exits on it, so main is woken within minutes (once per entry: dedupe). Everything
+else waits in the queue for the next planning pass. Each cycle writes data/sentinel.heartbeat.
 
 Checks (grace): Legion API / population (4 min after a deploy), kills per bot, frozen-bot share (probe),
 puppet-dispatcher heartbeat (only while legion/data/stack.up exists), meter checks from /api/meter (farming share of the
-time budget, stuck share, deaths per bot-hour, API latency), Ayla online, Ayla's party together, watch client + its launcher running, client restart
-loops, chat volume, death rate; farming time: farming share of bot states (>= 85%), town trips per bot (<= 1 per
+time budget, stuck share, deaths per bot-hour, API latency), Ayla online, Ayla's party together, chat volume, death
+rate (the watch-client checks are retired: AY17, no watch client); farming time: farming share of bot states (>= 85%), town trips per bot (<= 1 per
 45 min) and unnecessary town trips (bag < 70% weight and slots with potions in stock) - main legion + legion-core.
 Usage: python3 /mnt/g/RO/legion/tools/sentinel.py [--once] [--mute KEY[,KEY...]] [--mute-until HH:MM]
   --mute: problem keys (e.g. bad_trips,deaths,party) already handed to a fixer. They are still measured and logged
@@ -31,10 +33,11 @@ try:
 except Exception:          # the queue/meter helpers are optional: the sentinel still works without them
     BUGQ = SYSC = METER = None
 OUTAGE_KEYS = {'legion_api', 'population', 'ayla'}   # these wake the main session; the rest goes to the queue
+URGENT_KEYS = {'party', 'stuck', 'frozen'}            # Ayla's party / stuck bots: filed high + wake (bugq.wake)
 METRIC_OF = {'kills': 'kpm', 'farming': 'kpm', 'trips': 'kpm', 'bad_trips': 'kpm', 'frozen': 'kpm', 'stuck': 'kpm',
              'deaths': 'deaths', 'meter_deaths': 'deaths'}
 PRIO_OF = {'kills': 'high', 'farming': 'high', 'deaths': 'high', 'meter_deaths': 'high', 'frozen': 'high',
-           'dispatcher': 'high', 'stuck': 'high'}
+           'dispatcher': 'high', 'stuck': 'high', 'party': 'high'}
 DISPATCH_FILES = ['dispatch.heartbeat', 'dispatcher.heartbeat', 'puppet.heartbeat']
 ONCE = '--once' in sys.argv
 
@@ -303,7 +306,7 @@ def file_problem(key, detail):
     try:
         i, _ = BUGQ.add('sentinel', 'outage' if key in OUTAGE_KEYS else PRIO_OF.get(key, 'normal'),
                         '[%s] %s' % (key, detail[:300]), evidence=detail[:600], key='sentinel:' + key,
-                        metric=METRIC_OF.get(key), bump_min_secs=600)
+                        metric=METRIC_OF.get(key), bump_min_secs=600, wake=key in URGENT_KEYS)
         return i
     except Exception:
         return None
@@ -409,18 +412,11 @@ def main():
                 len(F.bad_trips), '; '.join(t for _, _, t in list(F.bad_trips)[-8:]))))
         except Exception as e:
             line['farm_err'] = str(e)[:120]
-        # Ayla + watch client (independent of Legion)
+        # Ayla online (independent of Legion). AY17: there is no watch client any more, so the old watch-client
+        # checks (its launcher running, the client running, client restart loops) are retired.
         ayla = sh("docker exec ro-db mariadb -N -uragnarok -pragnarok ragnarok -e 'SELECT online FROM `char` WHERE char_id=150010'")
         line['ayla'] = ayla
         found.append(P.check('ayla', ayla != '1', 300, 'Ayla offline for 5+ min; openkore tail: ' + sh("docker logs --tail 3 ro-openkore-ayla 2>&1 | tr '\\n' ' ' | cut -c1-300")))
-        client = bool(sh('pgrep -f RO-AILab.exe'))
-        launcher = bool(sh('pgrep -f ai-client.sh'))
-        line['client'] = int(client)
-        found.append(P.check('launcher', not launcher, 60, 'ai-client.sh (watch-client launcher) is not running; last log: ' + sh('tail -2 /tmp/roai-restarts.log | cut -c1-200')))
-        found.append(P.check('client', launcher and not client and ayla == '1', 300, 'watch client not running for 5+ min; ' + sh('tail -2 /tmp/roai-restarts.log | cut -c1-200')))
-        recent = sh("awk -v t=\"$(date -d '20 min ago' '+%F %T')\" '$0 > t' /tmp/roai-restarts.log | grep -c 'dropped: \\(frozen\\|error\\)'")
-        found.append(P.check('client_loop', recent.isdigit() and int(recent) >= 3, 0,
-                             'watch client froze/crashed %s times in 20 min: %s' % (recent, sh("grep 'dropped:' /tmp/roai-restarts.log | tail -3 | cut -c1-160"))))
 
         found = [f for f in found if f]
         line['problems'] = [k for k, _ in found]

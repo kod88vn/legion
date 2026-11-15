@@ -516,8 +516,9 @@ def assemble(role, api, notes_dir, prev=None, prev_ts=None, trigger=""):
         return guild_briefing(api, role, notes_dir, prev, prev_ts)
     if role == "market":
         return market_briefing(api, notes_dir, prev, prev_ts)
-    if role == "build":
-        return build_briefing(api, notes_dir, prev, prev_ts)
+    if role in ("qa", "build"):   # scheduled reviewers (qabrief.py): class files digested in, both file to the queue
+        import qabrief
+        return getattr(qabrief, role + "_briefing")(api, notes_dir, prev, prev_ts, trigger)
     if role == "chat":
         return chat_briefing(api, notes_dir, prev, prev_ts, trigger)
     if role == "ayla":

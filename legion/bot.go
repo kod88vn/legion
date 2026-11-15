@@ -1179,6 +1179,7 @@ func (b *Bot) handle(pk []byte) {
 			friendHeard(b, cstr(pk[8:]), false) // friends.go
 			b.buffAskHeard(cstr(pk[8:]), now)   // priestbuff.go PT29: a party mate asks the priest for buffs
 			b.partyCmdHeard(cstr(pk[8:]), now)  // partycmd.go: the leader's command (follow me, come to me at <map> x,y, wait here...)
+			go leaderHeard(b, cstr(pk[8:]))     // leadertalk.go PT26: a bot leader answers its members
 			if b.pin != nil {
 				txt := cstr(pk[8:])
 				partyChatHeard(b.pin.Human, txt, now) // partyintent.go: the party chat on the dashboard

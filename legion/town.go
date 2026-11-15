@@ -542,6 +542,9 @@ func (b *Bot) startTrip(why string, now time.Time) {
 	if p := partyOf(b); p != nil && t.Why != "calling it a day" {
 		b.tripAnnounce(why, town)
 	}
+	if p := partyOf(b); p != nil && t.Why == "calling it a day" {
+		b.dayEndSay(p) // leadertalk.go: logging off for the day is said, not a silent vanish
+	}
 }
 
 // tripWingOK (b.mu held): a town trip uses a Butterfly Wing only when the town is far (3+ maps away) or the bot is in

@@ -94,6 +94,10 @@ package main
 //   chat_react_chattiness     0.5
 //   chat_react_jobchange      0.25 ...then for a job change, this chance on top
 //   chat_react_death          0.3  ...for a death, this chance on top
+//   Ambient talk (convo.go): short 2-4 line conversations between two players near each other (town / party)
+//   ambient_talk_on           true conversations on (system layer, CT02 "server feels alive")
+//   ambient_talk_div          150  conversations per minute = online bots / div (at least 0.3)
+//   ambient_talk_max_per_min  3    never more than this many started in any minute (and the rate's upper clamp)
 //
 //   Exchange and chat jobs (exchange.go, chatjobs.go, chatintent.go; docs/design/exchange.md)
 //   exchange_tiers_on         false party free, guild mate / friend free for a spare else kin_discount_pct, ask order
@@ -101,8 +105,11 @@ package main
 //   exchange_gifts_per_hour   3    free / discounted hand-overs per giver per hour (then market price)
 //   exchange_ask_stage_sec    180  a want is asked in party chat, then guild chat, then #trade, this long per stage
 //   chat_jobs_on              false social lines wait for a chat agent's words (only while one polls /api/chat-jobs)
-//   chat_job_wait_min_sec     20   how long a chat job waits for the agent (random between min and max)
-//   chat_job_wait_max_sec     40
+//   chat_job_wait_min_sec     45   how long a chat job waits for the agent (random between min and max)
+//   chat_job_wait_max_sec     90
+//   chat_job_listed_grace_sec 45   a job listed by the agent (GET /api/chat-jobs) gets at least this long from the listing
+//                                  (capped 3 min after it was queued); 0 = off (chatjobs_wait.go)
+//   chat_job_code_kinds       thanks,accept  kinds the code says at once without waiting for the agent (PR38)
 
 import (
 	"encoding/json"
@@ -160,6 +167,8 @@ type Tuning struct {
 	PartyDestOff bool `json:"party_dest_off"`
 	// healerstick.go: the party healer stays with the leader and keeps the leader buffed (true = old behaviour)
 	HealerStickOff bool `json:"healer_stick_off"`
+	// leadertalk.go PT10/PT26: bot party leaders say town runs, rally waits, late members, answer members (true = off)
+	LeaderTalkOff bool `json:"leader_talk_off"`
 	// kafrachain.go: the next hop of one Kafra trip (same goal) is not refused by the 3-in-10-min cap (true = plain cap)
 	KafraChainOff bool `json:"kafra_chain_off"`
 	// ferry.go: the Sailor boats (Izlude <-> Byalan Island) are route edges (true = no boats: iz_dun* unreachable)
@@ -287,6 +296,21 @@ type Tuning struct {
 	// pt32.go (PT32/PR16, 2026-11-14): a party member fights in place - a new target within 8 cells of it or a party
 	// mate, no other aggressive monster on the way, none while 2+ monsters are on it. ON (owner rule).
 	PartyFightInPlaceOn bool `json:"party_fight_in_place_on"`
+	// chatjobs_wait.go: a listed job's grace, and the kinds the code says by itself (comma list)
+	ChatJobListedGraceSec int    `json:"chat_job_listed_grace_sec"`
+	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
+	// party / guild get first refusal on a want for this long in all (split over the buyer's kin stages), then anyone
+	ExchangeFirstRefusalSec int  `json:"exchange_first_refusal_sec"`
+	// convo.go ambient talk (default on: an older tuning.json without the keys keeps these defaults)
+	AmbientTalkOn        bool    `json:"ambient_talk_on"`
+	AmbientTalkDiv       float64 `json:"ambient_talk_div"`
+	AmbientTalkMaxPerMin float64 `json:"ambient_talk_max_per_min"`
+	// idleerrand.go (EC36): a bot waiting in a town sells / restocks (default on; idle_errand_off switches it off)
+	IdleErrandOff         bool `json:"idle_errand_off"`
+	IdleErrandWaitSec     int  `json:"idle_errand_wait_sec"`
+	IdleErrandWeightPct   int  `json:"idle_errand_weight_pct"`
+	IdleErrandSlots       int  `json:"idle_errand_slots"`
+	IdleErrandCooldownMin int  `json:"idle_errand_cooldown_min"`
 	// aylarotate.go (AY15, 2026-11-15): Ayla's party swaps one non-priest member every ayla_rotation_hours (0 = 3)
 	// for an online bot of an untested class/build in the same role. ON by default (ayla_rotation_off true stops it).
 	AylaRotationOff   bool    `json:"ayla_rotation_off"`
@@ -319,9 +343,12 @@ var defaultTuning = Tuning{
 	ChatGlobalTrade: 0.45, ChatGlobalLFP: 0.80, ChatLocalReply: 0.6, ChatPartyReply: 0.5, ChatPartyHuman: 0.3,
 	ChatGuildLeader: 0.5, ChatReactBase: 0.25, ChatReactChattiness: 0.5, ChatReactJobChange: 0.25, ChatReactDeath: 0.3,
 	LfgGlobalPerMin: 6,
-	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
+	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ExchangeFirstRefusalSec: 40, ChatJobWaitMinSec: 45, ChatJobWaitMaxSec: 90,
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
 	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
+	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept",
+	AmbientTalkOn: true, AmbientTalkDiv: 150, AmbientTalkMaxPerMin: 3,
+	IdleErrandWaitSec: 45, IdleErrandWeightPct: 35, IdleErrandSlots: 85, IdleErrandCooldownMin: 10,
 }
 
 var curTuning atomic.Value // *Tuning
@@ -371,6 +398,10 @@ func (t *Tuning) sanitize() {
 		}
 	}
 	pos(&t.PartyLeash, d.PartyLeash)
+	pos(&t.IdleErrandWaitSec, d.IdleErrandWaitSec)
+	pos(&t.IdleErrandWeightPct, d.IdleErrandWeightPct)
+	pos(&t.IdleErrandSlots, d.IdleErrandSlots)
+	pos(&t.IdleErrandCooldownMin, d.IdleErrandCooldownMin)
 	pos(&t.CasterBoltFloorPct, d.CasterBoltFloorPct)
 	pos(&t.CasterHelpSPPct, d.CasterHelpSPPct)
 	pos(&t.TogetherCells, d.TogetherCells)
@@ -387,6 +418,8 @@ func (t *Tuning) sanitize() {
 	posF(&t.ChatLocalDiv, d.ChatLocalDiv)
 	posF(&t.ChatPartyDiv, d.ChatPartyDiv)
 	posF(&t.ChatGuildDiv, d.ChatGuildDiv)
+	posF(&t.AmbientTalkDiv, d.AmbientTalkDiv)
+	posF(&t.AmbientTalkMaxPerMin, d.AmbientTalkMaxPerMin)
 	if t.PriestBuffRenewHi <= t.PriestBuffRenewLo {
 		t.PriestBuffRenewHi = t.PriestBuffRenewLo + 1
 	}

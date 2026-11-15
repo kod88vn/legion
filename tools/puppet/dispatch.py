@@ -98,8 +98,14 @@ ROLES["market"] = dict(brief="market", model="haiku", interval=30 * 60, offset=6
                        min_gap=300, bus="market")
 ROLES["chat"] = dict(brief="chat", model="haiku", interval=0, offset=0, call_cap=0.06, hourly_cap=0.45,
                      min_gap=30, bus="chat")
-ROLES["build"] = dict(brief="build", model="sonnet", interval=0, offset=0, call_cap=0.35, hourly_cap=0.60,
-                      min_gap=1800, bus="build")
+# PR38 build/class master: once a day (and on build.wake), haiku, reviews builds and skill use per class against the
+# class files and the meter; files code fixes into the bug queue, never plays bots. daily_cap = USD per rolling 24 h.
+ROLES["build"] = dict(brief="build", model="haiku", interval=24 * HOUR, offset=2 * 3600, call_cap=0.20, hourly_cap=0.25,
+                      daily_cap=0.40, min_gap=1800, bus="build")
+# PR17/PR39 class QA (.claude/agents/qa.md as a scheduled one-shot): once after each deploy (a new record in
+# legion/data/deploys.jsonl, once the bots settled) and every 3 hours; samples every class, files to the bug queue.
+ROLES["qa"] = dict(brief="qa", model="haiku", interval=3 * HOUR, offset=30 * 60, call_cap=0.15, hourly_cap=0.30,
+                   daily_cap=1.50, min_gap=1800, bus="qa")
 # owner PR38 / AY05 (amended 2026-11-15): her algorithm (partylead.pl) plays her; her dedicated Haiku helper watches and
 # steps in only when she is stuck or deciding badly (guarded ayla.sh commands), and every intervention files a code-fix
 # item. min_gap 300 = at most one call (so one intervention) per 5 min. Woken by her watchdog's reports too.
@@ -125,6 +131,9 @@ WD_CONSOLE = os.path.join(REPO, "openkore-ayla", "logs", "console_player_2.txt")
 WD_RE = re.compile(r"\[watchdog\] (STUCK|IDLE|WRONG_MAP)\b")
 
 
+REVIEWERS = ("qa", "build")  # scheduled reviewers: observe and file only, like Ayla's watcher
+
+
 def allowed_tools(role, python="python"):
     """Bash only, and only legionctl (Ayla's watcher also reads her console log through ayla.sh, read-only actions)."""
     tools = [f"Bash({python} {mind_path(CTL)}:*)"]
@@ -141,12 +150,12 @@ DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-
 
 
 # the watcher only observes and files: no words, prices, directions or chat jobs in the world either
-DENIED_WATCHER = ["say", "whisper", "party-say", "shop", "remember", "chat-jobs", "chat-intent", "guild-direction-set",
+DENIED_WATCHER = ["say", "whisper", "party-say", "guild-say", "shop", "remember", "chat-jobs", "chat-intent", "guild-direction-set",
                   "guild-direction-clear", "guild-pardon", "leader", "boss-check"]
 
 
 def denied_tools(python="python", role=""):
-    cmds = DENIED_CTL + (DENIED_WATCHER if role == "ayla" else [])
+    cmds = DENIED_CTL + (DENIED_WATCHER if role == "ayla" or role in REVIEWERS else [])
     return [f"Bash({python} {mind_path(CTL)} {c}:*)" for c in cmds]
 
 
@@ -252,6 +261,43 @@ def parse_result(stdout):
 
 
 # ----------------------------------------------------------------- schedule (pure logic)
+def spent_since(rows, role, since):
+    return sum(float(r.get("cost_usd") or 0) for r in rows if r.get("role") == role and r.get("t", 0) >= since)
+
+
+# ----------------------------------------------------------------- deploy trigger (class QA after each deploy)
+DEPLOY_SETTLE = 10 * 60    # the sentinel ignores the first 10 min after a deploy too: logins re-plan
+DEPLOY_MAX_AGE = 6 * HOUR  # an older deploy never wakes QA (a restarted dispatcher must not chase old deploys)
+
+
+def last_deploy(data=None):
+    """(epoch, tag) of the newest record in legion/data/deploys.jsonl (tools/system/deploylog.py), or (None, None)"""
+    best = (None, None)
+    try:
+        with open(os.path.join(data or DATA, "deploys.jsonl"), encoding="utf-8") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                    t = float(r.get("epoch") or 0)
+                except (ValueError, TypeError, AttributeError):
+                    continue
+                if t and (best[0] is None or t > best[0]):
+                    best = (t, r.get("tag"))
+    except OSError:
+        pass
+    return best
+
+
+def deploy_wake(last_call, now, data=None):
+    """the deploy tag QA should check now: a deploy newer than QA's last call, settled, not too old; else None"""
+    t, tag = last_deploy(data)
+    if t is None or now - t < DEPLOY_SETTLE or now - t > DEPLOY_MAX_AGE:
+        return None
+    if last_call is not None and last_call >= t:
+        return None
+    return tag or "deploy"
+
+
 class Scheduler:
     """Decides which role is due. No I/O: tests drive it with `now`, `signals` and a log."""
 
@@ -270,20 +316,23 @@ class Scheduler:
         if role in self.roles:
             self.pending.setdefault(role, trigger)
 
-    def due(self, role, now, rows, signals):
+    def due(self, role, now, rows, signals, day_rows=None):
         """trigger label ('schedule', 'orders', 'human', ...) or None"""
         cfg = ROLES[role]
         if role in self.running:
             return None
         if spent_last_hour(rows, role, now) >= cfg["hourly_cap"]:
             return None
+        if cfg.get("daily_cap") is not None and day_rows is not None and                 spent_since(day_rows, role, now - 24 * HOUR) >= cfg["daily_cap"]:
+            return None
         last = self.last.get(role)
         gap = now - last if last else None
         if gap is not None and gap < cfg["min_gap"]:
             return None
         trig = None
-        if signals.get("wake", {}).get(role):
-            trig = "wake"
+        w = signals.get("wake", {}).get(role)
+        if w:
+            trig = w if isinstance(w, str) else "wake"
         elif signals.get("orders", {}).get(role) and (gap is None or gap >= min(ORDER_GAP, cfg["min_gap"])):
             trig = "orders"
         elif role in self.pending:
@@ -652,8 +701,9 @@ def main(argv=None):
 
     if args.list:
         for r, c in ROLES.items():
-            print(f"{r:<8} {c['model']:<7} every {c['interval'] // 60 if c['interval'] else '-':>3} min  "
-                  f"per-call ${c['call_cap']:.2f}  per-hour ${c['hourly_cap']:.2f}  min-gap {c['min_gap']}s")
+            print(f"{r:<8} {c['model']:<7} every {int(c['interval'] // 60) if c['interval'] else '-':>4} min  "
+                  f"per-call ${c['call_cap']:.2f}  per-hour ${c['hourly_cap']:.2f}  min-gap {c['min_gap']}s"
+                  + (f"  per-day ${c['daily_cap']:.2f}" if c.get("daily_cap") is not None else ""))
         return 0
 
     roles = [r.strip() for r in args.roles.split(",")] if args.roles else list(ROLES)
@@ -681,7 +731,9 @@ def main(argv=None):
     if other_instance_alive() and not args.force:
         print("another dispatcher heartbeat is fresh (<45 s); use --force to start anyway", file=sys.stderr)
         return 3
-    sched = Scheduler({r: ROLES[r] for r in roles}, time.time(), read_log(since=time.time() - 2 * HOUR))
+    # 25 h of the log: the daily build review and QA's last call survive a restart
+    sched = Scheduler({r: ROLES[r] for r in roles}, time.time(), read_log(since=time.time() - 25 * HOUR))
+    day_rows, day_t = [], 0.0
     sig = Signals(briefing.Api)
     backoff = 0
     threads = []
@@ -690,6 +742,8 @@ def main(argv=None):
         while True:
             now = time.time()
             rows = read_log(since=now - HOUR)
+            if now - day_t > 300:  # the 24 h spend (daily caps) is re-read every 5 min, not every tick
+                day_rows, day_t = read_log(since=now - 24 * HOUR), now
             try:
                 if not paused():
                     launch_owner(sched, now, args, threads)  # AY20: owner orders first, even with the API down
@@ -705,7 +759,10 @@ def main(argv=None):
                     nap(max(args.tick, backoff))
                     continue
                 backoff = 0
-                signals = {"orders": s["orders"], "wake": s["wake"]}
+                signals = {"orders": s["orders"], "wake": dict(s["wake"])}
+                dtag = deploy_wake(sched.last.get("qa"), now) if "qa" in sched.roles else None
+                if dtag:
+                    signals["wake"]["qa"] = "deploy:" + str(dtag)
                 if s.get("chat"):
                     sched.note("chat", s["chat"]) if "chat" in sched.roles else None
                 if s.get("ayla_event"):
@@ -714,7 +771,7 @@ def main(argv=None):
                 for r in roles:
                     if len(threads) >= args.max_parallel:
                         break
-                    trig = sched.due(r, now, rows, signals)
+                    trig = sched.due(r, now, rows, signals, day_rows)
                     if not trig:
                         continue
                     sched.started(r, now)

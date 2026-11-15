@@ -204,6 +204,7 @@ func main() {
 		// handoff.go + aylarotate.go: AY15 party rotation (accounts moved between the instances)
 		go handoffManager(all, bots, *loginAddr, stop)
 		go rallyManager(stop)         // rally.go: parties regroup at the Kafra nearest their destination
+		go leaderTalkManager(stop)    // leadertalk.go PT10: bot leaders say town runs, rally waits, late members
 		go econManager(bots, stop)    // economy.go: #trade wants/offers, bot-to-bot trades
 		go alchemyManager(bots, stop) // alchemy.go: every guild's alchemist, brewing
 		go gearPoolManager(stop)      // gearpool.go: party gear turns, zeny gifts, planned gear runs

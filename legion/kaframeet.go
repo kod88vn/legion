@@ -88,3 +88,9 @@ func kafraMeetDone(ms []pubState, me, town string, x, y int) bool {
 
 // partyWingStock: a party member below its 2-wing stock buys them before saving for gear
 func partyWingStock(inParty bool, have int) bool { return inParty && have < 2 }
+
+// noAheadOfLeader: a member on the leader's map (herMap) whose target is another map would go ahead of her - not while
+// she is outside a town (in a town a meeting / town run may send members to a building or the Kafra town)
+func noAheadOfLeader(herMap, target string) bool {
+	return herMap != "" && target != herMap && !isTown(herMap) && townOf(herMap) == ""
+}
