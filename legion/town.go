@@ -241,7 +241,9 @@ func wingPrice() int {
 // bwWant: Butterfly Wings worth carrying for this purse - none while poor (walk / Fly Wing escapes), 1 once 1.5
 // wings are spare above the floor, 2 (a trip + the escape reserve) at 3 wings, bwTarget at 30 wings' worth (at
 // 1,000z: 1,500 / 3,000 / 30,000z as in run 7; at 300z: 450 / 900 / 9,000z) (b.mu held)
-func (b *Bot) bwWant() int {
+func (b *Bot) bwWant() int { return b.bwWantParty(b.bwWantBase()) } // travelwing.go: Ayla's friends keep 2
+
+func (b *Bot) bwWantBase() int {
 	spare := b.Zeny - wingSaveFloor(b.BaseLv)
 	wp := wingPrice()
 	switch {

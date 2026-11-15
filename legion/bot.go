@@ -286,6 +286,7 @@ type Bot struct {
 	skillFailUntil             map[int]time.Time    // attack skill the server refused (0x0110: wrong weapon, no ammo, zeny...): skipped until then
 	teleAt                     time.Time            // teleport.go: last skill Teleport cast, its cell and map (teleCheck)
 	teleFrom                   [2]int               //
+	teleSaveAt                 time.Time            // travelwing.go: a Teleport cast for the save point (warpReply)
 	teleMap                    string               //
 	castUntil                  time.Time            // our own cast bar ends (0x07fb): rAthena refuses a wing (item and cast) while casting
 	opt1                       uint16               // our bodyState (0x0229): stone/freeze/stun/sleep - no item can be used
@@ -364,6 +365,8 @@ type Bot struct {
 	meter                meterCounters // meter.go: kills, income, deaths, time budget (guarded by mu)
 	ConnectedAt          time.Time
 	LastErr              string
+	PrevErr              string    // loginready.go: LastErr moved here at the next good login
+	PrevErrAt            time.Time // when that login happened
 	pktsIn               int64
 }
 
@@ -417,7 +420,7 @@ func (b *Bot) connect(loginAddr string) error {
 	}
 	op := le.Uint16(pk)
 	if op != 0x0ac4 && op != 0x0069 {
-		return fmt.Errorf("login refused (%04x, code %d)", op, pk[2])
+		return loginRefusedErr(op, pk[2]) // loginready.go
 	}
 	b.lid1, b.aid, b.lid2 = le.Uint32(pk[4:]), le.Uint32(pk[8:]), le.Uint32(pk[12:])
 	b.sex = pk[46]
@@ -499,6 +502,9 @@ func (b *Bot) connect(loginAddr string) error {
 			b.cid = le.Uint32(pk[2:])
 			b.MapName = trimGat(cstr(pk[6:22]))
 			mapAddr = fmt.Sprintf("%s:%d", ip4(le.Uint32(pk[22:])), le.Uint16(pk[26:]))
+		case 0x0840: // loginready.go: map server not up yet; the server sends nothing else, so stop waiting
+			c.Close()
+			return accessibleMapsErr(pk)
 		case 0x006c, 0x0081:
 			c.Close()
 			return fmt.Errorf("char select refused (%04x)", le.Uint16(pk))
@@ -608,6 +614,7 @@ func (b *Bot) handle(pk []byte) {
 	b.traceRecv(op, pk, now)
 	b.auditRecv(op, pk, now) // skillaudit.go: skill answers and the can-act delay
 	b.healRecv(op, pk)       // heal.go
+	b.buffRecv(op, pk, now)  // priestbuff.go PT29
 	switch op {
 	case 0x0087: // own walk accepted: tick, movedata
 		x0, y0, x1, y1 := decodeMove(pk[6:12])
@@ -778,7 +785,7 @@ func (b *Bot) handle(pk []byte) {
 			b.spiritCasts = int(le.Uint16(pk[6:]))
 		}
 	case 0x0abe: // ZC_WARPLIST: our Teleport skill's menu - teleport.go answers "Random"
-		if r := warpListReply(pk); r != nil {
+		if r := b.warpReply(pk); r != nil { // travelwing.go: "Random", or the save point after flySave
 			go b.send(r)
 		}
 	case 0x0afb: // ZC_AUTOSPELLLIST (Hindsight): len, int32 skill ids - answer with the spell to auto-cast
@@ -1167,6 +1174,7 @@ func (b *Bot) handle(pk []byte) {
 		if len(pk) > 8 {
 			b.event("party", "", cstr(pk[8:]))
 			friendHeard(b, cstr(pk[8:]), false) // friends.go
+			b.buffAskHeard(cstr(pk[8:]), now)   // priestbuff.go PT29: a party mate asks the priest for buffs
 			if b.pin != nil {
 				txt := cstr(pk[8:])
 				go func() { rallyHeard(partyOf(b), txt) }()                 // the human called a rally (rally.go)
@@ -1543,7 +1551,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 				return
 			case <-time.After(backoff + time.Duration(b.rng.Intn(5000))*time.Millisecond):
 			}
-			if backoff < 2*time.Minute {
+			if backoff < 2*time.Minute && !(serverStarting(err) && backoff >= 20*time.Second) { // loginready.go
 				backoff *= 2
 			}
 			continue
@@ -1563,6 +1571,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			b.hangoutUntil = now.Add(time.Duration(float64(30+b.rng.Intn(int(30+150*b.P.Sociability)))*b.tactics().Hangout) * time.Second)
 		}
 		b.remember("logged in on %s", b.MapName)
+		b.noteLoginOK(now)        // loginready.go: an old error is no longer the current one
 		b.kafraLastFromDiary(now) // kafra.go: an hourly restart doesn't reset the "no Kafra back-and-forth" memory
 		b.meterLogin(now)         // meter.go: purse baseline, new counters for another character
 		b.mu.Unlock()

@@ -171,13 +171,14 @@ sub cmd_partylead {
 			# in town with the party scattered: regroup at this town's Kafra, then everyone walks out together (the plan's
 			# "meet at the kafra" - QA 20:22: she left Payon via pay_fild07, the friends via pay_fild01, all lost)
 			$rallyNext = 0;
-			start_rally($hereT, undef, undef, "regroup at the $hereT kafra, then $m together", 1);
-			if ($rally) { $rally->{thenGoto} = $m; $rally->{mind} = 1; $rally->{dest} = $m; message "[partylead] goto $m: regroup at the $hereT Kafra first\n", 'system' }
+			start_rally($hereT, undef, undef, "regroup at the $hereT kafra, then $m together", pt30_on() ? 0 : 1);
+			if ($rally) { $rally->{thenGoto} = $m; $rally->{mind} = 1; $rally->{dest} = $m; message "[partylead] goto $m: regroup at the $hereT Kafra first\n", 'system'; say_dest($m, $hereT, $rally->{x}, $rally->{y}) }
 		} elsif (!is_townmap($m) && $KAFRA{$st} && ($config{saveMap} || '') ne $st) {
 			$rallyNext = 0;
-			start_rally($st, undef, undef, "save at the $st kafra before $m", 1);
-			if ($rally) { $rally->{thenGoto} = $m; message "[partylead] goto $m: first a save stop at the $st Kafra (save point is " . ($config{saveMap} || '?') . ")\n", 'system' }
+			start_rally($st, undef, undef, "save at the $st kafra before $m", pt30_on() ? 0 : 1);
+			if ($rally) { $rally->{thenGoto} = $m; message "[partylead] goto $m: first a save stop at the $st Kafra (save point is " . ($config{saveMap} || '?') . ")\n", 'system'; say_dest($m, $st, $rally->{x}, $rally->{y}) }
 		}
+		say_dest($m) unless $rally || is_townmap($m); # PT30: no regroup stop - go straight there, said once
 	} elsif ($args =~ /^\s*reload-cmdfile/i) {
 		$reloadCmdfile = 1;
 	} else {
@@ -1141,6 +1142,62 @@ sub psay {
 	push @pending, [time + (defined $delay ? $delay : 1), $text];
 }
 
+# ---- PT30 (2026-11-14): the leader tells the party where to be, once per new destination; members travel there by
+# their own route (Legion partydest.go reads "dest" from status.json). conf partylead_dest 0 turns it off.
+my ($destSaid, $destSaidAt) = ('', 0);
+my (%farHold, %toldGo); # a friend on another map: since when she holds for it / when she told it where to meet
+sub pt30_on { return !defined $config{partylead_dest} || $config{partylead_dest} ne '0' }
+sub say_dest {
+	my ($m, $meet, $x, $y) = @_;
+	return unless pt30_on() && defined $m && $m ne '';
+	return if $m eq $destSaid && time - $destSaidAt < 600;
+	($destSaid, $destSaidAt) = ($m, time);
+	my $line;
+	if ($meet && $meet ne $m) {
+		my $at = defined $x ? " ($x,$y)" : '';
+		$line = pick("heading to $m, meet at the kafra in $meet$at", "next spot $m, meet at the kafra in $meet$at", "new spot: $m. meet at the kafra in $meet$at first");
+	} else {
+		$line = pick("new spot: $m, see u there", "heading to $m, meet me there", "next: $m, come straight there");
+	}
+	psay($line, 1, 0);
+}
+# every ~5 min while a friend is on another map (not the spot): say again where to go and where to meet, with a hint
+# for a friend stuck in a dungeon of another area (live 2026-11-15 02:57Z: the priest walked pay_dun01 while she
+# waited in Geffen, nobody said a word)
+sub dest_remind_tick {
+	return unless pt30_on() && $char && $field;
+	return if time - $destSaidAt < 300;
+	my $here = $field->baseName;
+	my $dest = $homeMap ne '' ? $homeMap : (($config{lockMap} || '') ne '' ? $config{lockMap} : ($saved ? ($saved->{lockMap} || '') : ''));
+	return if $dest eq '' || is_townmap($dest);
+	my @far = grep { $_->[1] ne '' && $_->[1] ne $here && $_->[1] ne $dest } online_friends();
+	return unless @far;
+	my $kt = town_of_map($dest);
+	my $line;
+	if ($rally) {
+		$line = "going $dest - meet at the kafra in $rally->{town} ($rally->{x},$rally->{y})";
+	} elsif ($here eq $dest) {
+		$line = pick("im on $dest, come here", "we're on $dest, come straight here");
+	} else {
+		$line = "going $dest - meet me there" . ($KAFRA{$kt} ? ", kafra to $kt is fastest" : '');
+	}
+	my ($stuck) = grep { is_dungeon($_->[1]) && town_of_map($_->[1]) ne $kt } @far;
+	$line .= ". $stuck->[0], wing out and kafra to $kt" if $stuck && $KAFRA{$kt};
+	($destSaid, $destSaidAt) = ($dest, time);
+	psay($line, 1, 0);
+}
+# statusout.pl: where she is heading ("" = there / nothing) and whether she is on a town run
+sub status_dest {
+	return '' unless $field;
+	my $here = $field->baseName;
+	my $d = $rally ? $rally->{town} : ($gotoMap ne '' ? $gotoMap : ($config{lockMap} || ($saved ? ($saved->{lockMap} || '') : '')));
+	return $d eq $here ? '' : $d;
+}
+sub status_town_run {
+	return 1 if $errand || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto');
+	return ($field && is_townmap($field->baseName) && time - $errandEnd < 600) ? 1 : 0;
+}
+
 sub flush_say {
 	return unless @pending && time >= $pending[0][0];
 	my $p = shift @pending;
@@ -1990,6 +2047,7 @@ sub tick {
 	}
 
 	goto_tick();
+	dest_remind_tick(); # PT30: where to go / meet, again every ~5 min while friends are elsewhere
 	return if portal_guard();
 	travel_mode_tick();
 	protect_tick();
@@ -2129,6 +2187,20 @@ sub tick {
 		# (QA 20:32-20:37: 5 min by the pay_fild10 portal "waiting for Zen.fox (on pay_fild10)")
 		my $destM = $homeMap ne '' ? $homeMap : (($config{lockMap} || '') ne '' ? $config{lockMap} : ($saved ? ($saved->{lockMap} || '') : ''));
 		if ($m ne '' && $m ne $here && $m eq $destM) { $near++; next }
+		# PT30: a friend on another map travels to the spot by its own route - in transit she doesn't wait for it at all,
+		# on the spot at most 3 min; she says once where to meet (live 02:57Z: Ayla held on gef_fild07 for the priest
+		# walking out of pay_dun01)
+		if ($m ne '' && $m ne $here && pt30_on() && $destM ne '') {
+			$farHold{$u->{name}} ||= time;
+			if ($here ne $destM || time - $farHold{$u->{name}} > 180) {
+				if (time - ($toldGo{$u->{name}} || 0) > 600) {
+					$toldGo{$u->{name}} = time;
+					psay(pick("$u->{name} we go on, meet us on $destM", "$u->{name} come to $destM, we start there", "going on to $destM, catch up $u->{name}"), 1, 0);
+				}
+				next;
+			}
+		}
+		delete $farHold{$u->{name}} if $m eq $here;
 		if ($m ne '' && $m ne $here) {
 			$why = "$u->{name} is on $m";
 			$whoFar = $u->{name};

@@ -595,7 +595,10 @@ func (b *Bot) rallyThink(gm *GameMap, moving bool, now time.Time) bool {
 	}
 	b.target = 0
 	if b.MapName != r.Town {
-		if b.Sitting && now.Sub(b.sitSentAt) > time.Second {
+		if done, own := b.rallyLeg(p, r, now); done { // rallypark.go: a leg we can't travel, or the rally over its cap for us
+			return own
+		}
+		if b.Sitting && now.Sub(b.sitSentAt) > time.Second && !b.waitSitHeld(now) {
 			b.sitSentAt = now
 			go b.stand()
 		}

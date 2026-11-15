@@ -1248,11 +1248,7 @@ func (b *Bot) travel(gm *GameMap, moving bool) {
 		if t, wing := b.kafraVia(b.Goal.Map, now); t != "" {
 			b.viaTown, b.viaFor, b.route, b.path = t, b.Goal.Map, nil, nil
 			if wing && now.Sub(b.wingAt) > 30*time.Second {
-				if idx := b.invIndex(itemButterflyWing); idx >= 0 {
-					b.wingAt = now
-					b.wingEvent(itemButterflyWing, "kafra trip via "+t+" to "+b.Goal.Map, now)
-					go b.useItem(idx)
-				}
+				b.flySave("kafra trip via "+t+" to "+b.Goal.Map, now) // travelwing.go: Butterfly Wing, else Teleport lv2
 			}
 			b.event("info", "", fmt.Sprintf("heading to the Kafra in %s for the trip to %s", t, b.Goal.Map))
 		}
@@ -1593,7 +1589,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		b.setState("resting")
 		return
 	}
-	if b.Sitting && !b.wantSit && now.Sub(b.sitSentAt) > 2*time.Second && now.Sub(b.restSitAt) > 1500*time.Millisecond { // stand up if something left us seated (not a party-rest sit: together.go)
+	if b.Sitting && !b.wantSit && now.Sub(b.sitSentAt) > 2*time.Second && now.Sub(b.restSitAt) > 1500*time.Millisecond && !b.waitSitHeld(now) { // stand up if something left us seated (not a party-rest sit: together.go)
 		b.sitSentAt = now
 		go b.stand()
 	}
@@ -2447,6 +2443,7 @@ func (b *Bot) leaderPartyPick(p *Party) bool {
 	if m != cur {
 		b.event("party", "", fmt.Sprintf("re-planning the party map: %s -> %s (fits the weakest member)", cur, m))
 		go p.moveTo(m)
+		sayPartyDest(b, b.P.Typing, p, m, "better spot for all of us") // partydest.go PT30: say where to be
 	}
 	return true
 }
@@ -2764,10 +2761,16 @@ func (b *Bot) fight(e *Entity, moving bool, now time.Time) {
 	if b.kiteStep(e, moving, now) { // kite.go: a bow user steps back out of melee reach (hit and run), Ankle Snare
 		return
 	}
+	if b.casterKite(e, moving, now) { // casterkite.go: a Mage-line caster walls / backs off a monster next to it
+		return
+	}
 	if b.trapCast(e, now) { // trap.go: Claymore Trap / Land Mine where the monster will step (trapper Hunter)
 		return
 	}
 	if b.aoeCast(e, now) { // aoe.go: Mage/Wizard area spells on 3+ grouped monsters, Fire Wall against a walker
+		return
+	}
+	if b.casterActive(e, moving, now) { // casteractive.go (CL16): no group -> a spell on a party target in range, no melee chase
 		return
 	}
 	if b.weaponAoE(e, now) { // weaponskill.go: Archer-line Arrow Shower on 3+ grouped monsters

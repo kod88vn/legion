@@ -23,9 +23,10 @@ RUN cat /tmp/servers-local.txt tables/servers.txt > /tmp/s && mv /tmp/s tables/s
     && cp -r control /openkore/control.default
 # Renewal maps whose OpenKore field / portals were the classic layout (izlude, morocc, alberta, ...): fields generated from
 # the server's map cache (rathena db/re/map_cache.dat), portals patched (2026-11-14, Ayla stuck in Renewal Izlude)
-COPY fields-re/ /openkore/fields/
+COPY fields-re/ /tmp/fields-re/
 COPY fix_re_portals.sh /tmp/fix_re_portals.sh
-RUN cd /openkore && rm -f fields/izlude.dist fields/izlude.weight fields/morocc.dist fields/morocc.weight fields/alberta.dist fields/alberta.weight     && sh /tmp/fix_re_portals.sh tables/portals.txt
+RUN cd /openkore && for f in /tmp/fields-re/*.fld2.gz; do b=$(basename "$f" .fld2.gz); cp "$f" fields/ && rm -f "fields/$b.dist" "fields/$b.weight"; done \
+    && sh /tmp/fix_re_portals.sh tables/portals.txt
 # Kafra teleport lines matching this server's Kafras (2026-11-14 travel QA; keep it the LAST portals.txt patch:
 # it owns every Kafra "c r2 c rN" line, fix_re_portals.sh and others must not write Kafra lines)
 COPY fix_kafra_portals.py /tmp/fix_kafra_portals.py

@@ -10,7 +10,6 @@ alberta 245 93 amatsu 197 83 10000 c r1 c c c r0 n
 amatsu 194 79 alberta 243 91 0 c r0 n
 alberta 245 62 gon_fild01 258 82 0 c r1 c c r0 n
 gon_fild01 255 79 alberta 243 67 0 c r0 n
-izlu2dun 108 27 izlude 176 182 0 c r0
 prt_fild05 270 212 prt_sewb1 135 248 0 c r0
 aldebaran 223 222 xmas_fild01 78 68 0 c r1 c c n
 moc_fild12 35 303 cmd_fild08 331 319 0 c r0 n
@@ -92,7 +91,6 @@ ama_dun01 229 7 ama_in02 119 181 0 c r0 n
 # to add: Eden warper, Prontera warper
 
 # Non-VIP Warps
-prontera 98 120 yuno 157 167 1800 1 c c r0 c
 yuno 142 183 prontera 116 72 1800 1 c c r0 c n
 rachel 109 138 veins 205 101 2200 1 c r2 c r0
 rachel 109 138 yuno 158 125 3000 1 c r2 c r1
@@ -1281,12 +1279,6 @@ iz_dun03 29 63 iz_dun02 339 331
 iz_dun03 264 245 iz_dun04 26 24
 iz_dun04 26 24 iz_dun03 264 245
 izlu2dun 108 83 iz_dun00 168 173
-izlude_in 87 169 izlude_in 108 169
-izlude_in 108 169 izlude_in 87 169
-izlude_in 171 97 izlude_in 172 116
-izlude_in 172 116 izlude_in 171 97
-izlude_in 172 139 izlude_in 172 158
-izlude_in 172 158 izlude_in 172 139
 juperos_01 51 249 jupe_cave 29 52
 jupe_cave 147 52 yuno_fild07 202 175
 jupe_cave 29 52 juperos_01 54 246
@@ -2901,8 +2893,6 @@ airplane 254 54 airplane 91 67
 airplane 87 67 airplane 250 54
 yuno 96 261 airplane 244 58
 yuno 6 261 airplane_01 244 58
-izlude 149 39 izlude 182 56
-izlude 176 56 izlude 145 40
 moscovia 205 98 mosk_in 214 255
 moscovia 203 171 mosk_in 86 180
 mosk_in 222 128 mosk_in 288 118
@@ -2914,8 +2904,6 @@ mosk_in 150 192 mosk_in 204 188
 mosk_in 202 188 mosk_in 148 192
 mosk_in 220 273 mosk_in 152 280
 mosk_in 21 113 mosk_in 99 123
-izlude 128 226 arena_room 100 30
-arena_room 99 24 izlude 128 220
 mosk_in 93 61 moscovia 255 140
 mosk_in 93 91 moscovia 224 232
 mosk_in 13 179 moscovia 188 193
@@ -2981,7 +2969,6 @@ einbroch 64 234 airport 138 51
 einbroch 64 207 airport 143 17
 
 # Izlude airship
-izlude 206 55 airplane_01 244 58 1200 c r0 c r0
 
 # Rachel airship
 #(portal with dialog) ra_fild12 295 208 airplane_01 245 60 1200 c r0
@@ -3556,12 +3543,7 @@ un_bunker 229 163 un_bunker 159 52
 un_bunker 164 51 un_bunker 233 164
 un_bunker 366 164 un_bunker 31 51
 un_bunker 27 52 un_bunker 361 163
-# Renewal Izlude (rathena npc/re/warps/cities/izlude.txt), 2026-11-14
-izlude 20 98 prt_fild08 367 212
-izlude 110 182 izlude_in 65 87
-izlude 52 172 izlude_in 74 161
-izlude 213 161 arena_room 100 30
-# Renewal Izlude (rathena npc/re/warps/cities/izlude.txt), 2026-11-14
+# Renewal Izlude (fix_re_portals.sh, from the server's rathena npc files)
 izlude 20 98 prt_fild08 367 212
 prt_fild08 371 212 izlude 24 98
 izlude 110 182 izlude_in 65 87
@@ -3570,8 +3552,21 @@ izlude 52 172 izlude_in 74 161
 izlude_in 74 158 izlude 52 168
 izlude_in 116 46 izlude 128 98
 izlude_in 148 127 izlude 210 161
+izlude_in 43 169 izlude_in 63 169
+izlude_in 87 169 izlude_in 111 169
+izlude_in 108 169 izlude_in 84 169
+izlude_in 172 139 izlude_in 172 161
+izlude_in 172 158 izlude_in 172 136
+izlude_in 172 116 izlude_in 172 94
+izlude_in 171 97 izlude_in 172 119
 izlude 213 161 arena_room 100 30
+arena_room 99 24 izlude 209 161
+izlude 197 205 izlu2dun 107 50 150 c r0
+izlude 197 205 alberta 188 169 500 c r1
+izlu2dun 108 27 izlude 197 210 0 c r0
 alberta 189 151 izlude 195 212 500 c r1
+izlude 202 75 airplane_01 244 58 1200 c r0 c r0
+# end Renewal Izlude
 # Kafra teleports (fix_kafra_portals.py, from the server's F_KafSet + kafras.txt)
 prontera 146 89 izlude 128 98 60 1 c r2 c r0
 prontera 146 89 geffen 120 39 120 1 c r2 c r1

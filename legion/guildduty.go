@@ -25,6 +25,8 @@ package main
 //   Never       guild leaders, guild alchemists, traders / vendors, Ayla's party (core instance, -exclude /
 //               LEGION_CORE names, pinned friends, kept accounts) are never warned or kicked. No human exemption
 //               (gate G25); the ledger only measures engine-run characters so far (STATUS.md, equal-treatment gaps).
+//   Starveil    the same rules and caps (AY19, G25): Ayla's plugin (guildrecruit.pl) says the warning and sends the
+//               expel, fetched from /api/human-guild/orders (starveillead.go; tuning starveil_auto_lead).
 //
 // Behaviour (blocks, warnings, kicks, invitations) needs tuning guild_duty_on (default off). The ledger, rank,
 // wealth and relations are computed regardless. Only the main instance runs this; the core instance (Ayla's party)
@@ -946,6 +948,7 @@ func dutyActions(snaps []*dutySnap, now time.Time, starveil string) {
 		m      dutyMember
 		kick   bool
 		leader *Bot
+		human  bool // Starveil: Ayla's plugin speaks and expels (starveillead.go)
 	}
 	var acts []act
 	gduty.Lock()
@@ -967,14 +970,15 @@ func dutyActions(snaps []*dutySnap, now time.Time, starveil string) {
 			continue // warnings and kicks happen while the member is online
 		}
 		l := guildLeader(m.Guild)
-		if l == nil || m.Guild == humanGuildID {
-			continue // Starveil: Ayla (OpenKore) is its master - shown in the API, never done by the engine
+		human := m.Guild == humanGuildID
+		if human && !starveilDutyOK(s) || !human && l == nil {
+			continue // Starveil: the same rules through Ayla's plugin (starveillead.go); her party is never touched
 		}
 		if m.WarnPending && now.Sub(gduty.guildWarn[m.Guild]) >= dutyWarnGap {
 			gduty.guildWarn[m.Guild] = now
 			m.WarnPending, m.WarnedAt = false, now
 			gduty.dirty = true
-			acts = append(acts, act{m: *m, leader: l})
+			acts = append(acts, act{m: *m, leader: l, human: human})
 			continue
 		}
 		if m.KickPending && now.After(m.KickAt) && m.KickSentAt.IsZero() && len(gduty.kicks) < perHour &&
@@ -985,7 +989,7 @@ func dutyActions(snaps []*dutySnap, now time.Time, starveil string) {
 			m.KickSentAt = now
 			m.KickTries++
 			gduty.dirty = true
-			acts = append(acts, act{m: *m, kick: true, leader: l})
+			acts = append(acts, act{m: *m, kick: true, leader: l, human: human})
 		}
 	}
 	// a kick that wasn't confirmed in 3 minutes is tried once more later, then given up for 6 hours
@@ -1004,6 +1008,10 @@ func dutyActions(snaps []*dutySnap, now time.Time, starveil string) {
 	gduty.Unlock()
 	for _, a := range acts {
 		s := byName[a.m.Char]
+		if a.human {
+			starveilDuty(s, a.m, a.kick, starveil) // starveillead.go
+			continue
+		}
 		if a.kick {
 			go dutyExpel(a.leader, s, a.m)
 		} else {

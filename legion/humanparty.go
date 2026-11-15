@@ -239,6 +239,18 @@ func (b *Bot) humanPartySync(now time.Time) {
 			}
 		}
 	}
+	// PT30 (partydest.go): she said where to be - head for her destination (or its meeting town) by our own route, not
+	// for the map/town she is crossing; on her map we stay with her (partyThink)
+	destMode := false
+	if ok && h.Map != "" {
+		hm := h.Map
+		if t := townOf(hm); t != "" {
+			hm = t
+		}
+		if _, t := b.humanDestNow(p, hm, now); t != "" {
+			m, destMode = t, true
+		}
+	}
 	// her road, not ours: when we stand on a map she crossed lately, the next map is the one she went to from it (the
 	// same portal) - together.go humanTrail (QA 20:23Z: friends took pay_fild01/07 while she went via pay_fild08)
 	if ok && h.Map != "" && b.MapName != h.Map && m == h.Map {
@@ -298,7 +310,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 				p.repointTownRun(ht, now)
 				b.event("party", "", fmt.Sprintf("%s is in %s, not %s: the town run goes there", p.Human, ht, town))
 			}
-			if t := b.trip; t != nil && t.Town != ht && (t.Why == "town run with the party" || t.Why == "with the party" || t.Why == "gear") {
+			if t := b.trip; t != nil && !destMode && t.Town != ht && (t.Why == "town run with the party" || t.Why == "with the party" || t.Why == "gear") {
 				b.trip, b.tripAgain, b.route, b.path = nil, time.Time{}, nil, nil // rejoin the run for her town
 			}
 		}
@@ -329,7 +341,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	}
 	// separated from the leader for 2+ minutes: ask for help in party chat (owner: "Party member should know to ask for
 	// help and ayla should know to go collect them"); Ayla's plugin answers by coming to get them
-	if ok && h.Map != "" && h.Map != b.MapName {
+	if ok && h.Map != "" && h.Map != b.MapName && !destMode { // on our way to where she said: not lost
 		if b.awaySince.IsZero() {
 			b.awaySince = now
 		} else if now.Sub(b.awaySince) > 45*time.Second && now.After(b.buffAt["helpsay"]) && p.rallyInfo().Town == "" && b.trip == nil && b.errand == nil && townOf(b.MapName) == "" {
@@ -340,6 +352,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	} else {
 		b.awaySince = time.Time{}
 	}
+	m = b.parkRedirect(p, m, now) // rallypark.go: a town we parked in front of for the cap -> the party's farm map
 	if b.Goal.Mode != "party" || b.Goal.Map != m || b.Goal.Set != "human" {
 		if b.Goal.Map != m {
 			b.route, b.path = nil, nil

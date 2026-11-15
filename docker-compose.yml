@@ -97,10 +97,17 @@ services:
       - ./openkore-ayla/control:/openkore/control
       - ./openkore-ayla/logs:/openkore/logs
       - ./openkore-ayla/plugins/cmdfile:/openkore/plugins/cmdfile
+      # server-matching fields + portal patches applied on EVERY start (openkore/overlay.sh), so they survive any
+      # recreate even with a stale ro-openkore image (2026-11-15: the docker-cp fix died with a recreate, Ayla
+      # stranded on izlude 24,98). Read-only.
+      - ./openkore:/ok-src:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/ok-kafras.txt:ro
     # X-Kore 2 binds XKore_publicIp, which must be the shared rathena container IP. That IP changes when the
     # network is rebuilt (172.18.0.3 -> .4 after the 2026-11-14 folder move: "IO::Socket::INET: Cannot assign
     # requested address", OpenKore quit with 'Bye!', restart loop). So write the current IP into config.txt at start.
-    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "ip=$$(hostname -i | awk '{print $$1}'); [ -n \"$$ip\" ] && sed -i -E \"s|^XKore_publicIp .*|XKore_publicIp $$ip|\" /openkore/control/config.txt; exec /entrypoint.sh"]
+    # Then overlay.sh copies openkore/fields-re over /openkore/fields (drops their .dist/.weight), self-checks them,
+    # patches tables/portals.txt (fix_re_portals.sh, fix_kafra_portals.py) and execs the normal /entrypoint.sh.
+    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "ip=$$(hostname -i | awk '{print $$1}'); [ -n \"$$ip\" ] && sed -i -E \"s|^XKore_publicIp .*|XKore_publicIp $$ip|\" /openkore/control/config.txt; if [ -f /ok-src/overlay.sh ]; then exec sh /ok-src/overlay.sh; fi; exec /entrypoint.sh"]
     stdin_open: true
     tty: true
     restart: unless-stopped
