@@ -75,6 +75,7 @@ my ($holding, $saved, $last, $lastMsg, $lastFetch) = (0, undef, 0, 0, 0);
 my ($lastSay, $nextIdle, $lastLv, $errand, @pending) = (0, time + 60, 0, 0);
 my $townWingAt = 0; # PT22: when she uses the Butterfly Wing of an announced party town run
 my $lastTownRun = 0;
+my %townPending; # PT33: town-run requests answered but not started yet (name -> when asked)
 my ($collect, $collectAt) = (undef, 0);
 my (%awaySince, %helpFrom, %memPos, %sitSince, %farSince, %dangerFrom, %friendSaved);
 my ($waitSpot, $waitMap, $waitFarmAt, $waitBackAt) = (undef, '', 0, 0); # wait_farm: where she waits
@@ -1442,6 +1443,20 @@ sub flush_say {
 }
 
 # a partymate said something: answer like a leader would
+# PT33: starts the pending town run(s): not within 10 min of the last one, not in town, not on a run already
+sub town_req_tick {
+	return unless %townPending && $char && $field;
+	foreach my $n (keys %townPending) { delete $townPending{$n} if time - $townPending{$n} > 900 }
+	return unless %townPending;
+	return if time - $lastTownRun <= 600 || is_townmap($field->baseName) || $rally || $depart || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'NPC');
+	$lastTownRun = time;
+	my $who = join(' + ', sort keys %townPending);
+	$townReason = "$who need to sell/restock";
+	%townPending = ();
+	psay("ok $who, town run now", 1, 0);
+	Commands::run('autosell');
+	message "[partylead] PT33: town run for $who started\n", 'system';
+}
 sub heard {
 	my (undef, $args) = @_;
 	my $who = defined $args->{MsgUser} ? $args->{MsgUser} : '';
@@ -1471,11 +1486,16 @@ sub heard {
 	# a friend asks for a town run: the whole party goes (she starts her own sell/restock run; they follow her)
 	# only a real REQUEST with a need starts a town run - not friends' replies ("ok town run, omw"), which made her
 	# walk to town twice with a bag 22% full
-	if ($msg =~ /overweight|bag (is )?full|out of pots|out of potions|no pots left/
-		&& $msg !~ /^(ok|k|coming|omw|yes|sure)\b/ && time - $lastTownRun > 600 && !AI::inQueue('sellAuto', 'buyAuto')
+	# PT33 (owner 2026-11-15: a member asked for a town run three times and was never answered): every request is answered
+	# at once - started now, or "in about N min" (town_req_tick starts it when the gap since the last run is over)
+	if ($msg =~ /overweight|heavy|bag (is )?full|out of pots|out of potions|no pots left/ && $msg !~ /^(ok|k|coming|omw|yes|sure)\b/
 		&& $field && $field->baseName !~ /^(payon|prontera|geffen|morocc|alberta)$|_in\d*$/) {
-		# one friend's full bag is its own errand (RULES 2: ~90% farming; QA 20:28: 3 party town runs in 40 min): it
-		# butterflies to town alone and comes back; the whole party goes only when 2+ friends need it within 5 min
+		if (AI::inQueue('sellAuto', 'buyAuto', 'storageAuto') || time - $lastTownRun <= 600) {
+			$townPending{$who} = time;
+			my $eta = int((600 - (time - $lastTownRun)) / 60) + 1;
+			psay(AI::inQueue('sellAuto', 'buyAuto', 'storageAuto') ? "$who ok, we're on a town run now" : "$who ok, town run in about $eta min", 1, 0);
+			return;
+		}
 		$townNeed{$who} = time;
 		foreach my $n (keys %townNeed) { delete $townNeed{$n} if time - $townNeed{$n} > 300 }
 		if (keys(%townNeed) < 2) {
@@ -3129,7 +3149,9 @@ sub pack_tick {
 		my $fightNear = grep { $_->{pos_to} && defined $_->{pos_to}{x} && !$_->{dead} && fightable($_) && blockDistance(my_pos(), $_->{pos_to}) <= 8 } @{$monstersList ? $monstersList->getItems() : []};
 		if (@far && !$fightNear) {
 			my ($m) = sort { ($b->[3] // 9999) <=> ($a->[3] // 9999) } @far;
-			if (!$pk{fetch} || $pk{fetch}{name} ne $m->[0]) { $pk{fetch} = {name => $m->[0], at => time} }
+			my ($cur) = grep { $_->[0] eq ($pk{fetch} ? $pk{fetch}{name} : '') } @far; # the same member while it is still far
+			$m = $cur if $cur;
+			if (!$pk{fetch} || !$cur) { $pk{fetch} = {name => $m->[0], at => time} }
 			my $fw = $pk{fetch};
 			if (time - $fw->{at} > 180) {
 				wd_report('FETCH', $here, "$fw->{name} still " . ($m->[3] // '?') . " cells back after 3 min", 'continuing without it');
@@ -3239,6 +3261,15 @@ sub pack_tick {
 		message "[partylead] AY22: with $pk{goName} again (within 6 cells for 3 s) - going on together\n", 'system';
 		psay("lets go, follow me", 1, 0); # the engine's follow order: the members switch from 'stay put' to following her
 		($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
+	}
+	# the wait cap (owner 2026-11-15: 'waiting for Zen.fox (178 s)' for minutes): a wait longer than 3 min goes on for 3 min
+	# (the others follow or are fetched by the fetch rule); a wait for a member 20+ cells back is never kept open longer
+	if ($act eq 'wait' && time < ($pk{capUntil} || 0)) { return 0 }
+	if ($act eq 'wait' && $pk{waitAt} && time - $pk{waitAt} > 180) {
+		$pk{capUntil} = time + 180; $pk{waitAt} = 0;
+		message "[partylead] wait cap: $an->[0] still " . ($an->[3] // '?') . " cells back after 3 min - going on
+", 'system';
+		return 0;
 	}
 	# gave up collecting (3 min, or the priest stuck far away): she holds and waits for 10 min before trying again
 	($act) = ('wait') if $act eq 'goto' && $pk{goGaveUp} && time - $pk{goGaveUp} < 600;
@@ -3724,6 +3755,7 @@ sub tick {
 	$huntMap = $config{lockMap} ne '' ? $config{lockMap} : (($saved && $saved->{lockMap}) ? $saved->{lockMap} : '');
 	set_home($config{lockMap}) if ($config{lockMap} || '') ne ''; # a non-empty lockMap is always the current destination (QA 20:54: stale homeMap pay_fild08)
 	buff_ask_tick(); # PT29: ask the priest for missing buffs
+	town_req_tick(); # PT33: a pending town-run request starts once the gap since the last run is over
 	fit_tick(); # AY07/AY19: her own level / gear / turn map choice when the mind's order is stale
 	watchdog_tick();
 	# never stand still (owner: "Never stand still, walk around a bit to unstuck yourself"): no movement for 20 s
