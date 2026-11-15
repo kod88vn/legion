@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"time"
+)
+
 // fairgate.go: a solo hunting spot must hold fair kills for the bot's base level. The kill metric (meter.go
 // meterIsFair) counts a kill fair when the monster's level is at least base level minus meter_fair_lv_gap, so a spot
 // whose monsters all sit under that line gives a bot nothing to score (bugq b1794751012196-928: a lv53 Monk on
@@ -47,17 +52,47 @@ func fairSpotOK(m string, baseLv int) bool {
 }
 
 // spotsFor: SpotsFor for this bot. A solo bot's spots pass the fair gate at its base level (not the effective level,
-// so gear does not move the line); a party member keeps the plain list.
+// so gear does not move the line); a party member keeps the plain list. When the gate empties a list (a bot whose
+// effective level sits well under its base level: the band is mostly monsters under base-15) the bot is not left idle:
+// it gets the one ungated spot whose monsters are most often fair (logged once per bot per hour).
 func (b *Bot) spotsFor(lv int) []HuntSpot {
 	all := SpotsFor(lv, b.P.Risk)
-	if b.PartyID != 0 {
+	if b.PartyID != 0 || !tune().FairSpotGateOn {
 		return all
 	}
-	out := all[:0]
+	base := b.BaseLvOr()
+	out := all[:0:0]
 	for _, s := range all {
-		if fairSpotOK(s.Map, b.BaseLvOr()) {
+		if fairSpotOK(s.Map, base) {
 			out = append(out, s)
 		}
 	}
-	return out
+	if len(out) > 0 || len(all) == 0 {
+		return out
+	}
+	best, bs := 0, -1.0
+	for i, s := range all {
+		sh, known := fairBandShare(s.Map, base)
+		if !known {
+			sh = fairSpotShare()
+		}
+		if sh > bs {
+			best, bs = i, sh
+		}
+	}
+	b.logFairFallback(lv, base, all[best].Map, bs, len(all))
+	return []HuntSpot{all[best]}
+}
+
+// logFairFallback: the gate emptied the spot list for this bot. Logged once per bot per hour (buffAt "fairlog").
+func (b *Bot) logFairFallback(lv, base int, m string, share float64, n int) {
+	if b.buffAt == nil {
+		b.buffAt = map[string]time.Time{}
+	}
+	now := time.Now()
+	if now.Before(b.buffAt["fairlog"]) {
+		return
+	}
+	b.buffAt["fairlog"] = now.Add(time.Hour)
+	b.event("info", "", fmt.Sprintf("no spot holds fair kills for base lv%d (effective lv%d): %d spots gated out, taking %s (fair share %.2f)", base, lv, n, m, share))
 }

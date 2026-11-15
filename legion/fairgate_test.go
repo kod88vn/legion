@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -112,32 +113,24 @@ func TestFairSpotShareTunable(t *testing.T) {
 	}
 }
 
-// after the gate removes every spot, the bot goes idle with the retry marker and picks again a minute later
-func TestGatedEmptyResultRetries(t *testing.T) {
+// the gate removes every spot, but the only spot is still taken: the bot hunts the best-share spot, it does not idle
+func TestGatedEmptyResultFallsBack(t *testing.T) {
 	swapFairTables(t)
-	mobs = map[int]*Mob{1: {ID: 1, Level: 23}, 2: {ID: 2, Level: 21}, 3: {ID: 3, Level: 29}}
-	spawnsByMap = map[string][]Spawn{"gef_fild05": {{"gef_fild05", 1, 20}, {"gef_fild05", 2, 20}, {"gef_fild05", 3, 10}}}
-	huntSpots = []HuntSpot{{Map: "gef_fild05", MinLv: 21, MaxLv: 29, Mobs: 50}}
+	// the ungated list has gef_fild05 (one lv34 monster is in its reach); the gate drops it (1 of 50 fair for lv45)
+	mobs = map[int]*Mob{1: {ID: 1, Level: 23}, 2: {ID: 2, Level: 21}, 3: {ID: 3, Level: 29}, 4: {ID: 4, Level: 34}}
+	spawnsByMap = map[string][]Spawn{"gef_fild05": {{"gef_fild05", 1, 20}, {"gef_fild05", 2, 20}, {"gef_fild05", 3, 9}, {"gef_fild05", 4, 1}}}
+	huntSpots = []HuntSpot{{Map: "gef_fild05", MinLv: 21, MaxLv: 34, Mobs: 50}}
 	guideSpots = nil
 	maps = map[string]*GameMap{"gef_fild05": {}}
-	b := &Bot{P: &Persona{BaseLevel: 45, Risk: 0.5}, BaseLv: 45, MapName: "gef_fild02", invSeen: true,
-		buffAt: map[string]time.Time{}, cart: map[int]*InvItem{}, inv: map[int]*InvItem{}, equipped: map[uint32]*InvItem{}}
-	if len(b.spotsFor(45)) != 0 {
-		t.Fatal("gef_fild05 must be gated out for a lv45 solo")
+	b := &Bot{P: &Persona{BaseLevel: 45, Risk: 0.5, Chars: []CharSpec{{Name: "FallbackTest"}}}, BaseLv: 45, MapName: "gef_fild02", invSeen: true,
+		buffAt: map[string]time.Time{}, cart: map[int]*InvItem{}, inv: map[int]*InvItem{}, equipped: map[uint32]*InvItem{},
+		rng: rand.New(rand.NewSource(1))}
+	if got := b.spotsFor(45); len(got) != 1 || got[0].Map != "gef_fild05" {
+		t.Fatalf("lv45 solo with only gef_fild05: spots = %+v, want the fallback gef_fild05", got)
 	}
-	before := time.Now()
 	b.chooseHuntingGround()
-	if b.Goal.Mode != "idle" || b.Goal.Set != "auto (nowhere reachable)" {
-		t.Fatalf("goal = %+v, want idle with the retry marker", b.Goal)
-	}
-	if d := b.buffAt["huntRetry"].Sub(before); d < 50*time.Second || d > 2*time.Minute {
-		t.Fatalf("retry in %v, want about a minute", d)
-	}
-	if huntRetryDue(b.Goal, b.buffAt["huntRetry"], before) {
-		t.Fatal("the retry must wait its minute")
-	}
-	if !huntRetryDue(b.Goal, b.buffAt["huntRetry"], before.Add(2*time.Minute)) {
-		t.Fatal("the retry must come due after its minute")
+	if b.Goal.Mode != "hunt" || b.Goal.Map != "gef_fild05" {
+		t.Fatalf("goal = %+v, want a hunt on gef_fild05 (never idle while a spot exists)", b.Goal)
 	}
 }
 

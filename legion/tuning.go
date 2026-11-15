@@ -286,12 +286,12 @@ type Tuning struct {
 	ShopAnnounceGapSec int  `json:"shop_announce_gap_sec"`
 	// gearscore.go (AY07, 2026-11-14): the effective level rates the whole kit (gear_score_on) and measured kills /
 	// deaths step a solo bot or a party down / up (gear_perf_on); both default ON
+	GearScoreOn bool `json:"gear_score_on"`
+	GearPerfOn  bool `json:"gear_perf_on"`
 	// fairgate.go (bugq b1794751012196-928): a solo hunting spot needs fair_spot_share of its monsters at or above base
 	// level minus meter_fair_lv_gap (0 or less = 0.5). fair_spot_gate_on default ON.
 	FairSpotGateOn bool    `json:"fair_spot_gate_on"`
 	FairSpotShare  float64 `json:"fair_spot_share"`
-	GearScoreOn    bool    `json:"gear_score_on"`
-	GearPerfOn  bool `json:"gear_perf_on"`
 	// partystick.go (PT04/PT06/PT31, 2026-11-14): no move / target / loot takes a grinding party member beyond
 	// together_cells of its party (party_stick_on), and no solo random Fly Wing / Teleport escape while party mates are
 	// on the map (party_stick_escape_on): run to the party, call for help, Butterfly Wing only when about to die. Both ON.
