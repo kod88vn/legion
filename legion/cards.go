@@ -200,6 +200,9 @@ func (b *Bot) bonusValue(cb *cardBonus) int {
 	switch b.gearStyle() {
 	case "magic":
 		v += cb.matk * 2
+		if !fitBuyOn() {
+			v += cb.crit // tuning fit_buy_off: the pre-fit valuation counted crit for every style
+		}
 	default:
 		v += cb.atk/2 + cb.crit
 	}

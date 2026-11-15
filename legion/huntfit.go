@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -131,44 +132,69 @@ func ammoFit(id int, m string) float64 {
 	return f + (1 - sum) // monsters without an element: neutral
 }
 
-// arrowChoice: the arrow a restock buys from a shop's sell list (pk) for hunting map m. An elemental arrow is bought only
-// when its fit gain pays for its extra price: each extra zeny per arrow must buy at least tuning arrow_gain_per_z percent
-// of damage (default 4: a Silver Arrow at 5z over a plain 1z needs 16%). Plain Arrows (itemArrow) otherwise. Returns the
-// item id and its listed price (0 = not listed).
-func arrowChoice(pk []byte, m string, zeny int) (int, int) {
-	plain := listedPrice(pk, itemArrow)
-	bestID, bestPr, bestGain := itemArrow, plain, 0.0
-	if !fitBuyOn() {
-		return bestID, bestPr
+// arrowChoice: the arrow a restock buys from an NPC shop's sell list. Always plain Arrows: with the server's barter
+// setup no NPC shop sells Silver or elemental arrows (Dealer_Update.txt re-creates the Tool Dealers without them), and
+// rule G09 forbids adding them to a shop. Elemental arrows reach the bots by equipping what they carry (bestArrowStack)
+// and by a market want (fitArrowWant). Returns the item id and its listed price (0 = not listed).
+func arrowChoice(pk []byte) (int, int) {
+	return itemArrow, listedPrice(pk, itemArrow)
+}
+
+// bestArrowStack (b.mu held): the carried arrow stack that fits the hunting map best (Silver or Fire Arrows against
+// Undead, plain otherwise). nil when the bot carries no arrows.
+func bestArrowStack(b *Bot, m string) *InvItem {
+	var best *InvItem
+	for _, it := range b.inv {
+		if it.Count > 0 && isArrow(it.ItemID) && (best == nil || ammoFit(it.ItemID, m) > ammoFit(best.ItemID, m)) {
+			best = it
+		}
+	}
+	return best
+}
+
+// fitArrowWant (b.mu held): an elemental arrow the market should sell this bow user, when its fit gain pays its price
+// over a plain Arrow (each extra zeny per arrow buys tuning arrow_gain_per_z percent of damage), and no carried arrow
+// already fits better. Only in the field, a bounded stock, a third of the purse at most. nil = no such want.
+func (b *Bot) fitArrowWant() *Want {
+	if !fitBuyOn() || !b.bowUser() || townOf(b.MapName) != "" || !huntKnown(b.huntMap()) {
+		return nil
 	}
 	cardBonOnce.Do(loadCardBonuses)
+	m := b.huntMap()
+	have := 1.0
+	if a := bestArrowStack(b, m); a != nil {
+		have = ammoFit(a.ItemID, m)
+	}
 	per := tune().ArrowGainPerZ
 	if per <= 0 {
 		per = 4
 	}
-	base := plain
-	if base <= 0 {
-		base = arrowPrice()
+	var bestW *Want
+	bestGain := 0.0
+	ids := make([]int, 0, len(ammoEle))
+	for id := range ammoEle {
+		ids = append(ids, id)
 	}
-	for o := 4; o+13 <= len(pk); o += 13 {
-		pr, id := int(le.Uint32(pk[o+4:])), int(le.Uint32(pk[o+9:]))
-		if pr <= 0 || id == itemArrow || !isArrow(id) || ammoEle[id] == "" || (zeny-arrowReserve)/pr < minArrowTrip {
+	sort.Ints(ids) // a tie (Silver and Fire both 125% on Undead) goes to the lower id, every time
+	for _, id := range ids {
+		if !isArrow(id) || items[id] == nil {
 			continue
 		}
-		gain := ammoFit(id, m) - 1
-		extra := max(0, pr-base)
-		if gain <= 0 || gain*100 < float64(extra*per) {
+		gain := ammoFit(id, m) - have
+		bid := bidPrice(b.P, id)
+		extra := max(0, bid-arrowPrice())
+		if bid <= 0 || gain <= 0 || gain*100 < float64(extra*per) || gain <= bestGain {
 			continue
 		}
-		if gain > bestGain {
-			bestID, bestPr, bestGain = id, pr, gain
+		const count = 50
+		if bid*count > b.Zeny/3 {
+			continue
 		}
+		bestGain = gain
+		bestW = &Want{ItemID: id, Count: count, Each: bid, Why: "ammo"}
 	}
-	return bestID, bestPr
+	return bestW
 }
-
-// elemArrowCap: most elemental arrows a single restock buys (the rest of the stock is plain Arrows)
-const elemArrowCap = 200
 
 // shareOf: the share of the map's monsters a bonus key hits; "all" (RC_All, Ele_All) hits every monster
 func shareOf(m map[string]float64, key string) float64 {

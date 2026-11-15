@@ -7,7 +7,7 @@ import (
 
 // loadFitFixtures loads the real rAthena rows the fit reads (fit_fixture_test.go: Arrows 1750-1757, the Hydra Card 4035,
 // Z Stone 9 4966 and Ice Crystal Orb 312087) and the real mobs and spawns of Payon Cave (mob_db.yml element and race;
-// npc spawn lines of pay_dun01). The ids are the server's.
+// npc spawn lines of zz_payon_undead). The ids are the server's.
 func loadFitFixtures(t *testing.T) {
 	t.Helper()
 	cardBonOnce.Do(loadCardBonuses) // the default rathena path has no DB here: a harmless no-op
@@ -41,20 +41,20 @@ func loadFitFixtures(t *testing.T) {
 	} {
 		mobs[m.ID] = m
 	}
-	// pay_dun01 (Payon Cave 2): the real spawn lines of the npc file, counts summed as the loader does (Soldier Skeleton
+	// zz_payon_undead (Payon Cave 2): the real spawn lines of the npc file, counts summed as the loader does (Soldier Skeleton
 	// 50 + 53, Archer Skeleton 30 + 32, Furious Soldier Skeleton 2, Drainliar 5, Eggyra 15 + 16, Red Plant 10, Golden
 	// Poring 3): undead is about 77% of the spawns.
-	spawnsByMap["pay_dun01"] = []Spawn{
-		{Map: "pay_dun01", MobID: 1028, Count: 50}, {Map: "pay_dun01", MobID: 1028, Count: 53},
-		{Map: "pay_dun01", MobID: 1016, Count: 30}, {Map: "pay_dun01", MobID: 1016, Count: 32},
-		{Map: "pay_dun01", MobID: 2649, Count: 2}, {Map: "pay_dun01", MobID: 1111, Count: 5},
-		{Map: "pay_dun01", MobID: 1116, Count: 15}, {Map: "pay_dun01", MobID: 1116, Count: 16},
-		{Map: "pay_dun01", MobID: 1078, Count: 10}, {Map: "pay_dun01", MobID: 2248, Count: 3},
+	spawnsByMap["zz_payon_undead"] = []Spawn{
+		{Map: "zz_payon_undead", MobID: 1028, Count: 50}, {Map: "zz_payon_undead", MobID: 1028, Count: 53},
+		{Map: "zz_payon_undead", MobID: 1016, Count: 30}, {Map: "zz_payon_undead", MobID: 1016, Count: 32},
+		{Map: "zz_payon_undead", MobID: 2649, Count: 2}, {Map: "zz_payon_undead", MobID: 1111, Count: 5},
+		{Map: "zz_payon_undead", MobID: 1116, Count: 15}, {Map: "zz_payon_undead", MobID: 1116, Count: 16},
+		{Map: "zz_payon_undead", MobID: 1078, Count: 10}, {Map: "zz_payon_undead", MobID: 2248, Count: 3},
 	}
 	// test-only spawn lists of real mobs: a neutral map and an all-Demihuman map
 	spawnsByMap["zz_neutral_fit"] = []Spawn{{Map: "zz_neutral_fit", MobID: 1177, Count: 10}}
 	spawnsByMap["zz_orc_fit"] = []Spawn{{Map: "zz_orc_fit", MobID: 1023, Count: 20}}
-	mapFitForget("pay_dun01", "zz_neutral_fit", "zz_orc_fit")
+	mapFitForget("zz_payon_undead", "zz_neutral_fit", "zz_orc_fit")
 }
 
 // mapFitForget: the hunt-fit cache of these maps is rebuilt from their spawn lists
@@ -64,6 +64,16 @@ func mapFitForget(maps ...string) {
 	for _, m := range maps {
 		delete(huntCache, m)
 	}
+}
+
+// withArrowGain runs f with tuning arrow_gain_per_z n, then restores the tuning in force
+func withArrowGain(n int, f func()) {
+	old := tune()
+	nt := *old
+	nt.ArrowGainPerZ = n
+	curTuning.Store(&nt)
+	defer curTuning.Store(old)
+	f()
 }
 
 // withFitOff runs f with tuning fit_buy_off true, then restores the tuning in force
@@ -88,39 +98,6 @@ func TestArrowElementsFromItemScripts(t *testing.T) {
 	}
 }
 
-// Payon Cave 2 is about 77% undead: a Silver Arrow (Holy: 125% against Undead and Dark, 75% against Poison, 100%
-// otherwise) gains about 20% over a plain Arrow. Tool Dealer#pay2 (payon_in02) sells Arrow at 1z and Silver Arrow at 5z.
-func TestPayonUndeadBuysSilverArrows(t *testing.T) {
-	loadFitFixtures(t)
-	if got := ammoFit(1751, "pay_dun01"); got < 1.18 || got > 1.22 {
-		t.Fatalf("Silver Arrow fit on pay_dun01 = %.3f, want about 1.20", got)
-	}
-	pk := shopPk(1, 1750, 5, 1751)
-	if id, pr := arrowChoice(pk, "pay_dun01", 5000); id != 1751 || pr != 5 {
-		t.Fatalf("pay_dun01 with 5000z: picked %d at %d, want Silver Arrow 1751 at 5", id, pr)
-	}
-	// a plain Arrow stays on a neutral map (Holy against neutral is 100%: 4z extra buys no damage)
-	if id, _ := arrowChoice(pk, "zz_neutral_fit", 5000); id != 1750 {
-		t.Fatalf("neutral map: picked %d, want the plain Arrow 1750", id)
-	}
-	// too poor for a useful elemental stock (30 arrows at 5z): plain
-	if id, _ := arrowChoice(pk, "pay_dun01", 100); id != 1750 {
-		t.Fatalf("100z: picked %d, want the plain Arrow", id)
-	}
-}
-
-// an elemental arrow whose gain does not pay its extra price stays out: a Fire Arrow (125% against Undead) on a map that
-// is a third undead and two thirds Dark gains less than the 4% per extra zeny, so the plain stock is bought
-func TestElementalArrowMustPayItsPrice(t *testing.T) {
-	loadFitFixtures(t)
-	spawnsByMap["zz_mixed_fit"] = []Spawn{{Map: "zz_mixed_fit", MobID: 1015, Count: 10}, {Map: "zz_mixed_fit", MobID: 1111, Count: 20}}
-	defer mapFitForget("zz_mixed_fit")
-	pk := shopPk(1, 1750, 5, 1752) // Fire Arrow at 5z (sold in alb2trea, ein_in01 and lhz_in03 per the npc files)
-	if id, _ := arrowChoice(pk, "zz_mixed_fit", 5000); id != 1750 {
-		t.Fatalf("1/3 undead, 2/3 Dark: picked %d, want the plain Arrow (gain %.3f does not pay 4z)", id, ammoFit(1752, "zz_mixed_fit")-1)
-	}
-}
-
 // the Demihuman race card (Hydra Card: bonus2 bAddRace,RC_DemiHuman,20) matches the server's "Demihuman" (mob_db);
 // RC_All (Z Stone 9) hits every monster; Ele_All (Ice Crystal Orb: bAddEle Ele_All 4) too. Undead-race cards are not
 // used here.
@@ -139,7 +116,7 @@ func TestDemihumanAndAllBonusesMatch(t *testing.T) {
 	if v := orc.huntFitValue(cardBon[4035]); v != 40 {
 		t.Fatalf("Hydra Card on an all-Demihuman map: value %d, want 40 (20 x share 1.0 x 2)", v)
 	}
-	pay := &Bot{Goal: Goal{Map: "pay_dun01"}}
+	pay := &Bot{Goal: Goal{Map: "zz_payon_undead"}}
 	if v := pay.huntFitValue(cardBon[4035]); v != 0 {
 		t.Fatalf("Hydra Card on Payon Cave 2 (no Demihuman): value %d, want 0", v)
 	}
@@ -155,28 +132,28 @@ func TestDemihumanAndAllBonusesMatch(t *testing.T) {
 func TestCritCardNoValueForCasters(t *testing.T) {
 	loadFitFixtures(t)
 	crit := &cardBonus{crit: 10}
-	priest := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "fitpriest"}}}, Class: 8, Goal: Goal{Map: "pay_dun01"}}
+	priest := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "fitpriest"}}}, Class: 8, Goal: Goal{Map: "zz_payon_undead"}}
 	if v := priest.bonusValue(crit); v != 0 {
 		t.Fatalf("priest crit card worth %d, want 0", v)
 	}
-	smith := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "fitsmith"}}}, Class: 0, Goal: Goal{Map: "pay_dun01"}}
+	smith := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "fitsmith"}}}, Class: 0, Goal: Goal{Map: "zz_payon_undead"}}
 	if v := smith.bonusValue(crit); v <= 0 {
 		t.Fatalf("melee crit card worth %d, want > 0", v)
 	}
 }
 
-// fit_buy_off true: the plain pre-fit behaviour - plain Arrows, no element fit, no card fit
+// fit_buy_off true: the plain pre-fit behaviour - no element fit, no card fit, no market arrow want
 func TestFitBuyOffIsPlainBehaviour(t *testing.T) {
 	loadFitFixtures(t)
-	pk := shopPk(1, 1750, 5, 1751)
 	withFitOff(func() {
-		if id, _ := arrowChoice(pk, "pay_dun01", 5000); id != 1750 {
-			t.Errorf("flag off: picked %d, want the plain Arrow", id)
-		}
-		if got := ammoFit(1751, "pay_dun01"); got != 1 {
+		if got := ammoFit(1751, "zz_payon_undead"); got != 1 {
 			t.Errorf("flag off: fit %.2f, want 1", got)
 		}
-		pay := &Bot{Goal: Goal{Map: "pay_dun01"}}
+		bow := &Bot{Goal: Goal{Map: "zz_payon_undead"}, MapName: "zz_payon_undead", P: &Persona{BaseLevel: 80, Chars: []CharSpec{{Name: "offwant"}}}}
+		if w := bow.fitArrowWant(); w != nil {
+			t.Errorf("flag off: market want %+v, want none", w)
+		}
+		pay := &Bot{Goal: Goal{Map: "zz_payon_undead"}}
 		if v := pay.huntFitValue(cardBon[4966]); v != 0 {
 			t.Errorf("flag off: card fit %d, want 0", v)
 		}
@@ -197,5 +174,59 @@ func TestElemMulIsServerTable(t *testing.T) {
 		if got := elemMul(c.spell, c.mob); got != c.want {
 			t.Errorf("elemMul(%s, %s) = %v, want %v", c.spell, c.mob, got, c.want)
 		}
+	}
+}
+
+// NPC shops sell plain Arrows only on this server (barter setup; rule G09 forbids adding elemental arrows): even a shop
+// that lists Silver Arrows at 5z gets a plain Arrow from the buy step.
+func TestArrowChoiceIsPlainOnly(t *testing.T) {
+	loadFitFixtures(t)
+	pk := shopPk(1, 1750, 5, 1751, 5, 1752)
+	if id, pr := arrowChoice(pk); id != 1750 || pr != 1 {
+		t.Fatalf("arrowChoice on a list with Silver and Fire: picked %d at %d, want the plain Arrow at 1", id, pr)
+	}
+}
+
+// the equip path: a bot carrying Silver Arrows and plain Arrows, hunting zz_payon_undead (Undead), equips the Silver stack;
+// on a neutral map both fit the same and the stack carried is kept (bestArrowStack picks the best fit only).
+func TestCarriedSilverArrowIsEquipped(t *testing.T) {
+	loadFitFixtures(t)
+	b := &Bot{Goal: Goal{Map: "zz_payon_undead"}, MapName: "zz_payon_undead", inv: map[int]*InvItem{
+		1: {Index: 1, ItemID: 1750, Count: 500},
+		2: {Index: 2, ItemID: 1751, Count: 100},
+	}}
+	if a := bestArrowStack(b, "zz_payon_undead"); a == nil || a.ItemID != 1751 {
+		t.Fatalf("zz_payon_undead: best stack %+v, want Silver Arrow 1751", a)
+	}
+	if a := bestArrowStack(&Bot{inv: map[int]*InvItem{}}, "zz_payon_undead"); a != nil {
+		t.Fatalf("no arrows carried: best stack %+v, want nil", a)
+	}
+}
+
+// the market path: a bow user in the field of a fully undead map wants Silver Arrows (the lowest id among the arrows
+// that fit 125% on Undead: 1751 Holy, 1752 Fire tie; the lower id wins), not in town, and not when no arrow fits better
+func TestMarketWantsFittingArrow(t *testing.T) {
+	loadFitFixtures(t)
+	spawnsByMap["zz_pure_undead"] = []Spawn{{Map: "zz_pure_undead", MobID: 1028, Count: 40}}
+	defer mapFitForget("zz_pure_undead")
+	bow := &Bot{Goal: Goal{Map: "zz_pure_undead"}, MapName: "zz_pure_undead", Zeny: 5000,
+		P:        &Persona{BaseLevel: 80, Chars: []CharSpec{{Name: "wantarrow"}}},
+		inv:      map[int]*InvItem{},
+		equipped: map[uint32]*InvItem{0x2: {Index: 9, ItemID: 1701, Count: 1, Equipped: true}}}
+	items[1701] = &Item{ID: 1701, Name: "Bow", Type: "Weapon", Sub: "Bow", Loc: 0x2, Atk: 15}
+	// the market bids 11z for a Silver Arrow here (no NPC sells it: the rarity price), 10z over plain: +25% does not pay
+	// 4% per zeny, so no want
+	if w := bow.fitArrowWant(); w != nil {
+		t.Fatalf("pure undead field at an 11z bid: want %+v, want none (the gain does not pay the price)", w)
+	}
+	// with the gate at 1% per zeny the same Silver Arrow pays and is wanted (lowest id on the tie)
+	withArrowGain(1, func() {
+		if w := bow.fitArrowWant(); w == nil || w.ItemID != 1751 || w.Why != "ammo" || w.Count != 50 {
+			t.Errorf("gate 1%%: want %+v, want Silver Arrow 1751 x50 (Why ammo)", w)
+		}
+	})
+	bow.MapName = "prontera" // a town: the shop runs and the field want don't mix
+	if w := bow.fitArrowWant(); w != nil {
+		t.Fatalf("in town: want %+v, want none", w)
 	}
 }

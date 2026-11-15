@@ -394,6 +394,10 @@ func (b *Bot) econWant() *Want {
 			return &Want{ItemID: itemRedPotion, Count: n, Each: each, Why: "potions"}
 		}
 	}
+	// huntfit.go: an elemental arrow that fits the hunting map, from the market (no NPC shop sells one on this server)
+	if w := b.fitArrowWant(); w != nil {
+		return w
+	}
 	p := b.plan()
 	if p == nil || lv < minGearLevel() || !b.invReady() {
 		return nil
