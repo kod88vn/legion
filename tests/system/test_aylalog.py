@@ -109,6 +109,22 @@ class TestTracker(unittest.TestCase):
         ev = tr.feed(T0 + 4, "Disconnected from Map Server, x")[0]
         self.assertEqual(ev.key(), "ayla:disconnect:any")
 
+    def test_watchdog_bare_word_is_not_a_map(self):
+        # b1794736126l06: "TELEPORT allowed" set her map to "allowed"; a map is named only after "on" or before a cell
+        tr = A.Tracker()
+        tr.feed(T0, "Map Change: payon.gat (30, 63)")
+        ev = tr.feed(T0 + 1, "[watchdog] TELEPORT allowed: party town run (Butterfly Wing to payon)")[0]
+        self.assertEqual(ev.key(), "ayla-watchdog-teleport-payon")
+        self.assertEqual(tr.map, "payon")
+        self.assertEqual(ev.map, "payon")
+        for line in ("[watchdog] PORTAL_LOOP crossed 3 times in 3 min", "[watchdog] RESPAWN refused: no wing",
+                     "[watchdog] PLAN_CHANGE pay_fild04 -> pay_fild07: re-pick"):
+            tr.feed(T0 + 2, line)
+            self.assertEqual(tr.map, "payon", line)
+        ev = tr.feed(T0 + 3, "[watchdog] STUCK izlude 24,98 for 3 min, route to payon fails")[0]
+        self.assertEqual((ev.map, ev.key()), ("izlude", "ayla-watchdog-stuck-izlude"))
+        self.assertEqual(tr.map, "izlude")
+
     def test_no_exp_on_field_every_5_min(self):
         tr = A.Tracker()
         tr.feed(T0, "Map Change: pay_dun00.gat (10, 10)")
@@ -200,6 +216,15 @@ class TestFiler(unittest.TestCase):
         self.assertEqual(f.flush(T0 + 70), 0)            # within 10 min of the last write
         f.add(self.ev(T0 + 620, "Stuck during route."))
         self.assertEqual(f.flush(T0 + 630), 1)           # next window
+
+    def test_unknown_switch_filed_once(self):
+        f = A.Filer(dry_run=True, out=io.StringIO())
+        for i in range(12):
+            f.add(self.ev(T0 + i, "Packet Parser: Unknown switch: 0B3F"))
+        f.flush(T0 + 20)
+        self.assertEqual(f.writes[0][1], "low")
+        f.add(self.ev(T0 + 700, "Packet Parser: Unknown switch: 0B3F"))
+        self.assertEqual(f.flush(T0 + 710), 0)           # already filed once: hits only from now on
 
     def test_high_at_escalates(self):
         f = A.Filer(dry_run=True, out=io.StringIO())

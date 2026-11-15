@@ -38,6 +38,7 @@ FROM = "ayla-log"
 WINDOW = 600                 # one queue write per key per 10 min
 MAX_WRITES_PER_CYCLE = 20
 MAX_NEW_KEYS_PER_H = 40
+ONCE_KINDS = ("unknown-switch",)   # console noise (280 lines in 6 h, b1794721138oed): one queue item per key, then only hits
 NOEXP_S = 300
 TOWN_STALL_S = 900
 LOG_SILENT_S = 600
@@ -69,7 +70,11 @@ class K(object):
 
 CELL = r"\((?P<x>\d+), ?(?P<y>\d+)\)"
 RULES = [
-    K("watchdog", r"^\[watchdog\] (?P<extra>[A-Z_]+) (?:(?:no productive action for \d+ s )?on )?(?P<map>[\w@-]+)? ?(?:(?P<x>\d+),(?P<y>\d+))?",
+    # a map is taken only where the watchdog names one: "... on <map>" (IDLE, WRONG_MAP) or "<map> x,y" (STUCK). A bare
+    # word after the cause ("TELEPORT allowed: ...", "crossed", "hold") is no map (b1794736126l06: it corrupted her map).
+    K("watchdog", [r"^\[watchdog\] (?P<extra>[A-Z_]+) (?:(?:no productive action for \d+ s )?on )(?P<map>[\w@-]+)(?: (?P<x>\d+),(?P<y>\d+))?",
+                   r"^\[watchdog\] (?P<extra>[A-Z_]+) (?P<map>[\w@-]+) (?P<x>\d+),(?P<y>\d+)",
+                   r"^\[watchdog\] (?P<extra>[A-Z_]+)\b"],
       "normal", desc="partylead watchdog fired"),
     K("route-loop", r"^\[getRoute\] Called with (?:no valid closest coordinates|invalid coordinates) on field (?P<map>[\w@-]+)(?: " + CELL + ")?",
       "normal", 1, 30, desc="route calculation keeps failing (getRoute invalid/unwalkable start)"),
@@ -90,7 +95,7 @@ RULES = [
     K("disconnect", [r"^Disconnected from Map Server", r"^Timeout on (?:Map|Account|Character Select|Character) Server",
                      r"^Error: The server still recognizes your last connection", r"^\[reconnect\] Login retry"],
       "high", key="any", desc="disconnect / login timeout"),
-    K("unknown-switch", r"^Packet Parser: Unknown switch: (?P<extra>\w+)", "normal", 1, None, key="extra",
+    K("unknown-switch", r"^Packet Parser: Unknown switch: (?P<extra>\w+)", "low", 1, None, key="extra",
       desc="unknown packet switch"),
     K("npc-fail", [r"^NPC error: Could not find an NPC", r"^Could not find an NPC",
                    r"^\[TalkNPC\].*(?:[Ff]ail|[Ee]rror|[Tt]imeout|[Cc]annot|[Uu]nable)", r"^Error in function 'talk"],
@@ -417,6 +422,9 @@ class Filer(object):
             self.pending[k] = evs
             kind = evs[-1].kind
             if len(evs) < self._min(kind):
+                continue
+            if kind in ONCE_KINDS and k in self.last:
+                del self.pending[k]
                 continue
             if now - self.last.get(k, 0) < WINDOW:
                 continue

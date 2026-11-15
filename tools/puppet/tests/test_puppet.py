@@ -263,6 +263,9 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(dispatch.classify_ayla_event({"kind": "death", "bot": "Kira", "text": "died"}, names), "death")
         self.assertIsNone(dispatch.classify_ayla_event({"kind": "death", "bot": "Stranger", "text": "died"}, names))
         self.assertEqual(dispatch.classify_ayla_event({"kind": "party", "bot": "Bo", "text": "separated from party"}, names), "split")
+        # b1794739867792-368: with no party names found, a death anywhere on the server must not wake her helper
+        self.assertIsNone(dispatch.classify_ayla_event({"kind": "death", "bot": "Stranger", "text": "died"}, set()))
+        self.assertIsNone(dispatch.classify_ayla_event({"kind": "death", "bot": "Kira", "text": "died"}, set()))
 
     def test_ayla_idle_state(self):
         neo = {"ayla": {"windows": {"10m": {"shares": {"town": 0.9}}}}}
