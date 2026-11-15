@@ -10,7 +10,7 @@ section 0 -> `process.md`, 1 -> the hard gates (`gates.md`), 2 -> `economy.md` a
 3b -> `guilds.md`, 4 -> `chat.md`, 5 -> `ayla.md`, 6 -> `process.md` (DB01, DB02); class rules -> `docs/classes/`.
 Find the rule by the quoted title in the Name column below.
 
-Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server setting 8, total 161.
+Counts by kind: behaviour spec 120, hard gate 20, process 30, replaced 5, server setting 8, ayla 9, economy 12, parties 6, classes 2, settings 1, total 213.
 
 | ID | Name | Kind | Old location | New location | Status |
 |---|---|---|---|---|---|
@@ -211,10 +211,15 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | AY24 | Ayla played by the Legion engine; OpenKore retired for her; Haiku watcher, code improved for her first (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
 | AY25 | Owner overrides puppet-master directives for Ayla, logged, with expiry (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
 | DB10 | Dashboard tool to guide Ayla (farm map, guild direction, party orders) and override puppet masters (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PR46 | .env untracked, example.env in the repository (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| EC44 | Market may broadcast server-wide what is worth farming, without a GM character in the world (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC45 | Farmers: guild-less bots, main hunter with Creamy card (hit and run) plus merchant second character, directed by the market and spread over wanted goods (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC46 | The market is an algorithm engine, not an AI agent (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC47 | Bots buy from the player market first, NPC shops last (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC43 | Market gives signals and information only, never directs guild leaders (2026-11-15, amended; replaces the earlier version) | economy | owner 2026-11-15 | docs/rules/economy.md | edited rule |
 | EC40 | End builds list gear upgrades and alternatives per slot (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC41 | Cards are one-time bound: refine first, but balance rare cards against refine cost; +7/+8 weapons, +7 gear; a usable card beats a refine that never comes (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC42 | Build numbers must be realistic, checked by tests (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
-| EC43 | Build information goes to the market agents, who tell guild leaders what and where to farm by server progress (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC39 | Build milestones per level range (stats, gear, skills); map choice gated by meeting the gear milestone (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC38 | Bots take one middle step of their end goal at a time; keep it; show the end goal (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | DB09 | Dashboard Builds tab: end goal per class/build with items, stats, skills and playstyle (solo, party, MVP, PvP) (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
