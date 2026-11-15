@@ -339,11 +339,14 @@ func (b *Bot) pickFarmGoal(now time.Time, prev string) *farmGoal {
 	if zeny != nil {
 		return zeny
 	}
+	if levelCapped(b.Class, lv) {
+		return b.capGoal(now) // ST01: a capped 2nd job has no level left; zeny for gear instead
+	}
 	step := 2
 	if lv >= 70 {
 		step = 1
 	}
-	return &farmGoal{Kind: "level", Target: lv + step, Set: now, Until: now.Add(2 * time.Hour)}
+	return &farmGoal{Kind: "level", Target: levelGoalTarget(b.Class, lv, step), Set: now, Until: now.Add(2 * time.Hour)}
 }
 
 // turnPiece (b.mu held): in a human-led party, the piece this member's goal is locked on (buy / zeny / gear) until
@@ -408,11 +411,14 @@ func (b *Bot) humanPartyGearGoal(now time.Time, lv int) *farmGoal {
 				Until: now.Add(2 * time.Hour)}
 		}
 	}
+	if levelCapped(b.Class, lv) {
+		return b.capGoal(now) // ST01: a capped 2nd job has no level left; zeny for gear instead
+	}
 	step := 2
 	if lv >= 70 {
 		step = 1
 	}
-	return &farmGoal{Kind: "level", Target: lv + step, Set: now, Until: now.Add(2 * time.Hour)}
+	return &farmGoal{Kind: "level", Target: levelGoalTarget(b.Class, lv, step), Set: now, Until: now.Add(2 * time.Hour)}
 }
 
 // cardGoal (b.mu held): a card from the build's band table it doesn't have, dropped on a map safe for it - one for a
@@ -820,7 +826,11 @@ func (b *Bot) leaderGoalSync(p *Party, pm string, others []*Bot, now time.Time) 
 		step = 1
 	}
 	b.mu.Lock()
-	b.fgoal = &farmGoal{Kind: "level", Target: lv + step, Set: now, Until: now.Add(60 * time.Minute)}
+	if levelCapped(b.Class, lv) {
+		b.fgoal = b.capGoal(now)
+	} else {
+		b.fgoal = &farmGoal{Kind: "level", Target: levelGoalTarget(b.Class, lv, step), Set: now, Until: now.Add(60 * time.Minute)}
+	}
 	b.event("info", "", fmt.Sprintf("goal: lvling with the party on %s (%s needs a map the group can't take)", pm, g.desc()))
 	b.mu.Unlock()
 	lfgCount(lfgStats.changed, g.Kind+" (leader adopts party map)")
