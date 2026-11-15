@@ -50,8 +50,9 @@ const (
 // where Ayla's engine bot is the master (the coreInstance gate is relaxed for Starveil only).
 func starveilAutoLead() bool { return tune().StarveilAutoLead && (!coreInstance() || aylaEngineOn()) }
 
-// aylaEngineOn: Ayla is played by the engine (package D, tuning ayla_engine_on, default off). Off changes nothing.
-func aylaEngineOn() bool { return tune().AylaEngineOn }
+// aylaEngineOn: Ayla is played by the engine (package D). The one switch is package C's tuning engine_parties: Ayla is
+// on the engine while "Ayla" is listed there, the same check as enginePartyOn("Ayla") in engineparty.go. Off changes nothing.
+func aylaEngineOn() bool { return nameSet(tune().EngineParties)["ayla"] }
 
 // starveilOrder: something Ayla's plugin does as Starveil's master (guild chat line, expel)
 type starveilOrder struct {

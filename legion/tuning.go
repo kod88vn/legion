@@ -233,9 +233,9 @@ type Tuning struct {
 	GuildKickCooldownH int  `json:"guild_kick_cooldown_h"`  // hours a kicked bot refuses every guild invitation
 	// starveillead.go (owner rule AY19): Starveil runs like a bot guild with no AI around (default on, owner order)
 	StarveilAutoLead bool `json:"starveil_auto_lead"`
-	// starveillead.go (Ayla on the engine, package D; default off): Ayla's engine bot is Starveil's master in core and
-	// runs the guild-leader duties (recruit, warn/expel, tax, skills) for Starveil; her OpenKore hand-off stops.
-	AylaEngineOn bool `json:"ayla_engine_on"`
+	// engineparty.go (AY24, ayla-switch): comma-separated human names whose party runs bot-led on the engine, the human's
+	// own bot as Leader through formPartyOpt (default empty: every human-led party stays as it is)
+	EngineParties string `json:"engine_parties"`
 	// Kafra
 	KafraMinSaving    int `json:"kafra_min_saving"`
 	KafraKeepBeginner int `json:"kafra_keep_zeny_beginner"`

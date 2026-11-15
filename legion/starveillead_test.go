@@ -99,7 +99,10 @@ func withAylaEngine(t *testing.T, on, core bool, f func()) {
 	t.Helper()
 	old := tune()
 	nt := *old
-	nt.AylaEngineOn = on
+	nt.EngineParties = ""
+	if on {
+		nt.EngineParties = "Ayla" // the one switch: package C's engine_parties
+	}
 	curTuning.Store(&nt)
 	oldO, oldE, oldC := *onlyNames, *excludeNames, *coreAPI
 	defer func() {
@@ -116,9 +119,19 @@ func withAylaEngine(t *testing.T, on, core bool, f func()) {
 }
 
 func TestAylaEngineDefaultOff(t *testing.T) {
-	if defaultTuning.AylaEngineOn {
-		t.Fatal("ayla_engine_on must default off: the switch stays dark until the owner says so")
+	if defaultTuning.EngineParties != "" || aylaEngineOn() {
+		t.Fatal("engine_parties must default empty: the switch stays dark until the owner says so")
 	}
+	withAylaEngine(t, false, false, func() {
+		if aylaEngineOn() {
+			t.Fatal("empty engine_parties: Ayla is not on the engine")
+		}
+	})
+	withAylaEngine(t, true, false, func() {
+		if !aylaEngineOn() {
+			t.Fatal("engine_parties listing Ayla: she is on the engine")
+		}
+	})
 }
 
 func TestAylaEngineOffChangesNothing(t *testing.T) {
