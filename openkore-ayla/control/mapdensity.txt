@@ -1,4 +1,4 @@
-# Monster spawns per map from rathena npc/*/mobs (248 files, sum of the monster lines' amounts).
+# Monster spawns per map from the rathena npc files the server loads (822 files: conf/map_athena.conf and npc/re/scripts_main.conf imports).
 # Stock counts; the plugin scales them by rate/100 (mob_count_rate of this server).
 rate 400
 abbey01 266
@@ -152,6 +152,11 @@ int_land01 40
 int_land02 40
 int_land03 40
 int_land04 40
+iz_ac01 4
+iz_ac01_a 4
+iz_ac01_b 4
+iz_ac01_c 4
+iz_ac01_d 4
 iz_dun00 217
 iz_dun01 192
 iz_dun02 198
@@ -160,12 +165,15 @@ iz_dun04 164
 iz_dun05 167
 jawaii 9
 jawaii_in 4
+job_monk 90
 jupe_core 278
 juperos_01 288
 juperos_02 318
 kh_dun01 107
 kh_dun02 115
 kh_kiehl01 32
+lasa_fild01 245
+lasa_fild02 300
 lhz_dun01 289
 lhz_dun02 334
 lhz_dun03 315
@@ -228,6 +236,7 @@ mosk_dun01 146
 mosk_dun02 111
 mosk_dun03 153
 mosk_fild02 130
+mosk_que 28
 nameless_n 101
 nif_fild01 135
 nif_fild02 83
@@ -262,11 +271,7 @@ prt_fild04 146
 prt_fild05 292
 prt_fild06 230
 prt_fild07 277
-prt_fild08 616
-prt_fild08a 340
-prt_fild08b 340
-prt_fild08c 340
-prt_fild08d 340
+prt_fild08 276
 prt_fild09 308
 prt_fild10 243
 prt_fild11 244
@@ -279,6 +284,17 @@ prt_sewb1 226
 prt_sewb2 197
 prt_sewb3 213
 prt_sewb4 147
+que_qaru01 45
+que_qaru02 45
+que_qaru03 45
+que_qaru04 45
+que_qaru05 45
+que_qsch01 45
+que_qsch02 45
+que_qsch03 45
+que_qsch04 45
+que_qsch05 45
+que_sign02 105
 ra_fild01 213
 ra_fild03 238
 ra_fild04 239
@@ -321,14 +337,13 @@ tha_t12 39
 thor_v01 117
 thor_v02 89
 thor_v03 149
-tra_fild 38
 tra_fild01 72
 tra_fild02 72
 tra_fild03 72
 treasure01 137
 treasure02 94
-treasure_n1 260
-treasure_n2 278
+treasure_n1 131
+treasure_n2 140
 tur_dun01 86
 tur_dun02 119
 tur_dun03 101
