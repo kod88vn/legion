@@ -72,3 +72,22 @@ Response shapes are read defensively (field guesses: `rank`, `wealth`, `standing
 Assumed, not in the brief: `guild-direction set` body fields (kind,item,map,min_lv,max_lv,classes,note,replace,hours),
 `guild-duty pardon` body `{name}`, `GET /api/minds/<m>/thoughts?limit=4`, `GET /api/chat-jobs?peek=1` (must not count
 as the chat agent's poll in the engine's 2-minute check) and Starveil's guild id `starveil`.
+
+## Resolved at the integration pass (2026-11-14)
+- The guessed legionctl commands were removed; the minds use the engine authors' commands: `meter ...`, `exchange`,
+  `chat-jobs [list|answer|pass]`, `chat-intent <from> <need|offer> <item>`, `guild-direction [g]`,
+  `guild-direction-set <g> <kind> ...`, `guild-direction-clear`, `guild-duty`, `guild-pardon`, `guild-rank`,
+  `guild-relations`. Puppet keeps `bug`, `neo`, `notes`. `guild-kick` is denied to the minds (the ledger kicks).
+- `briefing.py` reads the real JSON: `/api/guild-rank` `rank[]` (place, score, wealth, name), `/api/guild-relations`
+  `relations[]` (a, b, value, label), `/api/guild-direction/<g>` `active[]`, `/api/guild-duty` `members[]` and
+  `standings{}`, `/api/meter` `server{kpm,zph,deaths_h}` and `cohorts[].{kpm,zph}.prize`, `/api/meter/bots` (guild
+  metrics by the in-game guild name), `/api/meter/neo` `party_summary`/`starveil_summary`, `/api/chat-jobs` `jobs[]`,
+  `/api/exchange` `counts{}`, `/api/minds/<m>/thoughts` `thoughts[]`, `/api/guild-stock` (replaces `/api/guilds/<g>`,
+  which has no GET). The guessed shapes are still read (test `test_guessed_shapes_still_read`).
+- Starveil's engine id is `human-guild` (`starveil` is accepted as an alias by the guild endpoints).
+- Heartbeat: the dispatcher also writes `legion/data/dispatch.heartbeat` (epoch) for the gate and the sentinel; it is
+  removed on a clean stop. `stack.hold` pauses the dispatcher like `puppet.pause`.
+- Chat: while the chat role can run (in the loop, under its hourly cap, not paused) the dispatcher's chat-jobs GET is a
+  real poll, so the engine holds social lines for the agent; otherwise it peeks and every line goes out as its template.
+  The job deadline is 20-40 s and the tick 30 s plus CLI start-up: for live chat use `--tick 10` and raise
+  `chat_job_wait_min_sec`/`chat_job_wait_max_sec` (e.g. 45/75) in tuning.json, or most jobs fall back to templates.

@@ -32,19 +32,52 @@ class MockApi:
         raise OSError("404 " + path)
 
 
+# the real engine shapes (legion/guildduty_api.go, meterapi.go, chatjobs.go, exchange.go, minds.go)
 FULL = {
     "/api/stats": {"bots": 100, "states": {"hunting": 60}},
     "/api/guilds": {"guild03": {"members": 80, "online": 41, "leader": "Mara"}},
+    "/api/guild-rank": {"instance": "main", "rank": [
+        {"guild": "guild03", "name": "Moonlit Bazaar", "place": 4, "score": 610.5, "wealth": 900000, "members": 80},
+        {"guild": "guild01", "name": "Crimson Oath", "place": 1, "score": 820.0, "wealth": 2500000, "members": 90},
+        {"guild": "human-guild", "name": "Starveil", "place": 7, "score": 300.0, "wealth": 120000, "members": 12}],
+        "history": {}},
+    "/api/guild-relations": {"instance": "main", "relations": [
+        {"a": "guild01", "b": "guild03", "name_a": "Crimson Oath", "name_b": "Moonlit Bazaar", "value": -0.4,
+         "label": "cool", "events": 3, "last_event": "member moved"},
+        {"a": "guild02", "b": "guild03", "name_a": "Silver Lanterns", "name_b": "Moonlit Bazaar", "value": 0.5,
+         "label": "ally", "events": 9}]},
+    "/api/guild-direction/guild03": {"guild": "guild03", "name": "Moonlit Bazaar",
+                                     "active": [{"id": "d1", "kind": "gear", "item": "Elunium", "set_by": "leader"}],
+                                     "leader_set": [], "autopilot": []},
+    "/api/guild-direction/human-guild": {"guild": "human-guild", "name": "Starveil", "active": [], "leader_set": [],
+                                         "autopilot": []},
+    "/api/guild-duty": {"duty_on": False, "standings": {"guild03": {"good": 1, "behind": 1}},
+                        "members": [{"char": "a", "guild": "guild03", "standing": "good", "days": []},
+                                    {"char": "b", "guild": "guild03", "standing": "behind", "short_days": 1, "days": []}]},
+    "/api/meter": {"window": "1h", "server": {"kpm": 2.1, "zph": 1200, "deaths_h": 0.2},
+                   "cohorts": [{"key": "swordman|41-60|party", "n": 12, "kpm": {"mean": 1.2, "par": 1.6, "prize": 4.8},
+                                "zph": {"mean": 900, "par": 1300, "prize": 4800}, "deaths_h": 0.1, "shares": {"fighting": 0.5}},
+                               {"key": "archer|21-40|solo", "n": 30, "kpm": {"mean": 1.0, "par": 1.4, "prize": 12},
+                                "zph": {"mean": 700, "par": 1000, "prize": 9000}, "deaths_h": 0.3, "shares": {}}]},
+    "/api/meter/bots": {"total": 2, "bots": [{"name": "a", "guild": "Moonlit Bazaar", "counted": True, "kpm": 1.0,
+                                              "zph": 1000, "gap_zph": 300},
+                                             {"name": "b", "guild": "Moonlit Bazaar", "counted": True, "kpm": 2.0,
+                                              "zph": 3000, "gap_zph": -100}]},
+    "/api/minds": [{"name": "build", "last_thought": {"text": "knights lag"}}],
+    "/api/minds/guild03/thoughts": {"mind": "guild03", "messages": [{"text": "OWNER message, not a thought"}],
+                                    "thoughts": [{"t": "2026-11-14T20:00:00", "text": "set elu direction"}], "next": 5},
+}
+
+# the shapes the puppet branch guessed before the engine was merged: still read (older or changed engine)
+GUESSED = dict(FULL, **{
     "/api/guild-rank": {"guilds": [{"guild": "guild03", "rank": 4, "wealth": 900000},
                                    {"guild": "guild01", "rank": 1, "wealth": 2500000}]},
     "/api/guild-relations": {"guild03": {"guild01": -0.4, "guild02": 0.5}},
     "/api/guild-direction/guild03": {"directions": [{"id": "d1", "kind": "gear", "item": "Elunium", "set_by": "leader"}]},
     "/api/guild-duty": {"members": [{"name": "a", "standing": "good"}, {"name": "b", "standing": "behind"}]},
-    "/api/meter": {"cohorts": [{"cohort": "knight 41-60 party", "n": 12, "gap_x_n": 55.0},
-                               {"cohort": "hunter 21-40 solo", "n": 30, "gap_x_n": 90.0}],
+    "/api/meter": {"cohorts": [{"cohort": "knight 41-60 party", "n": 12, "gap_x_n": 55.0}],
                    "totals": {"zeny_per_hour": 1200, "kills_per_min": 2.1}},
-    "/api/minds": [{"name": "build", "last_thought": {"text": "knights lag"}}],
-}
+})
 
 
 class BriefingTests(unittest.TestCase):
@@ -52,7 +85,7 @@ class BriefingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as nd:
             text, snap = briefing.assemble("guild03", briefing.Api(fetch=MockApi(FULL)), nd)
         self.assertIn("Rival guilds", text)
-        self.assertIn("guild01", text)  # rival listed with rank and wealth
+        self.assertIn("Crimson Oath", text)  # rival listed with place and wealth
         self.assertIn("-0.4", text)  # relations
         self.assertIn("Elunium", text)
         self.assertIn("First call", text)
@@ -68,6 +101,36 @@ class BriefingTests(unittest.TestCase):
         self.assertIn("rank: 6 -> 4 (-2)", text)
         self.assertIn("wealth: 800000 -> 900000 (+100000)", text)
         self.assertIn("still active: 1", text)
+
+    def test_guild_engine_shapes(self):
+        with tempfile.TemporaryDirectory() as nd:
+            text, snap = briefing.assemble("guild03", briefing.Api(fetch=MockApi(FULL)), nd)
+        self.assertIn("Crimson Oath: -0.4 (cool)", text)
+        self.assertIn("#1 Crimson Oath", text)
+        self.assertIn("set elu direction", text)  # thoughts, not the owner's messages
+        self.assertNotIn("OWNER message", text)
+        self.assertIn("2 members: kills/min 1.5, zeny/h 2000", text)  # guild metrics from meter rows by guild name
+        self.assertIn("archer|21-40|solo n=30", text.split("Biggest gaps")[1].splitlines()[1])  # biggest zeny prize first
+        self.assertEqual(snap["metrics"]["zph"], 2000)
+
+    def test_guessed_shapes_still_read(self):
+        with tempfile.TemporaryDirectory() as nd:
+            text, snap = briefing.assemble("guild03", briefing.Api(fetch=MockApi(GUESSED)), nd)
+        self.assertEqual(snap["metrics"]["rank"], 4)
+        self.assertEqual(snap["metrics"]["duty_behind"], 1)
+        self.assertIn("Elunium", text)
+        self.assertIn("-0.4", text)
+
+    def test_ayla_starveil(self):
+        neo = {"window": "1h", "ayla": {"name": "Ayla", "windows": {"1h": {"zph_purse": 4000}}},
+               "party_summary": {"n": 6, "ratio_kpm": 1.1, "ratio_zph": 0.9}, "party": [{"name": "Kira", "kpm": 1}],
+               "starveil_summary": {"n": 3}, "starveil": []}
+        with tempfile.TemporaryDirectory() as nd:
+            text, snap = briefing.assemble("ayla", briefing.Api(fetch=MockApi(dict(FULL, **{"/api/meter/neo": neo}))), nd)
+        self.assertIn("Starveil rank and wealth", text)
+        self.assertEqual(snap["metrics"]["starveil_place"], 7)
+        self.assertEqual(snap["metrics"]["party_ratio_zph"], 0.9)
+        self.assertEqual(snap["metrics"]["ayla_zph_purse"], 4000)
 
     def test_old_engine_degrades(self):
         old = {"/api/stats": FULL["/api/stats"], "/api/guilds": FULL["/api/guilds"]}
@@ -91,7 +154,8 @@ class BriefingTests(unittest.TestCase):
         self.assertIn("watch potions", text)
 
     def test_chat_jobs_listed(self):
-        data = dict(FULL, **{"/api/chat-jobs": [{"id": "j1", "kind": "ask", "speaker": "Kira", "template_line": "any elu?"}]})
+        data = dict(FULL, **{"/api/chat-jobs": {"on": True, "agent_present": True, "wait_sec": [20, 40], "counts": {},
+                                                "jobs": [{"id": "j1", "kind": "ask", "speaker": "Kira", "template_line": "any elu?"}]}})
         with tempfile.TemporaryDirectory() as nd:
             text, snap = briefing.assemble("chat", briefing.Api(fetch=MockApi(data)), nd, trigger="jobs")
         self.assertIn("j1", text)
@@ -264,3 +328,62 @@ class QueueTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IntegrationTests(unittest.TestCase):
+    """agreements with the system tools (tools/system) and the engine, checked after the merge"""
+
+    def test_heartbeat_file_for_gate_and_sentinel(self):
+        with tempfile.TemporaryDirectory() as d:
+            old = dispatch.DATA
+            dispatch.DATA = d
+            try:
+                s = dispatch.Scheduler(dispatch.ROLES, NOW)
+                dispatch.heartbeat("ok", s, [], True, NOW)
+                with open(os.path.join(d, "dispatch.heartbeat")) as f:
+                    self.assertEqual(int(f.read()), int(NOW))
+                self.assertTrue(os.path.exists(os.path.join(d, "puppet_heartbeat.json")))
+                dispatch.heartbeat("stopped", s, [], None, NOW)
+                self.assertFalse(os.path.exists(os.path.join(d, "dispatch.heartbeat")))
+            finally:
+                dispatch.DATA = old
+        sys.path.insert(0, os.path.join(TOOLS, ".."))
+        import mindgate  # noqa: E402
+        import sentinel  # noqa: E402
+        self.assertIn("dispatch.heartbeat", mindgate.DISPATCH_FILES)
+        self.assertIn("dispatch.heartbeat", sentinel.DISPATCH_FILES)
+
+    def test_stack_hold_pauses(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertFalse(dispatch.paused(d))
+            open(os.path.join(d, "stack.hold"), "w").close()
+            self.assertTrue(dispatch.paused(d))
+            os.remove(os.path.join(d, "stack.hold"))
+            open(os.path.join(d, "puppet.pause"), "w").close()
+            self.assertTrue(dispatch.paused(d))
+
+    def test_kick_denied_and_real_commands_exist(self):
+        denied = " ".join(dispatch.denied_tools())
+        self.assertIn("guild-kick:*", denied)
+        import legionctl_guild  # noqa: E402
+        for c in ("guild-direction", "guild-direction-set", "guild-pardon", "guild-rank", "guild-relations"):
+            self.assertIn(c, legionctl_guild.COMMANDS)
+        self.assertEqual(legionctl.PUPPET_CMDS, {"bug", "neo", "notes"})
+        for name in ("guild", "chat", "ayla"):
+            text = open(os.path.join(HERE, "..", "briefs", name + ".md"), encoding="utf-8").read()
+            self.assertNotIn("guild-direction get", text)
+            self.assertNotIn("guild-duty pardon", text)
+            self.assertNotIn("--kind need", text)
+
+    def test_queue_lines_read_by_bugq(self):
+        sys.path.insert(0, os.path.join(TOOLS, "system"))
+        import bugq  # noqa: E402
+        with tempfile.TemporaryDirectory() as d:
+            legionctl.queue_append(legionctl.queue_entry("ayla", "NEO party stuck", "neo", {"x": 1}), d)
+            legionctl.queue_append(legionctl.queue_entry("market", "shops closed"), d)
+            rows = [json.loads(l) for l in open(os.path.join(d, "bugqueue.jsonl"), encoding="utf-8")]
+            for r in rows:
+                for k in ("id", "t", "from", "priority", "text", "evidence", "status"):
+                    self.assertIn(k, r)
+            self.assertTrue(bugq.is_neo(rows[0]))
+            self.assertFalse(bugq.is_neo(rows[1]))

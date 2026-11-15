@@ -11,9 +11,11 @@ python tools/puppet/dispatch.py --dry-run [--roles a,b] # print the exact comman
 python tools/puppet/dispatch.py --once guild03          # one real call now (spends tokens)
 python tools/puppet/dispatch.py                         # the loop (start it only when the owner says so)
 ```
-Stop: Ctrl+C or kill (heartbeat state becomes `stopped`). Pause without stopping: create `legion/data/puppet.pause`.
+Stop: Ctrl+C or kill (heartbeat state becomes `stopped`). Pause without stopping: create `legion/data/puppet.pause`
+(`tools/system/stackctl.py down`, which writes `stack.hold`, pauses it too).
 Wake the build/class master: `touch legion/data/build.wake` (or an owner order to mind `build`).
-Files: `legion/data/puppet_calls.jsonl` (call log), `puppet_heartbeat.json` (each loop), `bugqueue.jsonl` (bug/neo
+Files: `legion/data/puppet_calls.jsonl` (call log), `puppet_heartbeat.json` (each loop, details) and
+`dispatch.heartbeat` (epoch; the session gate and the sentinel read it), `bugqueue.jsonl` (bug/neo
 queue written by `legionctl bug|neo`), `tools/puppet/notes/<role>.md` (each mind's notes, git-ignored).
 
 ## Layout

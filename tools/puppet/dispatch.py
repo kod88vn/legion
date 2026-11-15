@@ -10,7 +10,9 @@ one-shot agent with the Claude Code CLI in print mode. See tools/puppet/README.m
   python tools/puppet/dispatch.py --roles chat,market   # restrict the loop to these roles
   python tools/puppet/dispatch.py --list           # role table (model, interval, caps)
 
-Pause: create legion/data/puppet.pause (delete it to resume). Stop: Ctrl+C / kill. Standard library only.
+Pause: create legion/data/puppet.pause (delete it to resume); legion/data/stack.hold (tools/system/stackctl.py down)
+pauses it too. Stop: Ctrl+C / kill. Heartbeats: puppet_heartbeat.json (details) and dispatch.heartbeat (epoch, read by
+tools/mindgate.py and tools/sentinel.py). Standard library only.
 """
 import argparse
 import json
@@ -65,7 +67,8 @@ def allowed_tools(role, python="python"):
 
 
 # legionctl commands that hand bots direct goals/maps: puppet masters set directions, prices, words, never these
-DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-cancel"]
+# guild-kick: the duty ledger kicks by its own rules; a leader mind pardons but never kicks by hand
+DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-cancel", "guild-kick"]
 
 
 def denied_tools(python="python"):
@@ -247,7 +250,10 @@ class Signals:
         self.pending_human = 0
         self.pending_ayla = None
 
-    def poll(self):
+    def poll(self, chat_present=False):
+        """chat_present: the chat role can be woken right now (in the loop, not paused, under its hourly cap). Then the
+        chat-jobs GET is a real poll (no peek), so the engine holds social lines for the chat agent's words (it waits
+        only while an agent polled within 2 min); otherwise peek, and every line goes out as its template at once."""
         api = self.mk()
         out = {"api_ok": api.alive(), "orders": {}, "wake": {}, "chat": None}
         if not out["api_ok"]:
@@ -267,8 +273,9 @@ class Signals:
             else:
                 self.inbox_cursor = ib.get("next", self.inbox_cursor)
                 self.pending_human += sum(1 for m in (ib.get("messages") or []) if not m.get("from_bot"))
-        jobs = api.get("/api/chat-jobs?peek=1")
-        njobs = len(jobs if isinstance(jobs, list) else briefing.rows_of(jobs)) if jobs is not None else 0
+        jobs = api.get("/api/chat-jobs" if chat_present else "/api/chat-jobs?peek=1")
+        jl = jobs if isinstance(jobs, list) else briefing.dig(jobs, "jobs", default=None)
+        njobs = len(jl if isinstance(jl, list) else briefing.rows_of(jobs)) if jobs is not None else 0
         if self.pending_human:
             out["chat"] = "human"
         elif njobs:
@@ -372,8 +379,21 @@ def heartbeat(state, sched, rows, api_ok, now):
         with open(p + ".tmp", "w") as f:
             json.dump(d, f)
         os.replace(p + ".tmp", p)
+        hb = os.path.join(DATA, "dispatch.heartbeat")  # the system gate/sentinel read this one (content = epoch)
+        if state == "stopped":
+            if os.path.exists(hb):
+                os.remove(hb)
+        else:
+            with open(hb, "w") as f:
+                f.write(str(int(now)))
     except OSError:
         pass
+
+
+def paused(data=None):
+    """puppet.pause (the dispatcher alone) or stack.hold (the owner stopped the stack) -> wake nobody"""
+    d = data or DATA
+    return os.path.exists(os.path.join(d, "puppet.pause")) or os.path.exists(os.path.join(d, "stack.hold"))
 
 
 def other_instance_alive():
@@ -432,7 +452,6 @@ def main(argv=None):
     if other_instance_alive() and not args.force:
         print("another dispatcher heartbeat is fresh (<45 s); use --force to start anyway", file=sys.stderr)
         return 3
-    pause = os.path.join(DATA, "puppet.pause")
     sched = Scheduler({r: ROLES[r] for r in roles}, time.time(), read_log(since=time.time() - 2 * HOUR))
     sig = Signals(briefing.Api)
     backoff = 0
@@ -443,11 +462,12 @@ def main(argv=None):
             now = time.time()
             rows = read_log(since=now - HOUR)
             try:
-                if os.path.exists(pause):
+                if paused():
                     heartbeat("paused", sched, rows, None, now)
                     time.sleep(args.tick)
                     continue
-                s = sig.poll()
+                chat_ok = "chat" in sched.roles and spent_last_hour(rows, "chat", now) < ROLES["chat"]["hourly_cap"]
+                s = sig.poll(chat_present=chat_ok)
                 if not s["api_ok"]:
                     backoff = min(max(backoff * 2, 10), 120)
                     heartbeat("api-down", sched, rows, False, now)

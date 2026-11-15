@@ -72,12 +72,7 @@ Minds bus (the owner watches these on the dashboard and can send orders)
   orders <mind>                  owner's unread messages to this mind (marks them read); "(no new orders)" if none
   think <mind> <text...> [--kind thought|decision|action|summary] [--status "short status line"]
   minds                          every mind: active/idle, last seen, unread orders, latest thought
-Puppet masters (need the redesign engine endpoints; tools/puppet/)
-  guild-direction get [guildNN] | set <guildNN> --kind K [--item X --map M --min-lv N --max-lv N --classes a,b --note T --hours H --replace ID]
-  guild-duty [guildNN] | guild-duty pardon|kick <guildNN> <name>      guild-rank      guild-relations
-  exchange                       relationship-priced trades: counters and recent
-  chat-jobs list | chat-jobs answer <id> --speaker N --channel C --text T [...]     chat-intent --from N --kind need|offer --item I
-  meter [bots [--cohort C --sort S --limit N] | bot <name> | neo]     kills/min, zeny/hour, cohorts, par
+Puppet masters and system agents (tools/puppet/, tools/system/bugq.py reads the queue)
   bug "<text>" [--from role] [--priority P] [--evidence T]   append to the bug queue (legion/data/bugqueue.jsonl)
   neo "<request>"                Ayla's line: top-priority queue entry with her evidence attached + neo.wake
   notes <role> [--set T | --append T]   a puppet master's small notes file between calls
@@ -269,8 +264,7 @@ def lookup_cmd(cmd, args):
 DATA_DIR = os.environ.get("LEGION_DATA") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "legion", "data")
 NOTES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "puppet", "notes")
 BUGQUEUE = "bugqueue.jsonl"
-PUPPET_CMDS = {"guild-direction", "guild-duty", "guild-rank", "guild-relations", "exchange", "chat-jobs",
-               "chat-intent", "meter", "bug", "neo", "notes"}
+PUPPET_CMDS = {"bug", "neo", "notes"}
 
 
 def try_call(path, body=None):
@@ -317,85 +311,9 @@ def neo_evidence():
 
 
 def puppet_cmd(cmd, args):
-    if cmd == "guild-direction":
-        sub = args[0] if args else ""
-        if sub == "get":
-            out(call(f"/api/guild-direction/{q(args[1])}" if len(args) > 1 else "/api/guild-direction"))
-        elif sub == "set":
-            g = args[1]
-            rest = args[2:]
-            body = {"kind": opt(rest, "--kind"), "item": opt(rest, "--item"), "map": opt(rest, "--map"),
-                    "min_lv": int(opt(rest, "--min-lv", 0) or 0), "max_lv": int(opt(rest, "--max-lv", 0) or 0),
-                    "classes": [c for c in (opt(rest, "--classes", "") or "").split(",") if c],
-                    "note": opt(rest, "--note", ""), "set_by": "leader"}
-            rep = opt(rest, "--replace")
-            if rep:
-                body["replace"] = rep
-            hrs = opt(rest, "--hours")
-            if hrs:
-                body["hours"] = float(hrs)
-            if not body["kind"]:
-                sys.exit("usage: guild-direction set <guildNN> --kind stock|gear|carry|level|supply|wealth [--item X] [--map M] [--min-lv N] [--max-lv N] [--classes a,b] [--note T] [--replace ID] [--hours H]")
-            out(call(f"/api/guild-direction/{q(g)}", {k: v for k, v in body.items() if v not in (None, "", 0, [])}))
-        else:
-            sys.exit("usage: guild-direction get [guildNN] | set <guildNN> --kind ...")
-    elif cmd == "guild-duty":
-        if args and args[0] in ("pardon", "kick"):
-            if len(args) < 3:
-                sys.exit(f"usage: guild-duty {args[0]} <guildNN> <member name>")
-            out(call(f"/api/guild-duty/{q(args[1])}/{args[0]}", {"name": " ".join(args[2:])}))
-        else:
-            out(call("/api/guild-duty" + (f"?guild={q(args[0])}" if args else "")))
-    elif cmd == "guild-rank":
-        out(call("/api/guild-rank"))
-    elif cmd == "guild-relations":
-        out(call("/api/guild-relations"))
-    elif cmd == "exchange":
-        out(call("/api/exchange"))
-    elif cmd == "chat-jobs":
-        sub = args[0] if args else "list"
-        if sub == "list":
-            out(call("/api/chat-jobs"))
-        elif sub == "answer":
-            # chat-jobs answer <id> --speaker N --channel C --text T [--speaker N2 --channel C2 --text T2 ...]
-            if len(args) < 2:
-                sys.exit('usage: chat-jobs answer <id> --speaker "<name>" --channel party|guild|global|trade|local --text "..." [repeat the triple]')
-            jid, rest = args[1], args[2:]
-            lines = []  # each --speaker starts a new line; --channel and --text fill the current one
-            for i in range(0, len(rest) - 1):
-                k = rest[i]
-                if k == "--speaker":
-                    lines.append({"speaker": rest[i + 1], "channel": "local"})
-                elif k in ("--channel", "--text") and lines:
-                    lines[-1][k[2:]] = rest[i + 1]
-            lines = [l for l in lines if l.get("text")]
-            if not lines:
-                sys.exit("no complete line (need --speaker and --text)")
-            out(call(f"/api/chat-jobs/{q(jid)}/lines", lines))
-        else:
-            sys.exit("usage: chat-jobs list | answer <id> ...")
-    elif cmd == "chat-intent":
-        body = {"from": opt(args, "--from"), "kind": opt(args, "--kind"), "item": opt(args, "--item"),
-                "price": opt(args, "--price"), "text": opt(args, "--text")}
-        if not body["from"] or body["kind"] not in ("need", "offer") or not body["item"]:
-            sys.exit('usage: chat-intent --from "<name>" --kind need|offer --item "<item>" [--price N] [--text "..."]')
-        if body["price"]:
-            body["price"] = int(body["price"])
-        out(call("/api/chat-intent", {k: v for k, v in body.items() if v}))
-    elif cmd == "meter":
-        sub = args[0] if args else ""
-        if sub == "bots":
-            rest = args[1:]
-            qs = "&".join(f"{k}={q(v)}" for k, v in (("cohort", opt(rest, "--cohort")), ("sort", opt(rest, "--sort")),
-                                                    ("limit", opt(rest, "--limit"))) if v)
-            out(call("/api/meter/bots" + ("?" + qs if qs else "")))
-        elif sub == "bot":
-            out(call(f"/api/meter/bot/{q(args[1])}"))
-        elif sub == "neo":
-            out(call("/api/meter/neo"))
-        else:
-            out(call("/api/meter"))
-    elif cmd == "bug":
+    """bug / neo / notes. meter, exchange, chat-jobs, chat-intent and the guild-* commands are the engine
+    authors' own implementations (meter_cmd, the exchange block in main(), tools/legionctl_guild.py)."""
+    if cmd == "bug":
         source = opt(args, "--from", "unknown")
         prio = opt(args, "--priority", "normal")
         evid = opt(args, "--evidence", "")
