@@ -3054,7 +3054,9 @@ sub gathered_kafra {
 sub pk_say { my $t = shift; return if time - ($pk{lineAt} || 0) < 30; $pk{lineAt} = time; psay($t, 1, 0) }
 sub pack_tick {
 	# a lockMap held during the last tick's wait comes back first (the wait below takes it again if still waiting)
-	if (($pk{lmHold} || '') ne '') { $config{lockMap} = $pk{lmHold} if ($config{lockMap} || '') eq ''; $pk{lmHold} = '' }
+	# restore only when no wait is running: restoring every tick and clearing again in the wait made OpenKore re-plan the
+	# lockMap route every tick ("Calculating lockMap route" 1278 times in 15 min, log 13:24)
+	if (($pk{lmHold} || '') ne '' && !$pk{waitAt}) { $config{lockMap} = $pk{lmHold} if ($config{lockMap} || '') eq ''; $pk{lmHold} = '' }
 	return 0 if defined $config{partylead_pack} && $config{partylead_pack} eq '0';
 	# a rally in ANOTHER town is travel too (live: the owner's re-pick to pay_dun02 started a Payon save-stop rally and
 	# she took the Kafra from aldebaran alone): the departure rule holds until she is in the rally town
