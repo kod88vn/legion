@@ -1,0 +1,8881 @@
+{
+ "status": "draft for owner review",
+ "drafted": "2026-11-15",
+ "about": "Per-build level checkpoints (stats, skills) and solo / MVP / PvP playstyle. Keyed by the build IDs in legion/builds.go. Stats and skills replay the engine's ordered plans at each gear-band end; gear is referenced by band only (legion/data/buildgear.json). The party role comes from code and is not repeated.",
+ "assumptions": {
+  "stat_points": "db/re/statpoint.yml (48 at level 1, 1273 at 99); every stat starts at 1; raising a stat from v costs (v-1)/10+2; job-level stat bonuses are not counted (the engine's plan reads base stats only)",
+  "skill_points": "Novice 9 (job 10), first job 39 (changes at job 40), second job 49 (job cap 50 for every second job on this server, db/re/job_exp.yml); a goal is raised only when the server's skill_tree.yml allows it",
+  "pace": "assumed: Novice job 10 by base 10, first job 40 at base 40, second job level = base level - 39 after the change; the engine changes jobs at job level 10 and 40 whatever the base level is, so the skill rows are approximate by up to a few levels either side",
+  "vendors": "vendor characters learn vendorFirst (Enlarge Weight Limit 5, Pushcart 3, Vending 3) before the plan's skills (builds.go planSkill). Merchant-line plans already start with these goals, so for them the replay is the same; a vendor of another line is not modelled (vendors are Merchant-line)",
+  "ranges": "gear bands from legion/data/buildgear.json (variants use their main plan's bands); a bands overlap, so 'by the end of the range' is the max level of the band",
+  "stats_keys": [
+   "STR",
+   "AGI",
+   "VIT",
+   "INT",
+   "DEX",
+   "LUK"
+  ]
+ },
+ "builds": {
+  "knight": {
+   "name": "Two-Hand Sword Knight",
+   "base": "",
+   "class": "Knight",
+   "first_job": "Swordman",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-32",
+     "min": 1,
+     "max": 32,
+     "class_at_end": "Swordman",
+     "stats": {
+      "STR": 33,
+      "AGI": 20,
+      "VIT": 20,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 228,
+     "stat_points_used": 226,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 1
+      },
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 3,
+       "name": "Two-Handed Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 5
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-60",
+     "min": 33,
+     "max": 60,
+     "class_at_end": "Knight",
+     "stats": {
+      "STR": 57,
+      "AGI": 40,
+      "VIT": 35,
+      "INT": 1,
+      "DEX": 25,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 553,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 1
+      },
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 3,
+       "name": "Two-Handed Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 5
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 7
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 60,
+       "name": "Twohand Quicken",
+       "lv": 10
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 5
+      },
+      {
+       "id": 61,
+       "name": "Counter Attack",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "48-99",
+     "min": 48,
+     "max": 99,
+     "class_at_end": "Knight",
+     "stats": {
+      "STR": 85,
+      "AGI": 75,
+      "VIT": 60,
+      "INT": 1,
+      "DEX": 40,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1264,
+     "stat_points_spare": 9,
+     "skills": [
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 1
+      },
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 3,
+       "name": "Two-Handed Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 10
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 60,
+       "name": "Twohand Quicken",
+       "lv": 10
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 5
+      },
+      {
+       "id": 61,
+       "name": "Counter Attack",
+       "lv": 5
+      },
+      {
+       "id": 62,
+       "name": "Bowling Bash",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 1
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1408,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 85,
+     "AGI": 75,
+     "VIT": 60,
+     "INT": 1,
+     "DEX": 40,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 9,
+    "stat_goals_unreached": [
+     "STR 90",
+     "AGI 85"
+    ],
+    "skill_points_listed": 87,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "Peco-mounted two-hander. Provoke the tough one, Two-Hand Quicken always up, Bowling Bash into any group of 3+, Magnum Break when swarmed. Hunts monsters 5-10 levels under its own on 1-3 monster spots.",
+     "Avoids ranged packs, stun/blind sources and Holy/Ghost mobs with no Endure up; sits on Increase HP Recovery between pulls and leaves under 30% HP (Fly Wing / Kafra). Carries Orange/White Potions, a Fly Wing, an Awakening Potion for dense spots."
+    ],
+    "mvp": [
+     "Main tank or melee DPS: Provoke to hold the boss, Endure against knock-back, Two-Hand Quicken up, Bowling Bash only when adds crowd the boss. Stays in the priest's heal range.",
+     "Brings White Potions for the stack, Awakening/Berserk Potion for the kill window, Butterfly Wing for the party's save point."
+    ],
+    "pvp": [
+     "Front-line bruiser: Two-Hand Quicken then Bowling Bash into the pack, Magnum Break to push melee off, Counter Attack against single melee, Endure so spells and hits do not flinch it.",
+     "Avoids long kiting and mage focus without Raydric/Matyr gear; carries White Potions, a Fly Wing and a Butterfly Wing; Yggdrasil Berry for the second wave."
+    ]
+   }
+  },
+  "crusader": {
+   "name": "VIT Holy Cross Crusader",
+   "base": "",
+   "class": "Crusader",
+   "first_job": "Swordman",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-26",
+     "min": 1,
+     "max": 26,
+     "class_at_end": "Swordman",
+     "stats": {
+      "STR": 20,
+      "AGI": 1,
+      "VIT": 28,
+      "INT": 10,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 178,
+     "stat_points_used": 175,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 6
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "14-50",
+     "min": 14,
+     "max": 50,
+     "class_at_end": "Crusader",
+     "stats": {
+      "STR": 40,
+      "AGI": 1,
+      "VIT": 40,
+      "INT": 24,
+      "DEX": 30,
+      "LUK": 1
+     },
+     "stat_points_available": 420,
+     "stat_points_used": 418,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 3
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 248,
+       "name": "Faith",
+       "lv": 7
+      },
+      {
+       "id": 253,
+       "name": "Holy Cross",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "27-99",
+     "min": 27,
+     "max": 99,
+     "class_at_end": "Crusader",
+     "stats": {
+      "STR": 75,
+      "AGI": 1,
+      "VIT": 80,
+      "INT": 40,
+      "DEX": 55,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1180,
+     "stat_points_spare": 93,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 3
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 248,
+       "name": "Faith",
+       "lv": 10
+      },
+      {
+       "id": 253,
+       "name": "Holy Cross",
+       "lv": 10
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 5
+      },
+      {
+       "id": 249,
+       "name": "Guard",
+       "lv": 10
+      },
+      {
+       "id": 250,
+       "name": "Smite",
+       "lv": 3
+      },
+      {
+       "id": 251,
+       "name": "Shield Boomerang",
+       "lv": 5
+      },
+      {
+       "id": 252,
+       "name": "Shield Reflect",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1180,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 75,
+     "AGI": 1,
+     "VIT": 80,
+     "INT": 40,
+     "DEX": 55,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 93,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 93,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Grand Cross",
+      "want": 4,
+      "reached": 0
+     },
+     {
+      "name": "Sacrifice",
+      "want": 1,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Peco-mounted holy tank. Faith and Auto Guard up, Holy Cross on 1-2 targets (best against Demon/Undead), Magnum Break as the low-level clear, Shield Boomerang to pull. Prefers Undead and Demon spots.",
+     "Avoids Holy-resistant monsters, big Ghost packs that hit through Auto Guard, and long farms with no healer; drinks White Potions and rests."
+    ],
+    "mvp": [
+     "Main tank: Provoke, Auto Guard and Reflect Shield up, Holy Cross on Undead/Demon bosses, Grand Cross on grouped adds when it can afford the HP (not reached by the current plan), Devotion on the priest (not reached by the current plan).",
+     "Brings White and Blue Potions, Awakening Potion, Yggdrasil Berry."
+    ],
+    "pvp": [
+     "Highest HP and DEF in the line: Auto Guard + Reflect Shield + Shield Boomerang, Holy Cross on single targets, Smite to stun; Sacrifice only next to a priest.",
+     "Avoids Ghost and Holy-immune targets and long fights without a healer; carries White Potions, Yggdrasil Berry, Fly Wing."
+    ]
+   }
+  },
+  "wizard": {
+   "name": "INT/DEX Wizard",
+   "base": "",
+   "class": "Wizard",
+   "first_job": "Mage",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Mage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 10,
+      "INT": 40,
+      "DEX": 22,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 5
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 5
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "25-65",
+     "min": 25,
+     "max": 65,
+     "class_at_end": "Wizard",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 35,
+      "INT": 68,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 630,
+     "stat_points_used": 630,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 5
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 5
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 10
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 5
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 84,
+       "name": "Jupitel Thunder",
+       "lv": 5
+      },
+      {
+       "id": 89,
+       "name": "Storm Gust",
+       "lv": 10
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
+      },
+      {
+       "id": 85,
+       "name": "Lord of Vermilion",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "60-99",
+     "min": 60,
+     "max": 99,
+     "class_at_end": "Wizard",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 53,
+      "INT": 99,
+      "DEX": 80,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1273,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 6
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 5
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 10
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 5
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 84,
+       "name": "Jupitel Thunder",
+       "lv": 5
+      },
+      {
+       "id": 89,
+       "name": "Storm Gust",
+       "lv": 10
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
+      },
+      {
+       "id": 85,
+       "name": "Lord of Vermilion",
+       "lv": 10
+      },
+      {
+       "id": 81,
+       "name": "Sightrasher",
+       "lv": 2
+      },
+      {
+       "id": 83,
+       "name": "Meteor Storm",
+       "lv": 10
+      },
+      {
+       "id": 92,
+       "name": "Quagmire",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1322,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 1,
+     "VIT": 53,
+     "INT": 99,
+     "DEX": 80,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 0,
+    "stat_goals_unreached": [
+     "VIT 60"
+    ],
+    "skill_points_listed": 117,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Fire Bolt",
+      "want": 10,
+      "reached": 6
+     },
+     {
+      "name": "Lightning Bolt",
+      "want": 10,
+      "reached": 5
+     },
+     {
+      "name": "Fire Ball",
+      "want": 10,
+      "reached": 5
+     },
+     {
+      "name": "Fire Wall",
+      "want": 10,
+      "reached": 5
+     },
+     {
+      "name": "Cold Bolt",
+      "want": 10,
+      "reached": 5
+     },
+     {
+      "name": "Jupitel Thunder",
+      "want": 10,
+      "reached": 5
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "AoE kiter. Fire Wall behind it, Storm Gust or Lord of Vermilion into a pulled pack (aimed at the centre monster), Thunder Storm to finish, Sight to find Hiding; stays at max range on Blue Potions. Spends an AoE only on 3+ monsters.",
+     "Avoids melee contact without a wall, Undead/Ghost packs resistant to its element, and long single-target grinds where SP runs dry; Fly Wing when cornered."
+    ],
+    "mvp": [
+     "Burst from max range: Storm Gust / Lord of Vermilion on the adds, Jupitel Thunder and bolts on the boss, Meteor Storm on a standing pack, Quagmire when the boss closes (Safety Wall (not reached by the current plan)).",
+     "Brings Blue Potions and Blue Gemstones, Awakening Potion, Yggdrasil Berry; never stands in front of the tank."
+    ],
+    "pvp": [
+     "Glass-cannon AoE: Storm Gust, Lord of Vermilion and Meteor Storm at range, Quagmire to slow melee, Fire Wall to hold a line, Jupitel Thunder to knock back; Frost Diver is its only single-target control.",
+     "Avoids anything that closes distance fast and Silence/Spell Breaker; carries Blue Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "sage": {
+   "name": "INT/DEX Battle Sage",
+   "base": "",
+   "class": "Sage",
+   "first_job": "Mage",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Mage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 10,
+      "INT": 40,
+      "DEX": 22,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 5
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 5
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 5
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "25-65",
+     "min": 25,
+     "max": 65,
+     "class_at_end": "Sage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 35,
+      "INT": 68,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 630,
+     "stat_points_used": 630,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 10
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
+       "id": 274,
+       "name": "Study",
+       "lv": 5
+      },
+      {
+       "id": 283,
+       "name": "Endow Quake",
+       "lv": 1
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 5
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "60-99",
+     "min": 60,
+     "max": 99,
+     "class_at_end": "Sage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 53,
+      "INT": 99,
+      "DEX": 80,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1273,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 10
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
+       "id": 274,
+       "name": "Study",
+       "lv": 10
+      },
+      {
+       "id": 283,
+       "name": "Endow Quake",
+       "lv": 1
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 5
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
+      },
+      {
+       "id": 275,
+       "name": "Cast Cancel",
+       "lv": 1
+      },
+      {
+       "id": 278,
+       "name": "Free Cast",
+       "lv": 10
+      },
+      {
+       "id": 276,
+       "name": "Magic Rod",
+       "lv": 1
+      },
+      {
+       "id": 277,
+       "name": "Spell Breaker",
+       "lv": 5
+      },
+      {
+       "id": 280,
+       "name": "Endow Blaze",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1322,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 1,
+     "VIT": 53,
+     "INT": 99,
+     "DEX": 80,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 0,
+    "stat_goals_unreached": [
+     "VIT 60"
+    ],
+    "skill_points_listed": 98,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Endow Blaze",
+      "want": 2,
+      "reached": 1
+     },
+     {
+      "name": "Endow Tsunami",
+      "want": 2,
+      "reached": 0
+     },
+     {
+      "name": "Endow Tornado",
+      "want": 2,
+      "reached": 0
+     },
+     {
+      "name": "Dispell",
+      "want": 5,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Caster Sage. Bolts and Heaven's Drive (Earth) with Free Cast so it keeps walking while casting, Fire Ball / Thunder Storm on small packs, Earth Spike on Wind monsters. Blue Potions keep SP up.",
+     "Avoids melee contact and Earth-immune groups; stops and rests under 30% SP."
+    ],
+    "mvp": [
+     "Mid-range support DPS: bolts with Free Cast on the move, Heaven's Drive on adds, Dispell on buffed bosses (not reached by the current plan), Endow Blaze / Tsunami / Tornado on a melee ally when stones are in the bag.",
+     "Brings Blue Potions, elemental stones for the endows, Awakening Potion, Fly Wing."
+    ],
+    "pvp": [
+     "Spell breaker: Free Cast to move and cast, Spell Breaker and Magic Rod to blunt enemy casters, Dispell strips buffs (not reached by the current plan), Heaven's Drive on groups, Cast Cancel when interrupted.",
+     "Avoids melee rush and Silence; carries Blue Potions, Fly Wing, a few elemental stones."
+    ]
+   }
+  },
+  "hunter": {
+   "name": "DEX/AGI Bow Hunter",
+   "base": "",
+   "class": "Hunter",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 10,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 36,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 133,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 20,
+      "VIT": 10,
+      "INT": 1,
+      "DEX": 54,
+      "LUK": 10
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 304,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Hunter",
+     "stats": {
+      "STR": 1,
+      "AGI": 75,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 99,
+      "LUK": 40
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1235,
+     "stat_points_spare": 38,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 10
+      },
+      {
+       "id": 126,
+       "name": "Beast Bane",
+       "lv": 10
+      },
+      {
+       "id": 127,
+       "name": "Falconry Mastery",
+       "lv": 1
+      },
+      {
+       "id": 129,
+       "name": "Blitz Beat",
+       "lv": 5
+      },
+      {
+       "id": 128,
+       "name": "Steel Crow",
+       "lv": 10
+      },
+      {
+       "id": 115,
+       "name": "Skid Trap",
+       "lv": 1
+      },
+      {
+       "id": 117,
+       "name": "Ankle Snare",
+       "lv": 3
+      },
+      {
+       "id": 116,
+       "name": "Land Mine",
+       "lv": 5
+      },
+      {
+       "id": 120,
+       "name": "Flasher",
+       "lv": 1
+      },
+      {
+       "id": 121,
+       "name": "Freezing Trap",
+       "lv": 1
+      },
+      {
+       "id": 119,
+       "name": "Sandman",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1235,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 75,
+     "VIT": 30,
+     "INT": 1,
+     "DEX": 99,
+     "LUK": 40
+    },
+    "stat_points_spare_at_99": 38,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 95,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Blast Mine",
+      "want": 1,
+      "reached": 0
+     },
+     {
+      "name": "Shockwave Trap",
+      "want": 1,
+      "reached": 0
+     },
+     {
+      "name": "Claymore Trap",
+      "want": 5,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Bow kiter. Double Strafe with Improve Concentration, steps back 4-6 cells when a monster gets within 2, Arrow Shower on groups, Ankle Snare when it carries Traps, falcon Blitz Beat as a proc. Element arrows by target.",
+     "Avoids 3+ monsters on it, fast melee that closes the gap and spots without an arrow supply (buys 1k+ arrows). Fly Wing early."
+    ],
+    "mvp": [
+     "Ranged DPS: Double Strafe on the boss with the right element arrow, Arrow Shower on adds, Ankle Snare when the boss chases, Blitz Beat on the side; stays behind the tank.",
+     "Brings Concentration/Awakening Potion, arrows by boss element, Traps, a Blue Potion, Fly Wing."
+    ],
+    "pvp": [
+     "Mobile glass cannon: kite and Double Strafe, Ankle Snare to hold, Land Mine / Claymore as the trap line is learned, Blitz Beat to finish; dies to anything that closes the gap.",
+     "Avoids melee and Silence; carries Fire/Silver/Iron arrows, Traps, Concentration Potion, Fly Wing."
+    ]
+   }
+  },
+  "bard": {
+   "name": "DEX/INT Bard",
+   "base": "",
+   "class": "Bard",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 10,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 36,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 133,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 25,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 52,
+      "LUK": 1
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 305,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Bard",
+     "stats": {
+      "STR": 1,
+      "AGI": 55,
+      "VIT": 40,
+      "INT": 40,
+      "DEX": 99,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1126,
+     "stat_points_spare": 147,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      },
+      {
+       "id": 304,
+       "name": "Amp",
+       "lv": 1
+      },
+      {
+       "id": 305,
+       "name": "Encore",
+       "lv": 1
+      },
+      {
+       "id": 315,
+       "name": "Music Lessons",
+       "lv": 1
+      },
+      {
+       "id": 317,
+       "name": "Unchained Serenade",
+       "lv": 3
+      },
+      {
+       "id": 321,
+       "name": "Magic Strings",
+       "lv": 10
+      },
+      {
+       "id": 320,
+       "name": "Impressive Riff",
+       "lv": 10
+      },
+      {
+       "id": 319,
+       "name": "Perfect Tablature",
+       "lv": 10
+      },
+      {
+       "id": 322,
+       "name": "Song of Lutie",
+       "lv": 7
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1126,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 55,
+     "VIT": 40,
+     "INT": 40,
+     "DEX": 99,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 147,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 105,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Music Lessons",
+      "want": 10,
+      "reached": 1
+     },
+     {
+      "name": "Song of Lutie",
+      "want": 10,
+      "reached": 7
+     },
+     {
+      "name": "Melody Strike",
+      "want": 5,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Double Strafe archer; the songs wait for a party. Improve Concentration, Arrow Shower on groups, kiting, rests at a Kafra. In a party it switches to songs.",
+     "Avoids leaving the party's map for solo songs and being the first target; keeps arrows stocked."
+    ],
+    "mvp": [
+     "Support singer: Magic Strings (Poem of Bragi) for the casters, Impressive Riff (Assassin Cross of Sunset) for the melee, Perfect Tablature (Apple of Idun) when HP drops, Song of Lutie for flee; sings from behind the tank and refreshes on timers.",
+     "Brings Blue Potions, a stack of arrows for idle shots, Yggdrasil Berry, Butterfly Wing."
+    ],
+    "pvp": [
+     "Song support: Bragi and Assassin Cross for the team's damage, Apple of Idun to pad HP, Unchained Serenade against an enemy caster; as a duelist it is a poor Double Strafe archer.",
+     "Avoids duels; carries Blue Potions, arrows, Fly Wing."
+    ]
+   }
+  },
+  "dancer": {
+   "name": "DEX/INT Dancer",
+   "base": "",
+   "class": "Dancer",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 10,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 36,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 133,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 25,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 52,
+      "LUK": 1
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 305,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Dancer",
+     "stats": {
+      "STR": 1,
+      "AGI": 55,
+      "VIT": 40,
+      "INT": 40,
+      "DEX": 99,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1126,
+     "stat_points_spare": 147,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      },
+      {
+       "id": 304,
+       "name": "Amp",
+       "lv": 1
+      },
+      {
+       "id": 305,
+       "name": "Encore",
+       "lv": 1
+      },
+      {
+       "id": 323,
+       "name": "Dance Lessons",
+       "lv": 1
+      },
+      {
+       "id": 325,
+       "name": "Hip Shaker",
+       "lv": 3
+      },
+      {
+       "id": 330,
+       "name": "Gypsy's Kiss",
+       "lv": 10
+      },
+      {
+       "id": 327,
+       "name": "Focus Ballet",
+       "lv": 10
+      },
+      {
+       "id": 328,
+       "name": "Slow Grace",
+       "lv": 10
+      },
+      {
+       "id": 329,
+       "name": "Lady Luck",
+       "lv": 7
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1126,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 55,
+     "VIT": 40,
+     "INT": 40,
+     "DEX": 99,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 147,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 105,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Dance Lessons",
+      "want": 10,
+      "reached": 1
+     },
+     {
+      "name": "Lady Luck",
+      "want": 10,
+      "reached": 7
+     },
+     {
+      "name": "Slinging Arrow",
+      "want": 5,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Double Strafe archer; the dances wait for a party. Improve Concentration, Arrow Shower on crowds, kiting; in a party it switches to Focus Ballet, Gypsy's Kiss, Slow Grace and Lady Luck.",
+     "Avoids being the first target, leaving the party's map and arrow shortages."
+    ],
+    "mvp": [
+     "Support dancer: Focus Ballet (Humming) for the archers' hit, Gypsy's Kiss (Service For You) for the casters' SP, Slow Grace (Please Don't Forget Me) to slow melee bosses, Lady Luck (Fortune's Kiss) for crit.",
+     "Brings Blue Potions, arrows, Yggdrasil Berry, Butterfly Wing."
+    ],
+    "pvp": [
+     "Dance support: Slow Grace cuts ASPD and speed of melee foes, Focus Ballet and Lady Luck for allies; weak solo.",
+     "Avoids duels; carries Blue Potions, arrows, Fly Wing."
+    ]
+   }
+  },
+  "priest": {
+   "name": "Full Support Priest",
+   "base": "",
+   "class": "Priest",
+   "first_job": "Acolyte",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-26",
+     "min": 1,
+     "max": 26,
+     "class_at_end": "Acolyte",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 1,
+      "INT": 47,
+      "DEX": 1,
+      "LUK": 1
+     },
+     "stat_points_available": 178,
+     "stat_points_used": 176,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 5
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 5
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "24-60",
+     "min": 24,
+     "max": 60,
+     "class_at_end": "Priest",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 1,
+      "INT": 92,
+      "DEX": 1,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 551,
+     "stat_points_spare": 4,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 10
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 5
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 35,
+       "name": "Cure",
+       "lv": 1
+      },
+      {
+       "id": 24,
+       "name": "Ruwach",
+       "lv": 1
+      },
+      {
+       "id": 33,
+       "name": "Angelus",
+       "lv": 2
+      },
+      {
+       "id": 73,
+       "name": "Kyrie Eleison",
+       "lv": 10
+      },
+      {
+       "id": 74,
+       "name": "Magnificat",
+       "lv": 3
+      },
+      {
+       "id": 66,
+       "name": "Impositio Manus",
+       "lv": 3
+      },
+      {
+       "id": 67,
+       "name": "Suffragium",
+       "lv": 3
+      },
+      {
+       "id": 70,
+       "name": "Sanctuary",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "55-99",
+     "min": 55,
+     "max": 99,
+     "class_at_end": "Priest",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 65,
+      "INT": 99,
+      "DEX": 70,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 10
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 5
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 35,
+       "name": "Cure",
+       "lv": 1
+      },
+      {
+       "id": 24,
+       "name": "Ruwach",
+       "lv": 1
+      },
+      {
+       "id": 33,
+       "name": "Angelus",
+       "lv": 2
+      },
+      {
+       "id": 73,
+       "name": "Kyrie Eleison",
+       "lv": 10
+      },
+      {
+       "id": 74,
+       "name": "Magnificat",
+       "lv": 5
+      },
+      {
+       "id": 66,
+       "name": "Impositio Manus",
+       "lv": 3
+      },
+      {
+       "id": 67,
+       "name": "Suffragium",
+       "lv": 3
+      },
+      {
+       "id": 70,
+       "name": "Sanctuary",
+       "lv": 7
+      },
+      {
+       "id": 75,
+       "name": "Gloria",
+       "lv": 1
+      },
+      {
+       "id": 26,
+       "name": "Teleport",
+       "lv": 2
+      },
+      {
+       "id": 27,
+       "name": "Warp Portal",
+       "lv": 4
+      },
+      {
+       "id": 25,
+       "name": "Pneuma",
+       "lv": 1
+      },
+      {
+       "id": 31,
+       "name": "Aqua Benedicta",
+       "lv": 1
+      },
+      {
+       "id": 68,
+       "name": "Aspersio",
+       "lv": 4
+      },
+      {
+       "id": 76,
+       "name": "Lex Divina",
+       "lv": 3
+      },
+      {
+       "id": 72,
+       "name": "Status Recovery",
+       "lv": 1
+      },
+      {
+       "id": 9,
+       "name": "Increase SP Recovery",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1688,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 1,
+     "VIT": 65,
+     "INT": 99,
+     "DEX": 70,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 1,
+    "stat_goals_unreached": [
+     "VIT 70",
+     "DEX 90",
+     "VIT 90"
+    ],
+    "skill_points_listed": 110,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Gloria",
+      "want": 5,
+      "reached": 1
+     },
+     {
+      "name": "Lex Divina",
+      "want": 5,
+      "reached": 3
+     },
+     {
+      "name": "Resurrection",
+      "want": 1,
+      "reached": 0
+     },
+     {
+      "name": "Turn Undead",
+      "want": 3,
+      "reached": 0
+     },
+     {
+      "name": "Lex Aeterna",
+      "want": 1,
+      "reached": 0
+     },
+     {
+      "name": "Safety Wall",
+      "want": 1,
+      "reached": 0
+     },
+     {
+      "name": "Magnus Exorcismus",
+      "want": 10,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Heal-support Priest. Kills slowly: Heal on Undead damages them, so it farms Undead/Demon spots with Blessing and Increase AGI on itself, Kyrie Eleison against the first hit and Aspersio'd melee as a pinch. Prefers spots next to a party's.",
+     "Avoids soloing anything above its level and melee early (VIT and DEX are low). Rests, buffs itself, keeps Blue Gemstones in stock."
+    ],
+    "mvp": [
+     "Healer: Heal the tank first, Kyrie Eleison on the tank, Blessing and Increase AGI on all, Lex Aeterna on the boss before the big hit (not reached by the current plan), Sanctuary on the tank's cell, Resurrection for the dead (not reached by the current plan); stays out of melee range.",
+     "Brings Blue Gemstones (Sanctuary, Warp Portal), Holy Water, Blue Potions, Yggdrasil Berry; the party retreats if the priest dies."
+    ],
+    "pvp": [
+     "Team support: Kyrie and Heal on the front line, Blessing / Increase AGI, Suffragium for casters, Resurrection after the fight (not reached by the current plan); not a duelist.",
+     "Avoids duels; carries Blue Gemstones, Blue Potions, Yggdrasil Berry, Fly Wing."
+    ]
+   }
+  },
+  "knight_spear": {
+   "name": "Brandish Spear Knight",
+   "base": "knight",
+   "class": "Knight",
+   "first_job": "Swordman",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-32",
+     "min": 1,
+     "max": 32,
+     "class_at_end": "Swordman",
+     "stats": {
+      "STR": 39,
+      "AGI": 10,
+      "VIT": 20,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 228,
+     "stat_points_used": 227,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 5
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 10
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 8
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-60",
+     "min": 33,
+     "max": 60,
+     "class_at_end": "Knight",
+     "stats": {
+      "STR": 60,
+      "AGI": 10,
+      "VIT": 49,
+      "INT": 1,
+      "DEX": 30,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 555,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 10
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 55,
+       "name": "Spear Mastery",
+       "lv": 10
+      },
+      {
+       "id": 56,
+       "name": "Pierce",
+       "lv": 5
+      },
+      {
+       "id": 58,
+       "name": "Spear Stab",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "48-99",
+     "min": 48,
+     "max": 99,
+     "class_at_end": "Knight",
+     "stats": {
+      "STR": 90,
+      "AGI": 20,
+      "VIT": 80,
+      "INT": 1,
+      "DEX": 55,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1236,
+     "stat_points_spare": 37,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 10
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 55,
+       "name": "Spear Mastery",
+       "lv": 10
+      },
+      {
+       "id": 56,
+       "name": "Pierce",
+       "lv": 6
+      },
+      {
+       "id": 58,
+       "name": "Spear Stab",
+       "lv": 10
+      },
+      {
+       "id": 57,
+       "name": "Brandish Spear",
+       "lv": 10
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 5
+      },
+      {
+       "id": 59,
+       "name": "Spear Boomerang",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1236,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 20,
+     "VIT": 80,
+     "INT": 1,
+     "DEX": 55,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 37,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 101,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Endure",
+      "want": 10,
+      "reached": 1
+     },
+     {
+      "name": "Pierce",
+      "want": 10,
+      "reached": 6
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Peco-mounted spearman. Brandish Spear on groups of 3+ (aimed at the middle monster), Pierce on Large targets, Spear Boomerang to pull; Bash opens until Brandish is learned. AGI stays low so it farms slower mobs it out-heals.",
+     "Avoids fast small mobs (Pierce hits fewer times on Small) and anything it cannot out-heal; rests on Increase HP Recovery. Carries White Potions and a Fly Wing."
+    ],
+    "mvp": [
+     "Tank/DPS on Large and Medium bosses: Provoke, Pierce / Brandish Spear on the boss and adds, Endure 10 against knock-back, Peco mount for HP and weight.",
+     "Brings White Potions, Awakening Potion, a Raydric garment for Neutral bosses, Butterfly Wing."
+    ],
+    "pvp": [
+     "Spear burst: Pierce and Brandish Spear in the pack, Spear Stab to knock a caster out of range, Peco mount for HP; has no answer to ranged and Soul Strike mages.",
+     "Avoids open ground without a priest; carries White/Blue Potions, a Fly Wing and a Yggdrasil Berry."
+    ]
+   }
+  },
+  "crusader_gc": {
+   "name": "INT/VIT Grand Cross Crusader",
+   "base": "crusader",
+   "class": "Crusader",
+   "first_job": "Swordman",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-26",
+     "min": 1,
+     "max": 26,
+     "class_at_end": "Swordman",
+     "stats": {
+      "STR": 10,
+      "AGI": 1,
+      "VIT": 28,
+      "INT": 20,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 178,
+     "stat_points_used": 175,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "14-50",
+     "min": 14,
+     "max": 50,
+     "class_at_end": "Crusader",
+     "stats": {
+      "STR": 10,
+      "AGI": 1,
+      "VIT": 47,
+      "INT": 40,
+      "DEX": 30,
+      "LUK": 1
+     },
+     "stat_points_available": 420,
+     "stat_points_used": 415,
+     "stat_points_spare": 5,
+     "skills": [
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 10
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 248,
+       "name": "Faith",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "27-99",
+     "min": 27,
+     "max": 99,
+     "class_at_end": "Crusader",
+     "stats": {
+      "STR": 10,
+      "AGI": 1,
+      "VIT": 80,
+      "INT": 92,
+      "DEX": 60,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1263,
+     "stat_points_spare": 10,
+     "skills": [
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 10
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 248,
+       "name": "Faith",
+       "lv": 10
+      },
+      {
+       "id": 253,
+       "name": "Holy Cross",
+       "lv": 6
+      },
+      {
+       "id": 254,
+       "name": "Grand Cross",
+       "lv": 10
+      },
+      {
+       "id": 249,
+       "name": "Guard",
+       "lv": 5
+      },
+      {
+       "id": 35,
+       "name": "Cure",
+       "lv": 1
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 5
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1340,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 10,
+     "AGI": 1,
+     "VIT": 80,
+     "INT": 92,
+     "DEX": 60,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 10,
+    "stat_goals_unreached": [
+     "INT 99"
+    ],
+    "skill_points_listed": 115,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Holy Cross",
+      "want": 10,
+      "reached": 6
+     },
+     {
+      "name": "Demon Bane",
+      "want": 5,
+      "reached": 4
+     },
+     {
+      "name": "Heal",
+      "want": 5,
+      "reached": 0
+     },
+     {
+      "name": "Smite",
+      "want": 3,
+      "reached": 0
+     },
+     {
+      "name": "Shield Boomerang",
+      "want": 3,
+      "reached": 0
+     },
+     {
+      "name": "Shield Reflect",
+      "want": 5,
+      "reached": 0
+     },
+     {
+      "name": "Sacrifice",
+      "want": 1,
+      "reached": 0
+     },
+     {
+      "name": "Cavalier Mastery",
+      "want": 5,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "INT/VIT Grand Cross build. Pulls a pack, stands in the middle, casts Grand Cross (strong on Undead/Demon) with Holy Cross to finish, Auto Guard to survive. Blue Potions between casts.",
+     "Avoids Holy/Ghost-resistant monsters, packs of 8+ without Auto Guard (Grand Cross costs HP), and spots where it cannot rest."
+    ],
+    "mvp": [
+     "Burst tank on Undead/Demon bosses: Provoke, Grand Cross when adds stack, Holy Cross to finish, Auto Guard against melee bosses. No Devotion until the plan reaches Reflect Shield.",
+     "Brings Blue Potions in bulk, White Potions, Yggdrasil Berry."
+    ],
+    "pvp": [
+     "Area-burst crusader: Grand Cross on a cluster plus Auto Guard; dangerous to groups, weak to quick single targets and Silence.",
+     "Avoids mobile duelists and Holy-resist builds; carries Blue and White Potions, Fly Wing."
+    ]
+   }
+  },
+  "hunter_blitz": {
+   "name": "DEX/INT Blitz Hunter",
+   "base": "hunter",
+   "class": "Hunter",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 1,
+      "INT": 10,
+      "DEX": 36,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 133,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 10,
+      "VIT": 1,
+      "INT": 25,
+      "DEX": 54,
+      "LUK": 1
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 305,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Hunter",
+     "stats": {
+      "STR": 1,
+      "AGI": 10,
+      "VIT": 30,
+      "INT": 70,
+      "DEX": 99,
+      "LUK": 20
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1121,
+     "stat_points_spare": 152,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 10
+      },
+      {
+       "id": 126,
+       "name": "Beast Bane",
+       "lv": 10
+      },
+      {
+       "id": 127,
+       "name": "Falconry Mastery",
+       "lv": 1
+      },
+      {
+       "id": 129,
+       "name": "Blitz Beat",
+       "lv": 5
+      },
+      {
+       "id": 128,
+       "name": "Steel Crow",
+       "lv": 10
+      },
+      {
+       "id": 115,
+       "name": "Skid Trap",
+       "lv": 1
+      },
+      {
+       "id": 117,
+       "name": "Ankle Snare",
+       "lv": 3
+      },
+      {
+       "id": 116,
+       "name": "Land Mine",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 3
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1121,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 10,
+     "VIT": 30,
+     "INT": 70,
+     "DEX": 99,
+     "LUK": 20
+    },
+    "stat_points_spare_at_99": 152,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 85,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "DEX/INT falconer. Falcon Blitz Beat as the main damage (procs on hit), Double Strafe to start, Land Mine / Ankle Snare to stop chasers. A few hundred arrows are enough.",
+     "Avoids monsters it cannot kill before they close (AGI is low) and packs of 4+; kites all the time."
+    ],
+    "mvp": [
+     "Falconer: Blitz Beat procs on the boss, Steel Crow keeps the falcon strong, Double Strafe when procs are off, Land Mine on the boss's path; stays back.",
+     "Brings arrows, Traps, Concentration Potion, a Blue Potion, Fly Wing."
+    ],
+    "pvp": [
+     "Burst falconer: Blitz Beat procs ignore DEF; low AGI means it leans on Ankle Snare and Land Mine to stay alive.",
+     "Avoids anyone with a gap-closer; carries Traps, arrows, Fly Wing."
+    ]
+   }
+  },
+  "priest_me": {
+   "name": "Magnus Exorcismus Priest",
+   "base": "priest",
+   "class": "Priest",
+   "first_job": "Acolyte",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-26",
+     "min": 1,
+     "max": 26,
+     "class_at_end": "Acolyte",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 1,
+      "INT": 47,
+      "DEX": 1,
+      "LUK": 1
+     },
+     "stat_points_available": 178,
+     "stat_points_used": 176,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 5
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 5
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "24-60",
+     "min": 24,
+     "max": 60,
+     "class_at_end": "Priest",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 1,
+      "INT": 92,
+      "DEX": 1,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 551,
+     "stat_points_spare": 4,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 10
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 5
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 35,
+       "name": "Cure",
+       "lv": 1
+      },
+      {
+       "id": 24,
+       "name": "Ruwach",
+       "lv": 1
+      },
+      {
+       "id": 33,
+       "name": "Angelus",
+       "lv": 2
+      },
+      {
+       "id": 73,
+       "name": "Kyrie Eleison",
+       "lv": 5
+      },
+      {
+       "id": 31,
+       "name": "Aqua Benedicta",
+       "lv": 1
+      },
+      {
+       "id": 66,
+       "name": "Impositio Manus",
+       "lv": 3
+      },
+      {
+       "id": 68,
+       "name": "Aspersio",
+       "lv": 4
+      },
+      {
+       "id": 70,
+       "name": "Sanctuary",
+       "lv": 3
+      },
+      {
+       "id": 12,
+       "name": "Safety Wall",
+       "lv": 1
+      },
+      {
+       "id": 72,
+       "name": "Status Recovery",
+       "lv": 1
+      },
+      {
+       "id": 9,
+       "name": "Increase SP Recovery",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "55-99",
+     "min": 55,
+     "max": 99,
+     "class_at_end": "Priest",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 40,
+      "INT": 99,
+      "DEX": 88,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1273,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 10
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 5
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 35,
+       "name": "Cure",
+       "lv": 1
+      },
+      {
+       "id": 24,
+       "name": "Ruwach",
+       "lv": 1
+      },
+      {
+       "id": 33,
+       "name": "Angelus",
+       "lv": 2
+      },
+      {
+       "id": 73,
+       "name": "Kyrie Eleison",
+       "lv": 7
+      },
+      {
+       "id": 31,
+       "name": "Aqua Benedicta",
+       "lv": 1
+      },
+      {
+       "id": 66,
+       "name": "Impositio Manus",
+       "lv": 3
+      },
+      {
+       "id": 68,
+       "name": "Aspersio",
+       "lv": 4
+      },
+      {
+       "id": 70,
+       "name": "Sanctuary",
+       "lv": 3
+      },
+      {
+       "id": 12,
+       "name": "Safety Wall",
+       "lv": 1
+      },
+      {
+       "id": 72,
+       "name": "Status Recovery",
+       "lv": 1
+      },
+      {
+       "id": 9,
+       "name": "Increase SP Recovery",
+       "lv": 4
+      },
+      {
+       "id": 54,
+       "name": "Resurrection",
+       "lv": 1
+      },
+      {
+       "id": 76,
+       "name": "Lex Divina",
+       "lv": 5
+      },
+      {
+       "id": 77,
+       "name": "Turn Undead",
+       "lv": 3
+      },
+      {
+       "id": 78,
+       "name": "Lex Aeterna",
+       "lv": 1
+      },
+      {
+       "id": 79,
+       "name": "Magnus Exorcismus",
+       "lv": 10
+      },
+      {
+       "id": 74,
+       "name": "Magnificat",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1500,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 1,
+     "VIT": 40,
+     "INT": 99,
+     "DEX": 88,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 0,
+    "stat_goals_unreached": [
+     "DEX 90",
+     "VIT 70"
+    ],
+    "skill_points_listed": 100,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Kyrie Eleison",
+      "want": 10,
+      "reached": 7
+     },
+     {
+      "name": "Sanctuary",
+      "want": 7,
+      "reached": 3
+     },
+     {
+      "name": "Gloria",
+      "want": 5,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Magnus Exorcismus Priest. Magnus on Undead/Demon packs (holy ground), Aspersio on its mace for the holy hit, Turn Undead as a pinch; one Blue Gemstone per cast. Plays Undead spots (Payon cave, Glast Heim, Pyramids).",
+     "Avoids non-Undead/Demon packs (Magnus does nothing there) and fights below 30% SP."
+    ],
+    "mvp": [
+     "Boss support: Magnus Exorcismus on Undead/Demon bosses while the tank holds, Kyrie / Lex Aeterna, Sanctuary and Heal in between.",
+     "Brings 100+ Blue Gemstones, Holy Water, Blue Potions, Yggdrasil Berry."
+    ],
+    "pvp": [
+     "Holy zoner: Magnus Exorcismus walls against Undead/Demon, Sanctuary to hold a cell, Turn Undead; no answer to a normal Human duelist.",
+     "Avoids human duels; carries Blue Gemstones, Blue Potions, Fly Wing."
+    ]
+   }
+  },
+  "monk": {
+   "name": "AGI/STR Combo Monk",
+   "base": "",
+   "class": "Monk",
+   "first_job": "Acolyte",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Acolyte",
+     "stats": {
+      "STR": 32,
+      "AGI": 20,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 206,
+     "stat_points_spare": 4,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 3
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "12-99",
+     "min": 12,
+     "max": 99,
+     "class_at_end": "Monk",
+     "stats": {
+      "STR": 82,
+      "AGI": 80,
+      "VIT": 50,
+      "INT": 15,
+      "DEX": 45,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1271,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 3
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 6
+      },
+      {
+       "id": 259,
+       "name": "Iron Fists",
+       "lv": 10
+      },
+      {
+       "id": 261,
+       "name": "Summon Spirit Sphere",
+       "lv": 5
+      },
+      {
+       "id": 265,
+       "name": "Dodge",
+       "lv": 5
+      },
+      {
+       "id": 263,
+       "name": "Raging Trifecta Blow",
+       "lv": 10
+      },
+      {
+       "id": 272,
+       "name": "Raging Quadruple Blow",
+       "lv": 5
+      },
+      {
+       "id": 273,
+       "name": "Raging Thrust",
+       "lv": 5
+      },
+      {
+       "id": 262,
+       "name": "Absorb Spirit Sphere",
+       "lv": 1
+      },
+      {
+       "id": 270,
+       "name": "Fury",
+       "lv": 3
+      },
+      {
+       "id": 266,
+       "name": "Occult Impaction",
+       "lv": 3
+      },
+      {
+       "id": 267,
+       "name": "Throw Spirit Sphere",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1351,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 82,
+     "AGI": 80,
+     "VIT": 50,
+     "INT": 15,
+     "DEX": 45,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 2,
+    "stat_goals_unreached": [
+     "STR 90"
+    ],
+    "skill_points_listed": 94,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Throw Spirit Sphere",
+      "want": 3,
+      "reached": 2
+     },
+     {
+      "name": "Asura Strike",
+      "want": 5,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Combo Monk. Summon Spirit Sphere to 5, Raging Trifecta Blow into Raging Quadruple Blow into Raging Thrust, Dodge, Blessing and Increase AGI on itself. Fast solo kills with little gear dependence.",
+     "Avoids starting a fight at low SP (combos spend spheres) and Fire mobs while VIT is low; Asura Strike is not reached in this plan."
+    ],
+    "mvp": [
+     "DPS/tank: Raging Trifecta -> Quadruple -> Thrust on the boss, Dodge, Blessing/Increase AGI; no Asura Strike in this plan.",
+     "Brings Blue Potions for SP, White Potions, Awakening Potion, Berserk Potion for the kill window."
+    ],
+    "pvp": [
+     "Combo duelist: combo chain, Fury for the sphere burst, Dodge, Absorb Spirit Sphere to drain a caster's SP; strong vs melee, risky vs Silence.",
+     "Avoids Safety Wall / Pneuma stalls; carries Blue and White Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "blacksmith": {
+   "name": "STR/DEX Axe Blacksmith",
+   "base": "",
+   "class": "Blacksmith",
+   "first_job": "Merchant",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Merchant",
+     "stats": {
+      "STR": 40,
+      "AGI": 10,
+      "VIT": 10,
+      "INT": 1,
+      "DEX": 17,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 209,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 5
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "16-60",
+     "min": 16,
+     "max": 60,
+     "class_at_end": "Blacksmith",
+     "stats": {
+      "STR": 60,
+      "AGI": 25,
+      "VIT": 25,
+      "INT": 1,
+      "DEX": 44,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 553,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 10
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 10
+      },
+      {
+       "id": 110,
+       "name": "Hammer Fall",
+       "lv": 2
+      },
+      {
+       "id": 111,
+       "name": "Adrenaline Rush",
+       "lv": 5
+      },
+      {
+       "id": 105,
+       "name": "Hilt Binding",
+       "lv": 1
+      },
+      {
+       "id": 107,
+       "name": "Weaponry Research",
+       "lv": 4
+      },
+      {
+       "id": 112,
+       "name": "Weapon Perfection",
+       "lv": 3
+      },
+      {
+       "id": 113,
+       "name": "Power-Thrust",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "30-99",
+     "min": 30,
+     "max": 99,
+     "class_at_end": "Blacksmith",
+     "stats": {
+      "STR": 90,
+      "AGI": 60,
+      "VIT": 50,
+      "INT": 1,
+      "DEX": 55,
+      "LUK": 20
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1262,
+     "stat_points_spare": 11,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 10
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 10
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 10
+      },
+      {
+       "id": 110,
+       "name": "Hammer Fall",
+       "lv": 5
+      },
+      {
+       "id": 111,
+       "name": "Adrenaline Rush",
+       "lv": 5
+      },
+      {
+       "id": 105,
+       "name": "Hilt Binding",
+       "lv": 1
+      },
+      {
+       "id": 107,
+       "name": "Weaponry Research",
+       "lv": 10
+      },
+      {
+       "id": 112,
+       "name": "Weapon Perfection",
+       "lv": 5
+      },
+      {
+       "id": 113,
+       "name": "Power-Thrust",
+       "lv": 5
+      },
+      {
+       "id": 114,
+       "name": "Maximize Power",
+       "lv": 5
+      },
+      {
+       "id": 108,
+       "name": "Weapon Repair",
+       "lv": 1
+      },
+      {
+       "id": 109,
+       "name": "Skin Tempering",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1262,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 60,
+     "VIT": 50,
+     "INT": 1,
+     "DEX": 55,
+     "LUK": 20
+    },
+    "stat_points_spare_at_99": 11,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "STR/DEX Axe Blacksmith. Adrenaline Rush up (axe/mace), Over Thrust, Mammonite on tougher monsters, Hammer Fall to stun a crowd, Maximize Power for the burst; Pushcart and Vending keep it a trader on the side.",
+     "Avoids heavy weight (pushcart drag), magic-heavy mobs, long fights with no Adrenaline Rush; sells loot between trips."
+    ],
+    "mvp": [
+     "Melee DPS: Adrenaline Rush for the party's ASPD, Over Thrust, Hammer Fall to stun adds, Maximize Power for the boss; stays on one flank.",
+     "Brings White Potions, Awakening/Berserk Potion, spare weapons for breakage."
+    ],
+    "pvp": [
+     "Heavy hitter: Adrenaline Rush + Over Thrust + Maximize Power for burst, Hammer Fall to stun a group, Weapon Perfection to ignore size; low flee, so it dies to focus.",
+     "Avoids ranged poke; carries White Potions, spare weapons, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "alchemist": {
+   "name": "STR/INT Alchemist",
+   "base": "",
+   "class": "Alchemist",
+   "first_job": "Merchant",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Merchant",
+     "stats": {
+      "STR": 38,
+      "AGI": 1,
+      "VIT": 15,
+      "INT": 10,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 5
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "16-99",
+     "min": 16,
+     "max": 99,
+     "class_at_end": "Alchemist",
+     "stats": {
+      "STR": 75,
+      "AGI": 1,
+      "VIT": 60,
+      "INT": 40,
+      "DEX": 60,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1047,
+     "stat_points_spare": 226,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 10
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 10
+      },
+      {
+       "id": 227,
+       "name": "Potion Research",
+       "lv": 10
+      },
+      {
+       "id": 228,
+       "name": "Prepare Potion",
+       "lv": 10
+      },
+      {
+       "id": 226,
+       "name": "Axe Mastery",
+       "lv": 10
+      },
+      {
+       "id": 231,
+       "name": "Aid Potion",
+       "lv": 5
+      },
+      {
+       "id": 238,
+       "name": "Bioethics",
+       "lv": 1
+      },
+      {
+       "id": 244,
+       "name": "Vaporize",
+       "lv": 1
+      },
+      {
+       "id": 243,
+       "name": "Call Homunculus",
+       "lv": 1
+      },
+      {
+       "id": 247,
+       "name": "Homunculus Resurrection",
+       "lv": 1
+      },
+      {
+       "id": 229,
+       "name": "Bomb",
+       "lv": 5
+      },
+      {
+       "id": 230,
+       "name": "Acid Terror",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1047,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 75,
+     "AGI": 1,
+     "VIT": 60,
+     "INT": 40,
+     "DEX": 60,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 226,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "STR/INT Alchemist. Mammonite and mace/axe melee with Axe Mastery, Acid Terror on tough monsters, Bomb (Demonstration) on a group; brews potions between trips (Prepare Potion, needs bottles and herbs).",
+     "Avoids long fights without Mammonite zeny, magic mobs; the Homunculus is summoned but not directed."
+    ],
+    "mvp": [
+     "Support: Aid Potion (Potion Pitcher) on allies, Acid Terror on the boss to strip DEF and armour, Bomb for burst; stays behind the tank.",
+     "Brings Red and Yellow Potions to throw, Acid Bottles, Blue Potions, Yggdrasil Berry."
+    ],
+    "pvp": [
+     "Utility fighter: Acid Terror breaks armour, Bomb burns equipment, Potion Pitcher heals allies; weak in a straight duel.",
+     "Avoids long duels; carries Acid Bottles, potions, Fly Wing."
+    ]
+   }
+  },
+  "assassin": {
+   "name": "Crit Katar Assassin",
+   "base": "",
+   "class": "Assassin",
+   "first_job": "Thief",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-32",
+     "min": 1,
+     "max": 32,
+     "class_at_end": "Thief",
+     "stats": {
+      "STR": 27,
+      "AGI": 40,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 10,
+      "LUK": 1
+     },
+     "stat_points_available": 228,
+     "stat_points_used": 227,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 2
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-60",
+     "min": 18,
+     "max": 60,
+     "class_at_end": "Assassin",
+     "stats": {
+      "STR": 50,
+      "AGI": 60,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 10,
+      "LUK": 20
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 554,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 134,
+       "name": "Katar Mastery",
+       "lv": 10
+      },
+      {
+       "id": 136,
+       "name": "Sonic Blow",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Assassin",
+     "stats": {
+      "STR": 77,
+      "AGI": 90,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 35,
+      "LUK": 40
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1265,
+     "stat_points_spare": 8,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 134,
+       "name": "Katar Mastery",
+       "lv": 10
+      },
+      {
+       "id": 136,
+       "name": "Sonic Blow",
+       "lv": 10
+      },
+      {
+       "id": 135,
+       "name": "Cloaking",
+       "lv": 5
+      },
+      {
+       "id": 137,
+       "name": "Grimtooth",
+       "lv": 5
+      },
+      {
+       "id": 138,
+       "name": "Enchant Poison",
+       "lv": 5
+      },
+      {
+       "id": 139,
+       "name": "Poison React",
+       "lv": 5
+      },
+      {
+       "id": 140,
+       "name": "Venom Dust",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 4
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1390,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 77,
+     "AGI": 90,
+     "VIT": 30,
+     "INT": 1,
+     "DEX": 35,
+     "LUK": 40
+    },
+    "stat_points_spare_at_99": 8,
+    "stat_goals_unreached": [
+     "STR 85",
+     "VIT 40"
+    ],
+    "skill_points_listed": 84,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "Critical-katar Assassin. Sonic Blow on tough targets, Double Attack in between, Enchant Poison on its blade, Cloaking to cross a spot unseen, Grimtooth from hiding on groups; high flee means it takes few hits. Hunts 1-3 monster spots.",
+     "Avoids Undead/Insect with Poison resistance, packs it cannot flee, long fights below 30% HP; Detoxify for self-poison."
+    ],
+    "mvp": [
+     "Melee DPS / evasion off-tank: Sonic Blow on the boss, Enchant Poison, Venom Dust on groups, flees damage with high FLEE; no Cloaking dependency on the boss.",
+     "Brings Red Gemstones (Venom Dust), White Potions, Awakening Potion, Fly Wing."
+    ],
+    "pvp": [
+     "Fast striker: Cloaking in, Sonic Blow burst, Enchant Poison for the poison tick, Grimtooth on a cluster; high flee, thin HP.",
+     "Avoids VIT-heavy tanks and AoE; carries White Potions, Red Gemstones, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "rogue": {
+   "name": "AGI/STR Dagger Rogue",
+   "base": "",
+   "class": "Rogue",
+   "first_job": "Thief",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Thief",
+     "stats": {
+      "STR": 20,
+      "AGI": 39,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 209,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "24-99",
+     "min": 24,
+     "max": 99,
+     "class_at_end": "Rogue",
+     "stats": {
+      "STR": 80,
+      "AGI": 85,
+      "VIT": 40,
+      "INT": 1,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1240,
+     "stat_points_spare": 33,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 210,
+       "name": "Gank",
+       "lv": 4
+      },
+      {
+       "id": 211,
+       "name": "Mug",
+       "lv": 4
+      },
+      {
+       "id": 212,
+       "name": "Back Stab",
+       "lv": 10
+      },
+      {
+       "id": 213,
+       "name": "Stalk",
+       "lv": 2
+      },
+      {
+       "id": 214,
+       "name": "Sightless Mind",
+       "lv": 5
+      },
+      {
+       "id": 219,
+       "name": "Snatch",
+       "lv": 5
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 5
+      },
+      {
+       "id": 225,
+       "name": "Intimidate",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1240,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 80,
+     "AGI": 85,
+     "VIT": 40,
+     "INT": 1,
+     "DEX": 50,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 33,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "AGI/STR Dagger Rogue. Back Stab from behind, Double Attack, Gank (steals while hitting), Mug for a coin bonus, Stalk to move through a spot in hiding; Hiding to reset. Hunts level-appropriate spots and steals as a side income.",
+     "Avoids Insect/Undead with Detect, groups it cannot Back Stab from behind, lengthy fights below 30% HP; Hiding to recover."
+    ],
+    "mvp": [
+     "Evasion DPS: Back Stab from behind after the tank positions the boss, Gank/Mug for drops, strips later; no healing, depends on flee.",
+     "Brings White Potions, Awakening Potion, Fly Wing, Yggdrasil Berry."
+    ],
+    "pvp": [
+     "Flee striker: Back Stab burst, Snatch (Intimidate) to warp the target next to it, strips for the plan's later builds; thin on HP.",
+     "Avoids AoE and Detect; carries White Potions, Fly Wing."
+    ]
+   }
+  },
+  "sage_support": {
+   "name": "Support Sage",
+   "base": "sage",
+   "class": "Sage",
+   "first_job": "Mage",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Mage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 15,
+      "INT": 40,
+      "DEX": 18,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 208,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 5
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 5
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 5
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "25-65",
+     "min": 25,
+     "max": 65,
+     "class_at_end": "Sage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 45,
+      "INT": 65,
+      "DEX": 45,
+      "LUK": 1
+     },
+     "stat_points_available": 630,
+     "stat_points_used": 630,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 10
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
+       "id": 274,
+       "name": "Study",
+       "lv": 5
+      },
+      {
+       "id": 283,
+       "name": "Endow Quake",
+       "lv": 1
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 3
+      },
+      {
+       "id": 275,
+       "name": "Cast Cancel",
+       "lv": 1
+      },
+      {
+       "id": 278,
+       "name": "Free Cast",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "60-99",
+     "min": 60,
+     "max": 99,
+     "class_at_end": "Sage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 65,
+      "INT": 99,
+      "DEX": 70,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 10
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
+       "id": 274,
+       "name": "Study",
+       "lv": 5
+      },
+      {
+       "id": 283,
+       "name": "Endow Quake",
+       "lv": 1
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 3
+      },
+      {
+       "id": 275,
+       "name": "Cast Cancel",
+       "lv": 1
+      },
+      {
+       "id": 278,
+       "name": "Free Cast",
+       "lv": 4
+      },
+      {
+       "id": 276,
+       "name": "Magic Rod",
+       "lv": 1
+      },
+      {
+       "id": 277,
+       "name": "Spell Breaker",
+       "lv": 3
+      },
+      {
+       "id": 289,
+       "name": "Dispell",
+       "lv": 5
+      },
+      {
+       "id": 280,
+       "name": "Endow Blaze",
+       "lv": 2
+      },
+      {
+       "id": 281,
+       "name": "Endow Tsunami",
+       "lv": 2
+      },
+      {
+       "id": 282,
+       "name": "Endow Tornado",
+       "lv": 2
+      },
+      {
+       "id": 285,
+       "name": "Volcano",
+       "lv": 3
+      },
+      {
+       "id": 286,
+       "name": "Deluge",
+       "lv": 3
+      },
+      {
+       "id": 287,
+       "name": "Whirlwind",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1312,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 1,
+     "VIT": 65,
+     "INT": 99,
+     "DEX": 70,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 1,
+    "stat_goals_unreached": [
+     "VIT 70"
+    ],
+    "skill_points_listed": 98,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Study",
+      "want": 10,
+      "reached": 5
+     },
+     {
+      "name": "Endow Quake",
+      "want": 3,
+      "reached": 1
+     },
+     {
+      "name": "Whirlwind",
+      "want": 3,
+      "reached": 1
+     },
+     {
+      "name": "Magnetic Earth",
+      "want": 1,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Slow solo farmer by design: bolts and Earth Spike from range, Heaven's Drive on 3+ monsters, VIT kept for HP. Volcano, Deluge and Whirlwind only matter with allies.",
+     "Avoids long solo grinds and melee; rests often and prefers spots a party also uses."
+    ],
+    "mvp": [
+     "Support caster: Volcano / Deluge / Violent Gale on the boss area for the party's element, endows for melee allies, Dispell on buffed bosses (not reached by the current plan), bolts when idle.",
+     "Brings Blue Potions, a stack of elemental stones, a Blue Gemstone, Awakening Potion."
+    ],
+    "pvp": [
+     "Utility caster: Dispell, Spell Breaker, Land Protector and the elemental fields; a team piece, never a duelist.",
+     "Avoids duels; carries Blue Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "monk_asura": {
+   "name": "Asura Strike Monk",
+   "base": "monk",
+   "class": "Monk",
+   "first_job": "Acolyte",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Acolyte",
+     "stats": {
+      "STR": 35,
+      "AGI": 1,
+      "VIT": 15,
+      "INT": 15,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 206,
+     "stat_points_spare": 4,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 3
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "12-99",
+     "min": 12,
+     "max": 99,
+     "class_at_end": "Monk",
+     "stats": {
+      "STR": 90,
+      "AGI": 1,
+      "VIT": 50,
+      "INT": 67,
+      "DEX": 55,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1270,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 3
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 6
+      },
+      {
+       "id": 259,
+       "name": "Iron Fists",
+       "lv": 10
+      },
+      {
+       "id": 261,
+       "name": "Summon Spirit Sphere",
+       "lv": 5
+      },
+      {
+       "id": 262,
+       "name": "Absorb Spirit Sphere",
+       "lv": 1
+      },
+      {
+       "id": 270,
+       "name": "Fury",
+       "lv": 5
+      },
+      {
+       "id": 266,
+       "name": "Occult Impaction",
+       "lv": 3
+      },
+      {
+       "id": 267,
+       "name": "Throw Spirit Sphere",
+       "lv": 3
+      },
+      {
+       "id": 271,
+       "name": "Asura Strike",
+       "lv": 5
+      },
+      {
+       "id": 265,
+       "name": "Dodge",
+       "lv": 5
+      },
+      {
+       "id": 269,
+       "name": "Root",
+       "lv": 2
+      },
+      {
+       "id": 260,
+       "name": "Spiritual Cadence",
+       "lv": 5
+      },
+      {
+       "id": 263,
+       "name": "Raging Trifecta Blow",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1294,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 1,
+     "VIT": 50,
+     "INT": 67,
+     "DEX": 55,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 3,
+    "stat_goals_unreached": [
+     "INT 70"
+    ],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "Asura Strike burst. Builds 5 spheres, Fury (Explosion Spirits), casts Asura Strike to kill one tough monster or a pack, then drinks Blue Potions and rebuilds; slow and potion-heavy.",
+     "Avoids packs it cannot one-shot and any fight that lasts after the Asura (SP is empty for 20+ s); kills one big target at a time."
+    ],
+    "mvp": [
+     "Boss burst: Fury and 5 spheres, Asura Strike for a huge chunk of the boss, then waits behind the tank until SP is back.",
+     "Brings 100+ Blue Potions, White Potions, Yggdrasil Berry, Butterfly Wing."
+    ],
+    "pvp": [
+     "One-hit monk: Fury, 5 spheres, Asura Strike one-shots most targets in range, then it is helpless; needs a partner to cover the SP gap.",
+     "Avoids long fights; carries Blue Potions, Fly Wing, Butterfly Wing."
+    ]
+   }
+  },
+  "alchemist_battle": {
+   "name": "STR/DEX Battle Alchemist",
+   "base": "alchemist",
+   "class": "Alchemist",
+   "first_job": "Merchant",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Merchant",
+     "stats": {
+      "STR": 38,
+      "AGI": 10,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 5
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "16-99",
+     "min": 16,
+     "max": 99,
+     "class_at_end": "Alchemist",
+     "stats": {
+      "STR": 90,
+      "AGI": 30,
+      "VIT": 55,
+      "INT": 1,
+      "DEX": 55,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1072,
+     "stat_points_spare": 201,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 10
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 10
+      },
+      {
+       "id": 226,
+       "name": "Axe Mastery",
+       "lv": 10
+      },
+      {
+       "id": 227,
+       "name": "Potion Research",
+       "lv": 10
+      },
+      {
+       "id": 228,
+       "name": "Prepare Potion",
+       "lv": 10
+      },
+      {
+       "id": 230,
+       "name": "Acid Terror",
+       "lv": 5
+      },
+      {
+       "id": 229,
+       "name": "Bomb",
+       "lv": 5
+      },
+      {
+       "id": 238,
+       "name": "Bioethics",
+       "lv": 1
+      },
+      {
+       "id": 244,
+       "name": "Vaporize",
+       "lv": 1
+      },
+      {
+       "id": 243,
+       "name": "Call Homunculus",
+       "lv": 1
+      },
+      {
+       "id": 247,
+       "name": "Homunculus Resurrection",
+       "lv": 1
+      },
+      {
+       "id": 231,
+       "name": "Aid Potion",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1072,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 30,
+     "VIT": 55,
+     "INT": 1,
+     "DEX": 55,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 201,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "STR/DEX Battle Alchemist. Axe Mastery with an axe, Mammonite, Acid Terror and Bomb (Demonstration) as ranged chip, Potion Pitcher on itself; good solo clear speed for a Merchant.",
+     "Avoids magic mobs and long fights at low SP; potions are made from the market, not for sale."
+    ],
+    "mvp": [
+     "Battle support: Acid Terror on the boss, Bomb for burst, Potion Pitcher on allies, melee when the tank holds.",
+     "Brings Acid Bottles, potions to throw, Blue Potions, Awakening Potion."
+    ],
+    "pvp": [
+     "Hybrid brawler: Mammonite and Acid Terror for damage, Bomb to burn a duelist's gear, Potion Pitcher for sustain; ordinary DEF and flee, so avoids ganks.",
+     "Avoids ranged kiting; carries Acid Bottles, White Potions, Fly Wing."
+    ]
+   }
+  },
+  "alchemist_potion": {
+   "name": "INT/DEX/LUK Potion Alchemist",
+   "base": "alchemist",
+   "class": "Alchemist",
+   "first_job": "Merchant",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Merchant",
+     "stats": {
+      "STR": 15,
+      "AGI": 1,
+      "VIT": 15,
+      "INT": 32,
+      "DEX": 20,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 206,
+     "stat_points_spare": 4,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 5
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 5
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 7
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "16-99",
+     "min": 16,
+     "max": 99,
+     "class_at_end": "Alchemist",
+     "stats": {
+      "STR": 30,
+      "AGI": 1,
+      "VIT": 35,
+      "INT": 90,
+      "DEX": 74,
+      "LUK": 45
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1267,
+     "stat_points_spare": 6,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 10
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 10
+      },
+      {
+       "id": 227,
+       "name": "Potion Research",
+       "lv": 10
+      },
+      {
+       "id": 228,
+       "name": "Prepare Potion",
+       "lv": 10
+      },
+      {
+       "id": 231,
+       "name": "Aid Potion",
+       "lv": 5
+      },
+      {
+       "id": 238,
+       "name": "Bioethics",
+       "lv": 1
+      },
+      {
+       "id": 244,
+       "name": "Vaporize",
+       "lv": 1
+      },
+      {
+       "id": 243,
+       "name": "Call Homunculus",
+       "lv": 1
+      },
+      {
+       "id": 247,
+       "name": "Homunculus Resurrection",
+       "lv": 1
+      },
+      {
+       "id": 229,
+       "name": "Bomb",
+       "lv": 5
+      },
+      {
+       "id": 230,
+       "name": "Acid Terror",
+       "lv": 5
+      },
+      {
+       "id": 226,
+       "name": "Axe Mastery",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1420,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 30,
+     "AGI": 1,
+     "VIT": 35,
+     "INT": 90,
+     "DEX": 74,
+     "LUK": 45
+    },
+    "stat_points_spare_at_99": 6,
+    "stat_goals_unreached": [
+     "DEX 80",
+     "LUK 60"
+    ],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "INT/DEX/LUK Potion Alchemist. Brews Red, Orange, Yellow, White and Blue Potions and sells them from a vend; fights with Mammonite and Acid Terror only for herb and bottle supplies, not for levels.",
+     "Avoids fights above its level and long hunts; works near town with a cart and Vending."
+    ],
+    "mvp": [
+     "Support in the back line: Aid Potion (Potion Pitcher) on the tank, Acid Terror on the boss, potions for the party; never takes aggro.",
+     "Brings a cart of Red/Yellow/White Potions, Blue Potions, Acid Bottles, Medicine Bowls."
+    ],
+    "pvp": [
+     "Potion supplier: Potion Pitcher on allies and Acid Terror on one target; not a fighter, ends up behind a wall of allies.",
+     "Avoids all duels; carries potions, Fly Wing, Butterfly Wing."
+    ]
+   }
+  },
+  "blacksmith_mace": {
+   "name": "VIT/STR Mace Blacksmith",
+   "base": "blacksmith",
+   "class": "Blacksmith",
+   "first_job": "Merchant",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Merchant",
+     "stats": {
+      "STR": 40,
+      "AGI": 1,
+      "VIT": 18,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 208,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 5
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "14-60",
+     "min": 14,
+     "max": 60,
+     "class_at_end": "Blacksmith",
+     "stats": {
+      "STR": 60,
+      "AGI": 1,
+      "VIT": 45,
+      "INT": 1,
+      "DEX": 38,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 552,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 10
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 3
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 10
+      },
+      {
+       "id": 110,
+       "name": "Hammer Fall",
+       "lv": 5
+      },
+      {
+       "id": 111,
+       "name": "Adrenaline Rush",
+       "lv": 5
+      },
+      {
+       "id": 105,
+       "name": "Hilt Binding",
+       "lv": 1
+      },
+      {
+       "id": 107,
+       "name": "Weaponry Research",
+       "lv": 2
+      },
+      {
+       "id": 112,
+       "name": "Weapon Perfection",
+       "lv": 3
+      },
+      {
+       "id": 113,
+       "name": "Power-Thrust",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "27-99",
+     "min": 27,
+     "max": 99,
+     "class_at_end": "Blacksmith",
+     "stats": {
+      "STR": 90,
+      "AGI": 15,
+      "VIT": 70,
+      "INT": 1,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1098,
+     "stat_points_spare": 175,
+     "skills": [
+      {
+       "id": 36,
+       "name": "Enlarge Weight Limit",
+       "lv": 10
+      },
+      {
+       "id": 39,
+       "name": "Pushcart",
+       "lv": 10
+      },
+      {
+       "id": 42,
+       "name": "Mammonite",
+       "lv": 10
+      },
+      {
+       "id": 41,
+       "name": "Vending",
+       "lv": 3
+      },
+      {
+       "id": 37,
+       "name": "Discount",
+       "lv": 3
+      },
+      {
+       "id": 38,
+       "name": "Overcharge",
+       "lv": 10
+      },
+      {
+       "id": 110,
+       "name": "Hammer Fall",
+       "lv": 5
+      },
+      {
+       "id": 111,
+       "name": "Adrenaline Rush",
+       "lv": 5
+      },
+      {
+       "id": 105,
+       "name": "Hilt Binding",
+       "lv": 1
+      },
+      {
+       "id": 107,
+       "name": "Weaponry Research",
+       "lv": 10
+      },
+      {
+       "id": 112,
+       "name": "Weapon Perfection",
+       "lv": 5
+      },
+      {
+       "id": 113,
+       "name": "Power-Thrust",
+       "lv": 5
+      },
+      {
+       "id": 114,
+       "name": "Maximize Power",
+       "lv": 5
+      },
+      {
+       "id": 109,
+       "name": "Skin Tempering",
+       "lv": 5
+      },
+      {
+       "id": 108,
+       "name": "Weapon Repair",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1098,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 15,
+     "VIT": 70,
+     "INT": 1,
+     "DEX": 50,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 175,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "VIT/STR Mace Blacksmith. Hammer Fall first, Adrenaline Rush with a mace, Over Thrust, Mammonite for single targets; VIT makes it a durable melee farmer.",
+     "Avoids ranged packs and long fights with no Adrenaline Rush; sells loot between trips."
+    ],
+    "mvp": [
+     "Durable melee DPS: Adrenaline Rush for the party, Over Thrust, Hammer Fall on adds, Maximize Power on the boss; takes hits from the boss without a healer longer than the axe build.",
+     "Brings White Potions, Awakening Potion, spare maces."
+    ],
+    "pvp": [
+     "Brawler: mace damage with Over Thrust, Hammer Fall stuns, high VIT; slow to kill but hard to kill.",
+     "Avoids ranged kiting; carries White Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "assassin_sonic": {
+   "name": "STR/AGI Sonic Blow Assassin",
+   "base": "assassin",
+   "class": "Assassin",
+   "first_job": "Thief",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-32",
+     "min": 1,
+     "max": 32,
+     "class_at_end": "Thief",
+     "stats": {
+      "STR": 23,
+      "AGI": 40,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 228,
+     "stat_points_used": 225,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 2
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-60",
+     "min": 18,
+     "max": 60,
+     "class_at_end": "Assassin",
+     "stats": {
+      "STR": 50,
+      "AGI": 60,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 25,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 555,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 134,
+       "name": "Katar Mastery",
+       "lv": 10
+      },
+      {
+       "id": 136,
+       "name": "Sonic Blow",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Assassin",
+     "stats": {
+      "STR": 86,
+      "AGI": 90,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 45,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1270,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 134,
+       "name": "Katar Mastery",
+       "lv": 10
+      },
+      {
+       "id": 136,
+       "name": "Sonic Blow",
+       "lv": 10
+      },
+      {
+       "id": 138,
+       "name": "Enchant Poison",
+       "lv": 10
+      },
+      {
+       "id": 135,
+       "name": "Cloaking",
+       "lv": 2
+      },
+      {
+       "id": 137,
+       "name": "Grimtooth",
+       "lv": 5
+      },
+      {
+       "id": 132,
+       "name": "Righthand Mastery",
+       "lv": 5
+      },
+      {
+       "id": 139,
+       "name": "Poison React",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 4
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1359,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 86,
+     "AGI": 90,
+     "VIT": 30,
+     "INT": 1,
+     "DEX": 45,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 3,
+    "stat_goals_unreached": [
+     "STR 90",
+     "VIT 40"
+    ],
+    "skill_points_listed": 84,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "STR/AGI Sonic Blow Assassin. Sonic Blow on every target worth it, Enchant Poison, Grimtooth, Right-hand Mastery for dual-wield when it has the second weapon; fastest single-target killer of the line.",
+     "Avoids packs of 4+ (Sonic Blow is single-target), Undead and Poison-immune targets; rests with Cloaking off."
+    ],
+    "mvp": [
+     "Burst DPS: Sonic Blow combos on the boss with Enchant Poison, Grimtooth on adds from hiding; thin HP so it relies on flee and a healer.",
+     "Brings Red Gemstones (Venom Dust), White Potions, Awakening Potion, Fly Wing."
+    ],
+    "pvp": [
+     "Burst striker: Sonic Blow one-chains most squishies, Enchant Poison adds damage; dies to AoE and stun.",
+     "Avoids Safety Wall stalls and tank builds; carries White Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "assassin_dagger": {
+   "name": "AGI/STR Dagger Assassin",
+   "base": "assassin",
+   "class": "Assassin",
+   "first_job": "Thief",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-32",
+     "min": 1,
+     "max": 32,
+     "class_at_end": "Thief",
+     "stats": {
+      "STR": 23,
+      "AGI": 40,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 228,
+     "stat_points_used": 225,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 2
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "24-60",
+     "min": 24,
+     "max": 60,
+     "class_at_end": "Assassin",
+     "stats": {
+      "STR": 50,
+      "AGI": 60,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 25,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 555,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 132,
+       "name": "Righthand Mastery",
+       "lv": 5
+      },
+      {
+       "id": 138,
+       "name": "Enchant Poison",
+       "lv": 10
+      },
+      {
+       "id": 139,
+       "name": "Poison React",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "48-99",
+     "min": 48,
+     "max": 99,
+     "class_at_end": "Assassin",
+     "stats": {
+      "STR": 78,
+      "AGI": 90,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 50,
+      "LUK": 20
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1270,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 132,
+       "name": "Righthand Mastery",
+       "lv": 5
+      },
+      {
+       "id": 138,
+       "name": "Enchant Poison",
+       "lv": 10
+      },
+      {
+       "id": 139,
+       "name": "Poison React",
+       "lv": 9
+      },
+      {
+       "id": 140,
+       "name": "Venom Dust",
+       "lv": 5
+      },
+      {
+       "id": 135,
+       "name": "Cloaking",
+       "lv": 5
+      },
+      {
+       "id": 133,
+       "name": "Lefthand Mastery",
+       "lv": 5
+      },
+      {
+       "id": 141,
+       "name": "Venom Splasher",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1288,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 78,
+     "AGI": 90,
+     "VIT": 30,
+     "INT": 1,
+     "DEX": 50,
+     "LUK": 20
+    },
+    "stat_points_spare_at_99": 3,
+    "stat_goals_unreached": [
+     "STR 80"
+    ],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "AGI/STR Dagger Assassin. Dual daggers (Right-hand and Left-hand Mastery), Enchant Poison, Venom Splasher on weak targets, Venom Dust for groups, Cloaking; Poison React to survive single poison hitters.",
+     "Avoids Poison-immune Undead/Insect, big packs without Venom Dust, long chases; leaves under 30% HP."
+    ],
+    "mvp": [
+     "Dual-dagger DPS: Double Attack + Left/Right mastery and Enchant Poison on the boss, Venom Splasher for burst, Cloaking when it needs to reset aggro.",
+     "Brings Red Gemstones (Venom Dust), White Potions, Awakening Potion."
+    ],
+    "pvp": [
+     "Dual-wield duellist: fast hits with Enchant Poison, Venom Splasher as a finisher, Poison React to counter poison users; low defence.",
+     "Avoids AoE and stun; carries White Potions, Red Gemstones, Fly Wing."
+    ]
+   }
+  },
+  "rogue_bow": {
+   "name": "DEX/AGI Bow Rogue",
+   "base": "rogue",
+   "class": "Rogue",
+   "first_job": "Thief",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Thief",
+     "stats": {
+      "STR": 1,
+      "AGI": 27,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 40,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 209,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "24-60",
+     "min": 24,
+     "max": 60,
+     "class_at_end": "Rogue",
+     "stats": {
+      "STR": 1,
+      "AGI": 45,
+      "VIT": 25,
+      "INT": 1,
+      "DEX": 65,
+      "LUK": 10
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 550,
+     "stat_points_spare": 5,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "45-99",
+     "min": 45,
+     "max": 99,
+     "class_at_end": "Rogue",
+     "stats": {
+      "STR": 1,
+      "AGI": 70,
+      "VIT": 35,
+      "INT": 1,
+      "DEX": 99,
+      "LUK": 20
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1127,
+     "stat_points_spare": 146,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 210,
+       "name": "Gank",
+       "lv": 4
+      },
+      {
+       "id": 211,
+       "name": "Mug",
+       "lv": 4
+      },
+      {
+       "id": 212,
+       "name": "Back Stab",
+       "lv": 4
+      },
+      {
+       "id": 213,
+       "name": "Stalk",
+       "lv": 2
+      },
+      {
+       "id": 214,
+       "name": "Sightless Mind",
+       "lv": 5
+      },
+      {
+       "id": 219,
+       "name": "Snatch",
+       "lv": 5
+      },
+      {
+       "id": 225,
+       "name": "Intimidate",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1127,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 70,
+     "VIT": 35,
+     "INT": 1,
+     "DEX": 99,
+     "LUK": 20
+    },
+    "stat_points_spare_at_99": 146,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "DEX/AGI Bow Rogue. Double Strafe with Vulture's Eye as the main damage, kites like a Hunter, Back Stab only if a dagger is equipped; Gank/Mug on the way. Hunts easy ranged spots.",
+     "Avoids melee swarms and spots without arrow supply; no Back Stab without a dagger swap."
+    ],
+    "mvp": [
+     "Ranged DPS: Double Strafe on the boss from behind the tank, Intimidate (Snatch) to break a stuck boss; low HP means it hangs back.",
+     "Brings arrows, Concentration Potion, White Potions, Fly Wing."
+    ],
+    "pvp": [
+     "Mobile archer-thief: Double Strafe and Intimidate to re-position; Plagiarism (copy) is not in the plan.",
+     "Avoids melee and Silence; carries arrows, White Potions, Fly Wing."
+    ]
+   }
+  },
+  "knight_pierce": {
+   "name": "AGI/STR Pierce Lancer Knight",
+   "base": "knight",
+   "class": "Knight",
+   "first_job": "Swordman",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-32",
+     "min": 1,
+     "max": 32,
+     "class_at_end": "Swordman",
+     "stats": {
+      "STR": 40,
+      "AGI": 18,
+      "VIT": 15,
+      "INT": 1,
+      "DEX": 10,
+      "LUK": 1
+     },
+     "stat_points_available": 228,
+     "stat_points_used": 226,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 5
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 8
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-60",
+     "min": 33,
+     "max": 60,
+     "class_at_end": "Knight",
+     "stats": {
+      "STR": 60,
+      "AGI": 44,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 20,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 554,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 4
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 5
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 55,
+       "name": "Spear Mastery",
+       "lv": 10
+      },
+      {
+       "id": 56,
+       "name": "Pierce",
+       "lv": 5
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "48-99",
+     "min": 48,
+     "max": 99,
+     "class_at_end": "Knight",
+     "stats": {
+      "STR": 90,
+      "AGI": 70,
+      "VIT": 60,
+      "INT": 1,
+      "DEX": 40,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1270,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 9
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 5
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 55,
+       "name": "Spear Mastery",
+       "lv": 10
+      },
+      {
+       "id": 56,
+       "name": "Pierce",
+       "lv": 10
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 5
+      },
+      {
+       "id": 59,
+       "name": "Spear Boomerang",
+       "lv": 5
+      },
+      {
+       "id": 58,
+       "name": "Spear Stab",
+       "lv": 3
+      },
+      {
+       "id": 57,
+       "name": "Brandish Spear",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1270,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 70,
+     "VIT": 60,
+     "INT": 1,
+     "DEX": 40,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 3,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 89,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Endure",
+      "want": 10,
+      "reached": 9
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Lancer with real AGI. Pierce on Large monsters (3 hits), Provoke, Spear Boomerang to pull, Brandish Spear on crowds; prefers Large targets (Minorous, Orc types, Golems).",
+     "Avoids swarms of Small monsters without Brandish Spear, Undead it cannot pierce through, long chases; rests on Increase HP Recovery and leaves under 30% HP."
+    ],
+    "mvp": [
+     "Fast spear tank: Provoke for aggro, Pierce on Large bosses at high ASPD, Brandish Spear on the adds, Endure 10 for knock-back bosses.",
+     "Brings White Potions, Awakening and Concentration Potion for ASPD, Butterfly Wing."
+    ],
+    "pvp": [
+     "High-ASPD lancer: Pierce for burst, Brandish Spear to break groups, Spear Stab to push a caster away; dies to stun-lock when Endure is off.",
+     "Avoids focused ranged fire; carries White Potions, an Awakening Potion for the first engage, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "crusader_spear": {
+   "name": "STR/VIT Spear Crusader",
+   "base": "crusader",
+   "class": "Crusader",
+   "first_job": "Swordman",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-32",
+     "min": 1,
+     "max": 32,
+     "class_at_end": "Swordman",
+     "stats": {
+      "STR": 40,
+      "AGI": 1,
+      "VIT": 23,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 228,
+     "stat_points_used": 225,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-60",
+     "min": 33,
+     "max": 60,
+     "class_at_end": "Crusader",
+     "stats": {
+      "STR": 60,
+      "AGI": 10,
+      "VIT": 49,
+      "INT": 1,
+      "DEX": 30,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 555,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 3
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 55,
+       "name": "Spear Mastery",
+       "lv": 10
+      },
+      {
+       "id": 258,
+       "name": "Spear Quicken",
+       "lv": 5
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "48-99",
+     "min": 48,
+     "max": 99,
+     "class_at_end": "Crusader",
+     "stats": {
+      "STR": 90,
+      "AGI": 30,
+      "VIT": 70,
+      "INT": 1,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1152,
+     "stat_points_spare": 121,
+     "skills": [
+      {
+       "id": 5,
+       "name": "Bash",
+       "lv": 10
+      },
+      {
+       "id": 6,
+       "name": "Provoke",
+       "lv": 5
+      },
+      {
+       "id": 2,
+       "name": "Sword Mastery",
+       "lv": 10
+      },
+      {
+       "id": 8,
+       "name": "Endure",
+       "lv": 1
+      },
+      {
+       "id": 4,
+       "name": "Increase HP Recovery",
+       "lv": 10
+      },
+      {
+       "id": 7,
+       "name": "Magnum Break",
+       "lv": 3
+      },
+      {
+       "id": 63,
+       "name": "Peco Peco Riding",
+       "lv": 1
+      },
+      {
+       "id": 55,
+       "name": "Spear Mastery",
+       "lv": 10
+      },
+      {
+       "id": 258,
+       "name": "Spear Quicken",
+       "lv": 10
+      },
+      {
+       "id": 64,
+       "name": "Cavalier Mastery",
+       "lv": 5
+      },
+      {
+       "id": 248,
+       "name": "Faith",
+       "lv": 10
+      },
+      {
+       "id": 253,
+       "name": "Holy Cross",
+       "lv": 10
+      },
+      {
+       "id": 254,
+       "name": "Grand Cross",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1152,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 30,
+     "VIT": 70,
+     "INT": 1,
+     "DEX": 50,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 121,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 90,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Grand Cross",
+      "want": 5,
+      "reached": 3
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Spear Crusader. Spear Quicken up for ASPD, Peco mount, Holy Cross and Grand Cross on packs, Bash for the first hit; STR/VIT so it trades hits for a long time on 1-3 monster spots.",
+     "Avoids ranged/magic packs and Holy-immune targets; rests to full before the next pull."
+    ],
+    "mvp": [
+     "Spear tank-DPS: Provoke, Spear Quicken and spear damage on Large bosses, Holy Cross on Undead/Demon, Grand Cross for adds.",
+     "Brings White Potions, Awakening Potion, Yggdrasil Berry, Butterfly Wing."
+    ],
+    "pvp": [
+     "Mounted spearman: Spear Quicken for ASPD, Holy Cross burst, Smite and Shield Boomerang for control; solid HP, no ranged answer.",
+     "Avoids ranged kiting and Silence; carries White Potions, Awakening Potion, Fly Wing."
+    ]
+   }
+  },
+  "wizard_fire": {
+   "name": "INT/DEX Fire Wizard",
+   "base": "wizard",
+   "class": "Wizard",
+   "first_job": "Mage",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Mage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 10,
+      "INT": 40,
+      "DEX": 22,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 4
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "25-65",
+     "min": 25,
+     "max": 65,
+     "class_at_end": "Wizard",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 35,
+      "INT": 68,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 630,
+     "stat_points_used": 630,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 10
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 4
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 1
+      },
+      {
+       "id": 81,
+       "name": "Sightrasher",
+       "lv": 2
+      },
+      {
+       "id": 83,
+       "name": "Meteor Storm",
+       "lv": 10
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
+      },
+      {
+       "id": 92,
+       "name": "Quagmire",
+       "lv": 3
+      },
+      {
+       "id": 84,
+       "name": "Jupitel Thunder",
+       "lv": 2
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "60-99",
+     "min": 60,
+     "max": 99,
+     "class_at_end": "Wizard",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 45,
+      "INT": 99,
+      "DEX": 85,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 10
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 6
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 10
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 1
+      },
+      {
+       "id": 81,
+       "name": "Sightrasher",
+       "lv": 2
+      },
+      {
+       "id": 83,
+       "name": "Meteor Storm",
+       "lv": 10
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
+      },
+      {
+       "id": 92,
+       "name": "Quagmire",
+       "lv": 3
+      },
+      {
+       "id": 84,
+       "name": "Jupitel Thunder",
+       "lv": 5
+      },
+      {
+       "id": 85,
+       "name": "Lord of Vermilion",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1336,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 1,
+     "VIT": 45,
+     "INT": 99,
+     "DEX": 85,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 1,
+    "stat_goals_unreached": [
+     "VIT 55"
+    ],
+    "skill_points_listed": 92,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Lightning Bolt",
+      "want": 10,
+      "reached": 6
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Fire specialist. Fire Wall and Fire Ball to grind, Meteor Storm on groups, Lord of Vermilion later; heavy damage on Earth/Plant/Undead (fire-weak), useless on Fire-immune monsters.",
+     "Avoids Fire-resistant spots (Magma, Volcano) and melee swarms; picks fire-weak farms."
+    ],
+    "mvp": [
+     "Boss caster: Meteor Storm on fire-weak bosses and adds, Fire Bolt and Fire Wall from max range, Lord of Vermilion; backs off for Quagmire when the boss reaches it.",
+     "Brings Blue Potions, a Blue Gemstone, Awakening Potion; needs the boss held by a tank."
+    ],
+    "pvp": [
+     "Fire nuker: Meteor Storm and Fire Ball at range, Fire Wall as a barrier, Lord of Vermilion; strong on Undead/Earth, bounces off Fire/Water-resist builds.",
+     "Avoids Fire-resist armour and melee closers; carries Blue Potions, Fly Wing."
+    ]
+   }
+  },
+  "wizard_frost": {
+   "name": "INT/DEX Frost Wizard",
+   "base": "wizard",
+   "class": "Wizard",
+   "first_job": "Mage",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Mage",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 10,
+      "INT": 40,
+      "DEX": 22,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 5
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 4
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "25-65",
+     "min": 25,
+     "max": 65,
+     "class_at_end": "Wizard",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 35,
+      "INT": 68,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 630,
+     "stat_points_used": 630,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 10
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 10
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 1
+      },
+      {
+       "id": 84,
+       "name": "Jupitel Thunder",
+       "lv": 5
+      },
+      {
+       "id": 89,
+       "name": "Storm Gust",
+       "lv": 10
+      },
+      {
+       "id": 87,
+       "name": "Ice Wall",
+       "lv": 1
+      },
+      {
+       "id": 85,
+       "name": "Lord of Vermilion",
+       "lv": 9
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "60-99",
+     "min": 60,
+     "max": 99,
+     "class_at_end": "Wizard",
+     "stats": {
+      "STR": 1,
+      "AGI": 1,
+      "VIT": 53,
+      "INT": 99,
+      "DEX": 80,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1273,
+     "stat_points_spare": 0,
+     "skills": [
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 10
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 10
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 1
+      },
+      {
+       "id": 84,
+       "name": "Jupitel Thunder",
+       "lv": 10
+      },
+      {
+       "id": 89,
+       "name": "Storm Gust",
+       "lv": 10
+      },
+      {
+       "id": 87,
+       "name": "Ice Wall",
+       "lv": 1
+      },
+      {
+       "id": 85,
+       "name": "Lord of Vermilion",
+       "lv": 10
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
+      },
+      {
+       "id": 92,
+       "name": "Quagmire",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 5
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1322,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 1,
+     "VIT": 53,
+     "INT": 99,
+     "DEX": 80,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 0,
+    "stat_goals_unreached": [
+     "VIT 60"
+    ],
+    "skill_points_listed": 83,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "Frost / Storm Gust. Frost Diver and Storm Gust (freeze in the area) for crowds, Cold Bolt to finish, Jupitel Thunder to push; frozen monsters do not hit, so it is the safest Wizard grind.",
+     "Avoids Undead (freeze-immune) and Water monsters; needs open ground to place Storm Gust."
+    ],
+    "mvp": [
+     "Freeze control: Storm Gust freezes the adds, Cold Bolt / Frost Diver on stragglers, Jupitel Thunder on the boss, Quagmire or Ice Wall to keep melee off; bosses resist freeze, so it does damage only.",
+     "Brings Blue Potions, Awakening Potion; stands behind the tank."
+    ],
+    "pvp": [
+     "Crowd control: Storm Gust freeze then Lord of Vermilion, Frost Diver on a lone attacker, Ice Wall to cut a lane, Quagmire to slow melee.",
+     "Avoids freeze-immune and Undead opponents and Silence; carries Blue Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "sage_hindsight": {
+   "name": "INT/AGI Hindsight Sage",
+   "base": "sage",
+   "class": "Sage",
+   "first_job": "Mage",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Mage",
+     "stats": {
+      "STR": 1,
+      "AGI": 10,
+      "VIT": 1,
+      "INT": 40,
+      "DEX": 22,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 6
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "25-65",
+     "min": 25,
+     "max": 65,
+     "class_at_end": "Sage",
+     "stats": {
+      "STR": 20,
+      "AGI": 35,
+      "VIT": 1,
+      "INT": 65,
+      "DEX": 45,
+      "LUK": 1
+     },
+     "stat_points_available": 630,
+     "stat_points_used": 623,
+     "stat_points_spare": 7,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 10
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 4
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 13,
+       "name": "Soul Strike",
+       "lv": 3
+      },
+      {
+       "id": 274,
+       "name": "Study",
+       "lv": 5
+      },
+      {
+       "id": 275,
+       "name": "Cast Cancel",
+       "lv": 1
+      },
+      {
+       "id": 278,
+       "name": "Free Cast",
+       "lv": 4
+      },
+      {
+       "id": 279,
+       "name": "Hindsight",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "60-99",
+     "min": 60,
+     "max": 99,
+     "class_at_end": "Sage",
+     "stats": {
+      "STR": 30,
+      "AGI": 60,
+      "VIT": 1,
+      "INT": 90,
+      "DEX": 70,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1221,
+     "stat_points_spare": 52,
+     "skills": [
+      {
+       "id": 19,
+       "name": "Fire Bolt",
+       "lv": 10
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 10
+      },
+      {
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 10
+      },
+      {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 10,
+       "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 4
+      },
+      {
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 5
+      },
+      {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 13,
+       "name": "Soul Strike",
+       "lv": 3
+      },
+      {
+       "id": 274,
+       "name": "Study",
+       "lv": 10
+      },
+      {
+       "id": 275,
+       "name": "Cast Cancel",
+       "lv": 1
+      },
+      {
+       "id": 278,
+       "name": "Free Cast",
+       "lv": 9
+      },
+      {
+       "id": 279,
+       "name": "Hindsight",
+       "lv": 10
+      },
+      {
+       "id": 283,
+       "name": "Endow Quake",
+       "lv": 1
+      },
+      {
+       "id": 90,
+       "name": "Earth Spike",
+       "lv": 3
+      },
+      {
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1221,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 30,
+     "AGI": 60,
+     "VIT": 1,
+     "INT": 90,
+     "DEX": 70,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 52,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 94,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": [
+     {
+      "name": "Free Cast",
+      "want": 10,
+      "reached": 9
+     },
+     {
+      "name": "Magic Rod",
+      "want": 1,
+      "reached": 0
+     },
+     {
+      "name": "Spell Breaker",
+      "want": 3,
+      "reached": 0
+     },
+     {
+      "name": "Dispell",
+      "want": 1,
+      "reached": 0
+     }
+    ]
+   },
+   "playstyle": {
+    "solo": [
+     "Auto Spell Sage. Hindsight procs Fire / Cold / Lightning Bolt on its melee swings (Soul Strike versus Undead), AGI for ASPD, Free Cast to keep moving. Stands in melee with a Book.",
+     "Avoids low-SP stretches and Ghost mobs for the wrong bolt; leaves when VIT-1 HP runs low (Fly Wing)."
+    ],
+    "mvp": [
+     "Melee-caster DPS: Hindsight bolt procs on the boss, Free Cast, Dispell (not reached by the current plan); relies on the tank for aggro and a priest for heals (VIT is low).",
+     "Brings Blue Potions, Awakening Potion, Concentration Potion for ASPD."
+    ],
+    "pvp": [
+     "Auto Spell duelist: high ASPD means frequent proc bolts, Free Cast keeps it mobile; no VIT, so one stun or Silence ends the fight.",
+     "Avoids open fights without an escape; carries Blue Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  },
+  "hunter_agi": {
+   "name": "AGI/DEX Auto-Attack Hunter",
+   "base": "hunter",
+   "class": "Hunter",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 20,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 30,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 133,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 5
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 41,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 45,
+      "LUK": 1
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 304,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 5
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 4
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Hunter",
+     "stats": {
+      "STR": 1,
+      "AGI": 90,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 85,
+      "LUK": 20
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1143,
+     "stat_points_spare": 130,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 10
+      },
+      {
+       "id": 126,
+       "name": "Beast Bane",
+       "lv": 10
+      },
+      {
+       "id": 127,
+       "name": "Falconry Mastery",
+       "lv": 1
+      },
+      {
+       "id": 129,
+       "name": "Blitz Beat",
+       "lv": 5
+      },
+      {
+       "id": 128,
+       "name": "Steel Crow",
+       "lv": 10
+      },
+      {
+       "id": 115,
+       "name": "Skid Trap",
+       "lv": 1
+      },
+      {
+       "id": 117,
+       "name": "Ankle Snare",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 8
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1143,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 90,
+     "VIT": 30,
+     "INT": 1,
+     "DEX": 85,
+     "LUK": 20
+    },
+    "stat_points_spare_at_99": 130,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 80,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "Auto-attack archer. AGI for ASPD: Double Strafe spam with Concentration, Arrow Shower on 3+, constant kiting. Fastest solo killer per minute of the archer line at mid levels.",
+     "Avoids slow-clearing tanky targets, melee swarms and low-arrow trips; buys arrows in bulk."
+    ],
+    "mvp": [
+     "Ranged DPS at the top ASPD: Double Strafe on the boss, Arrow Shower on adds, Blitz Beat procs; needs the tank to hold the boss.",
+     "Brings Concentration and Awakening Potion, a heavy arrow stack, Fly Wing."
+    ],
+    "pvp": [
+     "Fast kiter: Double Strafe at max ASPD, Skid Trap / Ankle Snare to separate, Arrow Shower for crowds; low VIT, so one stun is fatal.",
+     "Avoids closing melee; carries arrows, Traps, Concentration Potion, Fly Wing."
+    ]
+   }
+  },
+  "priest_battle": {
+   "name": "STR/INT Battle Priest",
+   "base": "priest",
+   "class": "Priest",
+   "first_job": "Acolyte",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-26",
+     "min": 1,
+     "max": 26,
+     "class_at_end": "Acolyte",
+     "stats": {
+      "STR": 32,
+      "AGI": 1,
+      "VIT": 15,
+      "INT": 15,
+      "DEX": 10,
+      "LUK": 1
+     },
+     "stat_points_available": 178,
+     "stat_points_used": 177,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 3
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 8
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "24-60",
+     "min": 24,
+     "max": 60,
+     "class_at_end": "Priest",
+     "stats": {
+      "STR": 60,
+      "AGI": 1,
+      "VIT": 30,
+      "INT": 44,
+      "DEX": 20,
+      "LUK": 1
+     },
+     "stat_points_available": 555,
+     "stat_points_used": 554,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 4
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 65,
+       "name": "Mace Mastery",
+       "lv": 10
+      },
+      {
+       "id": 66,
+       "name": "Impositio Manus",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "55-99",
+     "min": 55,
+     "max": 99,
+     "class_at_end": "Priest",
+     "stats": {
+      "STR": 90,
+      "AGI": 1,
+      "VIT": 60,
+      "INT": 70,
+      "DEX": 40,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1270,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 10
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 65,
+       "name": "Mace Mastery",
+       "lv": 10
+      },
+      {
+       "id": 66,
+       "name": "Impositio Manus",
+       "lv": 5
+      },
+      {
+       "id": 33,
+       "name": "Angelus",
+       "lv": 2
+      },
+      {
+       "id": 73,
+       "name": "Kyrie Eleison",
+       "lv": 5
+      },
+      {
+       "id": 74,
+       "name": "Magnificat",
+       "lv": 3
+      },
+      {
+       "id": 24,
+       "name": "Ruwach",
+       "lv": 1
+      },
+      {
+       "id": 76,
+       "name": "Lex Divina",
+       "lv": 5
+      },
+      {
+       "id": 35,
+       "name": "Cure",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 6
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1270,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 1,
+     "VIT": 60,
+     "INT": 70,
+     "DEX": 40,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 3,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 82,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "STR/INT battle Priest with a Mace. Mace Mastery and Demon Bane, Blessing / Increase AGI / Impositio Manus on itself, melee swings with Heal in between. Kills solo at a decent speed but heals less than the support plan.",
+     "Avoids ranged/magic packs and stun sources; rests with Heal and Blue Potions."
+    ],
+    "mvp": [
+     "Front-line healer-DPS: Heal, Blessing and Increase AGI for the party, Impositio Manus, melee support while the tank holds; heals less than a support Priest.",
+     "Brings Blue Gemstones, Blue and White Potions, Awakening Potion."
+    ],
+    "pvp": [
+     "Mace brawler: Blessing + Increase AGI + Impositio Manus on itself, Mace Mastery damage, Demon Bane and Heal for sustain; good 1v1 against Demon/Undead, soft against casters.",
+     "Avoids ranged focus; carries Blue and White Potions, Fly Wing."
+    ]
+   }
+  },
+  "bard_arrow": {
+   "name": "DEX/AGI Arrow Bard",
+   "base": "bard",
+   "class": "Bard",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 15,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 33,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 132,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 30,
+      "VIT": 10,
+      "INT": 1,
+      "DEX": 51,
+      "LUK": 1
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 304,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Bard",
+     "stats": {
+      "STR": 1,
+      "AGI": 75,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 99,
+      "LUK": 10
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1118,
+     "stat_points_spare": 155,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 10
+      },
+      {
+       "id": 304,
+       "name": "Amp",
+       "lv": 1
+      },
+      {
+       "id": 305,
+       "name": "Encore",
+       "lv": 1
+      },
+      {
+       "id": 315,
+       "name": "Music Lessons",
+       "lv": 10
+      },
+      {
+       "id": 316,
+       "name": "Melody Strike",
+       "lv": 5
+      },
+      {
+       "id": 317,
+       "name": "Unchained Serenade",
+       "lv": 3
+      },
+      {
+       "id": 320,
+       "name": "Impressive Riff",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 8
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1118,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 75,
+     "VIT": 30,
+     "INT": 1,
+     "DEX": 99,
+     "LUK": 10
+    },
+    "stat_points_spare_at_99": 155,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 80,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "DEX/AGI arrow Bard. Double Strafe, Arrow Shower and Melody Strike with Concentration, kiting; songs once a party arrives. Better solo than the song-support line.",
+     "Avoids melee swarms and long fights without arrows."
+    ],
+    "mvp": [
+     "Archer-Bard hybrid: Double Strafe on the boss, Bragi / Assassin Cross when allies are close, Arrow Shower on adds; stays behind the tank.",
+     "Brings Concentration Potion, arrows, Blue Potions, Fly Wing."
+    ],
+    "pvp": [
+     "Singing archer: Double Strafe and Melody Strike for damage, team songs for allies, Unchained Serenade to blunt a caster; kites like a Hunter.",
+     "Avoids melee and Silence; carries arrows, Blue Potions, Fly Wing."
+    ]
+   }
+  },
+  "dancer_arrow": {
+   "name": "DEX/AGI Arrow Dancer",
+   "base": "dancer",
+   "class": "Dancer",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 15,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 33,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 132,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 30,
+      "VIT": 10,
+      "INT": 1,
+      "DEX": 51,
+      "LUK": 1
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 304,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Dancer",
+     "stats": {
+      "STR": 1,
+      "AGI": 75,
+      "VIT": 30,
+      "INT": 1,
+      "DEX": 99,
+      "LUK": 10
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1118,
+     "stat_points_spare": 155,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 10
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 10
+      },
+      {
+       "id": 304,
+       "name": "Amp",
+       "lv": 1
+      },
+      {
+       "id": 305,
+       "name": "Encore",
+       "lv": 1
+      },
+      {
+       "id": 323,
+       "name": "Dance Lessons",
+       "lv": 10
+      },
+      {
+       "id": 324,
+       "name": "Slinging Arrow",
+       "lv": 5
+      },
+      {
+       "id": 325,
+       "name": "Hip Shaker",
+       "lv": 3
+      },
+      {
+       "id": 327,
+       "name": "Focus Ballet",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 8
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1118,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 75,
+     "VIT": 30,
+     "INT": 1,
+     "DEX": 99,
+     "LUK": 10
+    },
+    "stat_points_spare_at_99": 155,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 80,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "DEX/AGI arrow Dancer. Double Strafe, Arrow Shower and Slinging Arrow with Concentration, kiting; dances once a party exists.",
+     "Avoids melee swarms and arrow shortages."
+    ],
+    "mvp": [
+     "Hybrid support: Double Strafe on the boss, Slow Grace on a melee boss, Focus Ballet when allies are close; stays behind the tank.",
+     "Brings Concentration Potion, arrows, Blue Potions, Fly Wing."
+    ],
+    "pvp": [
+     "Dancing archer: Double Strafe and Slinging Arrow for damage, Focus Ballet for allies; kiter with a light support job.",
+     "Avoids melee and Silence; carries arrows, Blue Potions, Fly Wing."
+    ]
+   }
+  },
+  "rogue_strip": {
+   "name": "DEX/STR Divest Rogue",
+   "base": "rogue",
+   "class": "Rogue",
+   "first_job": "Thief",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Thief",
+     "stats": {
+      "STR": 21,
+      "AGI": 20,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 35,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 1
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "24-99",
+     "min": 24,
+     "max": 99,
+     "class_at_end": "Rogue",
+     "stats": {
+      "STR": 78,
+      "AGI": 50,
+      "VIT": 40,
+      "INT": 1,
+      "DEX": 90,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
+     "skills": [
+      {
+       "id": 48,
+       "name": "Double Attack",
+       "lv": 10
+      },
+      {
+       "id": 49,
+       "name": "Improve Dodge",
+       "lv": 10
+      },
+      {
+       "id": 50,
+       "name": "Steal",
+       "lv": 5
+      },
+      {
+       "id": 51,
+       "name": "Hiding",
+       "lv": 3
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
+      },
+      {
+       "id": 53,
+       "name": "Detoxify",
+       "lv": 1
+      },
+      {
+       "id": 210,
+       "name": "Gank",
+       "lv": 4
+      },
+      {
+       "id": 211,
+       "name": "Mug",
+       "lv": 4
+      },
+      {
+       "id": 218,
+       "name": "Divest Helm",
+       "lv": 5
+      },
+      {
+       "id": 216,
+       "name": "Divest Shield",
+       "lv": 5
+      },
+      {
+       "id": 217,
+       "name": "Divest Armor",
+       "lv": 5
+      },
+      {
+       "id": 215,
+       "name": "Divest Weapon",
+       "lv": 5
+      },
+      {
+       "id": 212,
+       "name": "Back Stab",
+       "lv": 10
+      },
+      {
+       "id": 213,
+       "name": "Stalk",
+       "lv": 2
+      },
+      {
+       "id": 214,
+       "name": "Sightless Mind",
+       "lv": 5
+      },
+      {
+       "id": 223,
+       "name": "Slyness",
+       "lv": 1
+      },
+      {
+       "id": 219,
+       "name": "Snatch",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1290,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 78,
+     "AGI": 50,
+     "VIT": 40,
+     "INT": 1,
+     "DEX": 90,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 1,
+    "stat_goals_unreached": [
+     "STR 80"
+    ],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "DEX/STR Divest Rogue. Back Stab for damage, Divest Weapon / Shield / Armor / Helm to weaken tough single targets, Gank and Mug for income; Hiding to recover. A support-leaning thief rather than a farmer.",
+     "Avoids packs (strips are single-target) and Undead/Boss-protocol mobs that resist stripping; picks medium monsters with gear to strip."
+    ],
+    "mvp": [
+     "Utility DPS: Divest Weapon first (-25% ATK) then Divest Shield or Armor on the boss at most twice each, Back Stab for damage; never wastes strips on trash.",
+     "Brings Awakening Potion, White Potions, spare Divest items, Fly Wing."
+    ],
+    "pvp": [
+     "Disarming duelist: strips an opponent's weapon/shield/armour, then Back Stab; thin on HP but strong vs geared melee.",
+     "Avoids casters (strips do not matter); carries White Potions, Fly Wing."
+    ]
+   }
+  },
+  "hunter_trap": {
+   "name": "DEX/INT Trapper Hunter",
+   "base": "hunter",
+   "class": "Hunter",
+   "first_job": "Archer",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-20",
+     "min": 1,
+     "max": 20,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 10,
+      "VIT": 1,
+      "INT": 1,
+      "DEX": 36,
+      "LUK": 1
+     },
+     "stat_points_available": 135,
+     "stat_points_used": 133,
+     "stat_points_spare": 2,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "18-40",
+     "min": 18,
+     "max": 40,
+     "class_at_end": "Archer",
+     "stats": {
+      "STR": 1,
+      "AGI": 15,
+      "VIT": 1,
+      "INT": 20,
+      "DEX": 54,
+      "LUK": 1
+     },
+     "stat_points_available": 305,
+     "stat_points_used": 300,
+     "stat_points_spare": 5,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "33-99",
+     "min": 33,
+     "max": 99,
+     "class_at_end": "Hunter",
+     "stats": {
+      "STR": 1,
+      "AGI": 25,
+      "VIT": 35,
+      "INT": 70,
+      "DEX": 99,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1146,
+     "stat_points_spare": 127,
+     "skills": [
+      {
+       "id": 46,
+       "name": "Double Strafe",
+       "lv": 10
+      },
+      {
+       "id": 43,
+       "name": "Owl's Eye",
+       "lv": 4
+      },
+      {
+       "id": 44,
+       "name": "Vulture's Eye",
+       "lv": 10
+      },
+      {
+       "id": 45,
+       "name": "Improve Concentration",
+       "lv": 10
+      },
+      {
+       "id": 47,
+       "name": "Arrow Shower",
+       "lv": 5
+      },
+      {
+       "id": 115,
+       "name": "Skid Trap",
+       "lv": 1
+      },
+      {
+       "id": 116,
+       "name": "Land Mine",
+       "lv": 5
+      },
+      {
+       "id": 117,
+       "name": "Ankle Snare",
+       "lv": 3
+      },
+      {
+       "id": 120,
+       "name": "Flasher",
+       "lv": 1
+      },
+      {
+       "id": 121,
+       "name": "Freezing Trap",
+       "lv": 1
+      },
+      {
+       "id": 119,
+       "name": "Sandman",
+       "lv": 1
+      },
+      {
+       "id": 122,
+       "name": "Blast Mine",
+       "lv": 5
+      },
+      {
+       "id": 118,
+       "name": "Shockwave Trap",
+       "lv": 1
+      },
+      {
+       "id": 123,
+       "name": "Claymore Trap",
+       "lv": 5
+      },
+      {
+       "id": 126,
+       "name": "Beast Bane",
+       "lv": 10
+      },
+      {
+       "id": 127,
+       "name": "Falconry Mastery",
+       "lv": 1
+      },
+      {
+       "id": 129,
+       "name": "Blitz Beat",
+       "lv": 5
+      },
+      {
+       "id": 128,
+       "name": "Steel Crow",
+       "lv": 10
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1146,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 1,
+     "AGI": 25,
+     "VIT": 35,
+     "INT": 70,
+     "DEX": 99,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 127,
+    "stat_goals_unreached": [],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "Trapper. Claymore Trap (2 Traps) or Land Mine on the cell the monster walks to, Blast Mine / Freezing Trap / Sandman to control, falcon Blitz Beat for the rest; kites around its traps. Needs a Trap stock (50z each) and restocks every trip.",
+     "Avoids running out of Traps, 4+ monsters without Claymore, fast flyers."
+    ],
+    "mvp": [
+     "Trap control: Ankle Snare + Claymore Trap on the boss's path, Freezing Trap / Sandman on adds, Land Mine for burst, Blitz Beat from range. Long prep, little SP.",
+     "Brings 60+ Traps, a Blue Potion, Concentration Potion, Fly Wing."
+    ],
+    "pvp": [
+     "Trap field: Ankle Snare, Land Mine, Claymore and Shockwave Trap (SP drain) around the party's line; strong holding a spot, weak when ambushed.",
+     "Avoids open rushes; carries many Traps, arrows, Fly Wing."
+    ]
+   }
+  },
+  "monk_occult": {
+   "name": "VIT/STR Occult Tank Monk",
+   "base": "monk",
+   "class": "Monk",
+   "first_job": "Acolyte",
+   "status": "draft for owner review",
+   "drafted": "2026-11-15",
+   "ranges": [
+    {
+     "range": "1-30",
+     "min": 1,
+     "max": 30,
+     "class_at_end": "Acolyte",
+     "stats": {
+      "STR": 35,
+      "AGI": 10,
+      "VIT": 20,
+      "INT": 1,
+      "DEX": 15,
+      "LUK": 1
+     },
+     "stat_points_available": 210,
+     "stat_points_used": 207,
+     "stat_points_spare": 3,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 3
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 3
+      }
+     ],
+     "skill_points_unspent": 0
+    },
+    {
+     "range": "12-99",
+     "min": 12,
+     "max": 99,
+     "class_at_end": "Monk",
+     "stats": {
+      "STR": 90,
+      "AGI": 10,
+      "VIT": 78,
+      "INT": 35,
+      "DEX": 50,
+      "LUK": 1
+     },
+     "stat_points_available": 1273,
+     "stat_points_used": 1265,
+     "stat_points_spare": 8,
+     "skills": [
+      {
+       "id": 28,
+       "name": "Heal",
+       "lv": 3
+      },
+      {
+       "id": 22,
+       "name": "Divine Protection",
+       "lv": 10
+      },
+      {
+       "id": 23,
+       "name": "Demon Bane",
+       "lv": 10
+      },
+      {
+       "id": 29,
+       "name": "Increase AGI",
+       "lv": 10
+      },
+      {
+       "id": 34,
+       "name": "Blessing",
+       "lv": 6
+      },
+      {
+       "id": 259,
+       "name": "Iron Fists",
+       "lv": 10
+      },
+      {
+       "id": 261,
+       "name": "Summon Spirit Sphere",
+       "lv": 5
+      },
+      {
+       "id": 266,
+       "name": "Occult Impaction",
+       "lv": 5
+      },
+      {
+       "id": 265,
+       "name": "Dodge",
+       "lv": 5
+      },
+      {
+       "id": 263,
+       "name": "Raging Trifecta Blow",
+       "lv": 5
+      },
+      {
+       "id": 272,
+       "name": "Raging Quadruple Blow",
+       "lv": 3
+      },
+      {
+       "id": 273,
+       "name": "Raging Thrust",
+       "lv": 3
+      },
+      {
+       "id": 268,
+       "name": "Mental Strength",
+       "lv": 5
+      },
+      {
+       "id": 262,
+       "name": "Absorb Spirit Sphere",
+       "lv": 1
+      },
+      {
+       "id": 269,
+       "name": "Root",
+       "lv": 2
+      },
+      {
+       "id": 260,
+       "name": "Spiritual Cadence",
+       "lv": 5
+      }
+     ],
+     "skill_points_unspent": 0
+    }
+   ],
+   "plan_check": {
+    "stat_points_goals_cost": 1283,
+    "stat_points_at_99": 1273,
+    "stats_at_99": {
+     "STR": 90,
+     "AGI": 10,
+     "VIT": 78,
+     "INT": 35,
+     "DEX": 50,
+     "LUK": 1
+    },
+    "stat_points_spare_at_99": 8,
+    "stat_goals_unreached": [
+     "VIT 80"
+    ],
+    "skill_points_listed": 88,
+    "skill_points_reachable": 88,
+    "skills_unreached_at_99": []
+   },
+   "playstyle": {
+    "solo": [
+     "Tank-ish Monk. Occult Impaction (Investigate) as the damage skill, Mental Strength (Steel Body: huge DEF/MDEF, but slow) against packs, Triple Attack combos for finishing, Dodge; VIT/STR makes it a slow, safe solo farmer.",
+     "Avoids long fights at low SP and spots where being slowed is fatal; rests with Spiritual Cadence."
+    ],
+    "mvp": [
+     "Off-tank: Mental Strength (Steel Body) while the boss swings, Occult Impaction burst, Root (Blade Stop) to hold a melee boss, combos when SP allows.",
+     "Brings Blue and White Potions, Yggdrasil Berry, Awakening Potion."
+    ],
+    "pvp": [
+     "Durable duelist: Steel Body gives huge DEF/MDEF at the price of speed, Occult Impaction burst, Root to stop one melee attacker; easy to kite.",
+     "Avoids fast kiters; carries Blue and White Potions, Fly Wing, Yggdrasil Berry."
+    ]
+   }
+  }
+ }
+}

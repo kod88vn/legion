@@ -77,3 +77,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Gear:** Rod[4] -> Wand / Staff[3] or Book[3] -> Wizardry Staff / Bible / Tablet; cards Elder Willow (INT+2), Willow
   (MaxSP+80), Drops, Sohee (MaxSP+15%), Verit, Phen (casts not interrupted), Raydric.
 
+### Build milestones and playstyle (draft for owner review, 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Mage-line build are in `legion/data/buildmilestones.json` (builds wizard, wizard_fire, wizard_frost, sage, sage_support, sage_hindsight). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
+- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
+  - `wizard` lists 117 skill points: the tail (bolts, Fire Ball, Fire Wall, Cold Bolt to 10; Jupitel Thunder 10) is never reached; the AoE core (Storm Gust, Lord of Vermilion, Meteor Storm, Heaven's Drive) is. All wizard plans end VIT 45-53, not the planned 55-60.
+  - `sage`, `sage_support`, `sage_hindsight`: endows / Dispell / Magic Rod / Spell Breaker tails stay short. `sage_hindsight` never raises VIT (stays 1): one stun or Silence ends a fight.

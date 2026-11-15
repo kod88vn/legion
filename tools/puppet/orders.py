@@ -22,17 +22,20 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 MAX_TEXT = 400
+sys.path.insert(0, os.path.join(HERE, "..", "system"))
+import common as C  # noqa: E402  the one resolver for live locations (rule G23)
 
 
 def orders_path():
     if os.environ.get("AYLA_ORDERS"):
-        return os.environ["AYLA_ORDERS"]
-    data = os.environ.get("LEGION_DATA") or os.path.join(REPO, "legion", "data")
-    return os.path.join(data, "ayla_orders.jsonl")
+        return C.refuse_live(os.environ["AYLA_ORDERS"], "AYLA_ORDERS")
+    return C.refuse_live(os.path.join(C.data_dir(), "ayla_orders.jsonl"), "the orders file")
 
 
 def log_path():
-    return os.environ.get("AYLA_ORDERS_LOG") or os.path.join(REPO, "openkore-ayla", "logs", "owner_orders.log")
+    if os.environ.get("AYLA_ORDERS_LOG"):
+        return C.refuse_live(os.environ["AYLA_ORDERS_LOG"], "AYLA_ORDERS_LOG")
+    return C.refuse_live(os.path.join(REPO, "openkore-ayla", "logs", "owner_orders.log"), "Ayla's owner log")
 
 
 def clean(text):

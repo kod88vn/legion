@@ -39,6 +39,7 @@ import common as C  # noqa: E402
 import bugq  # noqa: E402
 sys.path.insert(0, HERE)
 import dbsnap  # noqa: E402
+import buildexport  # noqa: E402  (DB09: the Builds tab)
 import offline  # noqa: E402
 
 PAGE = os.path.join(REPO, "legion", "dashboard.html")
@@ -413,6 +414,27 @@ def ayla_file(now):
 
 
 # ----------------------------------------------------------------- engine proxy
+OVERRIDE_ROUTE = re.compile(r"^/api/ayla/overrides(/[^?]*)?(\?.*)?$")
+
+
+def owner_token_path():
+    """legion/data/owner.token: the engine's per-host owner secret (aylaoverride.go). LEGION_DATA moves the folder."""
+    return os.path.join(os.environ.get("LEGION_DATA") or os.path.join(REPO, "legion", "data"), "owner.token")
+
+
+def owner_headers(method, path):
+    """Extra headers for one engine call. Only the owner tool's override writes (POST/DELETE on
+    /api/ayla/overrides) get X-Owner-Token; every other route, GET included, is sent without it."""
+    if method not in ("POST", "DELETE") or not OVERRIDE_ROUTE.match(path or ""):
+        return {}
+    try:
+        with open(owner_token_path(), encoding="utf-8") as f:
+            tok = f.read().strip()
+    except OSError:
+        return {}
+    return {"X-Owner-Token": tok} if tok else {}
+
+
 class Engine:
     def __init__(self, base):
         self.base = base.rstrip("/")
@@ -454,6 +476,8 @@ class Engine:
         req = urllib.request.Request(self.base + path, data=body, method=method)
         if ctype:
             req.add_header("Content-Type", ctype)
+        for k, v in owner_headers(method, path).items():
+            req.add_header(k, v)
         try:
             with urllib.request.urlopen(req, timeout=ENGINE_TIMEOUT) as r:
                 data = r.read()
@@ -707,6 +731,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(200, self.server.players.char(int(cid) if cid.isdigit() else None, g("name") or None))
             except Exception as e:
                 return self.send_json(500, {"error": repr(e)[:300]})
+        if route == "/api/builds":   # DB09: the build plans (builds.json, exported from legion/builds.go) + live counts
+            try:
+                return self.send_json(200, buildexport.view(snap_dir=SNAP_DIR))
+            except (OSError, ValueError) as e:
+                return self.send_json(500, {"error": "builds export unreadable (run tools/dashboard/buildexport.py): %s" % e})
         if route == "/favicon.ico":
             return self.send(204, "image/x-icon", b"")
         if route.startswith("/api/"):

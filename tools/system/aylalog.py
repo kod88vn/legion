@@ -511,7 +511,9 @@ def meter_events(neo, tracker, now):
 
 # ------------------------------------------------------------------ main loop
 def default_log():
-    return os.environ.get("AYLA_LOG") or os.path.join(C.ROOT, "openkore-ayla", "logs", "console_player_2.txt")
+    if os.environ.get("AYLA_LOG"):
+        return C.refuse_live(os.environ["AYLA_LOG"], "AYLA_LOG")
+    return C.refuse_live(os.path.join(C.ROOT, "openkore-ayla", "logs", "console_player_2.txt"), "Ayla's console log")
 
 
 def load_state():
@@ -623,7 +625,7 @@ def run(a):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--log", default=default_log())
+    ap.add_argument("--log", default=None, help="default: Ayla's console log (resolved after parsing, G23)")
     ap.add_argument("--interval", type=float, default=30)
     ap.add_argument("--backlog-h", type=float, default=6)
     ap.add_argument("--log-utc-offset", type=float, default=0.0, help="hours the log clock is ahead of UTC")
@@ -633,6 +635,8 @@ def main(argv=None):
     ap.add_argument("--once", action="store_true", help="backlog (if due) and one live pass, then exit")
     ap.add_argument("--summary", action="store_true", help="print kind counts of the backlog")
     a = ap.parse_args(argv)
+    if a.log is None:
+        a.log = default_log()
     return run(a)
 
 

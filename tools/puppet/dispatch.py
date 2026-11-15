@@ -35,7 +35,7 @@ DISPATCH_LOCKED = False
 import constitution  # noqa: E402  the one loader of CONSTITUTION.md (PR42): first in every prompt, exactly once
 
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-DATA = os.environ.get("LEGION_DATA") or os.path.join(REPO, "legion", "data")
+DATA = LC.data_dir()   # the one resolver (rule G23)
 NOTES = os.path.join(HERE, "notes")
 BRIEFS = os.path.join(HERE, "briefs")
 WORKDIR = os.path.join(HERE, "workdir")
@@ -129,9 +129,15 @@ OWNER_GAP = 30   # owner orders for Ayla (AY20): past min_gap and the hourly cap
 AYLA_READ = ["log", "chat", "deals", "lead", "status", "orders"]
 AYLA_ACT = ["map", "rally", "party", "cmd respawn", "townrun", "done"]
 BUGQ = os.path.join(REPO, "tools", "system", "bugq.py").replace("\\", "/")
-WD_QUEUE = os.path.join(REPO, "openkore-ayla", "logs", "bugqueue.jsonl")  # partylead.pl wd_report writes here
+def wd_queue_path():
+    """partylead.pl wd_report writes here (Ayla's live logs: refused under LEGION_TEST=1, rule G23)"""
+    return LC.refuse_live(os.path.join(REPO, "openkore-ayla", "logs", "bugqueue.jsonl"), "Ayla's watchdog queue")
+
+
 # her OpenKore console log (every "[watchdog] CAUSE ..." line, also the repeats the queue file dedupes for an hour)
-WD_CONSOLE = os.path.join(REPO, "openkore-ayla", "logs", "console_player_2.txt")
+def wd_console_path():
+    return LC.refuse_live(os.path.join(REPO, "openkore-ayla", "logs", "console_player_2.txt"), "Ayla's console log")
+
 WD_RE = re.compile(r"\[watchdog\] (STUCK|IDLE|WRONG_MAP)\b")
 
 
@@ -419,9 +425,11 @@ class Signals:
     """Polls cheap endpoints each tick: owner orders (minds bus), new human chat lines, queued chat jobs, Ayla events,
     the build wake file. Never raises; returns what it saw. API down -> api_ok False and nothing else."""
 
-    def __init__(self, api_factory, data_dir=None):
+    def __init__(self, api_factory, data_dir=None, wd_queue=None, wd_console=None):
         self.mk = api_factory
         self.data = data_dir or DATA
+        self.wd_queue_src = wd_queue      # None: Ayla's live queue file (refused under LEGION_TEST=1, G23)
+        self.wd_console_src = wd_console  # None: Ayla's live console log
         self.inbox_cursor = None
         self.event_cursor = None
         self.pending_human = 0
@@ -491,7 +499,7 @@ class Signals:
 
     def watchdog_reports(self, path=None):
         """causes of new lines in her watchdog's queue file since the last poll (the first poll only sets the offset)"""
-        path = path or WD_QUEUE
+        path = path or self.wd_queue_src or wd_queue_path()
         try:
             size = os.path.getsize(path)
         except OSError:
@@ -519,7 +527,7 @@ class Signals:
 
     def watchdog_console(self, path=None):
         """causes of new '[watchdog] STUCK|IDLE|WRONG_MAP' lines in her console log since the last poll"""
-        path = path or WD_CONSOLE
+        path = path or self.wd_console_src or wd_console_path()
         try:
             size = os.path.getsize(path)
         except OSError:

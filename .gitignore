@@ -61,6 +61,8 @@ legion/data/puppet_heartbeat.json*
 legion/data/puppet.pause
 legion/data/ayla_orders.jsonl
 legion/data/bugqueue.jsonl
+# logins kept out of the tracked personas.json (ayla-switch): account id -> password
+legion/data/logins.local.json
 legion/data/neo.wake
 legion/data/build.wake
 legion/data/guild_duty.json
@@ -83,3 +85,6 @@ tools/puppet/workdir/.claude/
 tools/dev/rathena-*/
 legion/testdata/rathena/
 legion/data/lfgstats.json
+# map-truth snapshot of the server data (tools/system/fieldcheck.py refreshes it: read-only copy of ro-rathena)
+tools/dev/mapsnap/
+legion/data/owner.token

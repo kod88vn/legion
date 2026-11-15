@@ -1936,6 +1936,21 @@ Resolved by newest owner word per PR41; see coverage.md.
 "fix the 3 conflicts you found. Like I said we're starting over and the constitution is the law of the land"
 ```
 
+## AY24 / AY25 / DB10
+```text
+"it seems like openkore was part of the problem. On top of that, if ayla use a different toolset than the bots, we do not know for sure if they have the same feature set. Change of plan, Ayla is also managed by legion engine. The only advantage she has is there's Haiku watching her closely and optimize code for her and her party first. She's just a test subject. Also, I want to be able to override puppet master command on her. The puppet master directives change every day, I can override it if I don't like it. In dashboard, build a tool for me to guide her farm location, guild direction, etc."
+```
+
+## EC39
+```text
+"it should also list the stats, gears, skills at certain level range for bots to achieve. I think this is the reason why bots were going to map that were too dangerous since their gears are mediocre. This information should guide bots where to farm. Farm certain maps unless gear requirements are met"
+```
+
+## EC38
+```text
+"although remember it's been doing a good job of assigning 1 middle step of a goal for bot, keeps doing that. But I want to see endgoal"
+```
+
 ## DB09
 ```text
 "I need to review the build agent. In dashboard, list the end goal of each class/build path, including items, stats, and skills, as well as playstyle for farming solo, in a party, MVP, PVP"

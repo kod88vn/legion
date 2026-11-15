@@ -1,5 +1,11 @@
 """Tests for the standalone dashboard server. No docker, no engine, no live data: temp folders and a fake engine.
 Run: python -m unittest discover -s tests/dashboard -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import json
 import os
 import shutil
@@ -64,7 +70,7 @@ class Base(unittest.TestCase):
             self.fake.shutdown(); self.fake.server_close()
         shutil.rmtree(self.d, ignore_errors=True)
         shutil.rmtree(self.cache, ignore_errors=True)
-        os.environ.pop("LEGION_DATA", None)
+        testenv.isolate()
 
     def status(self):
         code, _, body = get(self.url + "/status")
@@ -205,6 +211,29 @@ class Small(unittest.TestCase):
         for bad in ("UPDATE `char` SET zeny = 0", "SELECT 1; DELETE FROM login", "delete from login", "INSERT INTO x VALUES (1)"):
             with self.assertRaises(ValueError):
                 dbsnap.run([bad])
+
+    def test_owner_token_only_on_override_writes(self):
+        import tempfile
+        import dashserve
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "owner.token"), "w", encoding="utf-8") as f:
+            f.write("tok123\n")
+        old = os.environ.get("LEGION_DATA")
+        os.environ["LEGION_DATA"] = d
+        try:
+            self.assertEqual(dashserve.owner_headers("POST", "/api/ayla/overrides"), {"X-Owner-Token": "tok123"})
+            self.assertEqual(dashserve.owner_headers("DELETE", "/api/ayla/overrides/ov1"), {"X-Owner-Token": "tok123"})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/ayla/overrides?x=1"), {"X-Owner-Token": "tok123"})
+            # GET is never sent the token, nor any other route, nor a look-alike path
+            self.assertEqual(dashserve.owner_headers("GET", "/api/ayla/overrides"), {})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/guild-direction/guild01"), {})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/ayla/overridesX"), {})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/bots/x/goal"), {})
+        finally:
+            if old is None:
+                os.environ.pop("LEGION_DATA", None)
+            else:
+                os.environ["LEGION_DATA"] = old
 
 
 if __name__ == "__main__":

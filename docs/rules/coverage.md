@@ -208,6 +208,11 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | DB06 | Dashboard page always on, also when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | DB07 | Dashboard tab to inspect any player in the database, read-only (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | DB08 | Dashboard shows everything on disk when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| AY24 | Ayla played by the Legion engine; OpenKore retired for her; Haiku watcher, code improved for her first (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
+| AY25 | Owner overrides puppet-master directives for Ayla, logged, with expiry (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
+| DB10 | Dashboard tool to guide Ayla (farm map, guild direction, party orders) and override puppet masters (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| EC39 | Build milestones per level range (stats, gear, skills); map choice gated by meeting the gear milestone (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| EC38 | Bots take one middle step of their end goal at a time; keep it; show the end goal (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | DB09 | Dashboard Builds tab: end goal per class/build with items, stats, skills and playstyle (solo, party, MVP, PvP) (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR45 | Haiku implements, Sonnet reviews (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PT35 | Wider level band for forming parties (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |

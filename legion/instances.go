@@ -109,6 +109,12 @@ func coreForward(next http.Handler) http.Handler {
 	core := nameSet(*excludeNames)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
+		// aylaoverride.go: the owner overrides of Ayla live with her party on the core instance, which alone reads and
+		// writes their store (all methods)
+		if p == "/api/ayla/overrides" || strings.HasPrefix(p, "/api/ayla/overrides/") {
+			proxy.ServeHTTP(w, r)
+			return
+		}
 		if p == "/api/human-party" || p == "/api/party-turn" { // lfg_human.go turns live on the core instance
 			proxy.ServeHTTP(w, r)
 			return

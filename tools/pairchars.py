@@ -16,8 +16,11 @@ Takes effect at the next legion restart (the engine loads personas.json at start
 import json, os, random, shutil, subprocess, sys, time
 
 SRV = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PERSONAS = os.path.join(SRV, 'legion', 'data', 'personas.json')
-HUMAN_PARTIES = os.path.join(SRV, 'legion', 'data', 'human-parties.json')
+sys.path.insert(0, os.path.join(SRV, 'tools', 'system'))
+import common as _C  # the one data-folder resolver (rule G23)
+DATA = _C.data_dir()
+PERSONAS = os.path.join(DATA, 'personas.json')
+HUMAN_PARTIES = os.path.join(DATA, 'human-parties.json')
 TOWNS = {  # town -> spawn cell (same as the seed's townSpawn for the beginner towns)
     'prontera': (156, 191), 'izlude': (128, 114), 'payon': (162, 233), 'geffen': (119, 59), 'alberta': (116, 57),
 }

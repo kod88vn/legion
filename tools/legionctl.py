@@ -294,7 +294,9 @@ def lookup_cmd(cmd, args):
 
 
 # ---------------------------------------------------------------- puppet-master commands (tools/puppet)
-DATA_DIR = os.environ.get("LEGION_DATA") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "legion", "data")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "system"))
+import common as _C  # noqa: E402  the one data-folder resolver (rule G23)
+DATA_DIR = _C.data_dir()
 NOTES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "puppet", "notes")
 BUGQUEUE = "bugqueue.jsonl"
 PUPPET_CMDS = {"bug", "neo", "notes"}

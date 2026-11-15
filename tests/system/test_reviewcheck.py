@@ -1,5 +1,11 @@
 """Review gate (Constitution 4.2): a deploy is refused unless every fix has a reviewer report with `verdict: merge`.
 Run: python -m unittest discover -s tests/system -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import os
 import sys
 import tempfile

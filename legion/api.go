@@ -14,6 +14,8 @@ package main
 //   GET  /api/leaderboard[?limit=N]      top characters by level + every guild leader's rank
 //   GET  /api/events?since=N             chat heard, whispers, deaths, level-ups (poll with returned "next")
 //   GET  /api/spots?level=N              suggested hunting grounds for a level
+//   GET|POST /api/ayla/overrides         owner overrides of Ayla's puppet directives (aylaoverride.go, AY25)
+//   DELETE /api/ayla/overrides/{id}      clear one owner override
 
 import (
 	"encoding/json"
@@ -803,6 +805,7 @@ func serveAPI(addr string, bots []*Bot) {
 	registerFriends(mux)                        // friends.go: /api/friends (friendships, guild changes due to friends)
 	registerLoyalty(mux)                        // loyalty.go: /api/guild-loyalty (loyalty, help requests, keep gifts)
 	registerExchange(mux, bots)                 // exchange.go: /api/exchange, /api/chat-jobs, /api/chat-intent
+	registerAylaOverrides(mux)                  // aylaoverride.go: /api/ayla/overrides (owner overrides, AY25)
 	http.ListenAndServe(addr, coreForward(mux)) // instances.go: core-party requests go to the core instance
 }
 

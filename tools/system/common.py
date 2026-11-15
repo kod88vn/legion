@@ -14,8 +14,27 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
 
+LIVE_DATA = os.path.join(ROOT, "legion", "data")
+LIVE_AYLA_LOGS = os.path.join(ROOT, "openkore-ayla", "logs")   # Ayla's OpenKore logs (mounted into her container)
+
+
+def refuse_live(path, what="path"):
+    """Under LEGION_TEST=1 (set by every test process) raise when path is the live legion/data or lies under Ayla's
+    live logs folder (rule G23). Otherwise return path unchanged. Every resolver of a live location goes through here."""
+    if os.environ.get("LEGION_TEST") == "1":
+        p = os.path.normcase(os.path.abspath(path))
+        for live in (LIVE_DATA, LIVE_AYLA_LOGS):
+            L = os.path.normcase(os.path.abspath(live))
+            if p == L or p.startswith(L + os.sep):
+                raise RuntimeError("LEGION_TEST=1 but %s is in the live %s (rule G23): give the test its own path"
+                                   % (what, live))
+    return path
+
+
 def data_dir():
-    return os.environ.get("LEGION_DATA") or os.path.join(ROOT, "legion", "data")
+    """The one resolver for the data folder: LEGION_DATA, else the live legion/data. Refused under LEGION_TEST=1
+    (rule G23) when it would be the live folder."""
+    return refuse_live(os.environ.get("LEGION_DATA") or LIVE_DATA, "the data folder")
 
 
 def dpath(name):
@@ -119,6 +138,13 @@ def heartbeat_age(path):
 
 
 WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO") or "Ubuntu-24.04"   # the one WSL setting (dashboard, watchdog)
+
+
+def docker_prefix():
+    """the one docker command line for every script (watchdog, fieldcheck): wsl.exe -d <distro> -- docker on Windows"""
+    if os.name == "nt":
+        return ["wsl.exe", "-d", WSL_DISTRO, "--", "docker"]
+    return ["docker"]
 
 
 def lock_owner(name):

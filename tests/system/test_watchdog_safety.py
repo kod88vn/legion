@@ -1,6 +1,12 @@
 """Safe restarts for tools/system/watchdog.py: the swallowed wake, a second keeper, a stale-but-alive process, grace after
 a hold, failed starts, one restart per pass, the meter and deploy in the 30-minute record, and unwall's single instance
 and mid-pass beats. Offline: temp data dir, fake clock, fake ops. Run: python -m unittest discover -s tests/system"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import io
 import json
 import os

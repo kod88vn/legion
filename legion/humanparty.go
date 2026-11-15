@@ -504,6 +504,12 @@ func humanPartyManager(bots []*Bot, stop <-chan struct{}) {
 
 // startHumanParty pins the given characters and registers a human-led party.
 func startHumanParty(human string, members []*Bot, chars []string, hold time.Duration) *Party {
+	if enginePartyOn(human) { // engineparty.go (AY24): the human's bot leads, the party runs on the engine
+		if p := startEnginePartyFor(human, members, chars, hold); p != nil {
+			return p
+		}
+		log.Printf("engine party for %s not formed (no member on %s): human-led party instead", human, human)
+	}
 	name := fmt.Sprintf("%.18s pt", human)
 	// leave any current parties
 	for _, m := range members {

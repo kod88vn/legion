@@ -25,13 +25,13 @@ import collections, json, os, random, re, subprocess, sys, time, urllib.request
 
 API = 'http://127.0.0.1:8090'
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-DATA = os.environ.get('LEGION_DATA') or os.path.join(ROOT, 'legion', 'data')
-LOG = os.path.join(DATA, 'health.log')
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'system'))
 try:
     import common as SYSC      # the single-instance lock needs it: without it the sentinel does not start (loud)
 except Exception as e:
     sys.exit('sentinel: cannot import common, so its single-instance lock cannot be taken: %s' % e)
+DATA = SYSC.data_dir()   # the one resolver (rule G23)
+LOG = os.path.join(DATA, 'health.log')
 try:
     import bugq as BUGQ, meterlib as METER
 except Exception:          # the queue/meter helpers are optional: the sentinel still works without them
