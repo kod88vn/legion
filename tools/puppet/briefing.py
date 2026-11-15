@@ -469,6 +469,16 @@ def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
                     + "\nStarveil: " + compact(ss, 300))
         else:
             body = compact(neo, 1500, 10)  # older or unknown shape
+        aw10 = ((neo.get("ayla") or {}).get("windows") or {}).get("10m", {}) if isinstance(neo, dict) else {}
+        sh = aw10.get("shares") or {}
+        lazy = sum(float(sh.get(k) or 0) for k in ("town", "idle", "waiting"))
+        amap = (neo.get("ayla") or {}).get("map", "?") if isinstance(neo, dict) else "?"
+        if lazy >= 0.5:
+            parts.append(section("IDLE ALERT (rule: Ayla has zero downtime)",
+                                 f"Ayla spent {int(lazy * 100)}% of the last 10 min in town/idle/waiting (now on {amap}; shares {compact(sh, 200)}). "
+                                 "Your plan is not being carried out. Act now: say the plan in party chat and send the party to the plan map "
+                                 "(`ayla.sh rally <town> <map>` or `ayla.sh map <map>`), or pick a map that fits and farm. "
+                                 "Do not answer 'plan unchanged' while she stands in town."))
         parts.append(section("You, your party and Starveil against comparable bots (par = p75, last hour)", body))
         for name, d in (("party", ps), ("starveil", ss)):
             for k in ("ratio_kpm", "ratio_zph", "above_par_kpm", "above_par_zph"):
