@@ -38,5 +38,28 @@ ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6)
 ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6), $kn->('gef_fild07', 9)]}) =~ /^ok/, 'pre-cross: both within 10 -> go');
 ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('gef_fild10', 12), $kn->('gef_fild10', 2)]}) eq 'wait:Zen.fox', 'on gef_fild10: priest 12 behind -> stop');
 ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('gef_fild10', 7), $kn->('gef_fild10', 30)]}) =~ /^ok/, 'on gef_fild10: priest at 7 -> go on');
+# waiting = fighting (owner 2026-11-14): the best safe field next to the town, or the safe map she waits on
+my %tops = (geffen => 1, gef_fild13 => 44, gef_fild07 => 24, gef_fild10 => 60, mjolnir_05 => 82, prt_fild08 => 24);
+my %danger = (gef_fild10 => 1);
+my $wm = sub { pack_wait_map($_[0], $_[1], $_[2], $_[3], \%tops, \%danger) };
+ok($wm->('geffen', 1, ['gef_fild13', 'gef_fild07'], 58) eq 'gef_fild13', 'geffen -> gef_fild13');
+ok($wm->('geffen', 1, ['gef_fild13', 'gef_fild07'], 30) eq 'gef_fild07', 'party 30 -> gef_fild07 (gef_fild13 above it)');
+ok($wm->('geffen', 1, ['gef_fild10'], 58) eq '', 'never gef_fild10');
+ok($wm->('gef_fild07', 0, undef, 58) eq 'gef_fild07', 'field: fight where she waits');
+ok($wm->('gef_fild10', 0, undef, 58) eq '', 'not on a dangerous crossing');
+ok($wm->('mjolnir_05', 0, undef, 58) eq '', 'not on a map above the party');
+ok($wm->('payon', 1, undef, 58) eq '', 'no table: wait as before');
+# waiting-farm release needs the priest + one friend within 20 (leaving rule)
+ok(act({here => 'gef_fild13', leaving => 1, friends => [$pr->('gef_fild13', 12), $kn->('gef_fild13', 18)]}) =~ /^ok/, 'release: priest + friend near');
+ok(act({here => 'gef_fild13', leaving => 1, friends => [$pr->('mjolnir_09', undef), $kn->('gef_fild13', 3)]}) =~ /^wait/, 'no release without the priest');
+# PT32: in place, one or a few at a time
+my $me = {x => 50, y => 50};
+ok(pt32_ok($me, {x => 56, y => 50}, undef, [], 0, 0), 'target at 6');
+ok(!pt32_ok($me, {x => 60, y => 50}, undef, [], 0, 0), 'target at 10: no');
+ok(pt32_ok($me, {x => 60, y => 50}, {x => 58, y => 50}, [], 0, 0), 'target 2 from the priest: ok');
+ok(!pt32_ok($me, {x => 57, y => 50}, undef, [{x => 54, y => 51}], 0, 0), 'aggressive on the way: no');
+ok(pt32_ok($me, {x => 57, y => 50}, undef, [{x => 54, y => 58}], 0, 0), 'aggressive off the way: ok');
+ok(!pt32_ok($me, {x => 52, y => 50}, undef, [], 2, 0), '2 on her: no new target');
+ok(pt32_ok($me, {x => 51, y => 50}, undef, [], 3, 1), 'one hitting her: always');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);
