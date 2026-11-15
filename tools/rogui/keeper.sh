@@ -15,15 +15,15 @@ strikes=0; restarts=0
 log() { echo "$(date '+%F %T') keeper: $*" | tee -a "$LOG"; }
 # every loop (and after each long docker step) refreshes the heartbeat and the lock; a keeper whose lock was taken exits
 beat() {
-  keeper_refresh_lock || { log "keeper lock now held by another keeper; this copy exits"; exit 0; }
+  keeper_refresh_lock || { log "keeper lock now held by another keeper; this copy exits"; exit 3; }
   echo "$(date +%s) $*" > "$HB" 2>/dev/null
 }
-keeper_take_lock || { log "another keeper holds $KEEPER_LOCK (fresh); this copy exits"; exit 0; }
+keeper_take_lock || { log "another keeper holds $KEEPER_LOCK (fresh); this copy exits"; exit 3; }
 while true; do
   if [ -e "$HOLD" ]; then
     beat "idle: stack.hold present"
     [ "${held:-0}" = 1 ] || { log "stack.hold present: keeper idle until it is removed"; held=1; }
-    strikes=0; restarts=0; sleep 20; continue
+    strikes=0; restarts=0; sleep 20 & wait $!; continue
   fi
   held=0
   beat "running"
@@ -31,7 +31,7 @@ while true; do
     log "ro-openkore-ayla not running -> starting it"
     docker compose up -d --no-deps openkore-ayla >/dev/null 2>&1   # --no-deps (G15): never recreate rathena or the db
     beat "started ayla"
-    sleep 60; continue
+    sleep 60 & wait $!; continue
   fi
   # the server's own online flag (OpenKore's status title is not printed while she sits idle -> false alarms)
   if [ "$(docker exec ro-db mariadb -N -uragnarok -pragnarok ragnarok -e 'SELECT online FROM `char` WHERE char_id=150010' 2>/dev/null)" = "1" ]; then
@@ -48,5 +48,5 @@ while true; do
     fi
     strikes=0
   fi
-  sleep 20
+  sleep 20 & wait $!
 done

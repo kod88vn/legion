@@ -175,6 +175,33 @@ def _install_release():
                 pass
 
 
+def _age_of(path):
+    """seconds since the file's time on the (fakeable) clock; None when it cannot be read"""
+    try:
+        return now() - os.path.getmtime(path)
+    except OSError:
+        return None
+
+
+def _put_back(aside, p):
+    """Restore a lock that was moved aside by mistake. A link fails if p exists, so a lock created meanwhile is never
+    overwritten; the aside copy is then dropped (its owner finds the owner pid differs and exits)."""
+    try:
+        os.link(aside, p)
+    except FileExistsError:
+        pass
+    except OSError:
+        if not os.path.exists(p):
+            try:
+                os.replace(aside, p)
+            except OSError:
+                pass
+    try:
+        os.remove(aside)
+    except OSError:
+        pass
+
+
 def take_lock(name, stale, pid=None):
     """Single instance, atomic. legion/data/<name> is created exclusively (O_EXCL) holding "<pid> <epoch>". A lock
     refreshed within `stale` seconds belongs to a live holder: False. An older lock (a crashed holder) is first moved
@@ -198,8 +225,15 @@ def take_lock(name, stale, pid=None):
             aside = "%s.stale.%d" % (p, me)
             try:
                 os.replace(p, aside)          # atomic: only one starter can move the stale lock
+            except PermissionError:
+                return False                  # Windows: the file is open in another process, so it is held
             except OSError:
                 return False                  # another starter moved it first and owns the takeover
+            moved_age = _age_of(aside)
+            if moved_age is None or moved_age <= stale:
+                # not the stale lock after all: a starter created a fresh one between our look and the move
+                _put_back(aside, p)
+                return False
             try:
                 os.remove(aside)
             except OSError:
