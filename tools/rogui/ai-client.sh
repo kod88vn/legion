@@ -3,8 +3,9 @@
 # desktop view-only by ai-display.sh) logs in THROUGH OpenKore's X-Kore 2 proxy, so it shows exactly what OpenKore
 # (which plays Ayla) sees and does. No GM account involved.
 #
-#   client -> 127.0.0.1:6901 (docker publish) -> OpenKore X-Kore 2 account server (172.18.0.3:6901)
-#          -> char server 172.18.0.3:6902 -> map server 172.18.0.3:6903   (OpenKore advertises XKore_publicIp)
+#   client -> 127.0.0.1:6901 (docker publish) -> OpenKore X-Kore 2 account server (<rathena container IP>:6901)
+#          -> char server :6902 -> map server :6903   (OpenKore advertises XKore_publicIp)
+#   The container IP is resolved at run time by ayla-ip.sh (it changed 172.18.0.3 -> .4 on 2026-11-14), never hardcoded.
 #   OpenKore itself stays logged in to rAthena as usual (account player, char slot 2).
 #   The exe's login address is patched to 127.0.0.1:6901.
 #
@@ -36,7 +37,8 @@ log() { echo "$(date '+%F %T') $*" >>$LOG; }
 win() { xdotool search --name ROAI 2>/dev/null | head -1; }
 focus() { xdotool windowfocus --sync "$(win)" 2>/dev/null; }
 click() { focus; xdotool mousemove $1 $2 sleep 0.1 mousedown 1 sleep 0.15 mouseup 1; sleep 0.6; }
-in_game() { ss -tn 2>/dev/null | grep -q "172.18.0.3:6903"; }   # live connection to OpenKore's map server
+. "$(dirname "$(readlink -f "$0")")/ayla-ip.sh"
+in_game() { ss -tn 2>/dev/null | grep -qF "$(ayla_ip):6903"; }   # live connection to OpenKore's map server
 # Ayla really in game right now: the server's online flag plus a fresh OpenKore status line (the log alone is stale
 # right after an OpenKore restart, which wasted a login attempt)
 ayla_online() {
