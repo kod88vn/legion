@@ -1325,6 +1325,67 @@ sub goto_tick {
 	message "[partylead] " . ($tgt eq $gotoMap ? 'goto' : 'idle, not on lockMap') . ": route to $tgt started\n", 'system';
 }
 
+# ---- zero-downtime watchdog (owner rule AY18, 2026-11-14: Ayla is never idle for any length of time) -------------------
+# Audit 2026-11-14 (console log, 27.9 h): 38% of the time was in idle stretches of 60 s or more (waiting for the party
+# 29% of those, char-select / login timeouts 27%, RODEX polling 19%, town / Kafra regroup 16%, routing 8%). Each of the
+# plugin's own waits has its own timeout, but nothing ever asked "has she done anything useful lately?". This does:
+# no kill, loot, errand, fight, exp gain or real route progress (a route to another map) for WD_IDLE seconds ->
+# she takes the default productive action: go to the mind's map (homeMap / lockMap), else the map most of her party is
+# on, else a level-fitting field, and farm there (the sweep: walk to monsters, fight). One map, one step; no mass action.
+use constant WD_IDLE => 60;
+my ($wdProdAt, $wdExp, $wdPos, $wdAct, $wdFired) = (time, 0, '', 0, 0);
+sub wd_target {
+	my $here = $field->baseName;
+	foreach my $m ($homeMap, $huntMap, ($saved && $saved->{lockMap}), $config{lockMap}, $gotoMap) { return $m if defined $m && $m ne '' && !is_townmap($m) }
+	my %n;
+	foreach my $f (online_friends()) {
+		my $a = $apiPos{$f->[0]};
+		my $m = ($a && time - $a->{at} < 30 && $a->{map}) ? $a->{map} : $f->[1];
+		$m =~ s/\.gat$//;
+		$n{$m}++ if $m ne '' && !is_townmap($m);
+	}
+	my ($best) = sort { $n{$b} <=> $n{$a} || $a cmp $b } keys %n;
+	return $best if defined $best;
+	my $lv = $char->{lv} || 1;
+	return $lv < 12 ? 'prt_fild08' : $lv < 25 ? 'prt_fild01' : $lv < 40 ? 'pay_fild09' : $lv < 60 ? 'pay_dun01' : 'pay_dun03';
+}
+sub watchdog_tick {
+	my $now = time;
+	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
+	my $pos = "$char->{pos_to}{x},$char->{pos_to}{y}";
+	my $here = $field->baseName;
+	my $busy = AI::inQueue('attack', 'take', 'items_take', 'items_gather', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'teleport', 'skill_use', 'deal')
+		|| $char->{sitting} || own_rest() || $char->{dead} || $rally || (defined &aylagear::busy && aylagear::busy());
+	# a real route (to another map, or a far cell) counts as progress while she is actually moving along it
+	if (!$busy && AI::inQueue('route', 'move') && $pos ne $wdPos) {
+		my $ri = AI::findAction('route');
+		my $ra = (defined $ri && $ri ne '') ? AI::args($ri) : undef;
+		my $rm = ($ra && ref $ra && $ra->{dest} && $ra->{dest}{map}) ? $ra->{dest}{map} : '';
+		$rm = eval { $rm->baseName } || '' if ref $rm;
+		$busy = 1 if $rm ne '' && $rm ne $here;
+	}
+	$busy = 1 if $exp != $wdExp && $wdExp; # she is gaining exp: she kills
+	$wdExp = $exp; $wdPos = $pos;
+	if ($busy) { $wdProdAt = $now; return }
+	return if $now - $wdProdAt < WD_IDLE;
+	return if $now - $wdAct < WD_IDLE; # one step per minute at most
+	$wdAct = $now; $wdFired++;
+	my $tgt = wd_target();
+	message "[partylead] watchdog: no productive action for " . int($now - $wdProdAt) . " s (map $here, holding=$holding): default action = farm $tgt (#$wdFired)\n", 'system';
+	Commands::run('stand') if $char->{sitting};
+	if ($holding) { restore() }       # a stalled hold never outlives a minute of nothing
+	$depart = undef if $depart;       # nor a stalled departure wait
+	set_home($tgt);
+	$config{lockMap} = $tgt if ($config{lockMap} || '') eq '' || is_townmap($config{lockMap});
+	AI::clear('route', 'move');
+	if ($here eq $tgt) {
+		my %a = (return => 0);
+		short_walk(undef, \%a);
+	} else {
+		main::ai_route($tgt, undef, undef, attackOnRoute => 1);
+	}
+}
+
 sub restore {
 	if ($holding && $saved) {
 		$config{route_randomWalk} = $saved->{randomWalk};
@@ -1405,6 +1466,7 @@ sub tick {
 	if ($sellTrigUntil && time > $sellTrigUntil) { $config{itemsMaxWeight_sellOrStore} = $sellTrigSaved; ($sellTrigSaved, $sellTrigUntil) = (0, 0) }
 	$huntMap = $config{lockMap} ne '' ? $config{lockMap} : (($saved && $saved->{lockMap}) ? $saved->{lockMap} : '');
 	set_home($config{lockMap}) if ($config{lockMap} || '') ne ''; # a non-empty lockMap is always the current destination (QA 20:54: stale homeMap pay_fild08)
+	watchdog_tick();
 	# never stand still (owner: "Never stand still, walk around a bit to unstuck yourself"): no movement for 20 s
 	# while not fighting, sitting or talking to an NPC -> step a few cells in a random direction
 	my $pk = "$char->{pos_to}{x},$char->{pos_to}{y}";

@@ -222,6 +222,24 @@ class ScheduleTests(unittest.TestCase):
         self.assertIsNone(dispatch.classify_ayla_event({"kind": "death", "bot": "Stranger", "text": "died"}, names))
         self.assertEqual(dispatch.classify_ayla_event({"kind": "party", "bot": "Bo", "text": "separated from party"}, names), "split")
 
+    def test_ayla_idle_state(self):
+        neo = {"ayla": {"windows": {"10m": {"shares": {"town": 0.9}}}}}
+        self.assertEqual(dispatch.ayla_idle_state(neo), "idle")
+        neo["ayla"]["windows"]["10m"]["shares"] = {"fighting": 0.8, "town": 0.1}
+        self.assertIsNone(dispatch.ayla_idle_state(neo))
+        self.assertIsNone(dispatch.ayla_idle_state({}))
+
+    def test_signals_idle_wakes_ayla_once_per_cooldown(self):
+        neo = {"ayla": {"windows": {"10m": {"shares": {"town": 1}}}}}
+        class A:
+            def get(self, p):
+                return neo if p == "/api/meter/neo" else ({"events": [], "next": 1} if "events" in p else ([] if p != "/api/stats" else {}))
+            def alive(self): return True
+        s = dispatch.Signals(lambda: A())
+        self.assertEqual(s.poll()["ayla_event"], "idle")
+        s.consumed("ayla")
+        self.assertIsNone(s.poll()["ayla_event"])
+
 
 class BudgetTests(unittest.TestCase):
     def test_hourly_cap_blocks_then_slides(self):

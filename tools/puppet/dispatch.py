@@ -256,6 +256,19 @@ def classify_ayla_event(e, names):
     return None
 
 
+def ayla_idle_state(neo, threshold=0.5):
+    """Ayla is an OpenKore character, not a Legion bot: the engine's event ring never holds her own deaths, level-ups or
+    idle stretches, so her mind got 'no event' while she stood in town (audit 2026-11-14, rule AY18). The meter's
+    status-based shares are the one signal about her. Returns 'idle' when town/idle/waiting shares of her last 10 min
+    reach `threshold`, else None."""
+    try:
+        sh = ((neo.get("ayla") or {}).get("windows") or {}).get("10m", {}).get("shares") or {}
+    except AttributeError:
+        return None
+    lazy = sum(float(sh.get(k) or 0) for k in ("town", "idle", "waiting"))
+    return "idle" if lazy >= threshold else None
+
+
 # ----------------------------------------------------------------- signals from the engine
 class Signals:
     """Polls cheap endpoints each tick: owner orders (minds bus), new human chat lines, queued chat jobs, Ayla events,
@@ -268,6 +281,13 @@ class Signals:
         self.event_cursor = None
         self.pending_human = 0
         self.pending_ayla = None
+        self.ayla_seen = {}  # event class -> last time it woke her (a repeating class must not wake her every 2 min)
+
+    def _ayla_wake(self, cls, cooldown):
+        now = time.time()
+        if now - self.ayla_seen.get(cls, 0) >= cooldown:
+            self.ayla_seen[cls] = now
+            self.pending_ayla = self.pending_ayla or cls
 
     def poll(self, chat_present=False):
         """chat_present: the chat role can be woken right now (in the loop, not paused, under its hourly cap). Then the
@@ -311,8 +331,11 @@ class Signals:
                 for e in ev.get("events") or []:
                     c = classify_ayla_event(e, names)
                     if c:
-                        self.pending_ayla = self.pending_ayla or c
+                        self._ayla_wake(c, 0 if c == "death" else 600)
             self.event_cursor = ev.get("next", self.event_cursor or 0)
+        # her own state (no event ever carries it): standing in town / idle for most of 10 min wakes her mind
+        if ayla_idle_state(api.get("/api/meter/neo") or {}):
+            self._ayla_wake("idle", 600)
         out["ayla_event"] = self.pending_ayla
         return out
 
