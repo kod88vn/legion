@@ -10,9 +10,19 @@ use strict;
 use Plugins;
 use Globals qw($char $field $net);
 use Time::HiRes qw(time);
+use Log;
+use JSON::PP;
 
 Plugins::register('statusout', 'write own stats to logs/status.json for the Legion dashboard', \&unload);
 my $hook = Plugins::addHook('mainLoop_post', \&tick);
+# dashboard extras (owner 2026-11-14 "since OpenKore crashed I have no way to know what Ayla is trying to do"): her
+# intent (partylead.pl status_intent), the last [partylead]/[watchdog] decision, the last order (control/commands.txt via
+# cmdfile.pl) and its result, exp %/h and kills/min over 10 min, deaths today, OpenKore uptime and restarts today.
+# Everything runs inside eval: a failure here never reaches OpenKore. The in-memory state survives a plugin reload
+# (our vars); deaths and restarts survive an OpenKore restart in logs/statusout_state.json.
+our %sx; # last_decision, last_watchdog, last_order, samples, prev exp, kills
+my $xhooks = Plugins::addHooks(['target_died', sub { eval { $sx{kills}++ } }], ['self_died', sub { eval { day_state(); $sx{st}{deaths}++; save_state() } }]);
+my $loghook = Log::addHook(sub { eval { logline(@_) } });
 my $last = 0;
 my $file = 'logs/status.json';
 
@@ -49,10 +59,100 @@ sub effects {
 	return '[' . join(',', @out) . ']';
 }
 
+# ---- extras
+my $stateFile = 'logs/statusout_state.json';
+sub today { my @l = localtime; return sprintf('%04d-%02d-%02d', $l[5] + 1900, $l[4] + 1, $l[3]) }
+sub load_state {
+	return if ref $sx{st};
+	$sx{st} = {};
+	if (open(my $f, '<', $stateFile)) { local $/; my $raw = <$f>; close $f; my $d = eval { JSON::PP::decode_json($raw) }; $sx{st} = $d if ref $d eq 'HASH' }
+}
+sub day_state {
+	load_state();
+	my $d = today();
+	%{$sx{st}} = (day => $d, deaths => 0, restarts => 0, start => $sx{st}{start}, prev_start => $sx{st}{prev_start}) if ($sx{st}{day} || '') ne $d;
+}
+sub save_state {
+	my $tmp = "$stateFile.tmp";
+	open(my $f, '>', $tmp) or return;
+	print $f JSON::PP->new->canonical->encode($sx{st});
+	close $f;
+	rename($tmp, $stateFile);
+}
+# a new OpenKore process ($^T = its start time) since the last one recorded: a restart (a crash or a manual restart)
+sub start_state {
+	day_state();
+	my $st = $sx{st};
+	return if ($st->{start} || 0) == $^T;
+	if ($st->{start}) { $st->{restarts}++; $st->{prev_start} = $st->{start} }
+	$st->{start} = $^T;
+	save_state();
+}
+sub clean { my $t = shift; $t = '' unless defined $t; $t =~ s/\e\[[0-9;?]*[a-zA-Z]//g; $t =~ s/^\s*\[\d\d:\d\d:\d\d\]\s*//; $t =~ s/\s+$//; return substr($t, 0, 300) }
+# every console line: keep the last decision / watchdog event / order and the first reply to that order
+sub logline {
+	my ($type, $domain, $level, $verb, $msg) = @_;
+	return unless defined $msg;
+	my $t = clean($msg);
+	return if $t eq '';
+	my $now = time;
+	if ($t =~ /\[cmdfile\]\s*(?:>\s*)?(.*)$/) {
+		my $o = $1;
+		$sx{last_order} = {text => $o, ts => int($now), result => ($o =~ /^BLOCKED/ ? 'blocked' : '')};
+		return;
+	}
+	if ($t =~ /\[(partylead|watchdog)\]/) {
+		$sx{last_decision} = {text => $t, ts => int($now)};
+		$sx{last_watchdog} = {text => $t, ts => int($now)} if $1 eq 'watchdog';
+	}
+	my $o = $sx{last_order};
+	if ($o && $o->{result} eq '' && $now - $o->{ts} < 20 && ($type =~ /^(error|warning)$/ || $t =~ /\[(partylead|watchdog|aylagear)\]/ || $t =~ /^(Syntax|Unknown|Error|Usage|You )/)) {
+		$o->{result} = $t;
+	}
+}
+# exp/h and kills/min over the last 10 min (samples every ~3 s; a level-up adds the rest of the old level)
+sub meter {
+	my $now = time;
+	my ($b, $bm, $j, $jm, $lv, $jl) = map { num($char->{$_}) } qw(exp exp_max exp_job exp_job_max lv lv_job);
+	my $p = $sx{prev};
+	if ($p) {
+		my $gb = $lv == $p->[4] ? $b - $p->[0] : ($lv > $p->[4] ? ($p->[1] - $p->[0]) + $b : 0);
+		my $gj = $jl == $p->[5] ? $j - $p->[2] : ($jl > $p->[5] ? ($p->[3] - $p->[2]) + $j : 0);
+		$sx{gb} += $gb if $gb > 0;
+		$sx{gj} += $gj if $gj > 0;
+	}
+	$sx{prev} = [$b, $bm, $j, $jm, $lv, $jl];
+	push @{$sx{samples}}, [$now, $sx{gb} || 0, $sx{gj} || 0, $sx{kills} || 0];
+	shift @{$sx{samples}} while @{$sx{samples}} > 1 && $now - $sx{samples}[0][0] > 600;
+	my $f = $sx{samples}[0];
+	my $min = ($now - $f->[0]) / 60;
+	my ($eh, $jh, $kpm) = (0, 0, 0);
+	if ($min >= 1) {
+		$eh = int((($sx{gb} || 0) - $f->[1]) / $min * 60);
+		$jh = int((($sx{gj} || 0) - $f->[2]) / $min * 60);
+		$kpm = int((($sx{kills} || 0) - $f->[3]) / $min * 100) / 100;
+	}
+	return join(',', '"base_exp_pct":' . ($bm ? int(1000 * $b / $bm) / 10 : 0), '"job_exp_pct":' . ($jm ? int(1000 * $j / $jm) / 10 : 0),
+		'"exp_h":' . $eh, '"job_exp_h":' . $jh, '"kpm":' . $kpm, '"meter_min":' . int($min * 10) / 10);
+}
+sub ev { my $e = shift; return 'null' unless ref $e; return '{' . join(',', map { "\"$_\":" . ($_ eq 'ts' ? num($e->{$_}) : str($e->{$_})) } sort keys %$e) . '}' }
+sub extras {
+	day_state();
+	my $st = $sx{st};
+	my ($intent, $since) = defined &partylead::status_intent ? partylead::status_intent() : ('', 0);
+	return join(',', meter(),
+		'"intent":' . str($intent), '"intent_since":' . num($since),
+		'"last_decision":' . ev($sx{last_decision}), '"last_watchdog":' . ev($sx{last_watchdog}), '"last_order":' . ev($sx{last_order}),
+		'"deaths_today":' . num($st->{deaths}), '"ok_start":' . num($^T), '"restarts_today":' . num($st->{restarts}),
+		'"prev_start":' . num($st->{prev_start}));
+}
+
 sub tick {
 	return if time - $last < 3;
 	$last = time;
 	return unless $char && $char->{name};
+	my $ex = eval { extras() };
+	$ex = '"extras_error":' . str(substr($@ || 'unknown', 0, 200)) unless defined $ex;
 	my $online = ($net && $net->getState() == Network::IN_GAME()) ? 1 : 0;
 	my ($x, $y) = (0, 0);
 	my $pos = eval { $char->position };
@@ -77,6 +177,7 @@ sub tick {
 		'"dest":' . str(defined &partylead::status_dest ? (eval { partylead::status_dest() } || '') : ''), # Legion partydest.go (PT30)
 		'"town_run":' . ((defined &partylead::status_town_run && eval { partylead::status_town_run() }) ? 'true' : 'false'),
 		'"effects":' . effects(), # Legion effects.go: her buffs/debuffs for the party dashboard
+		$ex, # dashboard extras: intent, last decision / order, exp and kill meter, deaths, restarts
 		'"ts":' . int(time)) . "}\n";
 	my $tmp = "$file.tmp";
 	open(my $out, '>', $tmp) or return;
@@ -85,5 +186,6 @@ sub tick {
 	rename($tmp, $file);
 }
 
-sub unload { Plugins::delHook($hook) }
+sub unload { Plugins::delHook($hook); Plugins::delHooks($xhooks); Log::delHook($loghook) }
+eval { start_state() }; # after every top-level 'my' above is set
 1;
