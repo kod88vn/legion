@@ -557,6 +557,14 @@ func (b *Bot) tripWingOK(town string) bool {
 	// ... but a Butterfly Wing lands on the SAVE point: only when that is the trip's town (QA 12:37: Ayla's friends winged
 	// to Morocc / Prontera on her Payon run and walked back for minutes); otherwise walk / Kafra there
 	if saved, known := b.knownSave(); !known || saved != town {
+		// savepoints.go (owner 2026-11-15): on a party town run, a save point nearer the run town than this field ->
+		// Butterfly Wing home, then the Kafra / walk to the meeting Kafra (not a long walk from the field)
+		if p := partyOf(b); known && p != nil && b.countItem(itemButterflyWing) >= 1 {
+			if at, _, _ := p.townRun(); time.Since(at) < 10*time.Minute &&
+				saveWingHelps(townHops(saved, town), mapHops(b.MapName, b.X, b.Y, town)) {
+				return true
+			}
+		}
 		return false
 	}
 	if p := partyOf(b); p != nil && b.countItem(itemButterflyWing) >= 1 {

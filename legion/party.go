@@ -88,6 +88,10 @@ type Party struct {
 	TownRunAt   time.Time
 	TownRunTown string
 	TownRunBy   string
+	// savepoints.go (EC05/PT03): the human leader asked the party to save at her Kafra ("save here", "save at the
+	// kafra"): every member in that town saves there too. Guarded by parties.Mutex.
+	SaveAskTown string
+	SaveAskAt   time.Time
 	// party rally at the Kafra nearest the destination (rally.go). Guarded by parties.Mutex.
 	Rally rallyState
 	// restored from data/parties.json after a Legion restart (partypersist.go): the 90-min refresh counts from here
