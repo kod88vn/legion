@@ -359,6 +359,7 @@ func (b *Bot) think() {
 					}
 				}
 			}
+			b.saveAskThink(p, now) // savepoints.go: the leader said "save here" - save at her Kafra in this town
 			// join the party's town run once: with business (loot, potions, gear) do it now, otherwise come along
 			if at, town, by := p.townRun(); !at.IsZero() && now.Sub(at) < 2*time.Minute && b.townRunSeen != at {
 				b.townRunSeen = at

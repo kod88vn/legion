@@ -507,6 +507,7 @@ func rallyHeard(p *Party, text string) {
 	if low := strings.ToLower(text[i+3:]); strings.Contains(low, "next town run") || strings.Contains(low, "next run") || strings.Contains(low, "next time") {
 		return
 	}
+	noteSaveAsk(p, text[i+3:], time.Now()) // savepoints.go: "save here" -> every member in her town saves at her Kafra
 	if tm := townRunLineRe.FindStringSubmatch(text[i+3:]); tm != nil {
 		town := strings.ToLower(tm[1])
 		if _, ok := townSpawn[town]; !ok {
@@ -623,7 +624,7 @@ func (b *Bot) rallyThink(gm *GameMap, moving bool, now time.Time) bool {
 		return true
 	}
 	// in the rally town: save at its Kafra first (owner: "Save location with Kafra before setting out")
-	if r.Save && b.savedTown != r.Town && b.kafra == nil && now.After(b.kafraNext) {
+	if saved, known := b.knownSave(); r.Save && (!known || saved != r.Town) && b.kafra == nil && now.After(b.kafraNext) { // savepoints.go: a guessed save point is no save
 		b.kafra = &kafraTrip{Save: true, Spot: kafraSpot{r.X, r.Y}, Town: r.Town, Stage: "walk", Started: now, At: now}
 	}
 	if b.kafraThink(gm, moving, now) {
