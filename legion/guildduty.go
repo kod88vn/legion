@@ -150,6 +150,8 @@ type dutyKicked struct {
 	JoinedAt  time.Time `json:"joined_at,omitempty"`
 }
 
+var dutySaveMu sync.Mutex // dutySave: serialises the file write
+
 var gduty = struct {
 	sync.Mutex
 	dirs      map[string][]*GuildDirection // guild -> leader-set directions (persisted)
@@ -1326,11 +1328,12 @@ func dutyDeliver(snaps []*dutySnap, now time.Time) {
 // ---------------------------------------------------------------- persistence
 
 type dutyFile struct {
-	Saved    time.Time                    `json:"saved"`
-	Dirs     map[string][]*GuildDirection `json:"directions"`
-	Members  []*dutyMember                `json:"members"`
-	Kicked   []*dutyKicked                `json:"kicked"`
-	Counters map[string]int               `json:"counters"`
+	Saved     time.Time                    `json:"saved"`
+	Dirs      map[string][]*GuildDirection `json:"directions"`
+	Members   []*dutyMember                `json:"members"`
+	Kicked    []*dutyKicked                `json:"kicked"`
+	Counters  map[string]int               `json:"counters"`
+	Dismissed map[string]time.Time         `json:"dismissed,omitempty"` // autopilot direction id -> off until
 }
 
 func dutyFilePath() string { return filepath.Join(*dataDir, "guild_duty.json") }
@@ -1346,8 +1349,9 @@ func dutyLoad() {
 	var f dutyFile
 	if json.Unmarshal(raw, &f) != nil {
 		// keep the unreadable file: the next save would otherwise overwrite every direction and record with an empty one
-		os.Rename(dutyFilePath(), dutyFilePath()+".unparsed")
-		log.Printf("guild duty: %s does not parse, starting empty (kept as .unparsed)", dutyFilePath())
+		kept := fmt.Sprintf("%s.unparsed-%d", dutyFilePath(), time.Now().UnixNano()) // every bad file kept, none replaced
+		os.Rename(dutyFilePath(), kept)
+		log.Printf("guild duty: %s does not parse, starting empty (kept as %s)", dutyFilePath(), kept)
 		return
 	}
 	for g, ds := range f.Dirs {
@@ -1366,16 +1370,30 @@ func dutyLoad() {
 	for k, v := range f.Counters {
 		gduty.counters[k] = v
 	}
+	for id, until := range f.Dismissed {
+		if time.Now().Before(until) {
+			gduty.dismissed[id] = until
+		}
+	}
 }
 
 // dutySave: marshal under the lock, write after releasing it (never file I/O under a lock)
 func dutySave() {
+	dutySaveMu.Lock() // one writer at a time: the tick and the API both save, through one tmp file
+	defer dutySaveMu.Unlock()
 	gduty.Lock()
 	if !gduty.dirty || !gduty.loaded {
 		gduty.Unlock()
 		return
 	}
-	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Counters: gduty.counters}
+	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Counters: gduty.counters, Dismissed: map[string]time.Time{}}
+	for id, until := range gduty.dismissed {
+		if time.Now().Before(until) {
+			f.Dismissed[id] = until
+		} else {
+			delete(gduty.dismissed, id)
+		}
+	}
 	for _, m := range gduty.members {
 		f.Members = append(f.Members, m)
 	}

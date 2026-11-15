@@ -212,13 +212,21 @@ func guildDirAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	case p.Remove != "":
 		keep := gduty.dirs[id][:0]
-		found := false
+		found, auto := false, false
 		for _, d := range gduty.dirs[id] {
 			if d.ID != p.Remove {
 				keep = append(keep, d)
 			} else {
 				found = true
 			}
+		}
+		for _, d := range gduty.auto[id] {
+			auto = auto || d.ID == p.Remove
+		}
+		if !found && !auto {
+			gduty.Unlock()
+			apiErr(w, 404, "no direction "+p.Remove+" in "+id)
+			return
 		}
 		gduty.dirs[id] = keep
 		if !found {
