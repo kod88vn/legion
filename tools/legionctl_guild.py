@@ -142,5 +142,4 @@ def guild_cmd(cmd, args, call, out, opt, q):
     elif cmd == "guild-say":
         if len(args) < 2 or not " ".join(args[1:]).strip():
             raise SystemExit("usage: guild-say <guildNN> <text...>")
-        leader = call(f"/api/guild-leaders/{q(args[0])}")["leader"]["name"]
-        out(call(f"/api/bots/{q(leader)}/guild-chat", {"text": " ".join(args[1:])}))
+        out(call(f"/api/guild-leaders/{q(args[0])}/say", {"text": " ".join(args[1:])}))

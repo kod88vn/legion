@@ -622,6 +622,37 @@ func leaderSummary(bots []*Bot) map[string]leaderStatus {
 	return m
 }
 
+// guildLeaderSay: POST /api/guild-leaders/{guild}/say {"text": "..."}: the guild's leader says a line in guild chat.
+// The leader is reached through its guild, not by its name in the bot list (that lookup 404ed for a leader the name
+// list did not hold, guild08 2026-11-15). An offline leader answers 409 instead of a missing bot.
+func guildLeaderSay(w http.ResponseWriter, r *http.Request, l *Bot) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `POST {"text": "..."}`, 405)
+		return
+	}
+	var body struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "bad JSON: "+err.Error(), 400)
+		return
+	}
+	t, err := chatLineOK(body.Text) // chatjobs.go: one short line, never a hint at the system (G18)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	l.mu.Lock()
+	online, name := l.Online, l.charName()
+	l.mu.Unlock()
+	if !online {
+		http.Error(w, "guild leader "+name+" is offline", 409)
+		return
+	}
+	go l.guildSay(t)
+	writeJSON(w, map[string]any{"ok": true, "leader": name, "text": t})
+}
+
 // registerGuildLeaders: /api/leaderboard, /api/guild-leaders (main instance; called from registerGuilds).
 func registerGuildLeaders(mux *http.ServeMux, bots []*Bot) {
 	if !coreInstance() {
@@ -706,8 +737,12 @@ func registerGuildLeaders(mux *http.ServeMux, bots []*Bot) {
 				"suggested_party": sug, "suggested_map": bestPartySpot(append([]*Bot{l}, ms...))})
 			return
 		}
+		if parts[1] == "say" {
+			guildLeaderSay(w, r, l)
+			return
+		}
 		if parts[1] != "party" || r.Method != http.MethodPost {
-			http.Error(w, "GET /api/guild-leaders/{guild} or POST /api/guild-leaders/{guild}/party", 400)
+			http.Error(w, "GET /api/guild-leaders/{guild}, POST /api/guild-leaders/{guild}/party or /say", 400)
 			return
 		}
 		var body struct {

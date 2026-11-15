@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/binary"
+	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -379,5 +382,138 @@ func TestGuildChatJobs(t *testing.T) {
 	chatJobsPolled(time.Now()) // an agent is polling: the kick line waits, the expel waits for its deadline
 	if w, _ := dutyChatKick(l, "MemberY", "bye", "short days"); w < 40 {
 		t.Fatalf("kick with an agent: expel waits past the job deadline, got %d", w)
+	}
+}
+
+// guild ledger (P9, 2026-11-15): wealth must not depend on who is online this round, and directions must persist
+func TestRankStockKeepsOfflineOwners(t *testing.T) {
+	shops := []rankShop{{name: "Vendor A", items: []vendListing{{ItemID: 501, Count: 3}}}, {name: "Vendor B", items: []vendListing{{ItemID: 502, Count: 1}}}}
+	price := func(id int) int { return id * 10 }
+	// Vendor A is not in this round's feed: its remembered guild still values its shop
+	got := rankStockOf(shops, map[string]string{"Vendor A": "guild01", "Vendor B": "guild02"}, price)
+	if got["guild01"] != 501*10*3 || got["guild02"] != 502*10 {
+		t.Fatalf("remembered owner dropped: %v", got)
+	}
+	if got := rankStockOf(shops, map[string]string{}, price); len(got) != 0 {
+		t.Fatalf("unknown owners valued: %v", got)
+	}
+}
+
+func TestRankRoundKeepsWealthWithoutFeed(t *testing.T) {
+	grank.Lock()
+	saved := grank.cur
+	grank.cur = map[string]*guildRankRow{"guild01": {Guild: "guild01", Wealth: 160514}}
+	grank.Unlock()
+	defer func() { grank.Lock(); grank.cur = saved; grank.Unlock() }()
+	guildRankRound(nil, time.Now(), "")
+	grank.Lock()
+	defer grank.Unlock()
+	if r := grank.cur["guild01"]; r == nil || r.Wealth != 160514 || len(grank.cur) != 1 {
+		t.Fatalf("empty feed replaced the last round: %+v", grank.cur)
+	}
+}
+
+func TestRankFundsSurviveRestart(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	defer func() { *dataDir = old }()
+	grank.Lock()
+	saveF, saveG, saveO := grank.funds, grank.fundGuild, grank.owner
+	grank.funds, grank.fundGuild, grank.owner = map[string][2]int{"Leader": {7037, int(time.Now().Unix())}},
+		map[string]string{"Leader": "guild01"}, map[string]string{"Vendor A": "guild01"}
+	grank.loaded, grank.dirty = true, true
+	grank.Unlock()
+	guildRankSave()
+	grank.Lock()
+	grank.funds, grank.fundGuild, grank.owner = map[string][2]int{}, map[string]string{}, map[string]string{}
+	grank.loaded = false
+	grank.Unlock()
+	guildRankLoad()
+	grank.Lock()
+	defer grank.Unlock()
+	ok := grank.funds["Leader"][0] == 7037 && grank.fundGuild["Leader"] == "guild01" && grank.owner["Vendor A"] == "guild01"
+	grank.funds, grank.fundGuild, grank.owner = saveF, saveG, saveO
+	if !ok {
+		t.Fatalf("purses or owners lost on restart: %v %v %v", grank.funds, grank.fundGuild, grank.owner)
+	}
+}
+
+func TestLeaderDirectionsStackAndPersist(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	defer func() { *dataDir = old }()
+	gduty.Lock()
+	saveD := gduty.dirs["guild02"]
+	gduty.dirs["guild02"], gduty.dirty, gduty.loaded = nil, true, true
+	gduty.Unlock()
+	defer func() { gduty.Lock(); gduty.dirs["guild02"] = saveD; gduty.Unlock() }()
+	for _, body := range []string{`{"kind":"supply","min_lv":10,"max_lv":60,"hours":4}`, `{"kind":"wealth","hours":4}`} {
+		rec := httptest.NewRecorder()
+		guildDirAPI(rec, httptest.NewRequest("POST", "/api/guild-direction/guild02", strings.NewReader(body)))
+		if rec.Code != 200 {
+			t.Fatalf("post %s: %d %s", body, rec.Code, rec.Body.String())
+		}
+	}
+	if act := activeDirsLocked("guild02", time.Now()); len(act) != 2 {
+		t.Fatalf("two leader directions in force, got %d", len(act))
+	}
+	dutySave()
+	gduty.Lock()
+	gduty.dirs["guild02"] = nil
+	gduty.loaded = false
+	gduty.Unlock()
+	dutyLoad()
+	gduty.Lock()
+	n := len(gduty.dirs["guild02"])
+	gduty.dirs["guild02"] = saveD
+	gduty.Unlock()
+	if n != 2 {
+		t.Fatalf("directions after restart: %d, want 2", n)
+	}
+}
+
+func TestClearAutopilotDirectionFreesSlot(t *testing.T) {
+	now := time.Now()
+	gduty.Lock()
+	saveA, saveD := gduty.auto["guild09"], gduty.dismissed
+	gduty.auto["guild09"] = autopilotDirs("guild09", []int{5001}, false, nil, now)
+	gduty.dismissed = map[string]time.Time{}
+	gduty.Unlock()
+	defer func() { gduty.Lock(); gduty.auto["guild09"], gduty.dismissed = saveA, saveD; gduty.Unlock() }()
+	id := "guild09-auto-stock-5001"
+	if act := activeDirsLocked("guild09", now); len(act) < 1 || act[0].ID != id {
+		t.Fatalf("autopilot stock not in force before the clear: %+v", act)
+	}
+	rec := httptest.NewRecorder()
+	guildDirAPI(rec, httptest.NewRequest("POST", "/api/guild-direction/guild09", strings.NewReader(`{"remove":"`+id+`"}`)))
+	if rec.Code != 200 {
+		t.Fatalf("remove: %d %s", rec.Code, rec.Body.String())
+	}
+	for _, d := range activeDirsLocked("guild09", now) {
+		if d.ID == id {
+			t.Fatal("cleared autopilot direction still in force")
+		}
+	}
+}
+
+func TestGuildLeaderSayOfflineLeader(t *testing.T) {
+	l := &Bot{P: &Persona{Chars: []CharSpec{{Name: "suncat82"}}}}
+	rec := httptest.NewRecorder()
+	guildLeaderSay(rec, httptest.NewRequest("POST", "/api/guild-leaders/guild08/say", strings.NewReader(`{"text":"hi all"}`)), l)
+	if rec.Code != 409 {
+		t.Fatalf("offline leader: %d %s, want 409", rec.Code, rec.Body.String())
+	}
+}
+
+func TestDutyLoadKeepsUnparsedFile(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	defer func() { *dataDir = old }()
+	if err := os.WriteFile(dutyFilePath(), []byte("{not json"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dutyLoad()
+	if _, err := os.Stat(dutyFilePath() + ".unparsed"); err != nil {
+		t.Fatalf("unparseable duty file not kept: %v", err)
 	}
 }

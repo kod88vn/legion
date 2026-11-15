@@ -46,23 +46,24 @@ import (
 )
 
 const (
-	guildDirMax       = 3
-	guildDirLeaderTTL = 24 * time.Hour
-	dutyTick          = time.Minute
-	dutyPlanGap       = 10 * time.Minute // between two plan checks of one member
-	dutyPlanPerTick   = 30               // plan checks per tick (each takes one bot's lock briefly)
-	dutyBlockMinMin   = 30
-	dutyBlockSlack    = 45 * time.Minute // a block may run this much longer than its minutes (town runs, deaths)
-	dutyDaysKept      = 8                // today + the last 7 days
-	dutyPlayedMin     = 30               // online minutes that make a played day
-	dutyDeliverGap    = 10 * time.Minute
-	dutyRecentBlock   = time.Hour // requested items of a block that ended this recently still go to the stock
-	dutyWarnGap       = 5 * time.Minute
-	dutyGuildKickGap  = 2 * time.Hour
-	dutyKickMinGap    = 15 * time.Minute
-	dutySayGap        = 3 * time.Minute // guild chat lines about blocks, per guild
-	dutyOldGuildBan   = 7 * 24 * time.Hour
-	dutyInviteGap     = 90 * time.Second
+	guildDirMax        = 3
+	guildDirLeaderTTL  = 24 * time.Hour
+	guildDirDismissTTL = 2 * time.Hour // an autopilot direction a leader cleared stays off this long (its id recurs every round)
+	dutyTick           = time.Minute
+	dutyPlanGap        = 10 * time.Minute // between two plan checks of one member
+	dutyPlanPerTick    = 30               // plan checks per tick (each takes one bot's lock briefly)
+	dutyBlockMinMin    = 30
+	dutyBlockSlack     = 45 * time.Minute // a block may run this much longer than its minutes (town runs, deaths)
+	dutyDaysKept       = 8                // today + the last 7 days
+	dutyPlayedMin      = 30               // online minutes that make a played day
+	dutyDeliverGap     = 10 * time.Minute
+	dutyRecentBlock    = time.Hour // requested items of a block that ended this recently still go to the stock
+	dutyWarnGap        = 5 * time.Minute
+	dutyGuildKickGap   = 2 * time.Hour
+	dutyKickMinGap     = 15 * time.Minute
+	dutySayGap         = 3 * time.Minute // guild chat lines about blocks, per guild
+	dutyOldGuildBan    = 7 * 24 * time.Hour
+	dutyInviteGap      = 90 * time.Second
 )
 
 // GuildDirection: one standing direction of a guild
@@ -158,6 +159,7 @@ var gduty = struct {
 	kicked    map[string]*dutyKicked       // char
 	kicks     []time.Time                  // server-wide expel times (rate limit)
 	guildKick map[string]time.Time
+	dismissed map[string]time.Time // autopilot direction id -> off until (a leader cleared it)
 	guildWarn map[string]time.Time
 	guildSay  map[string]time.Time
 	charGuild map[string]string   // last snapshot: char -> guild id (relations, trades)
@@ -166,7 +168,7 @@ var gduty = struct {
 	dirty     bool
 	loaded    bool
 }{dirs: map[string][]*GuildDirection{}, auto: map[string][]*GuildDirection{}, members: map[string]*dutyMember{},
-	byChar: map[string]*dutyMember{}, kicked: map[string]*dutyKicked{}, guildKick: map[string]time.Time{},
+	byChar: map[string]*dutyMember{}, kicked: map[string]*dutyKicked{}, guildKick: map[string]time.Time{}, dismissed: map[string]time.Time{},
 	guildWarn: map[string]time.Time{}, guildSay: map[string]time.Time{}, charGuild: map[string]string{}, left: map[string]dutyLeft{}, counters: map[string]int{}}
 
 type dutyLeft struct {
@@ -297,7 +299,7 @@ func activeDirsLocked(guild string, now time.Time) []*GuildDirection {
 	}
 	for _, d := range gduty.auto[guild] {
 		k := d.Kind + "|" + fmt.Sprint(d.ItemID) + "|" + d.Map
-		if len(out) >= guildDirMax || seen[k] || now.After(d.Expires) {
+		if len(out) >= guildDirMax || seen[k] || now.After(d.Expires) || now.Before(gduty.dismissed[d.ID]) {
 			continue
 		}
 		seen[k] = true
@@ -1343,7 +1345,9 @@ func dutyLoad() {
 	}
 	var f dutyFile
 	if json.Unmarshal(raw, &f) != nil {
-		log.Printf("guild duty: %s does not parse, starting empty", dutyFilePath())
+		// keep the unreadable file: the next save would otherwise overwrite every direction and record with an empty one
+		os.Rename(dutyFilePath(), dutyFilePath()+".unparsed")
+		log.Printf("guild duty: %s does not parse, starting empty (kept as .unparsed)", dutyFilePath())
 		return
 	}
 	for g, ds := range f.Dirs {
