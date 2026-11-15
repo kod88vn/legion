@@ -186,6 +186,9 @@ services:
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro   # drop rates (droprate.go)
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
+    # ayla-switch (AY24, package C): nothing changes until cut-over. At cut-over (deploy agent, once, see the
+    # cut-over steps in the ayla-switch report): add Ayla to LEGION_CORE in .env and to the -exclude list of legion,
+    # run tools/system/ayla_engine_migrate.py, then set tuning engine_parties to "Ayla". Until then Ayla is not in -only.
     command: ["run", "-only", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,LilLilyblade,vex_x18}", "-api", "127.0.0.1:8091", "-pprof", "127.0.0.1:6061", "-stagger", "2s"]
     restart: unless-stopped
 

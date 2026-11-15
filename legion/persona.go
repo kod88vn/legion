@@ -487,7 +487,9 @@ func seedSQL(ps []*Persona, r *rand.Rand) string {
 	b.WriteString("ALTER TABLE `char` AUTO_INCREMENT = 200100;\n")
 	b.WriteString("DELETE FROM login WHERE account_id BETWEEN 2100001 AND 2199999" + keepSQL + ";\n")
 	for _, p := range ps {
-		if seedKeep[p.AccountID] {
+		// G06: only Legion's own accounts are seeded (a persona outside the bot range, e.g. Ayla's 2000000, is never
+		// inserted or deleted by a re-seed; the DELETEs above are range-bound too)
+		if p.AccountID < 2100001 || p.AccountID > 2199999 || seedKeep[p.AccountID] {
 			continue
 		}
 		// everyone starts as a Novice, so in a beginner town that's connected to the rest of the world by road
