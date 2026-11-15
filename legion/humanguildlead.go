@@ -285,7 +285,7 @@ func guildPlan(guild, human string, ms []guildMemberInfo, recruits []guildRecrui
 	return acts, map[string]any{"alchemist": alchemist, "week": weekView, "pool": pool}
 }
 
-// memberParties: online main-instance members without a party, grouped by level (within 10) into parties of 3-5
+// memberParties: online main-instance members without a party, grouped by level (PT35 band: partyLvOK) into parties of 3-5
 // with a map that fits them all (guildlead.go bestPartySpot). The leader is the highest level.
 func memberParties(bots []*Bot, guild string) []guildAction {
 	var acts []guildAction
@@ -329,6 +329,8 @@ func memberPartyGroups(bots []*Bot, guild string) []memberPartyGroup {
 			free = append(free, fb{b, lv, name})
 		}
 	}
+	// free is sorted strongest first: the lead is the group's strongest, so checking each candidate against it bounds the
+	// spread and the exp rule for every member. A change to this sort order breaks that pairwise check.
 	sort.Slice(free, func(i, j int) bool { return free[i].lv > free[j].lv })
 	var out []memberPartyGroup
 	for len(free) >= 3 {

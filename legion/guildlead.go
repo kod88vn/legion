@@ -279,7 +279,7 @@ func bestPartySpot(members []*Bot) string {
 	// leader (hops cost score), beginners stay within 3 maps of their home town, and the pick is kept for 20 minutes
 	// while it still fits (no re-pick every leaderPartyManager minute).
 	l := members[0]
-	minLv, maxLv, aoe, allRanged, fitLv, minBase := 999, 0, false, true, 999, 999
+	minLv, maxLv, aoe, allRanged, fitLv, minBase, maxBase := 999, 0, false, true, 999, 999, 0
 	l.mu.Lock()
 	from, fx, fy, lname := l.MapName, l.X, l.Y, l.P.Name
 	l.mu.Unlock()
@@ -294,7 +294,7 @@ func bestPartySpot(members []*Bot) string {
 			lv = max(1, lv-partyFragileLv) // ai.go: low HP, dies first in a crowd
 		}
 		m.mu.Unlock()
-		minLv, maxLv, fitLv, minBase = min(minLv, lv), max(maxLv, lv), min(fitLv, tl), min(minBase, base)
+		minLv, maxLv, fitLv, minBase, maxBase = min(minLv, lv), max(maxLv, lv), min(fitLv, tl), min(minBase, base), max(maxBase, base)
 		aoe = aoe || aoeFamily(cls)
 		allRanged = allRanged && (r == roleRanged || r == roleSupport)
 	}
@@ -317,7 +317,10 @@ func bestPartySpot(members []*Bot) string {
 	partySpotPick.Lock()
 	prev := partySpotPick.m[lname]
 	partySpotPick.Unlock()
-	if prev.m != "" && time.Since(prev.at) < 20*time.Minute {
+	// PT35: a mixed-level party looks first for spots that still give its strongest member real exp (mapExpPoor at its
+	// base level); the spot must suit the weakest either way. Only then the old choice (room first, then any).
+	mixed := minBase < 999 && maxBase > minBase
+	if prev.m != "" && time.Since(prev.at) < 20*time.Minute && !(mixed && mapExpPoor(prev.m, maxBase)) {
 		for _, g := range guideSpots {
 			if g.Map == prev.m && fits(g) && !mapCrowded(prev.m) { // crowd.go: a full map is given up
 				return prev.m
@@ -326,13 +329,24 @@ func bestPartySpot(members []*Bot) string {
 	}
 	beginner := minBase < beginnerLv()
 	best, bs := "", -1e9
+	type pass struct{ strong, room bool }
+	passes := []pass{{false, true}, {false, false}}
+	if mixed {
+		passes = []pass{{true, true}, {true, false}, {false, true}, {false, false}}
+	}
 	// crowd.go: a map with room for the party first (the party's own map: not crowded), then any fitting one
-	for pass := 0; pass < 2 && best == ""; pass++ {
+	for _, ps := range passes {
+		if best != "" {
+			break
+		}
 		for _, g := range guideSpots {
 			if !fits(g) {
 				continue // the weakest member's target filter must accept most monsters there
 			}
-			if pass == 0 && (g.Map == from && mapCrowded(g.Map) || g.Map != from && !mapHasRoom(g.Map, len(members))) {
+			if ps.strong && mapExpPoor(g.Map, maxBase) {
+				continue
+			}
+			if ps.room && (g.Map == from && mapCrowded(g.Map) || g.Map != from && !mapHasRoom(g.Map, len(members))) {
 				continue
 			}
 			h := 0

@@ -721,17 +721,16 @@ func (b *Bot) partyGoalFit(now time.Time) {
 	case healer:
 		// PT35: the same band as joining (lfgLvFits), with 2 levels of slack: the spread outgrew the band, or the
 		// party's map gives the healer no real exp any more (it was +-12 around the average, against a +-10 join band)
-		lo, hi, n := lv, lv, 0
+		var levels []int
 		for _, o := range others {
 			if s, ok := peek(o.P.Name); ok && s.Known && s.Lv > 0 {
-				lo, hi, n = min(lo, s.Lv), max(hi, s.Lv), n+1
+				levels = append(levels, s.Lv)
 			}
 		}
-		switch {
-		case n == 0:
-		case mapExpPoor(pm, lv-2):
+		switch healerLeaveWhy(lv, levels, pm) {
+		case "exp":
 			line, why = pick("i get almost no exp here anymore, gonna find a party closer to my lvl. ty all", "this place is too low for me now, gl all!"), "healer level gap"
-		case !partyLvOK(lo, hi, 2):
+		case "band":
 			line, why = pick("you guys outlevel me now, gl all!", "gonna find a party closer to my lvl, ty all", "lvl gap is too big now, ty for the party"), "healer level gap"
 		}
 	case p.gearTurnHolder(b):
@@ -1012,6 +1011,26 @@ func lfgLvFits(c *lfgCand, P *lfgParty) bool {
 		return false
 	}
 	return true
+}
+
+// healerLeaveWhy: why a healer of base level lv leaves a party on map pm whose other known members are at levels
+// ("" = it stays). "exp": the map gives it no real exp any more (mapExpPoor at lv-2). "band": the spread outgrew the
+// band (partyLvOK with 2 levels of slack, so a healer that just joined does not leave at once). No others: stays.
+func healerLeaveWhy(lv int, levels []int, pm string) string {
+	if len(levels) == 0 {
+		return ""
+	}
+	lo, hi := lv, lv
+	for _, l := range levels {
+		lo, hi = min(lo, l), max(hi, l)
+	}
+	switch {
+	case mapExpPoor(pm, lv-2):
+		return "exp"
+	case !partyLvOK(lo, hi, 2):
+		return "band"
+	}
+	return ""
 }
 
 // lfgLvFit: lfgFits' level check (injectable: the PT35 snapshot test compares the old +-10 band)

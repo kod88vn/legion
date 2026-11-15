@@ -114,6 +114,8 @@ func formRoleParties(m string, cands []*Bot) {
 			rest = append(rest, c)
 		}
 	}
+	// rest is sorted weakest first: the lead is the group's weakest, so checking each candidate against it bounds the spread
+	// and the exp rule for every member. A change to this sort order breaks that pairwise check.
 	sort.Slice(rest, func(i, j int) bool { return rest[i].BaseLvOr() < rest[j].BaseLvOr() })
 	for i := 0; i+1 < len(rest); i += 3 {
 		lead := rest[i]
