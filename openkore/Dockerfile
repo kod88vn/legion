@@ -21,11 +21,16 @@ RUN mkdir -p tables/kRO/Ragexe_2021_06_02 \
 COPY servers-local.txt /tmp/servers-local.txt
 RUN cat /tmp/servers-local.txt tables/servers.txt > /tmp/s && mv /tmp/s tables/servers.txt \
     && cp -r control /openkore/control.default
-# Renewal maps whose OpenKore field / portals were the classic layout (izlude, morocc, alberta, ...): fields generated from
-# the server's map cache (rathena db/re/map_cache.dat), portals patched (2026-11-14, Ayla stuck in Renewal Izlude)
+# Server-exact fields baked into the image (2026-11-15): every map whose OpenKore field was the classic layout (izlude,
+# morocc, alberta, umbala, ...) is replaced by the field generated from the server's map cache (rathena db/map_cache.dat
+# with db/re/map_cache.dat over it). fields-re and fields-srv both; they are the same bytes for their shared maps.
+# The stale ro-openkore image of 2026-11-12 had the classic fields: rebuilt images are right without the overlay too.
+# tools/system/fieldcheck.py checks every file here and every container's /openkore/fields against the server.
+# Renewal portals patched (2026-11-14, Ayla stuck in Renewal Izlude).
 COPY fields-re/ /tmp/fields-re/
+COPY fields-srv/ /tmp/fields-srv/
 COPY fix_re_portals.sh /tmp/fix_re_portals.sh
-RUN cd /openkore && for f in /tmp/fields-re/*.fld2.gz; do b=$(basename "$f" .fld2.gz); cp "$f" fields/ && rm -f "fields/$b.dist" "fields/$b.weight"; done \
+RUN cd /openkore && for d in /tmp/fields-re /tmp/fields-srv; do for f in "$d"/*.fld2.gz; do b=$(basename "$f" .fld2.gz); cp "$f" fields/ && rm -f "fields/$b.dist" "fields/$b.weight" "fields/$b.fld2"; done; done \
     && sh /tmp/fix_re_portals.sh tables/portals.txt
 # Kafra teleport lines matching this server's Kafras (2026-11-14 travel QA; keep it the LAST portals.txt patch:
 # it owns every Kafra "c r2 c rN" line, fix_re_portals.sh and others must not write Kafra lines)

@@ -20,6 +20,10 @@ dashboard server asks), the stack markers, the meter file and the last deploy, a
   once an hour, G16). A failed start is not counted against the throttle. Containers use `docker start` only (G15).
 - Every 30 minutes it appends one summary record (every agent's and container's state, the meter state, the last deploy
   with its keep/revert verdict) to legion/data/watchdog-reports.jsonl. A missing report is an alarm on the dashboard.
+- The map truth (tools/system/fieldcheck.py, 2026-11-15): every OpenKore field file and portal line against the server's
+  map cache and loaded warps, once an hour and at once when an OpenKore container starts. Each mismatching source
+  (repo copies, or a container) is filed to the bug queue as one item (key fieldcheck:<source>, priority high), closed
+  when that source matches again. Filing only: nothing is restarted or changed.
 - Its live state is legion/data/watchdog.status.json, its own heartbeat legion/data/watchdog.heartbeat. If it dies, the
   keep loop (tools/system/watchdog-keep.cmd) files that as an outage and starts it again.
 Standard library only; runs on Windows Python and on python3 in WSL. LEGION_DATA moves the data dir (tests).
@@ -54,6 +58,9 @@ LOCK_FILE = "watchdog.lock"  # one loop at a time: refreshed each pass; older th
 LOCK_STALE = 90
 EXIT_LOCKED = 3              # another live watchdog holds the lock
 WAITING = "waiting"
+FIELD_EVERY = 3600       # fieldcheck.py: once an hour, and at once when an OpenKore container starts
+OPENKORE = ["ro-openkore-ayla", "ro-openkore-qa", "ro-openkore"]
+FIELD_LINES = 60         # evidence lines kept per filed source
 
 # The loop's scripts. cmd: the script (relative to the repo root) and its arguments, started with this python (or with
 # bash under WSL for keeper.sh). hb: heartbeat file names, the first that exists wins. stale: seconds. lock: the
@@ -493,9 +500,46 @@ class Pass:
         return row
 
 
-def run_pass(now, ops, dry=False, containers="auto", queue=None):
+def run_fieldcheck():
+    """the map truth: (problems, infos) from tools/system/fieldcheck.py (read-only; raises when the server data is absent)"""
+    import fieldcheck  # tools/system is on sys.path (HERE)
+    return fieldcheck.run_all()
+
+
+def field_pass(p, now, st, containers, fields):
+    """Files the map-truth mismatches (one open item per source) and closes the items of sources that match again.
+    Runs when an hour has passed or an OpenKore container has just started. fields: the check (a callable)."""
+    up = sorted(n for n in OPENKORE if isinstance(containers, dict) and containers.get(n, ("",))[0] == "running")
+    started = set(up) - set(st.get("fc_up") or [])
+    st["fc_up"] = up
+    last = st.get("fieldcheck_t")
+    if not started and last is not None and now - last < FIELD_EVERY:
+        return
+    st["fieldcheck_t"] = now
+    try:
+        probs, infos = fields()
+    except Exception as e:  # a check that cannot run is filed, never silent
+        p.file("fieldcheck:run", "fieldcheck could not run: %r" % (e,), priority="high")
+        return
+    checked = {i["source"] for i in infos if i.get("source") not in (None, "server") and not i.get("absent")}
+    checked |= {x["source"] for x in probs}
+    for src in sorted(checked):
+        ps = [x for x in probs if x["source"] == src]
+        key = "fieldcheck:" + src
+        if ps:
+            maps = sorted({x["map"] for x in ps})
+            text = "map truth: %s has %d mismatch(es) against the server in %d map(s): %s" % (
+                src, len(ps), len(maps), ", ".join(maps[:15]) + (" ..." if len(maps) > 15 else ""))
+            ev = "\n".join("%s: %s" % (x["map"], x["detail"]) for x in ps[:FIELD_LINES])
+            p.file(key, text, priority="high", evidence=ev)
+        else:
+            p.close(key, "matches the server again at %s" % C.iso(now))
+
+
+def run_pass(now, ops, dry=False, containers="auto", queue=None, fields=None):
     """One pass. containers: "auto" (ask docker), {name: (state, status)}, or None for "docker did not answer".
-    queue: the bug queue's merged entries (tests pass a dict; default reads the real queue)."""
+    queue: the bug queue's merged entries (tests pass a dict; default reads the real queue).
+    fields: the map-truth check (a callable returning (problems, infos)); main() passes run_fieldcheck; None = not run."""
     st = load_state()
     if queue is None:
         try:
@@ -507,6 +551,8 @@ def run_pass(now, ops, dry=False, containers="auto", queue=None):
     p = Pass(now, ops, dry, st, queue)
     rows = [p.agent(a) for a in AGENTS]
     crows = [p.container(n, containers) for n in CONTAINERS]
+    if not dry and fields is not None:
+        field_pass(p, now, st, containers, fields)
     counts = {"agents_ok": sum(r["state"] == "ok" for r in rows),
               "agents_waiting": sum(r["state"] == WAITING for r in rows),
               "agents_down": sum(r["state"] in ("down", "missing", "stuck") for r in rows),
@@ -563,7 +609,7 @@ def main(argv=None):
             print("watchdog lock taken by another loop; exiting", file=sys.stderr, flush=True)
             return EXIT_LOCKED
         try:
-            res = run_pass(C.now(), ops, dry=a.dry_run)
+            res = run_pass(C.now(), ops, dry=a.dry_run, fields=run_fieldcheck)
             if a.dry_run or a.once:
                 print(json.dumps({"filed": res["filed"], "actions": res["actions"], "report_due": res["report_due"],
                                   "summary": res["status"]["summary"]}, ensure_ascii=False, indent=1))

@@ -55,6 +55,23 @@ def main():
     except Exception as e:  # a check that cannot run is a failed check
         bad.append("constcheck could not run: %r" % (e,))
 
+    # the map truth: every OpenKore field file and portal line against the server's map cache and loaded warps
+    # (fieldcheck.py: the repo copies, plus every OpenKore container that exists, stopped ones too; read-only)
+    try:
+        import fieldcheck
+        probs, infos = fieldcheck.run_all()
+        print("fields: " + "; ".join(i.get("label", i.get("source", "?")) for i in infos[:1]))
+        by_src = {}
+        for p in probs:
+            by_src.setdefault(p["source"], []).append(p)
+        for src, ps in sorted(by_src.items()):
+            maps = sorted({p["map"] for p in ps})
+            bad.append("fieldcheck %s: %d mismatch(es) in %d map(s): %s%s" % (
+                src, len(ps), len(maps), ", ".join(maps[:12]), " ..." if len(maps) > 12 else ""))
+        print("fields: %d mismatch(es)" % len(probs))
+    except Exception as e:  # a check that cannot run is a failed check
+        bad.append("fieldcheck could not run: %r" % (e,))
+
     for b in bad:
         print("FAIL: " + b)
     print("OK" if not bad else "%d problem(s)" % len(bad))
