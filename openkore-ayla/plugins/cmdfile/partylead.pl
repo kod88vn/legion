@@ -1878,8 +1878,8 @@ eval {
 	} else { $forceRepick = 1; step_save() }
 };
 sub gm_kill {
-	$gmKills++;
-	# (the drained counter comes from her exp gains: plan_track)
+	# kills are counted from her exp gains (plan_track): every party kill shares exp with her, the target_died hook
+	# only saw some of hers (the step never rose with 40-60 party kills / 5 min)
 }
 sub gm_died {
 	$gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths;
@@ -1912,9 +1912,10 @@ sub gm_step_offset {
 	foreach my $f (online_friends()) {
 		my $a = $apiPos{$f->[0]};
 		next unless $a && defined $a->{kills} && $f->[1] eq $here;
-		$n++; $k += $a->{kills}; $d += $a->{deaths} || 0;
+		$n++; $d += $a->{deaths} || 0; # kills: her exp-gain count already holds the party's kills (shared exp)
 	}
-	if ($gmWin{map} ne $here || $gmWin{n} != $n || $k < $gmWin{k} || $d < $gmWin{d}) {
+	$gmWin{n} = $n if $gmWin{map} eq $here && $n > ($gmWin{n} || 0); # a member arriving / leaving no longer restarts the 20-min window
+	if ($gmWin{map} ne $here || $k < $gmWin{k} || $d < $gmWin{d}) {
 		%gmWin = (map => $here, at => time, k => $k, d => $d, n => $n);
 		return $gmOff;
 	}
@@ -2260,6 +2261,7 @@ sub plan_track {
 	my $here = $field->baseName;
 	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
 	my $gain = $ptExp >= 0 && $exp != $ptExp;
+	$gmKills++ if $gain && $exp > $ptExp && !is_townmap($here); # the measured step counts party kills by her exp gains
 	if ($gain && $exp > $ptExp && ($here eq (plan_map() || $huntMap || '-'))) { # a kill she or the party made (shared exp)
 		push @planKillTimes, time; $planKillAt = time;
 		farmed_save() if time - ($pk_fsAt || 0) > 60 && ($pk_fsAt = time);
