@@ -1837,7 +1837,69 @@ sub town_back_guard {
 		return;
 	}
 }
+# ---- no Fly Wing / Teleport with friends online (owner 2026-11-14; live 5b2c5ee: a Fly Wing on gef_fild10 with no
+# danger - OpenKore's own mon_control "teleport if on screen" flag for Orc Lord / Orc Hero, or a teleportAuto_* left on
+# by a solo moment). While any friend is online every teleportAuto_* and route_teleport is 0, mon_control's teleport
+# flags are off, and any queued teleport but the PT31 dying Butterfly Wing is cancelled and logged with its context.
+# Solo again: the saved values come back.
+our ($wingOkUntil, %tpSaved, %tpMonSaved) = (0);
+my @TP_KEYS = map { "teleportAuto_$_" } qw(hp sp idle portal search minAggressives minAggressivesInLock maxDmg maxDmgInLock deadly
+	unstuck lostTarget dropTarget dropTargetEngaged dropTargetKS dropTargetHidden attackedWhenSitting totalDmg totalDmgInLock atkCount atkMiss allPlayers);
+my $tpLogAt = 0;
+sub tp_guard {
+	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
+	my @fr = stick_on() ? online_friends() : ();
+	if (@fr) {
+		foreach my $k (@TP_KEYS, 'route_teleport') {
+			next unless $config{$k};
+			$tpSaved{$k} = $config{$k} unless exists $tpSaved{$k};
+			$config{$k} = 0;
+		}
+		foreach my $n (keys %Globals::mon_control) {
+			my $mc = $Globals::mon_control{$n};
+			next unless ref $mc eq 'HASH' && $mc->{teleport_auto};
+			$tpMonSaved{$n} = $mc->{teleport_auto} unless exists $tpMonSaved{$n};
+			$mc->{teleport_auto} = 0;
+		}
+		if (AI::inQueue('teleport') && time > ($wingOkUntil || 0)) {
+			my @mons = map { $_->{name} } grep { $_ && $_->{pos_to} && defined $_->{pos_to}{x} } @{$monstersList ? $monstersList->getItems() : []};
+			my $ctx = sprintf("HP %d/%d, %d monsters on her, in sight: %s", $char->{hp} || 0, $char->{hp_max} || 0, scalar(AI::ai_getAggressives()), join(', ', @mons[0 .. ($#mons < 5 ? $#mons : 5)]) || '-');
+			AI::clear('teleport');
+			wd_report('TELEPORT', $field->baseName, "teleport cancelled (friends online: " . join(', ', map { $_->[0] } @fr) . "); $ctx", "stays with the party") if time - $tpLogAt > 10;
+			$tpLogAt = time;
+		}
+	} else {
+		$config{$_} = delete $tpSaved{$_} foreach keys %tpSaved;
+		foreach my $n (keys %tpMonSaved) { $Globals::mon_control{$n}{teleport_auto} = delete $tpMonSaved{$n} if ref $Globals::mon_control{$n} eq 'HASH' }
+		%tpMonSaved = ();
+	}
+}
+# a farm map whose way crosses dangerous packs is never kept as a destination (live 5b2c5ee: she still went into
+# orcsdun02 - homeMap from config.txt / a restore set it, not an outside lockMap, so the guard never saw it)
+my $ruAt = 0;
+sub route_guard {
+	return if time - $ruAt < 5;
+	$ruAt = time;
+	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
+	my @fr = online_friends();
+	return if @fr && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr) && time - $fitLoadAt < 300;
+	foreach my $m (grep { $_ ne '' } ($homeMap, $gotoMap, $config{lockMap} || '', ($saved ? $saved->{lockMap} || '' : ''))) {
+		my $v = route_unsafe($m);
+		next if $v eq '';
+		$gotoMap = '' if $gotoMap eq $m;
+		($homeMap, $homeAt, $homeBy) = ('', 0, 'auto') if $homeMap eq $m;
+		$saved->{lockMap} = '' if $saved && ($saved->{lockMap} || '') eq $m;
+		if (($config{lockMap} || '') eq $m) { $config{lockMap} = ''; eval { Misc::configModify('lockMap', '', 1) } if defined &Misc::configModify; $config{lockMap} = '' }
+		$lmSet = '' if defined $lmSet && $lmSet eq $m;
+		my ($rdm) = route_maps();
+		AI::clear('route', 'move') if $rdm eq $m;
+		$fitAt = 0;
+		wd_report('ROUTE_UNSAFE', $m, "$m dropped as destination: its way crosses $v (party rated " . transit_fit_lv() . ")", "own choice");
+	}
+}
 sub tick_guarded {
+	tp_guard();
+	route_guard();
 	lockmap_guard();
 	tick(@_);
 	town_back_guard() if $net && $net->getState() == 5;
@@ -2404,6 +2466,7 @@ sub stick_tick {
 	# about to die and still being hit: Butterfly Wing to the save Kafra (not a random cell), and say where and what next
 	if ($hpp < STICK_DEADLY && $stickLowAt && time - $stickLowAt >= 0.4 && $aggr >= 1 && time - $stickHitAt < 3 && time - $stickWingAt > 10 && $char->inventory->getByName('Butterfly Wing')) {
 		$stickWingAt = time;
+		$wingOkUntil = time + 8; # tp_guard: this one teleport (the dying Butterfly Wing) is allowed
 		my $town = $config{saveMap} || 'town';
 		my $back = $homeMap ne '' ? $homeMap : $here;
 		$stickWinged = {town => $town, back => $back, at => time};
