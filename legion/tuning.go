@@ -27,6 +27,8 @@ package main
 //   priest_buff_renew_max_sec 260
 //   priest_active_buffs       true PT29 (priestbuff.go): members ask for missing buffs, the priest buffs them on request and before expiry
 //   priest_buff_hold_sp_pct   30   ...down to this SP % (kept for Heal); replaces the 70% floor while priest_active_buffs is on
+//   party_cmd                 true partycmd.go: members obey the leader's commands in party chat (follow me, come to me at
+//                                  <map> x,y, wait here, stay close, pull back, lets go to <map>, heal me / buffs pls)
 //
 //   Map choice by level AND gear (gearscore.go, AY07)
 //   gear_score_on             true the effective level rates the whole kit (weapon+refine, all armor DEF/MDEF, cards, empty slots)
@@ -132,6 +134,7 @@ type Tuning struct {
 	PriestBuffRenewHi int  `json:"priest_buff_renew_max_sec"`
 	PriestActiveBuffs bool `json:"priest_active_buffs"`     // PT29 priestbuff.go: members ask for buffs, the priest buffs down to the hold line
 	PriestBuffHoldSP  int  `json:"priest_buff_hold_sp_pct"` // PT29: no buffs under this SP % (kept for Heal)
+	PartyCmd          bool `json:"party_cmd"`               // partycmd.go: members obey the leader's party-chat commands (follow me, wait here, ...)
 	// AI
 	BeginnerLv          int     `json:"beginner_lv"`
 	StayCrowd           int     `json:"stay_crowd"`
@@ -167,6 +170,11 @@ type Tuning struct {
 	// ON by default (rally_park_off true switches it off); rally_park_cap_min 0 = 12 (Ayla's rally timeout)
 	RallyParkOff    bool `json:"rally_park_off"`
 	RallyParkCapMin int  `json:"rally_park_cap_min"`
+	// farmshare.go: capped Kafra waits, no pointless waits, no-route loop guard, hourly Kafra cap lifted for long walks.
+	// ON by default (farm_share_off true switches it off); 0 = defaults (60 s wait cap, 900 cells long walk)
+	FarmShareOff       bool `json:"farm_share_off"`
+	KafraWaitCapSec    int  `json:"kafra_wait_cap_sec"`
+	KafraLongWalkCells int  `json:"kafra_long_walk_cells"`
 	PotHPAcolyte    int  `json:"pot_hp_acolyte"`
 	PotSPTarget     int  `json:"pot_sp_target"`
 	// parcel.go (economy batch 17): surplus gear mailed to vendors. Off by default; parcel_test_bots (comma-separated
@@ -286,7 +294,7 @@ var defaultTuning = Tuning{
 	GearScoreOn: true, GearPerfOn: true,
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
-	PriestActiveBuffs: true, PriestBuffHoldSP: 30,
+	PriestActiveBuffs: true, PriestBuffHoldSP: 30, PartyCmd: true,
 	CasterBoltFloorPct: 35, CasterHelpSPPct: 60,
 
 	BeginnerLv: 20, StayCrowd: 70, TargetLvOver: 2, TargetLvAggression: 6, TargetLvMin: 8,

@@ -326,6 +326,7 @@ type Bot struct {
 	idleLeadStill              time.Time
 	idleSitAt                  time.Time // ... and when the idle sit went down (hysteresis / minimum sit time)
 	kafraVirtual               bool      // kafra.go kafraWouldTake: planning from a town we are not in (no fare requests)
+	kafraNoHard                bool      // farmshare.go kafraWaitUseful: a probe plan that ignores the hard limit
 	escortHold                 string    // humanparty.go escortGate: why we wait in the entrance town ("" = not waiting)
 	leadMap                    string    // partyGoalSync: the leader's map as last seen, since when, and when our goal changed
 	leadMapSince               time.Time
@@ -1176,8 +1177,10 @@ func (b *Bot) handle(pk []byte) {
 			b.event("party", "", cstr(pk[8:]))
 			friendHeard(b, cstr(pk[8:]), false) // friends.go
 			b.buffAskHeard(cstr(pk[8:]), now)   // priestbuff.go PT29: a party mate asks the priest for buffs
+			b.partyCmdHeard(cstr(pk[8:]), now)  // partycmd.go: the leader's command (follow me, come to me at <map> x,y, wait here...)
 			if b.pin != nil {
 				txt := cstr(pk[8:])
+				partyChatHeard(b.pin.Human, txt, now) // partyintent.go: the party chat on the dashboard
 				go func() { rallyHeard(partyOf(b), txt) }()                 // the human called a rally (rally.go)
 				go func() { humanRestHeard(partyOf(b), txt, time.Now()) }() // together.go: "resting" / "ready" from the human leader
 			}

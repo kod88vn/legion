@@ -78,3 +78,13 @@ func pt32Allows(bx, by, x, y int, refs, others [][2]int, attackers int) bool {
 	}
 	return true
 }
+
+// goalMoveAllowed (PT16): may a member's goal move the party off its map? Not within partyStayTime of arriving,
+// unless it is that member's gear turn.
+func goalMoveAllowed(moved, arrived, now time.Time, gearTurn bool) bool {
+	if gearTurn {
+		return true
+	}
+	staying := !arrived.IsZero() && !arrived.Before(moved) && now.Sub(arrived) < partyStayTime
+	return !staying
+}

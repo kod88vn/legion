@@ -770,8 +770,13 @@ func (b *Bot) leaderGoalSync(p *Party, pm string, others []*Bot, now time.Time) 
 	}
 	ms := append([]*Bot{b}, others...)
 	parties.Lock()
-	moved := p.MovedAt
+	moved, arrived := p.MovedAt, p.ArrivedAt
 	parties.Unlock()
+	// PT16 (owner 2026-11-14): one hunting map for ~2 h once the party is there - a member's item goal moves it only
+	// after the stay, or when that member holds the party's gear turn (gearpool.go)
+	if !goalMoveAllowed(moved, arrived, now, p.gearTurnHolder(b)) {
+		return
+	}
 	if now.Sub(moved) >= 15*time.Minute {
 		for _, m := range g.Maps {
 			if m == pm || !goalMapSafeItem(ms, m, g.farmItem()) || mapHops(at, ax, ay, m) > 8 {

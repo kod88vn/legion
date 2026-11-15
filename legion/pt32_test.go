@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestPT32Allows(t *testing.T) {
 	cases := []struct {
@@ -24,5 +27,22 @@ func TestPT32Allows(t *testing.T) {
 		if got := pt32Allows(50, 50, c.x, c.y, c.refs, c.others, c.attackers); got != c.want {
 			t.Errorf("%s: got %v want %v", c.name, got, c.want)
 		}
+	}
+}
+
+func TestGoalMoveAllowedPT16(t *testing.T) {
+	now := time.Now()
+	moved, arrived := now.Add(-50*time.Minute), now.Add(-40*time.Minute)
+	if goalMoveAllowed(moved, arrived, now, false) {
+		t.Fatal("40 min after arriving: the party stays")
+	}
+	if !goalMoveAllowed(moved, arrived, now, true) {
+		t.Fatal("gear turn moves it")
+	}
+	if !goalMoveAllowed(now.Add(-3*time.Hour), now.Add(-121*time.Minute), now, false) {
+		t.Fatal("after 2 h it may move")
+	}
+	if !goalMoveAllowed(now.Add(-10*time.Minute), time.Time{}, now, false) {
+		t.Fatal("not arrived yet: not a stay")
 	}
 }

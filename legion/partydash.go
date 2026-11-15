@@ -39,6 +39,7 @@ type partyMemberView struct {
 	Deaths   int          `json:"deaths"`
 	GearNext *gearStep    `json:"gear_next,omitempty"` // gearpool.go: next gear step, cost, funded by, party turn
 	Effects  []effectView `json:"effects,omitempty"`   // effects.go: active buffs/debuffs with time left
+	Detail   *humanDetail `json:"detail,omitempty"`    // partyintent.go: a human leader's intent, last decision / order, meter
 }
 
 type partyView struct {
@@ -59,6 +60,7 @@ type partyView struct {
 	GearLog    []string               `json:"gear_log,omitempty"`  // recent gear pool events (gifts, turns done)
 	Need       bool                   `json:"need,omitempty"`      // lfg.go: formed around goals (ends with them)
 	Purpose    string                 `json:"purpose,omitempty"`   // lfg.go: what the party farms
+	Chat       []partyChatLine        `json:"chat,omitempty"`      // partyintent.go: a human-led party's chat, newest first
 }
 
 func registerPartyDash(mux *http.ServeMux) {
@@ -95,6 +97,8 @@ func registerPartyDash(mux *http.ServeMux) {
 				if s, ok := humanStatusOf(p.Human); ok { // her own stats from OpenKore (humanstats.go)
 					fillHumanStats(&hm, s)
 				}
+				hm.Detail = humanDetailOf(p.Human) // partyintent.go
+				v.Chat = partyChatOf(p.Human)
 				hm.WithLead = true
 				v.Members = append(v.Members, hm)
 			} else if p.Leader != nil {

@@ -14,29 +14,30 @@ import (
 )
 
 type humanStatus struct {
-	Name      string        `json:"name"`
-	Online    bool          `json:"online"`
-	HP        int           `json:"hp"`
-	MaxHP     int           `json:"max_hp"`
-	SP        int           `json:"sp"`
-	MaxSP     int           `json:"max_sp"`
-	Zeny      int           `json:"zeny"`
-	Weight    float64       `json:"weight"`     // OpenKore keeps the client's figure (server units / 10)
-	MaxWeight float64       `json:"max_weight"` // same
-	BaseLevel int           `json:"base_level"`
-	JobLevel  int           `json:"job_level"`
-	Map       string        `json:"map"`
-	LockMap   string        `json:"lock_map"` // her hunting map (partylead.pl $huntMap): the party's destination
-	X         int           `json:"x"`
-	Y         int           `json:"y"`
-	TS        int64         `json:"ts"`
-	SaveMap   string        `json:"save_map"` // statusout.pl: her save point (partylead.pl sets it on a verified Kafra save)
-	Sitting   bool          `json:"sitting"`  // statusout.pl: she is sitting (resting) - the friends hold position
-	Guild     string        `json:"guild"`    // statusout.pl: her guild name ("" = none) - humanguild.go
-	JobID     int           `json:"job_id"`   // statusout.pl: her job (class id) - humanguild.go recruits the jobs she lacks
-	Dest      string        `json:"dest"`     // statusout.pl: where she is heading (goto map, rally town, lockMap; "" = there) - partydest.go
-	TownRun   bool          `json:"town_run"` // statusout.pl: she is on a town run (sell/buy/storage, the Kafra meet after it)
-	Effects   []humanEffect `json:"effects"`  // statusout.pl: OpenKore $char->{statuses} (effects.go)
+	Name        string        `json:"name"`
+	Online      bool          `json:"online"`
+	HP          int           `json:"hp"`
+	MaxHP       int           `json:"max_hp"`
+	SP          int           `json:"sp"`
+	MaxSP       int           `json:"max_sp"`
+	Zeny        int           `json:"zeny"`
+	Weight      float64       `json:"weight"`     // OpenKore keeps the client's figure (server units / 10)
+	MaxWeight   float64       `json:"max_weight"` // same
+	BaseLevel   int           `json:"base_level"`
+	JobLevel    int           `json:"job_level"`
+	Map         string        `json:"map"`
+	LockMap     string        `json:"lock_map"` // her hunting map (partylead.pl $huntMap): the party's destination
+	X           int           `json:"x"`
+	Y           int           `json:"y"`
+	TS          int64         `json:"ts"`
+	SaveMap     string        `json:"save_map"` // statusout.pl: her save point (partylead.pl sets it on a verified Kafra save)
+	Sitting     bool          `json:"sitting"`  // statusout.pl: she is sitting (resting) - the friends hold position
+	Guild       string        `json:"guild"`    // statusout.pl: her guild name ("" = none) - humanguild.go
+	JobID       int           `json:"job_id"`   // statusout.pl: her job (class id) - humanguild.go recruits the jobs she lacks
+	Dest        string        `json:"dest"`     // statusout.pl: where she is heading (goto map, rally town, lockMap; "" = there) - partydest.go
+	TownRun     bool          `json:"town_run"` // statusout.pl: she is on a town run (sell/buy/storage, the Kafra meet after it)
+	Effects     []humanEffect `json:"effects"`  // statusout.pl: OpenKore $char->{statuses} (effects.go)
+	humanExtras               // statusout.pl dashboard extras: intent, last decision / order, meter (partyintent.go)
 }
 
 var humanStats struct {

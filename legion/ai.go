@@ -274,7 +274,7 @@ func (b *Bot) think() {
 	if b.bossWatch(gm, moving, now) || b.survive(gm, moving, now) { // bossnote.go: leave before a far-above boss reaches us
 		return
 	}
-	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.selfKyrie(now) || b.lowHPGuard(gm, moving, now) { // healerstick.go: Kyrie on the priest itself
+	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.selfKyrie(now) || b.selfBuffs(now) || b.lowHPGuard(gm, moving, now) { // healerstick.go: Kyrie on the priest itself
 		return
 	}
 	// economy.go: meeting another player for a trade (bought or sold on #trade) owns the bot until done or timed out
@@ -552,6 +552,9 @@ func (b *Bot) think() {
 	b.partyGoalSync(now)
 	// escort.go: never cross a dangerous approach map alone - wait at the safe point; the leader comes back for us
 	if b.escortThink(gm, moving, now) {
+		return
+	}
+	if b.partyCmdThink(gm, moving, now) { // partycmd.go: the leader's party-chat command (follow me, wait here...) comes first
 		return
 	}
 	// a pending Kafra save (save gate, the party town, a rally) is done wherever the rest of think would take over
@@ -1305,6 +1308,9 @@ func (b *Bot) travel(gm *GameMap, moving bool) {
 						return
 					}
 				}
+			}
+			if b.noRouteGiveUp(now) { // farmshare.go: no route for 90 s (doors that lead back): another ground
+				return
 			}
 			if b.escapeNoRoute(gm, moving, now) { // nav.go: Butterfly Wing, or out of the nearest door
 				return
