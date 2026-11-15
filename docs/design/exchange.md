@@ -62,8 +62,9 @@ Everything is behind two tuning flags, both **off by default**. With both off th
   person within 10 cells as every party trade does.
 
 ## Humans and Ayla
-- Humans are never auto-traded or charged: a kin bot mails a free gift (the giver pays the 100z fee), or quotes the
-  kin price through the existing human-sale flow (it mails the item and asks; the human pays only by its own mail).
+- A human gets the same tiers as any player (gate G25, owner 2026-11-14). The engine cannot act for a human, so the
+  human's side is always the human's own move: a kin bot mails a free gift (the giver pays the 100z fee), or quotes the
+  kin price through the existing human-sale flow (it mails the item and asks; the human pays by its own mail).
   A human's offer is answered with a whisper; the hand-over is the human's move.
 - Ayla keeps 10,000z (`aylaZenyFloor`): a paid quote reaches her only if `purse - price >= 10,000` with the purse from
   status.json; purse unknown -> gifts only. A need intent from her goes to the market with max price

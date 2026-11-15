@@ -83,7 +83,9 @@ Basic fit (`dirBasicFit`): not a vendor, not under `beginner_lv` (stays home), l
   normal -> 3 and 2; Kitty Cafe -> 6 and 4.
 - Exempt (never warned/kicked, standing "exempt"): guild leaders / in-game masters, the guild alchemist, the guild
   trader and every vendor character, Ayla's party (core instance, names in `-exclude` and env `LEGION_CORE`,
-  pinned human-party friends, `seedKeep` accounts). Humans are not engine bots and never appear.
+  pinned human-party friends, `seedKeep` accounts). No human exemption (gate G25, owner 2026-11-14: a human member is
+  owed the same duty, warnings and kicks); the ledger measures only engine-run characters so far, so a human member is
+  not yet in it (open work: `STATUS.md`, "Equal treatment of humans: gaps").
 
 ## Warnings and kicks (flag on)
 - Warning: the guild's leader bot says it in guild chat (one per guild per 5 min, member online); the member answers

@@ -51,7 +51,8 @@ after restarting the machine.
   needs under each bot's lock, release, then compute); unit tests replay the server's real packet sequence.
 - Both instances run the same binary: the main one and `legion-core` (Ayla's party members, API on :8091, merged
   by the main instance). New endpoints must work for both, following how existing endpoints merge or forward.
-- Never Ayla's party for anything destructive (kicks, resets). Humans are never kicked or auto-traded.
+- Never Ayla's party for anything destructive (kicks, resets). Humans are treated like every other player in the world
+  (gate G25: same tax, duty, kicks, prices, trades, chat); only out-of-world data safety differs (G06, G11).
 - Compile and test with `bash /g/RO/legion/tools/dev/gocheck.sh <path-to-engine-dir>` (created by the toolchain
   agent; it prints the known baseline failures in `docs/design/toolchain.md`). Your branch must compile, pass
   `go vet`, and add unit tests for your logic. If the script is not there yet, keep working and check later.
@@ -94,7 +95,7 @@ Always on, read-only for behaviour.
   factor follows the guild's style (strict min-maxers kick sooner, the social guilds later).
 - Kick and after: expel in game, clear the guild, 24-hour cool-down, then the bot looks for a guild with room,
   preferring higher rank and wealth, and friends. Never kicked: guild leaders, guild alchemists and traders
-  (their job is their duty), members of Ayla's party, humans.
+  (their job is their duty), members of Ayla's party (no human exception, G25).
 - Rank and wealth: rank from guild level, members' levels and leaderboard places; wealth from the guild stock's
   market value plus guild funds. History kept. Feeds the join preference.
 - Relations between guilds: a table from rival (-1) to ally (+1) that drifts with events (a poached member

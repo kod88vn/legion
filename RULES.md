@@ -24,11 +24,12 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 - G17 (PR32) Deploys every 3 hours (critical unblocking fixes excepted), as one batch assigned by the main session; only the deploy agent deploys, both `legion` and `legion-core`, and it alone runs go vet/test and image builds. Working subagents report "built" and never deploy.
 - G18 (CT05) Never reveal or hint that players are bots, AI, a simulation or a script.
 - G19 (AY03) Ayla and her party are always online. (G19 to G23 confirmed as hard gates by the owner, 2026-11-14.)
-- G20 Humans are never kicked or auto-traded; Ayla's party is never subjected to kicks, resets or build resets. (Guild EXP tax applies to humans too, owner 2026-11-14.)
+- G20 Ayla's party is never subjected to kicks, resets or build resets. (Human part removed by the owner 2026-11-14; see G25.)
 - G21 Nothing is started until the owner says so (`STATUS.md` hold; temporary).
 - G22 Ask the owner before outward-facing or hard-to-reverse actions (installing external tools, deleting data).
 - G23 Tests and experiments never touch live data: not `ro-db`, not `~/.wine-ro`, not the running-state files in `legion/data`.
 - G24 (PR31) The deploy agent may `docker stop`/`docker kill` stray golang test or build containers that block a deploy, NEVER rathena, Ayla, legion or the db.
+- G25 No in-world discrimination between humans and other players: a human is subject to the same rules as everyone (guild tax, duty, warnings, kicks, prices, trades, chat), and nothing in the world may treat a human in a way that reveals the difference. Data safety stays (G06, G11). (2026-11-14)
 
 ## Recording a new rule (PR02)
 When the owner states a rule (a "must", "always", "never", "should", "apply to all ..."), in the same turn, without waiting to be asked: add one short plain line (ID, statement, date; no quote of the owner) to the right file under `docs/rules/` (class rules under `docs/classes/`), put the owner's words with the date in `docs/rules/archive.md` under the same ID, and add a row to `docs/rules/coverage.md`. A new hard gate also gets a G ID in `docs/rules/gates.md` and a line above; then run `python tools/system/gatecheck.py --coverage`. A new rule that replaces an old one edits the old line.

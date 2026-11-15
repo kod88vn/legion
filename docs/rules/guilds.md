@@ -12,8 +12,8 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Design deta
 - GD05. Each guild leader (Starveil included) tracks guild stock and every member's development and keeps supplies ready before
   members need them (potions, common and build-specific gear). It assigns dedicated farmers with high solo survivability, DS
   Hunters first, to hunt what the guild needs. (2026-11-14)
-- GD06. Every guild sets a small EXP tax on member positions to level up; the tax applies to every member, humans included
-  (2026-11-14); guild skill points go to Guild Extension first, then
+- GD06. Every guild sets a small EXP tax on member positions to level up; the tax applies to every member, no human
+  exception (G25, 2026-11-14); guild skill points go to Guild Extension first, then
   the useful skills. (2026-11-14)
 - GD07. Every guild has a Merchant-line member (Vending, Discount, Overcharge) as its trader: vends surplus at the Prontera
   market, sells to NPCs with Overcharge, buys what the guild needs (from player shops, #trade, and NPCs with Discount) for the guild stock. (2026-11-14)
