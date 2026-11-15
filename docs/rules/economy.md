@@ -3,6 +3,8 @@
 One line per rule: ID, statement, date. Owner words in `archive.md`.
 
 ## Progression
+- EC39. Every build path defines milestones per level range: the stats, gear (with cards) and skills a bot should have by then. Bots farm only maps their milestone allows: a bot behind on its gear milestone farms maps suited to the gear it actually has (and that help it get the missing pieces) until the requirement is met. The Builds tab shows the milestones. (2026-11-15)
+- EC38. Each bot works toward its end goal (its final build) one middle step at a time: the engine gives it the next step as its current goal. Keep this; views of a bot's goal show the end goal, with the current step beneath it. (2026-11-15)
 - EC01. Every bot starts at level 1 Novice and levels for real with a build, a levelling plan and a gear path to 99. (2026-11-14)
 - EC02 / G11. A bot character whose skills or stats do not match its build plan is deleted and restarted at level 1; bot
   accounts only, never humans or Ayla's party (report those). (2026-11-14)
