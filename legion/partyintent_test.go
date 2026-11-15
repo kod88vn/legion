@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -98,5 +101,44 @@ func TestExpSampleAndMemberJSONRoundTrip(t *testing.T) {
 	}
 	if out[0].Members[0].PartyMemberExtras == nil || out[0].Members[0].DistLead != 7 || out[0].Members[1].Intent != "farming" || out[0].Members[1].Detail.Intent != "farming" {
 		t.Fatalf("round trip lost fields: %s", raw)
+	}
+}
+
+// TestPartyDetailExpForEngineParty (aylawatch): every member of a party carries its base exp total and exp/h, engine
+// parties included (no human leader there), and the human-led extras keep the same numbers. Served through the real
+// handler (GET /api/parties/detail?local=1: the core merge is off).
+func TestPartyDetailExpForEngineParty(t *testing.T) {
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	_, lead, mem := ovHookParty(t, "parity-exp-view", true)
+	lead.BaseLv, lead.BaseExp = 50, 123456
+	mem.BaseLv, mem.BaseExp = 40, 7890
+	mux := http.NewServeMux()
+	registerPartyDash(mux)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/parties/detail?local=1", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var views []partyView
+	if err := json.Unmarshal(rec.Body.Bytes(), &views); err != nil {
+		t.Fatal(err)
+	}
+	var found *partyView
+	for i := range views {
+		if views[i].Name == "parity-exp-view" {
+			found = &views[i]
+		}
+	}
+	if found == nil {
+		t.Fatalf("engine party missing from the detail: %s", rec.Body.String())
+	}
+	want := map[string]int64{"AylaOwn": 123456, "AylaMate": 7890}
+	for _, m := range found.Members {
+		if got, ok := want[m.Name]; !ok || m.BaseExp != got {
+			t.Errorf("member %s: base_exp %d, want %d", m.Name, m.BaseExp, got)
+		}
+	}
+	if !strings.Contains(rec.Body.String(), `"base_exp":123456`) || !strings.Contains(rec.Body.String(), `"exp_per_h":`) {
+		t.Errorf("the additive JSON fields are missing: %s", rec.Body.String())
 	}
 }

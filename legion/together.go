@@ -59,9 +59,21 @@ func needsCollect(leadMap string, lx, ly int, s pubState, committed bool) bool {
 }
 
 // leftAloneOnTrip (AY23, engine parties only): a member on a town run is left to come back on its own - no collect
-// walk and no rally wait for it. Off for every other party (the old behaviour).
+// walk and no rally wait for it. A member in danger (losing a fight) is still collected: the run never leaves her to
+// die. Off for every other party (the old behaviour).
 func leftAloneOnTrip(p *Party, s pubState) bool {
-	return ovEngineParty(p) && s.Trip
+	return ovEngineParty(p) && s.Trip && !memberInDanger(s)
+}
+
+// collectLagClear (AY23): a collect that ends (the member caught up, or it timed out) or is not needed any more spends
+// the member's lag grace. Its clock is cleared, so the next lag starts a full collectLagWait, not the old clock. Caller
+// holds b.mu.
+func (b *Bot) collectLagClear(name string) {
+	if name == "" {
+		return
+	}
+	delete(b.buffAt, "collectlag:"+name)
+	delete(b.buffAt, "collectlagseen:"+name)
 }
 
 // collectLagWait: how long the leader waits for a lagging member before it collects (AY23: about 10 s).

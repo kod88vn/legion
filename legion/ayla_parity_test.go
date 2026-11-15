@@ -144,4 +144,77 @@ func TestParityLeftAloneOnTrip(t *testing.T) {
 	if leftAloneOnTrip(old, pubState{Name: "TripMate", Trip: true}) {
 		t.Error("a party off the engine switch keeps the old collect rule")
 	}
+	// a member on a town run that is losing a fight is still collected (the run never leaves her to die)
+	if leftAloneOnTrip(p, pubState{Name: "TripMate", Trip: true, Online: true, Target: 7, HPFrac: 0.3}) {
+		t.Error("engine party: a member on a town run in danger must still be collected")
+	}
+}
+
+// TestParityCollectGraceClearedAfterCollect (AY23): a collect that ends spends the member's lag grace. Driven through
+// hunt() itself, the path the engine runs: the grace, one collect, the member caught up, then a new lag must get its
+// own full 10 s grace and not collect at once on the old clock.
+func TestParityCollectGraceClearedAfterCollect(t *testing.T) {
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	_, lead, _ := ovHookParty(t, "parity-grace-clear", true)
+	const mate = "AylaMate"
+	lead.MaxHP, lead.HP = 1000, 1000 // full HP and SP: no rest or sit takes the leader out of the collect branch
+	lead.MaxSP, lead.SP = 1000, 1000
+	lead.X, lead.Y, lead.DestX, lead.DestY = 100, 100, 100, 100 // standing still at 100,100 (livePos reads Dest)
+	far := pubState{Name: mate, Map: "good_map", X: 160, Y: 100, LX: 160, LY: 100, Online: true, Known: true, HPFrac: 1}
+	near := far
+	near.X, near.LX = 105, 105
+	t0 := time.Now()
+	parityPub(t, far)
+	lead.hunt(nil, false, t0) // the first sighting of the lag: the grace starts, no collect yet
+	if lead.collectName != "" {
+		t.Fatal("collect started at the first sighting of a lag: the grace was skipped")
+	}
+	// the lag is seen every 2 s (a gap over 5 s would be a new episode, as in TestParityCollectLagGrace)
+	for _, d := range []time.Duration{2, 4, 6, 8} {
+		lead.hunt(nil, false, t0.Add(d*time.Second))
+		if lead.collectName != "" {
+			t.Fatalf("collect after %v: the grace is 10 s", d*time.Second)
+		}
+	}
+	lead.hunt(nil, false, t0.Add(10*time.Second)) // the grace is over: one collect
+	if lead.collectName != mate {
+		t.Fatalf("no collect after the grace: collectName=%q state=%q", lead.collectName, lead.State)
+	}
+	parityPub(t, near)
+	lead.hunt(nil, false, t0.Add(12*time.Second)) // the member caught up: the collect completes
+	if lead.collectName != "" {
+		t.Fatal("the collect did not end when the member caught up")
+	}
+	if _, ok := lead.buffAt["collectlag:"+mate]; ok {
+		t.Fatal("the grace clock survived the completed collect (collectLagClear not run)")
+	}
+	parityPub(t, far)
+	lead.hunt(nil, false, t0.Add(13*time.Second)) // a new lag: its own 10 s grace, not the old clock
+	if lead.collectName != "" {
+		t.Fatal("a new lag collected at once on the clock of the finished collect")
+	}
+}
+
+// TestParityIsAylaKeyedOnEnginePartyNotName (G25/PR16, G12): the zeny floor follows the engine party's human. The
+// name Ayla keeps it only before the switch.
+func TestParityIsAylaKeyedOnEnginePartyNotName(t *testing.T) {
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "" })
+	if !isAyla("Ayla") || !isAyla(" ayla ") {
+		t.Error("OpenKore era: Ayla keeps the G12 floor by her name")
+	}
+	if isAyla("ParityHuman") {
+		t.Error("a player who is not Ayla has no floor")
+	}
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	if !isAyla("AylaOwn") {
+		t.Error("engine party: the human named in engine_parties keeps the G12 floor")
+	}
+	if isAyla("ParityHuman") {
+		t.Error("engine party: a name that is not in engine_parties has no floor")
+	}
+	a := engineMk(65, "AylaOwn")
+	a.Zeny = 10500
+	if a.zenyPayOK(1000) {
+		t.Error("G12: the engine party's human pays from 10,500z to 9,500z: must stay at 10,000z or more")
+	}
 }

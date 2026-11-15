@@ -37,6 +37,8 @@ type partyMemberView struct {
 	WithLead           bool         `json:"with_leader"`         // on the same map as the leader
 	Kills              int          `json:"kills"`
 	Deaths             int          `json:"deaths"`
+	BaseExp            int64        `json:"base_exp"`                // base exp total, the member's own counter (every party, engine parties too)
+	ExpPerH            int64        `json:"exp_per_h"`               // base exp per hour over the last <= 10 min (expSample), every party
 	GearNext           *gearStep    `json:"gear_next,omitempty"`     // gearpool.go: next gear step, cost, funded by, party turn
 	Effects            []effectView `json:"effects,omitempty"`       // effects.go: active buffs/debuffs with time left
 	Intent             string       `json:"intent,omitempty"`        // partyintent.go: a human leader's intent (= detail.intent, flat)
@@ -141,10 +143,14 @@ func registerPartyDash(mux *http.ServeMux) {
 					}
 				}
 				mv.Zeny = m.Zeny
+				// exp for every member, engine parties included (aylawatch reads it). expSample keeps a sample per call,
+				// so it runs exactly once per member here.
+				mv.BaseExp = m.BaseExp
+				expH, expMin := expSample(mv.Name, m.BaseLv, m.BaseExp, now) // partyintent.go
+				mv.ExpPerH = expH
 				var mx *PartyMemberExtras
 				if p.Human != "" {
-					mx = &PartyMemberExtras{DistLead: -1, LeadMap: humMap}
-					mx.ExpH, mx.ExpMin = expSample(mv.Name, m.BaseLv, m.BaseExp, now) // partyintent.go
+					mx = &PartyMemberExtras{DistLead: -1, LeadMap: humMap, ExpH: expH, ExpMin: expMin}
 					if m.Online && humMap != "" && sameMap(m.MapName, humMap) && humX+humY > 0 {
 						mx.DistLead = dist(m.X, m.Y, humX, humY)
 					}
