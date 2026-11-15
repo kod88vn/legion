@@ -19,6 +19,7 @@ my $src = do { local $/; <$fh> };
 package AI; our (@Q, $CLEARS, $AGGR); sub inQueue { my %q = map { $_ => 1 } @Q; return scalar grep { $q{$_} } @_ } sub clear { $CLEARS++ }
 sub findAction { return (@Q && $Q[0] eq 'attack') ? 'attack' : undef } sub args { return {ID => $main::ATTACK_ID} }
 sub ai_getAggressives { return $AGGR || 0 } sub action { '' }
+sub is { 0 } sub queue { 0 } sub AUTOLOAD { return 0 } sub DESTROY { }
 package main;
 package partylead;
 use constant DENSITY_PER_MEMBER => 20;
@@ -46,12 +47,17 @@ sub stick_tick { $partylead::CALLS{stick}++; return $partylead::STICKRET }
 sub pack_tick { $partylead::CALLS{pack}++; return $partylead::PACKRET }
 sub stick_on { 1 }
 sub farm_sweep { 0 }
+sub portal_guard { $partylead::CALLS{portal_guard}++; return $partylead::PORTALRET }
+our (@pending, $ownSay, $PORTALRET, $AUTOLOAD);
+sub AUTOLOAD { my $n = $AUTOLOAD; $n =~ s/.*:://; return if $n eq 'DESTROY'; $partylead::CALLS{$n}++; return 0 }
 package NetStub; sub getState { 5 }
 package MonStub; sub new { my $c = shift; bless {l => [@_]}, $c } sub getItems { $_[0]{l} }
 package FieldStub; sub new { bless {name => $_[1]}, $_[0] } sub baseName { $_[0]{name} }
 package main;
 sub attack { push @main::ATT, $_[0] }
-our (@ATT, $ATTACK_ID);
+our (@ATT, @SENT, $ATTACK_ID);
+package Commands; sub run { push @main::SENT, $_[0] }
+package main;
 
 my ($pass, $fail) = (0, 0);
 sub ok($$) { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
@@ -279,6 +285,74 @@ sub step { $partylead::atkSeq++ }
 	ok(($partylead::droppedUntil{pay_dun02} || 0) > time + 7000, 'the near-death map is off for about 2 h');
 	ok($partylead::homeMap eq '' && $partylead::gotoMap eq '' && $partylead::config{lockMap} eq '', 'the dropped map is no longer her destination');
 	ok(($partylead::saved->{lockMap} || '') eq '', 'the dropped map is no longer the saved lockMap');
+}
+
+# ---- tick_guarded (post-mortem 20261115 cause 3): the party lines, the town-run check, her map choice and the watchdog
+# run every tick, whatever tick() returned early with. tick_guarded and tick are extracted; every other rule the wrapper
+# or the tick body reaches is an AUTOLOAD stub that counts the call and returns 0; the rules under test are explicit.
+{
+	my ($code) = $src =~ /(sub tick_guarded \{.*?\n\}\n)/s;
+	if (!$code) { ok(0, 'tick_guarded is missing from partylead.pl') }
+	else { eval "no strict; package partylead;\n$code\n1" or die "tick_guarded: $@" }
+	my ($fcode) = $src =~ /(sub flush_say \{.*?\n\}\n)/s;
+	if (!$fcode) { ok(0, 'flush_say is missing from partylead.pl') }
+	else { eval "no strict; package partylead;\n$fcode\n1" or die "flush_say: $@" }
+	my $guard_run = sub { $partylead::last = 0; partylead::tick_guarded() };
+	my $guard_reset = sub {
+		%partylead::attackSeen = (); %partylead::attackAt = (); $partylead::atkDoneSeq = -1; $partylead::fbMsgAt = 0;
+		@AI::Q = (); $AI::AGGR = 0; $partylead::BOSS = undef; $partylead::STICKRET = 0; $partylead::PACKRET = 0;
+		$partylead::PORTALRET = 0; %partylead::CALLS = (); @main::SENT = (); @main::ATT = (); @partylead::pending = ();
+		$partylead::stickWingAt = 0; $partylead::lootBlockUntil = 0; $partylead::pgFrom = ''; $partylead::lastPos = ''; $partylead::holdReleasedAt = 0; $partylead::stickFlee = undef; @FRIENDS = (['Zen.fox', 'pay_dun03']);
+		$partylead::char = {name => 'Ayla', pos_to => {x => 10, y => 10}, hp => 90, hp_max => 100, dead => 0,
+			party => {users => {1 => {name => 'Zen.fox', online => 1}}}};
+		$partylead::net = bless({}, 'NetStub');
+		$partylead::field = FieldStub->new('pay_dun03');
+		$partylead::mon = {ID => 30, name => 'Zombie', pos_to => {x => 12, y => 10}, dmgToYou => 0, missedYou => 0};
+		$partylead::monstersList = MonStub->new($partylead::mon);
+	};
+	# a party line queued now (due at once), as psay queues it
+	my $queue_line = sub { push @partylead::pending, [time - 1, $_[0]] };
+
+	# (1) a party line queued during a fight is sent, and the watchdog ran
+	$guard_reset->();
+	$guard_run->();                           # baseline sample, nobody hits her
+	%partylead::CALLS = (); @main::SENT = ();
+	$partylead::mon->{dmgToYou} = 2;          # a monster hits her: the fight
+	$queue_line->('im on it, hold on');
+	$guard_run->();
+	ok(scalar(@main::ATT) == 1, 'tail: she is fighting the monster that hit her');
+	ok(scalar(grep { $_ eq 'p im on it, hold on' } @main::SENT) == 1, 'tail: a party line queued during a fight is sent');
+	ok(($partylead::CALLS{watchdog_tick} || 0) == 1, 'tail: the watchdog ran during the fight');
+	ok(($partylead::CALLS{fit_tick} || 0) == 1 && ($partylead::CALLS{town_req_tick} || 0) == 1, 'tail: the map choice and the town-run check ran during the fight');
+
+	# (2) a stick wait (the tick returns at the stick rule): the same tail runs
+	$guard_reset->(); $partylead::STICKRET = 1;
+	$queue_line->('regroup at the kafra');
+	$guard_run->();
+	ok(scalar(grep { $_ eq 'p regroup at the kafra' } @main::SENT) == 1, 'tail: a party line is sent during a stick wait');
+	ok(($partylead::CALLS{watchdog_tick} || 0) == 1, 'tail: the watchdog ran during a stick wait');
+	ok(!($partylead::CALLS{travel_mode_tick} || 0), 'tail: the tick body stopped at the stick rule');
+
+	# (3) a pack wait with nobody attacking: the tail runs too
+	$guard_reset->(); $partylead::PACKRET = 1;
+	$queue_line->('waiting for zen');
+	$guard_run->();
+	ok(scalar(grep { $_ eq 'p waiting for zen' } @main::SENT) == 1 && ($partylead::CALLS{watchdog_tick} || 0) == 1, 'tail: a pack wait still sends lines and runs the watchdog');
+
+	# (4) the portal_guard path: the tick body returns at the portal hold, the tail still runs, travel is not reached
+	$guard_reset->(); $partylead::PORTALRET = 1;
+	$queue_line->('portal hold, wait here');
+	$guard_run->();
+	ok(($partylead::CALLS{portal_guard} || 0) == 1, 'portal: the portal hold rule was reached');
+	ok(!($partylead::CALLS{travel_mode_tick} || 0), 'portal: the tick body returned at the portal hold (travel not reached)');
+	ok(scalar(grep { $_ eq 'p portal hold, wait here' } @main::SENT) == 1, 'portal: a party line is still sent when the portal hold returns');
+	ok(($partylead::CALLS{watchdog_tick} || 0) == 1, 'portal: the watchdog still runs when the portal hold returns');
+
+	# (5) nothing is sent twice: a line is sent once, and a dead step does not stop the others
+	$guard_reset->(); $partylead::STICKRET = 1;
+	$queue_line->('once');
+	$guard_run->(); $guard_run->();
+	ok(scalar(grep { $_ eq 'p once' } @main::SENT) == 1, 'tail: a queued line is sent once');
 }
 
 print "partylead_flow_test: $pass passed, $fail failed\n";

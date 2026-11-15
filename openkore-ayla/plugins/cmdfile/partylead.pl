@@ -2601,8 +2601,13 @@ sub tick_guarded {
 	tick(@_);
 	# PT33 root cause: tick() returns early on pack_tick / stick_tick (she is waiting or sweeping most of the time), so the
 	# queued party lines (flush_say) and the pending town-run check (town_req_tick) never ran. Both run on every tick now.
-	flush_say() if $net && $net->getState() == 5;
-	town_req_tick() if $net && $net->getState() == 5;
+	# post-mortem 20261115 cause 3: tick() returns early (fights, pack / stick / portal waits), and the party lines, the
+	# town-run request, her map choice and the watchdog must still run every tick - they are called here, never in tick()
+	if ($net && $net->getState() == 5 && $char && $field) {
+		foreach my $step (\&flush_say, \&town_req_tick, \&fit_tick, \&watchdog_tick) { # each runs even if another dies
+			eval { $step->(); 1 } or message "[partylead] tick tail failed: $@\n", 'system';
+		}
+	}
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
@@ -3975,7 +3980,6 @@ sub tick {
 			message "[partylead] no looting now: $aggr monsters on her, HP " . int($hpp * 100) . "%\n", 'system' if time - $lastMsg > 10;
 		}
 	}
-	flush_say();
 	# aylagear.pl is buying a piece from a player vendor in Prontera (a short walk + the shop window): leave her alone
 	return if defined &aylagear::busy && aylagear::busy();
 	# a call for help counts for 2 min only (QA 2026-11-14 12:27: Echobunny's "help, cant find u" from 12:19 made her
@@ -3991,9 +3995,7 @@ sub tick {
 	$huntMap = $config{lockMap} ne '' ? $config{lockMap} : (($saved && $saved->{lockMap}) ? $saved->{lockMap} : '');
 	set_home($config{lockMap}) if ($config{lockMap} || '') ne ''; # a non-empty lockMap is always the current destination (QA 20:54: stale homeMap pay_fild08)
 	buff_ask_tick(); # PT29: ask the priest for missing buffs
-	town_req_tick(); # PT33: a pending town-run request starts once the gap since the last run is over
-	fit_tick(); # AY07/AY19: her own level / gear / turn map choice when the mind's order is stale
-	watchdog_tick();
+	# flush_say, town_req_tick, fit_tick and watchdog_tick run in tick_guarded, always (post-mortem 20261115 cause 3)
 	# never stand still (owner: "Never stand still, walk around a bit to unstuck yourself"): no movement for 20 s
 	# while not fighting, sitting or talking to an NPC -> step a few cells in a random direction
 	my $pk = "$char->{pos_to}{x},$char->{pos_to}{y}";
