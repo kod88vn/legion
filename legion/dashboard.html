@@ -135,6 +135,7 @@ button.btn:disabled { opacity: 0.45; cursor: default; }
 .ctl-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; font-size: 12.5px; margin-top: 4px; }
 .ctl-cols h3 { font-size: 12.5px; margin: 0 0 6px; color: var(--text-2); font-weight: 600; }
 #ctlActive { margin-top: 12px; }
+.ctl-box[hidden] { display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; font-size: 12px; color: var(--muted); }
 .chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 9px; color: var(--text-2); cursor: pointer; font: inherit; font-size: 12px; }
 .chip:hover { border-color: var(--s5); }
@@ -215,6 +216,16 @@ td.wrapc { white-space: normal; max-width: 640px; }
       <div style="margin-top:8px;font-size:12.5px"><a class="lnk" data-openmind="ayla">Talk to Ayla (her chat is on the Puppet master decisions tab)</a></div></div>
     <div class="card" id="aylaCtl"><h2>Ayla control <small id="ctlNote">owner overrides (AY25)</small></h2>
       <div id="ctlState"><div class="empty">loading...</div></div>
+      <div id="ctlFlags"></div>
+      <div id="ctlReqs" style="margin-top:10px"><div class="empty">loading...</div></div>
+      <form class="ctl-box" data-kind="request" id="ctlReqForm" hidden style="margin-top:10px"><b>Confirm an owner order</b>
+        <div class="ctl-hint">Her order, as written: <span id="ctlReqText"></span>. Pick the kind it means and set the value. The override is set first; then the order is marked confirmed.</div>
+        <label>kind <select id="ctlReqKind"><option value="farm_map">farm_map</option><option value="guild_dir">guild_dir</option><option value="party_order">party_order</option><option value="town_run">town_run</option><option value="rally">rally</option></select></label>
+        <label>value <input id="ctlReqValue" maxlength="200" autocomplete="off"></label>
+        <label>expires <select id="ctlReqHours">
+          <option value="1">1 h</option><option value="6">6 h</option><option value="24">24 h</option>
+          <option value="72">3 days</option><option value="168">1 week</option><option value="720">until cleared (30 days cap)</option></select></label>
+        <div><button class="btn" type="submit">Confirm and set</button> <button class="btn" type="button" id="ctlReqCancel">Cancel</button></div></form>
       <div class="ctl-grid" id="ctlForms">
         <form class="ctl-box" data-kind="farm_map"><b>Farm map</b>
           <div class="ctl-hint">Her base and max level come from her party. The fair and fit gates are checked; a warning needs "Force anyway".</div>
@@ -1772,7 +1783,7 @@ function renderCtl() {
   $('ctlNote').textContent = live ? 'owner overrides (AY25): they win over the puppet masters until cleared or expired'
     : 'read-only: the engine is not answering, so overrides cannot be set or cleared' + staleSfx(res || {});
   if (!res || !res.ok) {
-    $('ctlState').innerHTML = downMsg(res || {err: ''}, 'override state'); $('ctlActive').innerHTML = ''; ctlDisabled(); return;
+    $('ctlState').innerHTML = downMsg(res || {err: ''}, 'override state'); $('ctlFlags').innerHTML = ''; $('ctlActive').innerHTML = ''; ctlDisabled(); return;
   }
   const d = res.data || {}, own = d.owner || {}, rows = (d.overrides || []).filter(o => o.active);
   const p = ctlParty(), lv = ctlLevels(p), puppet = d.puppet || {}, sg = puppet.starveil_guild || {}, ord = puppet.orders || {};
@@ -1794,6 +1805,7 @@ function renderCtl() {
       ['last owner order', ho ? `${esc(ho.text || '')} <span style="color:var(--muted)">${esc(ho.iso || '')}</span>` : '<span style="color:var(--muted)">none</span>'],
       ['helper result', hh ? esc(hh.result || '') : '<span style="color:var(--muted)">none</span>'],
     ]) + '</div></div>';
+  $('ctlFlags').innerHTML = flagsHtml(d.flags);   // additive (fix/ayla-hookin): flags from her party; absent = nothing shown
   $('ctlActive').innerHTML = '<h3 style="font-size:12.5px;margin:0 0 6px;color:var(--text-2);font-weight:600">Your active overrides</h3>' +
     (rows.length ? '<div class="tbl"><table><thead><tr><th>kind</th><th>value</th><th>note</th><th>set</th><th class="r">time left</th><th></th></tr></thead><tbody>' +
       rows.map(o => `<tr><td>${esc(o.kind)}</td><td><b>${esc(o.value)}</b></td><td>${esc(o.note || '')}</td><td>${clock(isoS(o.set_at))}</td>` +
@@ -1802,13 +1814,25 @@ function renderCtl() {
   ctlDisabled();
 }
 
+// flags on GET /api/ayla/overrides (fix/ayla-hookin): {kind, party, map, time, text, kept}. Shape-tolerant: anything
+// not an object is skipped, and no flags field means no table.
+function flagsHtml(flags) {
+  const F = Array.isArray(flags) ? flags.filter(f => f && typeof f === 'object') : [];
+  if (!F.length) return '';
+  const when = t => typeof t === 'number' ? clock(t) : esc(t == null ? '' : t);
+  return '<h3 style="font-size:12.5px;margin:12px 0 6px;color:var(--text-2);font-weight:600">Flags from her party</h3>' +
+    '<div class="tbl"><table><thead><tr><th>flag</th><th>party</th><th>map</th><th>time</th><th class="r">kept</th><th>detail</th></tr></thead><tbody>' +
+    F.map(f => `<tr><td><b>${esc(f.kind || '')}</b></td><td>${esc(f.party || '')}</td><td>${esc(f.map || '')}</td>` +
+      `<td>${when(f.time)}</td><td class="r">${f.kept != null ? esc(f.kept) + ' min' : ''}</td><td>${esc(f.text || '')}</td></tr>`).join('') +
+    '</tbody></table></div>';
+}
 function ctlBody(kind, value, hours, note) {
   const b = {kind, value, hours: +hours, note: note || ''};
   if (kind === 'farm_map') { const lv = ctlLevels(ctlParty()); b.base_lv = lv.base; b.max_lv = lv.max; }
   return b;
 }
 // one POST. 200: stored. 409: the gate warnings, nothing stored, and "Force anyway" re-sends with confirm=true.
-async function ctlSend(body) {
+async function ctlSend(body, onOk) {
   ctlMsg('saving...', '');
   let resp, txt = '', data = null;
   try {
@@ -1818,11 +1842,13 @@ async function ctlSend(body) {
   } catch (e) { ctlMsg('could not reach the dashboard server: nothing was stored', 'bad'); return; }
   if (resp.status === 200) {
     CTL.pending = null;
-    ctlMsg(`stored: ${esc(body.kind)} ${esc(body.value)}, ${esc(CTL_TTL[body.hours] || body.hours + ' h')}`, 'ok');
+    let note = '';
+    if (onOk) { const extra = await onOk(); if (extra) note = ' · ' + esc(extra); }   // the order is marked confirmed only after the override is stored
+    ctlMsg(`stored: ${esc(body.kind)} ${esc(body.value)}, ${esc(CTL_TTL[body.hours] || body.hours + ' h')}${note}`, 'ok');
     refreshOverrides(); return;
   }
   if (resp.status === 409 && data && data.warnings) {
-    CTL.pending = body;
+    CTL.pending = body; CTL.pendingOk = onOk || null;
     ctlMsg(`not stored: ${data.warnings.map(esc).join('; ')}<div style="margin-top:6px"><button class="btn" type="button" data-force="1">Force anyway</button></div>`, 'bad');
     return;
   }
@@ -1835,7 +1861,7 @@ async function ctlClear(id) {
   ctlMsg('clearing...', '');
   let resp, data = null;
   try {
-    resp = await fetch('/api/ayla/overrides/' + encodeURIComponent(id), {method: 'DELETE', cache: 'no-store'});
+    resp = await fetch('/api/ayla/overrides/' + encodeURIComponent(id), {method: 'DELETE', headers: {'Content-Type': 'application/json'}, cache: 'no-store'});
     try { data = await resp.json(); } catch (e) {}
   } catch (e) { ctlMsg('could not reach the dashboard server: nothing was cleared', 'bad'); return; }
   if (resp.status === 200) { ctlMsg(`cleared: ${esc(data && data.kind || '')} ${esc(data && data.value || '')}`, 'ok'); refreshOverrides(); return; }
@@ -1848,6 +1874,7 @@ $('aylaCtl').addEventListener('submit', ev => {
   const f = ev.target.closest('form[data-kind]');
   if (!f) return;
   ev.preventDefault();
+  if (f.dataset.kind === 'request') return confirmReq();
   if (f.dataset.kind === 'farm_map') {
     const v = $('ctlMap').value;
     if (!v) { ctlMsg('pick a map first', 'bad'); return; }
@@ -1865,18 +1892,84 @@ $('ctlOrders').addEventListener('click', ev => {
 });
 $('ctlMsg').addEventListener('click', ev => {
   const b = ev.target.closest('button[data-force]');
-  if (b && CTL.pending) ctlSend(Object.assign({}, CTL.pending, {confirm: true}));
+  if (b && CTL.pending) ctlSend(Object.assign({}, CTL.pending, {confirm: true}), CTL.pendingOk);
 });
 $('ctlActive').addEventListener('click', ev => {
   const b = ev.target.closest('button[data-clear]');
   if (b) ctlClear(b.dataset.clear);
 });
 
+// ---- owner orders awaiting a decision (dashserve.py /api/ayla/requests, from ayla_override_requests.jsonl). Confirm
+// opens the override form with the owner's text; the owner picks the kind. Decline only closes the order.
+const REQ = {list: [], open: null};
+const REQ_HOURS = [1, 6, 24, 72, 168, 720];
+async function refreshRequests() {
+  try {
+    const r = await fetch('/api/ayla/requests', {cache: 'no-store'});
+    const data = await r.json();
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    REQ.list = data.requests || [];
+    renderRequests();
+  } catch (e) { $('ctlReqs').innerHTML = '<div class="empty">owner orders not readable</div>'; }
+}
+function renderRequests() {
+  const L = REQ.list;
+  $('ctlReqs').innerHTML = L.length
+    ? '<div class="tbl"><table><thead><tr><th>asked</th><th>owner order, as written</th><th></th></tr></thead><tbody>' +
+      L.map(r => `<tr><td>${clock(r.t)}</td><td>${esc(r.text)}</td><td style="white-space:nowrap">` +
+        `<button class="btn sm" type="button" data-req-confirm="${esc(r.id)}">Confirm</button> ` +
+        `<button class="btn sm" type="button" data-req-decline="${esc(r.id)}">Decline</button></td></tr>`).join('') + '</tbody></table></div>'
+    : '<div class="empty">no owner order waiting</div>';
+  ctlDisabled();
+}
+async function postStatus(id, status) {
+  try {
+    const r = await fetch('/api/ayla/requests/' + encodeURIComponent(id) + '/status',
+      {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status}), cache: 'no-store'});
+    return r.ok;
+  } catch (e) { return false; }
+}
+function openReq(id) {
+  const row = REQ.list.find(r => r.id === id);
+  if (!row) return;
+  REQ.open = id;
+  $('ctlReqText').textContent = row.text || '(no text)';
+  $('ctlReqValue').value = row.value || row.text || '';
+  const want = row.hours || 0;
+  $('ctlReqHours').value = String(REQ_HOURS.find(h => h >= want) || 720);
+  $('ctlReqForm').hidden = false;
+  ctlDisabled();
+}
+function closeReq() { REQ.open = null; $('ctlReqForm').hidden = true; }
+function confirmReq() {
+  const id = REQ.open;
+  if (!id) { ctlMsg('pick an owner order first', 'bad'); return; }
+  const v = $('ctlReqValue').value.trim();
+  if (!v) { ctlMsg('write the value first', 'bad'); return; }
+  ctlSend(ctlBody($('ctlReqKind').value, v, $('ctlReqHours').value, 'owner order ' + id), async () => {
+    if (await postStatus(id, 'confirmed')) { closeReq(); refreshRequests(); return ''; }
+    return 'the order is not marked confirmed (answered already, or the engine did not record it)';
+  });
+}
+async function declineReq(id) {
+  const ok = await postStatus(id, 'declined');
+  if (ok && REQ.open === id) closeReq();
+  ctlMsg(ok ? 'declined: the order is closed' : 'could not record the decline', ok ? 'ok' : 'bad');
+  refreshRequests();
+}
+$('ctlReqs').addEventListener('click', ev => {
+  const c = ev.target.closest('button[data-req-confirm]'), d = ev.target.closest('button[data-req-decline]');
+  if (c) openReq(c.dataset.reqConfirm);
+  else if (d) declineReq(d.dataset.reqDecline);
+});
+$('ctlReqCancel').addEventListener('click', () => closeReq());
+
 const every = (fn, ms) => { fn(); setInterval(fn, ms); };
 every(refreshStatus, 10000);
 every(refresh, 10000);
 every(refreshParties, 10000);
 every(refreshOverrides, 10000);
+every(refreshRequests, 10000);
 every(refreshMinds, 5000);
 every(refreshGuilds, 30000);
 every(refreshLeaderboard, 30000);

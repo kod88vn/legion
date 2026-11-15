@@ -276,14 +276,22 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         route, _, q = self.path.partition("?")
         if route == "/api/ayla/overrides":
-            return self.reply(200, ov_view(self.ov_rows(), time.time()))
+            view = ov_view(self.ov_rows(), time.time())
+            if getattr(self.server, "flags", None) is not None:   # a test may give the flags field (fix/ayla-hookin)
+                view["flags"] = self.server.flags
+            return self.reply(200, view)
         if route == "/api/spots":
             lv = int((q.split("level=")[1].split("&")[0]) or 0) if "level=" in q else 0
             return self.reply(200, spots(lv))
         obj = answer(self.path)
         self.reply(200 if obj is not None else 404, obj if obj is not None else {"error": "not in the sample"})
 
+    def note_write(self):
+        """every write the engine receives, for the tests: a refused write must never show up here"""
+        self.server.__dict__.setdefault("writes", []).append(self.path)
+
     def do_POST(self):
+        self.note_write()
         raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
         if self.path.partition("?")[0] == "/api/ayla/overrides":
             if not self.owner_ok():
@@ -297,6 +305,7 @@ class H(BaseHTTPRequestHandler):
         self.reply(200, {"id": 99, "ok": True})
 
     def do_DELETE(self):
+        self.note_write()
         route = self.path.partition("?")[0]
         if route.startswith("/api/ayla/overrides/"):
             if not self.owner_ok():
