@@ -32,8 +32,8 @@ use constant RESUME => 12;   # hysteresis (= collect_stop_cells+4): once waiting
                              # when everyone is within 12 - stopping and going at 20/21 flip-flopped (QA 2026-11-14)
 
 Plugins::register('partylead', 'Ayla waits for, guards and talks to her party', \&unload);
-my $hooks = Plugins::addHooks(['AI_pre', \&tick], ['packet_partyMsg', \&heard], ['ai_processRandomWalk', \&short_walk], ['checkMonsterAutoAttack', \&area_target], ['npc_talk', \&npc_said], ['target_died', \&gm_kill], ['self_died', \&gm_died]);
-my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', \&cmd_partylead]);
+my $hooks = Plugins::addHooks(['AI_pre', \&tick_guarded], ['packet_partyMsg', \&heard], ['ai_processRandomWalk', \&short_walk], ['checkMonsterAutoAttack', \&area_target], ['npc_talk', \&npc_said], ['target_died', \&gm_kill], ['self_died', \&gm_died]);
+my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', \&cmd_guarded]);
 
 my ($holding, $saved, $last, $lastMsg, $lastFetch) = (0, undef, 0, 0, 0);
 my ($lastSay, $nextIdle, $lastLv, $errand, @pending) = (0, time + 60, 0, 0);
@@ -145,6 +145,10 @@ sub cmd_partylead {
 		}
 	} elsif ($args =~ /^\s*goto\s+(\S+)/i) {
 		my $m = $1;
+		if (my $why = map_dropped($m)) { # a destination whose route kept failing (STUCK) is off for 2 h, for everyone
+			wd_report('MIND_MAP', $m, "rejected: goto $m - $why", "keeping " . ($homeMap || '-'));
+			return;
+		}
 		if (!$autoPick && (my $why = mind_map_far($m))) { # the mind / helper sent her somewhere far above the party
 			my ($own) = choose_map();
 			wd_report('MIND_MAP', $m, "rejected: goto $m - $why", "keeping her own choice " . ($own || $homeMap || '-'));
@@ -1737,6 +1741,63 @@ sub crowd_move {
 	auto_goto($m, "$here is crowded; $why");
 }
 
+# ---- lockMap guard (AY05/AY07, 2026-11-14): a lockMap set from outside the plugin (a raw 'conf lockMap X' from the
+# helper / mind / ayla.sh, or one left in config.txt) gets the same gear-rated check as 'partylead goto' - live: the
+# helper's 'conf lockMap gl_church' (party rated 58, gl_church from 72) followed every rejected goto. $lmSet is what the
+# plugin itself last left in lockMap (updated after every tick and every partylead command); anything else is outside.
+our $lmSet; # undef until the first check (then a lockMap from config.txt is checked too)
+our %droppedUntil; # map -> until when it is off (STUCK: its route keeps failing)
+sub map_dropped {
+	my $m = shift || '';
+	return '' unless $droppedUntil{$m};
+	if (time >= $droppedUntil{$m}) { delete $droppedUntil{$m}; return '' }
+	return "its route kept failing, off for " . int(($droppedUntil{$m} - time) / 60) . " more min";
+}
+sub drop_map {
+	my ($m, $why) = @_;
+	$droppedUntil{$m} = time + 7200;
+	$crowdedAt{$m} = time + 3600; # level_map / map_fits skip it for 2 h as well
+	$gotoMap = '' if $gotoMap eq $m;
+	($homeMap, $homeAt, $homeBy) = ('', 0, 'auto') if $homeMap eq $m; # a stale mind order on it no longer holds her
+	$saved->{lockMap} = '' if $saved && ($saved->{lockMap} || '') eq $m;
+	$config{lockMap} = '' if ($config{lockMap} || '') eq $m;
+	$fitAt = 0; $lmSet = $config{lockMap} || '';
+	wd_report('DROP_MAP', $m, "$m dropped for 2 h: $why", "own gear-rated choice");
+}
+sub lockmap_guard {
+	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
+	my $lm = $config{lockMap} || '';
+	return if defined $lmSet && $lm eq $lmSet;
+	if ($lm ne '' && !is_townmap($lm)) {
+		# the party's levels come from Legion's API: no verdict before they are in (5 min at most, as fit_tick)
+		my @fr = online_friends();
+		return if @fr && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr) && time - $fitLoadAt < 300;
+		my $why = map_dropped($lm) || mind_map_far($lm);
+		if ($why) {
+			my $back = defined $lmSet && !map_dropped($lmSet) && !mind_map_far($lmSet) ? $lmSet : '';
+			$config{lockMap} = $back;
+			eval { Misc::configModify('lockMap', $back, 1) } if defined &Misc::configModify; # config.txt too (conf wrote it)
+			$config{lockMap} = $back;
+			$gotoMap = '' if $gotoMap eq $lm;
+			($homeMap, $homeAt, $homeBy) = ('', 0, 'auto') if $homeMap eq $lm;
+			$saved->{lockMap} = $back if $saved && ($saved->{lockMap} || '') eq $lm;
+			AI::clear('route', 'move') if AI::is('route', 'move');
+			$fitAt = 0 if $back eq ''; # nothing to go back to: her own choice now
+			wd_report('MIND_MAP', $lm, "rejected (conf): lockMap $lm - $why", "lockMap back to " . ($back || "her own choice"));
+		}
+	}
+	$lmSet = $config{lockMap} || '';
+}
+sub tick_guarded {
+	lockmap_guard();
+	tick(@_);
+	$lmSet = $config{lockMap} || '' if defined $lmSet;
+}
+sub cmd_guarded {
+	cmd_partylead(@_);
+	$lmSet = $config{lockMap} || '' if defined $lmSet;
+}
+
 # ---- PT29 (2026-11-14): like every party member she asks the party priest for buffs she lacks ("bless pls", "agi?");
 # the engine priest (legion/priestbuff.go buffAskHeard) reads such party lines and moves the asker to the front.
 # Only with the priest on her map within 9 cells, never while idle in town, once per 90-150 s (varied).
@@ -1840,10 +1901,16 @@ sub watchdog_tick {
 		my $dest = $rally ? ($rally->{thenGoto} || $rally->{dest} || $rally->{town}) : ($gotoMap || $config{lockMap} || '');
 		wd_report('STUCK', $here, "$here $pos for " . int(($now - $wdStuckSince) / 60) . " min, route to " . ($dest || '?') . " fails" . ($rally ? " (rally $rally->{town})" : ''),
 			($rally ? 'rally cancelled, ' : '') . 'respawn to ' . ($config{saveMap} || 'the save point'));
-		if ($dest ne '' && ++$wdStuckN{$dest} >= 2 && !mind_fresh()) { $crowdedAt{$dest} = $now + 3600; $wdStuckN{$dest} = 0 }
+		# a respawn that lands in the town she is stuck in changes nothing (live 2026-11-14: STUCK geffen 118,39, route to
+		# gl_church fails -> respawn to geffen -> the same route again, in a loop): the destination is dropped for 2 h at
+		# once, whoever set it, and she falls back to her own gear-rated choice
+		my $sameTown = is_townmap($here) && ($config{saveMap} || '') eq $here;
+		if ($dest ne '' && !is_townmap($dest) && ($sameTown || ++$wdStuckN{$dest} >= 2 || $droppedUntil{$dest})) { drop_map($dest, $sameTown ? "route from $here fails and a respawn lands in $here again" : "route fails again"); $wdStuckN{$dest} = 0 }
+		elsif ($dest ne '' && ++$wdStuckN{$dest} >= 2 && !mind_fresh()) { $crowdedAt{$dest} = $now + 3600; $wdStuckN{$dest} = 0 }
 		if ($rally) { end_rally("can't find a way there", 0); $rally = undef }
 		$depart = undef; $gotoMap = ''; $holding = 0;
 		AI::clear('route', 'move');
+		if ($sameTown) { ($wdStuckSince, $wdProdAt, $wdAct) = ($now, $now, $now); $wdExp = $exp; $wdPos = $pos; $fitAt = 0; return } # no respawn: fit_tick picks her own map now
 		Commands::run('respawn');
 		($wdStuckSince, $wdProdAt, $wdAct) = ($now, $now, $now);
 		$wdExp = $exp; $wdPos = $pos;
