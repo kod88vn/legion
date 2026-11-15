@@ -32,9 +32,32 @@ def _epoch(r):
     return C.to_epoch(r.get("epoch", r.get("t"))) or 0.0
 
 
+def deploy_records():
+    """The deploy records only: kind "verdict" lines (league.py, keep or revert of a past deploy) are not deploys."""
+    return [r for r in C.read_jsonl(C.dpath(DEPLOYS)) if r.get("kind") != "verdict"]
+
+
 def last_record():
-    recs = C.read_jsonl(C.dpath(DEPLOYS))
+    recs = deploy_records()
     return max(recs, key=_epoch) if recs else None
+
+
+def _verdict_previous(tag):
+    """Deploy flow step (Constitution 3.6): before a new deploy is recorded, the previous deploy's 3-hour windows are
+    compared and the keep/revert verdict is written to deploys.jsonl. The core step (same tag) is skipped: its window
+    has not run yet. A failure is reported, never blocks the deploy record."""
+    last = last_record()
+    if not last or last.get("tag") == tag:
+        return None
+    try:
+        import league
+        rec = league.record_verdict()
+        if rec:
+            print("verdict for %s: %s%s" % (rec.get("tag"), rec.get("verdict"), " (partial window)" if rec.get("partial") else ""))
+        return rec
+    except Exception as e:  # the verdict is measurement, not a gate
+        sys.stderr.write("WARNING: deploy verdict not recorded: %s\n" % e)
+        return None
 
 
 def check(min_gap=MIN_GAP, critical=None, tag=None, fixes=0):
@@ -65,7 +88,8 @@ def parse_fix(s):
 
 
 def record(tag, services, critical, fixes):
-    recs = C.read_jsonl(C.dpath(DEPLOYS))
+    _verdict_previous(tag)
+    recs = deploy_records()
     if not fixes:
         for r in recs:
             if r.get("tag") == tag and r.get("fixes"):

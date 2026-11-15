@@ -400,6 +400,7 @@ func meterLoop(bots []*Bot) {
 	lastTune := time.Now()
 	lastHour := time.Now().Unix() / 3600
 	lastSave := time.Now()
+	lastBots := time.Now()
 	for {
 		now := time.Now()
 		if now.Sub(lastTune) >= time.Minute {
@@ -436,6 +437,10 @@ func meterLoop(bots []*Bot) {
 				lastSave = now
 				meterPersist(bots, now) // meterpersist.go: counters survive a restart
 			}
+			if now.Sub(lastBots) >= meterBotsEvery && !coreInstance() {
+				lastBots = now
+				meterWriteBots(v, now) // the per-bot numbers on disk (below)
+			}
 			if h := now.Unix() / 3600; h != lastHour {
 				lastHour = h
 				if !coreInstance() && !meterTune().HistoryOff {
@@ -444,6 +449,40 @@ func meterLoop(bots []*Bot) {
 			}
 		}()
 		time.Sleep(time.Duration(meterTune().PeriodSec) * time.Second)
+	}
+}
+
+// meterBotsEvery: how often the per-bot file is rewritten (about 7,800 rows, a few MB).
+const meterBotsEvery = 5 * time.Minute
+
+// meterBotsFile: <data>/meter_bots.json, the per-bot meter (kills/min, zeny/h, deaths/h, time shares) of every bot that
+// has been online in the last hour, plus Ayla's own row. The Players tab and the leaderboard read it while the engine
+// is down (meter.jsonl keeps only cohort, server and neo rows). Written by the main instance only; the rows are the
+// published view, so they include the core instance's bots.
+type meterBotsFile struct {
+	T      int64         `json:"t"`
+	Window string        `json:"window"`
+	Total  int           `json:"total"`
+	Bots   []meterBotOut `json:"bots"`
+	Ayla   *meterBotOut  `json:"ayla,omitempty"`
+}
+
+func meterWriteBots(v *meterView, now time.Time) {
+	w := mw60
+	f := meterBotsFile{T: now.Unix(), Window: meterWinNames[w], Bots: []meterBotOut{}}
+	for _, r := range v.Rows {
+		if r.Win[w].Min > 0 {
+			f.Bots = append(f.Bots, v.botOut(r, w, true))
+		}
+	}
+	f.Total = len(f.Bots)
+	f.Ayla = aylaBotOut(v.Ayla, meterWinNames[w])
+	raw, err := json.Marshal(f)
+	if err != nil {
+		return
+	}
+	if err := writeFileAtomic(filepath.Join(*dataDir, "meter_bots.json"), raw); err != nil {
+		log.Printf("meter: bots file: %v", err)
 	}
 }
 

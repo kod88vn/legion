@@ -90,8 +90,13 @@ type friendPair struct {
 	First    time.Time `json:"first"`
 	Last     time.Time `json:"last"`
 	Seeded   bool      `json:"seeded,omitempty"`
-	decayAt  time.Time
-	rate     map[int]time.Time // per kind: last counted (rate limits)
+	// saved with the file: DecayedAt is when Score was last decayed (a restart resumes from it, so the score is not
+	// decayed twice); Eff is the score the engine shows (raw + memory bonus, friendEffLocked) at save time, for the
+	// offline dashboard (tools/dashboard/offline.py) which otherwise showed the raw score.
+	DecayedAt time.Time `json:"decayed_at,omitempty"`
+	Eff       float64   `json:"eff,omitempty"`
+	decayAt   time.Time
+	rate      map[int]time.Time // per kind: last counted (rate limits)
 }
 
 type friendMove struct {
@@ -1104,6 +1109,9 @@ func friendsLoad() {
 		}
 		k, a, b := friendKey(p.A, p.B)
 		p.A, p.B, p.decayAt = a, b, p.Last
+		if !p.DecayedAt.IsZero() { // the decay resumes from the time the saved score was decayed to
+			p.decayAt = p.DecayedAt
+		}
 		friends.pairs[k] = p
 	}
 	friends.moves = d.Moves
@@ -1153,6 +1161,8 @@ func friendsSave(force bool) {
 	for _, p := range friends.pairs {
 		c := *p
 		c.rate = nil
+		c.DecayedAt = p.decayAt
+		c.Eff = math.Round(friendEffLocked(p.A, p.B)*10) / 10
 		d.Pairs = append(d.Pairs, &c)
 	}
 	for _, m := range friends.moves {

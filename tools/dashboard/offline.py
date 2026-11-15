@@ -218,25 +218,62 @@ def friends(n=15):
         return None
     pairs = f.get("pairs") or []
     tiers = {"acquaintance": 0, "friend": 0, "close friend": 0}
-    for p in pairs:   # legion/friends.go thresholds, on the raw score (the engine applies a decay on top)
-        s = p.get("score") or 0
+    # the engine's /api/friends score: "eff" (raw decayed score + memory bonus) when the file has it, else the raw score
+    def eff(p):
+        e = p.get("eff")
+        return e if isinstance(e, (int, float)) else (p.get("score") or 0)
+    for p in pairs:   # legion/friends.go thresholds
+        s = eff(p)
         t = "close friend" if s >= 65 else "friend" if s >= 35 else "acquaintance" if s >= 10 else ""
         if t:
             tiers[t] += 1
-    top = sorted(pairs, key=lambda p: -(p.get("score") or 0))[:n]
+    top = sorted(pairs, key=lambda p: -eff(p))[:n]
     loy = f.get("loyalty") or []
     lc = f.get("loyalty_counters") or {}
     return {"pairs_total": len(pairs), "tiers": tiers, "counters": f.get("counters") or {}, "guild_moves": [],
-            "note": "raw scores from legion/data/friends.json (no decay applied)",
+            "note": "scores from legion/data/friends.json: the engine's score (decayed, with the memory bonus) as saved by the engine; raw score where the file has none",
             "loyalty": {"help_asked": sum(v for k, v in lc.items() if k.startswith("asked")),
                         "help_answered": sum(v for k, v in lc.items() if k.startswith("answered")),
                         "help_unanswered": sum(v for k, v in lc.items() if k.startswith("unanswered")),
                         "at_risk": sum(1 for x in loy if (x.get("loyalty") or 100) < 30), "keep_gifts_sent": sum(x.get("kept") or 0 for x in loy)},
-            "top": [{"a": p.get("a"), "b": p.get("b"), "score": round(p.get("score") or 0, 1),
-                     "tier": "close friend" if (p.get("score") or 0) >= 65 else "friend" if (p.get("score") or 0) >= 35 else "acquaintance",
+            "top": [{"a": p.get("a"), "b": p.get("b"), "score": round(eff(p), 1), "raw": round(p.get("score") or 0, 1),
+                     "tier": "close friend" if eff(p) >= 65 else "friend" if eff(p) >= 35 else "acquaintance",
                      "partied_min": p.get("partied_min"), "fight_min": p.get("fight_min"), "heals": p.get("heals"),
                      "chats": p.get("chats"), "trades": p.get("trades"), "guild_min": p.get("guild_min"),
                      "last_contact": (p.get("last") or "")[:16].replace("T", " ")} for p in top]}
+
+
+def overview():
+    """/api/overview as the engine saved it (legion/dashboard.go saveOverview -> data/overview.json)."""
+    return cached(data("overview.json"), load_json)
+
+
+_BOT_SORT = {"zph": "zph", "kpm": "kpm", "gap_zph": "gap_zph", "gap_kpm": "gap_kpm", "deaths": "deaths_h", "min": "min"}
+
+
+def meter_bots(q):
+    """/api/meter/bots from data/meter_bots.json (the engine's per-bot meter, written every 5 min). Same query keys:
+    cohort (prefix), sort (zph|kpm|gap_zph|gap_kpm|deaths|name|min), order=asc, limit (default 50)."""
+    f = cached(data("meter_bots.json"), load_json)
+    if not f:
+        return None
+    def arg(k, d=""):
+        return (q.get(k) or [d])[0]
+    coh = arg("cohort").lower()
+    rows = [b for b in (f.get("bots") or []) if not coh or str(b.get("cohort", "")).lower().startswith(coh)]
+    by = arg("sort")
+    if by == "name":
+        rows.sort(key=lambda b: str(b.get("name", "")))
+    else:
+        key = _BOT_SORT.get(by, "zph")
+        rows.sort(key=lambda b: (b.get(key) or 0), reverse=arg("order") != "asc")
+    try:
+        limit = int(arg("limit", "0") or 0)
+    except ValueError:
+        limit = 0
+    limit = limit if limit > 0 else 50
+    return {"t": f.get("t"), "window": f.get("window"), "total": len(rows), "bots": rows[:limit],
+            "note": "offline: legion/data/meter_bots.json (the engine's last save)"}
 
 
 def _meter_rows():

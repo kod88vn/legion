@@ -317,7 +317,9 @@ def bug_queue(now):
 
 
 def deploys():
-    recs = C.read_jsonl(C.dpath("deploys.jsonl"))
+    all_recs = C.read_jsonl(C.dpath("deploys.jsonl"))
+    recs = [r for r in all_recs if r.get("kind") != "verdict"]   # keep/revert lines (league.py) are not deploys
+    verdicts = [r for r in all_recs if r.get("kind") == "verdict"]
     if not recs:
         return {"available": False, "why": "no deploy record"}
 
@@ -325,9 +327,16 @@ def deploys():
         return C.to_epoch(r.get("epoch", r.get("t"))) or 0.0
     recs.sort(key=ep)
 
+    def verdict_of(r):
+        """the latest keep/revert verdict written for this deploy (same tag and epoch); None until one exists"""
+        vs = [v for v in verdicts if v.get("tag") == r.get("tag") and abs((C.to_epoch(v.get("deploy_epoch")) or 0) - ep(r)) < 1]
+        if not vs:
+            return None
+        return max(vs, key=lambda v: C.to_epoch(v.get("t")) or 0).get("verdict")
+
     def slim(r):
         return {"t": ep(r) or None, "tag": r.get("tag"), "services": r.get("services"), "critical": r.get("critical"),
-                "reason": r.get("reason"), "fixes": r.get("fixes") or [], "verdict": r.get("verdict")}
+                "reason": r.get("reason"), "fixes": r.get("fixes") or [], "verdict": verdict_of(r)}
     return {"available": True, "count": len(recs), "last": slim(recs[-1]), "recent": [slim(r) for r in recs[-8:][::-1]]}
 
 
@@ -529,6 +538,8 @@ FILE_ROUTES = {
     "/api/guilds/detail": (lambda q: offline.guilds_detail(), "guild_rank.json"),
     "/api/friends": (lambda q: offline.friends(int(q.get("n", ["15"])[0] or 15)), "friends.json"),
     "/api/meter": (lambda q: offline.meter(), "meter.jsonl"),
+    "/api/meter/bots": (lambda q: offline.meter_bots(q), "meter_bots.json"),
+    "/api/overview": (lambda q: offline.overview(), "overview.json"),
     "/api/meter/neo": (lambda q: offline.meter_neo(), "meter.jsonl"),
     "/api/overview/history": (lambda q: offline.history(), "health.log"),
     "/api/parties/detail": (lambda q: offline.parties_detail(PLAYERS[0].current() if PLAYERS else None), "parties.json"),
