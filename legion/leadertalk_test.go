@@ -126,7 +126,7 @@ func (c *ltCapture) n() int {
 
 func ltTestSetup(t *testing.T) (*ltCapture, func()) {
 	c := &ltCapture{}
-	oldSay, oldRand, oldUnit, oldGo := ltSay, ltRand, ltUnit, ltGo
+	oldSay, oldRand, oldUnit, oldGo, oldTypo := ltSay, ltRand, ltUnit, ltGo, typoRoll
 	ltSay = func(b *Bot, line string) {
 		c.Lock()
 		c.lines = append(c.lines, b.charName()+" : "+line)
@@ -134,6 +134,7 @@ func ltTestSetup(t *testing.T) (*ltCapture, func()) {
 	}
 	ltRand = func() float64 { return 0 }
 	ltUnit = 0 // no real delay: the delayed lines are tracked and settle() waits for them
+	typoRoll = func() float64 { return 1 } // no typos: a garbled place or name would miss the substring checks
 	ltGo = func(f func()) {
 		c.wg.Add(1)
 		go func() {
@@ -143,7 +144,7 @@ func ltTestSetup(t *testing.T) (*ltCapture, func()) {
 	}
 	return c, func() {
 		c.settle()
-		ltSay, ltRand, ltUnit, ltGo = oldSay, oldRand, oldUnit, oldGo
+		ltSay, ltRand, ltUnit, ltGo, typoRoll = oldSay, oldRand, oldUnit, oldGo, oldTypo
 	}
 }
 
@@ -279,16 +280,19 @@ func TestLeaderHeard(t *testing.T) {
 	}()
 	ltPub(l, "prt_fild02", 100, 100, false)
 	leaderHeard(a, "Errandy : brb, buying arrows") // a member hearing it doesn't answer
+	c.settle()
 	if c.n() != 0 {
 		t.Fatalf("member answered: %v", c.lines)
 	}
 	leaderHeard(l, "Errandy : brb, buying arrows")
+	c.settle()
 	if c.n() != 1 || !strings.HasPrefix(c.lines[0], "Lead4 : ") {
 		t.Fatalf("leader didn't answer the errand: %v", c.lines)
 	}
 	leaderHeard(l, "Errandy : brb, buying arrows") // no spam
 	leaderHeard(l, "Lead4 : town run guys")        // its own line
 	leaderHeard(l, "Stranger : brb")               // not a member
+	c.settle()
 	if c.n() != 1 {
 		t.Fatalf("answered too much: %v", c.lines)
 	}
@@ -297,6 +301,7 @@ func TestLeaderHeard(t *testing.T) {
 	st := ltStateOf(p)
 	st.lastReply = time.Time{}
 	leaderHeard(l, "Errandy : ok back")
+	c.settle()
 	if c.n() != 1 {
 		t.Fatalf("bot answered in a human-led party: %v", c.lines)
 	}

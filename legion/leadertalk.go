@@ -610,9 +610,11 @@ func leaderHeard(b *Bot, raw string) {
 	if line == "" {
 		return
 	}
-	typing := typingOf(b)
-	time.Sleep(time.Duration(2+crand(4)) * ltUnit)
-	ltSay(b, styled(typing, line))
+	typing, say, wait := typingOf(b), ltSay, time.Duration(2+crand(4))*ltUnit
+	ltGo(func() {
+		time.Sleep(wait)
+		say(b, styled(typing, line))
+	})
 }
 
 // ---- hooks called with b.mu held ----
@@ -629,7 +631,8 @@ func (b *Bot) dayEndSay(p *Party) {
 		return
 	}
 	line := styled(b.P.Typing, dayEndLine(leader, pm))
-	go ltSay(b, line)
+	say := ltSay
+	ltGo(func() { say(b, line) })
 }
 
 // leaderTalkSkipTrip (b.mu held): the bot leader joining its party's town run doesn't say a member's join line - its
