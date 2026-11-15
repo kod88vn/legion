@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -311,10 +312,10 @@ var humanRest = struct {
 }{on: map[string]bool{}, at: map[string]time.Time{}, sitSince: map[string]time.Time{}, help: map[string]time.Time{}}
 
 var (
-	humanHelpLineRe   = regexp.MustCompile(`(?i)\b(help|heal me|save me|im dying)\b`)
+	humanHelpLineRe = regexp.MustCompile(`(?i)\b(help|heal me|save me|im dying)\b`)
 	// a rest line is a whole clause of her message ("need sp, resting"): a rest word inside a sentence is not one
 	// ("the rest of you", "k, sit, we cover u", "tell me if u need a break", "np, rest up" were all false rests)
-	humanRestClauseRe  = regexp.MustCompile(`(?i)^((ok|okay|k|kk|yep|np|brb)\s+)?(resting|rest|sitting( down)?|sit down|brb (resting|rest|sp)|need (sp|hp|a (sec|break|moment))|regen(ing)?)( (a bit|a sec|a min|a moment|a little|now|rn|real quick))?$`)
+	humanRestClauseRe  = regexp.MustCompile(`(?i)^((ok|okay|k|kk|yep|np|brb)\s+)?((gotta|got to|need to|have to|gonna|going to)\s+(rest|sit|sit down)|resting|rest|sitting( down)?|sit down|brb (resting|rest|sp)|need (sp|hp|a (sec|break|moment))|regen(ing)?)( (a bit|a sec|a min|a moment|a little|for a (bit|sec|min|moment|little)|now|rn|real quick))?$`)
 	humanClauseSplitRe = regexp.MustCompile(`[,.!;]+`)
 	humanReadyLineRe   = regexp.MustCompile(`(?i)\b(ready|rdy|let'?s (go|move)|lets (go|move)|moving( on)?|done resting|go go|ok go|full sp)\b`)
 )
@@ -1081,9 +1082,19 @@ func (b *Bot) escortGate(p *Party, herMap string, now time.Time) (string, string
 	// inside a dungeon: a floor is crossed only with a friend on the same floor (PT04, PT32b: members travel together
 	// or with the leader; QA 2026-11-15: members walked pay_dun00-02 alone, 4x monsters, and died on the way). Alone on
 	// a floor of her dungeon, the member goes back to the entrance town to gather there instead.
-	if dungeonMap(b.MapName) && (dungeonFamily(b.MapName) != dungeonFamily(herMap) || friendOnFloor(p, b, b.MapName, now)) {
-		escortRestockClear(b)
-		return "", ""
+	// Alone on a floor of her dungeon she is elsewhere: it holds here, and follows only when she is on the next floor
+	// up or down (a portal is a normal one-floor lag, not a reason to walk out of the dungeon). Back to town only when
+	// hurt or out of potions. Deeper than her, or on another dungeon, the same rule.
+	if dungeonMap(b.MapName) {
+		if dungeonFamily(b.MapName) == dungeonFamily(herMap) && !friendOnFloor(p, b, b.MapName, now) && !floorAdjacent(b.MapName, herMap) {
+			if !b.outOfPotions() && !b.hurtBadly() {
+				escortRestockClear(b)
+				return b.MapName, "waiting on this floor for " + p.Human
+			}
+		} else {
+			escortRestockClear(b)
+			return "", ""
+		}
 	}
 	town := humanSaveTown(p)
 	if town == "" {
@@ -1103,6 +1114,18 @@ func (b *Bot) escortGate(p *Party, herMap string, now time.Time) (string, string
 		}
 	} else {
 		escortRestockClear(b)
+	}
+	// short of the survival minimum but not out of potions: top up at the town's potion seller before going in, the
+	// way a player at the Kafra would. No trip away and no party run: the trip stays in this town (forceTown).
+	if !b.isHealer() && b.realPotCount() < b.potMin() && b.Zeny >= 500 && potionShop(town) != nil && escortRestockOK(b, now) {
+		if b.trip == nil && (b.lastTripAt.IsZero() || now.Sub(b.lastTripAt) >= 2*time.Minute) {
+			b.forceTown = town
+			b.startTrip("out of potions", now)
+			b.forceTown = ""
+		}
+		if b.trip != nil {
+			return town, "restocking potions before going in"
+		}
 	}
 	outside, inTown := 0, 0
 	for _, m := range p.Members {
@@ -1133,6 +1156,27 @@ func dungeonFamily(m string) string {
 		return ""
 	}
 	return strings.TrimRight(m, "0123456789")
+}
+
+// dungeonFloorNo: the floor number of a dungeon map ("pay_dun03" -> 3); false when the map has none.
+func dungeonFloorNo(m string) (int, bool) {
+	n, err := strconv.Atoi(m[len(dungeonFamily(m)):])
+	return n, err == nil
+}
+
+// floorAdjacent: a and b are floors of the same dungeon, one floor apart (a portal away).
+func floorAdjacent(a, b string) bool {
+	fa, oka := dungeonFloorNo(a)
+	fb, okb := dungeonFloorNo(b)
+	if !oka || !okb || dungeonFamily(a) != dungeonFamily(b) {
+		return false
+	}
+	return fa-fb == 1 || fb-fa == 1
+}
+
+// hurtBadly: under half HP - a member hurt alone in a dungeon goes back to town to heal.
+func (b *Bot) hurtBadly() bool {
+	return b.MaxHP > 0 && b.HP*2 < b.MaxHP
 }
 
 // friendOnFloor: the human leader or another online friend of the party is on floor m (seen recently).

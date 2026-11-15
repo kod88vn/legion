@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -12,7 +13,8 @@ func TestRestClauseOnlyRealRests(t *testing.T) {
 			t.Errorf("%q is not a rest line", line)
 		}
 	}
-	for _, line := range []string{"need sp, resting", "resting", "rest", "sit down", "brb sp", "need a break", "sitting down."} {
+	for _, line := range []string{"need sp, resting", "resting", "rest", "sit down", "brb sp", "need a break", "sitting down.",
+		"gotta rest a bit", "need to sit", "resting for a sec", "gotta sit down", "ok resting a bit", "got to rest now"} {
 		if !humanRestClause(line) {
 			t.Errorf("%q is a rest line", line)
 		}
@@ -96,5 +98,46 @@ func TestDungeonFloorNeedsFriend(t *testing.T) {
 	}
 	if friendOnFloor(p, m, "pay_dun00", now.Add(3*time.Minute)) {
 		t.Fatal("an old sighting of the leader does not count")
+	}
+}
+
+// Review of 133adda (Major 1, 2): escortGate itself. A member alone on a dungeon floor holds there while the leader is
+// elsewhere; a portal to the next floor (one floor apart) is followed; a member deeper than her holds too.
+func TestEscortGateFloorsDriven(t *testing.T) {
+	now := time.Now()
+	human := "EscortDriveHuman"
+	defer humanLocs.Delete(human)
+	mk := func(name, floor string) (*Bot, *Party) {
+		b := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: name}}}, MapName: floor,
+			MaxHP: 3500, HP: 3500, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+		return b, &Party{Human: human, Members: []*Bot{b}}
+	}
+	cases := []struct {
+		name, member, leader string
+		hold                 bool // the member must hold on its own floor
+	}{
+		{"portal next floor", "pay_dun00", "pay_dun01", false},
+		{"she is far below", "pay_dun00", "pay_dun03", true},
+		{"deeper than her, two floors", "pay_dun03", "pay_dun01", true},
+		{"deeper than her, one floor", "pay_dun02", "pay_dun01", false},
+	}
+	for i, c := range cases {
+		b, p := mk("escortdrive"+string(rune('a'+i)), c.member)
+		humanLocs.Store(human, humanSeen{Map: c.leader, At: now})
+		town, why := b.escortGate(p, c.leader, now)
+		held := town == c.member && strings.HasPrefix(why, "waiting on this floor")
+		if held != c.hold {
+			t.Errorf("%s: escortGate(%s -> %s) = %q %q, hold %v", c.name, c.member, c.leader, town, why, c.hold)
+		}
+		if !c.hold && (town != "" || why != "") {
+			t.Errorf("%s: a portal lag must not send the member anywhere: %q %q", c.name, town, why)
+		}
+	}
+	// hurt alone on a floor: never the hold (it goes to town to heal)
+	b, p := mk("escortdrivehurt", "pay_dun00")
+	b.HP = 500
+	humanLocs.Store(human, humanSeen{Map: "pay_dun03", At: now})
+	if _, why := b.escortGate(p, "pay_dun03", now); strings.HasPrefix(why, "waiting on this floor") {
+		t.Error("a hurt member alone on a floor must not hold there")
 	}
 }
