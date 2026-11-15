@@ -105,3 +105,4 @@ start anything.
 
 - Next regular batch (after the 03:34 one, gate ~06:35): fix/market-stall a5ce919 (vending pitch leak, stuck carts, double-promised stock).
 - Also next batch: fix/loot-filter b19f809 (party members leave cheap heavy junk).
+- Also next batch: fix/rotate-safe a37cea5 (rotation only in town; members wait at the Kafra town instead of walking into a dungeon alone).
