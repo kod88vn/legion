@@ -1,0 +1,2 @@
+# Test names gocheck.sh reports but does not fail on (one per line). Empty on main as of 2026-11-14:
+# every test passes or skips offline.
