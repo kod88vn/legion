@@ -39,6 +39,9 @@ var (
 	ltUnit = time.Second
 )
 
+// ltGo: starts a delayed line on its own goroutine (a seam: the unit tests track these and wait for them, not sleep).
+var ltGo = func(f func()) { go f() }
+
 // ---- what each bot said lately in party chat (partySay hook): a decision already spoken isn't spoken twice ----
 
 type saidLine struct {
@@ -408,11 +411,11 @@ func (p *Party) leaderTalkTick(st *ltState, now time.Time) {
 		if !trAt.IsZero() && now.Sub(trAt) < 90*time.Second && trTown != "" {
 			st.trOpen, st.trAt, st.trWent = true, trAt, map[string]bool{}
 			line := styled(typingOf(l), townRunPlanLine(trBy, ls.Name, trTown, pm))
-			say := ltSay
-			go func() {
-				time.Sleep(time.Duration(2+crand(3)) * ltUnit)
+			say, wait := ltSay, time.Duration(2+crand(3))*ltUnit
+			ltGo(func() {
+				time.Sleep(wait)
 				say(l, line)
-			}()
+			})
 		}
 	}
 	// 3. the town run is over: everyone back, or the leader goes on without the late ones
@@ -501,13 +504,14 @@ func namedOnly(ms []ltMember, names []string) []ltMember {
 // sayLater: the leader says line (styled) after delay seconds, from its own goroutine.
 func sayLater(l *Bot, line string, delay int) {
 	typing := typingOf(l)
-	say := ltSay
-	go func() {
-		if delay > 0 {
-			time.Sleep(time.Duration(delay+crand(3)) * ltUnit)
-		}
+	say, wait := ltSay, time.Duration(0)
+	if delay > 0 {
+		wait = time.Duration(delay+crand(3)) * ltUnit
+	}
+	ltGo(func() {
+		time.Sleep(wait)
 		say(l, styled(typing, line))
-	}()
+	})
 }
 
 // ackLater: up to n online members answer the leader's plan briefly, each with chance pr.
@@ -525,12 +529,12 @@ func ackLater(ms []ltMember, n int, pr float64, line func() string) {
 			continue
 		}
 		said++
-		typing, text := typingOf(m.b), line()
-		say := ltSay
-		go func(b *Bot, d int) {
-			time.Sleep(time.Duration(d) * ltUnit)
+		typing, text, b := typingOf(m.b), line(), m.b
+		say, wait := ltSay, time.Duration(5+crand(6)+said*3)*ltUnit
+		ltGo(func() {
+			time.Sleep(wait)
 			say(b, styled(typing, text))
-		}(m.b, 5+crand(6)+said*3)
+		})
 	}
 }
 
