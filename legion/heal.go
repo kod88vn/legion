@@ -298,6 +298,22 @@ func (b *Bot) lowHPGuard(gm *GameMap, moving bool, now time.Time) bool {
 		b.setState(fmt.Sprintf("low HP (%d%%): going back to %s to rest", int(hp*100), anchor.Name))
 		return true
 	}
+	// restfollow.go: the party went on to another map - follow it first (drinking on the way), rest with it there
+	if m, ok := b.partyAwayMap(now); ok && (hp >= 0.2 || b.pickPotion(false) >= 0) { // nearly dead with no potion: rest
+		b.wantSit = false
+		if b.Sitting && now.Sub(b.sitSentAt) > time.Second {
+			b.sitSentAt = now
+			go b.stand()
+		}
+		if hp < 0.5 && now.After(b.potAt) {
+			if idx := b.pickPotion(false); idx >= 0 {
+				b.potAt = now.Add(time.Second)
+				go b.useItem(idx)
+			}
+		}
+		b.restFollowSay(m, now)
+		return false // the normal flow travels to the party's map (humanPartySync / partyThink goal)
+	}
 	b.target, b.wantSit = 0, true
 	if !b.Sitting && !moving && !b.poisoned(now) && now.Sub(b.sitSentAt) > 2*time.Second && b.basicLv() >= 3 {
 		b.sitSentAt = now
