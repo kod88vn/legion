@@ -72,11 +72,17 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(buildexport.solo_clauses("Solo: no boss/swarm, Fire Wall vs a walker; quick"),
                          ["Solo: no boss/swarm, Fire Wall vs a walker"])
 
-    def test_knight_assassin_hunter_solo_stays_not_defined(self):
+    def test_knight_assassin_hunter_solo_is_draft_text_not_the_doc_false_hits(self):
+        # the three doc false hits (Fly Wing, solo trip, solo DS Hunters) are never used; the design draft's solo
+        # text fills the gap instead, labelled draft (owner to confirm)
         by = {b["id"]: b for b in load_export()["builds"]}
         for bid in ("knight", "assassin", "hunter"):
-            self.assertEqual(by[bid]["playstyle"]["solo"]["status"], "gap", bid)
-            self.assertEqual(by[bid]["playstyle"]["solo"]["lines"], [], bid)
+            solo = by[bid]["playstyle"]["solo"]
+            self.assertEqual(solo["status"], "draft", bid)
+            self.assertTrue(solo["lines"], bid)
+            for line in solo["lines"]:
+                self.assertTrue(line["source"].startswith("draft: legion/data/buildmilestones.json"), bid)
+                self.assertNotIn("docs/classes", line["source"], bid)
 
     def test_mage_and_acolyte_solo_text_is_defined(self):
         # docs/classes/mage.md:26 (wizard, sage plans) and acolyte.md:26-27 (priest plans) describe solo play
@@ -84,10 +90,46 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(by["wizard"]["playstyle"]["solo"]["status"], "defined")
         self.assertEqual(by["priest"]["playstyle"]["solo"]["status"], "defined")
 
-    def test_pvp_is_a_gap_everywhere(self):
+    def test_pvp_is_draft_or_gap_and_never_unlabelled(self):
         for b in load_export()["builds"]:
-            self.assertEqual(b["playstyle"]["pvp"]["status"], "gap", b["id"])
-            self.assertEqual(b["playstyle"]["pvp"]["lines"], [], b["id"])
+            pvp = b["playstyle"]["pvp"]
+            self.assertIn(pvp["status"], ("draft", "gap"), b["id"])
+            if pvp["status"] == "gap":
+                self.assertEqual(pvp["lines"], [], b["id"])
+            else:
+                self.assertEqual(pvp["note"], "draft for owner review", b["id"])
+                self.assertTrue(all(l["source"].startswith("draft:") for l in pvp["lines"]), b["id"])
+
+    def test_part_counts_split_defined_from_draft_per_part(self):
+        doc = load_export()
+        pc = doc["part_counts"]
+        self.assertEqual(sorted(pc), ["mvp", "pvp", "solo"])
+        for part in ("solo", "mvp", "pvp"):
+            c = pc[part]
+            self.assertEqual(c["defined"] + c["draft"] + c["gap"], len(doc["builds"]), part)
+            self.assertEqual(c["defined"], sum(1 for b in doc["builds"] if b["playstyle"][part]["status"] == "defined"), part)
+            self.assertEqual(c["draft"], sum(1 for b in doc["builds"] if b["playstyle"][part]["status"] == "draft"), part)
+        # knight solo is draft only (owner call: the draft fills it, labelled)
+        self.assertGreater(pc["solo"]["draft"], 0)
+
+    def test_every_draft_playstyle_part_is_labelled(self):
+        for b in load_export()["builds"]:
+            for part, val in b["playstyle"].items():
+                if val["status"] == "draft":
+                    self.assertEqual(val["note"], "draft for owner review", (b["id"], part))
+                    self.assertTrue(all(l["source"].startswith("draft: legion/data/buildmilestones.json")
+                                        for l in val["lines"]), (b["id"], part))
+
+    def test_plan_check_warnings_come_from_the_draft(self):
+        by = {b["id"]: b for b in load_export()["builds"]}
+        knight = by["knight"]["plan_check"]
+        self.assertEqual(knight["status"], "draft")
+        self.assertTrue(any("STR 90" in w and "AGI 85" in w for w in knight["warnings"]), knight["warnings"])
+        self.assertTrue(any("1408 points" in w for w in knight["warnings"]), knight["warnings"])
+        # a build whose plan reaches every goal has no unreached-goal warning
+        for w in by["hunter_blitz"]["plan_check"]["warnings"]:
+            self.assertNotIn("never reached", w)
+        self.assertEqual(knight["figures"]["stat_goals_unreached"], ["STR 90", "AGI 85"])
 
     def test_gap_list_matches_the_parts_marked_gap(self):
         doc = load_export()
@@ -103,9 +145,52 @@ class ExportTests(unittest.TestCase):
             if table_id in gear:
                 self.assertEqual(len(b["milestones"]), len(gear[table_id]["bands"]), b["id"])
             for m in b["milestones"]:
-                self.assertEqual(m["stats"]["status"], "gap")
-                self.assertEqual(m["skills"]["status"], "gap")
                 self.assertEqual(m["range"], "%s-%s" % (m["min"], m["max"]))
+                self.assertIn(m["stats"]["status"], ("draft", "gap"))
+                self.assertIn(m["skills"]["status"], ("draft", "gap"))
+
+    def test_milestone_stats_and_skills_are_the_draft_values(self):
+        with open(os.path.join(REPO, "legion", "data", "buildmilestones.json"), encoding="utf-8") as f:
+            draft = json.load(f)["builds"]
+        by = {b["id"]: b for b in load_export()["builds"]}
+        for bid, entry in draft.items():
+            rows = by[bid]["milestones"]
+            self.assertEqual([r["range"] for r in rows], [r["range"] for r in entry["ranges"]], bid)
+            for row, want in zip(rows, entry["ranges"]):
+                self.assertEqual(row["stats"]["status"], "draft", bid)
+                self.assertEqual(row["stats"]["values"]["STR"], want["stats"]["STR"], bid)
+                self.assertEqual(row["skills"]["items"], want["skills"], bid)
+                self.assertEqual(row["stats"]["points"]["spare"], want["stat_points_spare"], bid)
+                self.assertIn("draft:", row["stats"]["source"], bid)
+
+    def test_milestones_read_at_export_time_not_a_frozen_copy(self):
+        with open(os.path.join(REPO, "legion", "data", "buildmilestones.json"), encoding="utf-8") as f:
+            draft = json.load(f)
+        draft["builds"]["knight"]["ranges"][0]["stats"]["STR"] = 99
+        tmp = tempfile.mkdtemp()
+        path = os.path.join(tmp, "buildmilestones.json")
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(draft, f)
+        items, skills, _ = buildexport.lookup_names()
+        doc = buildexport.build_export(items, skills, {"MILESTONES": path})
+        knight = next(b for b in doc["builds"] if b["id"] == "knight")
+        self.assertEqual(knight["milestones"][0]["stats"]["values"]["STR"], 99)
+
+    def test_engine_gear_hook_is_inert_until_the_file_exists(self):
+        by = {b["id"]: b for b in load_export()["builds"]}
+        for row in by["knight"]["milestones"]:
+            self.assertTrue(row["gear"]["source"].startswith("legion/data/buildgear.json"), row["range"])
+
+    def test_engine_gear_hook_is_used_when_the_file_exists(self):
+        tmp = tempfile.mkdtemp()
+        path = os.path.join(tmp, "buildmilestones_gear.json")
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            json.dump({"builds": {"knight": {"ranges": [
+                {"min": 1, "max": 99, "slots": {"weapon": [1201]}}]}}}, f)
+        items, skills, _ = buildexport.lookup_names()
+        doc = buildexport.build_export(items, skills, {"ENGINE_GEAR": path})
+        knight = next(b for b in doc["builds"] if b["id"] == "knight")
+        self.assertTrue(all(r["gear"]["source"].startswith("engine milestone gear") for r in knight["milestones"]))
 
     def test_the_export_is_the_same_as_a_fresh_run_in_every_value(self):
         # the committed file must equal what the Go source says now: every value, not only the ids and gaps
@@ -219,7 +304,8 @@ class RouteAndTabTests(unittest.TestCase):
         for t in ["ayla", "legion", "economy", "puppet", "leaderboard", "players", "system"]:   # G08: nothing removed
             self.assertIn("data-tab=\"%s\"" % t, html)
         self.assertIn("'system', 'builds'", html)
-        for cls in (".bd-part", ".bd-card", ".bd-gap"):   # each class the tab uses has a rule
+        for cls in (".bd-part", ".bd-card", ".bd-gap", ".bd-draft", ".bd-warn"):   # each class the tab uses has a rule
+            self.assertIn(cls, html)
             self.assertRegex(html, re.escape(cls) + r"\s*\{", cls)
 
 

@@ -154,6 +154,9 @@ a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; }
 .tab { display: none; } .tab.cur { display: block; }
 .bd-card { margin-top: 12px; } .bd-part { margin: 4px 0; font-size: 12.5px; line-height: 1.45; }
 .bd-gap { color: var(--muted); font-style: italic; }
+.bd-draft { display: inline-block; font-size: 10.5px; padding: 0 5px; border: 1px solid var(--muted); border-radius: 3px; color: var(--muted); vertical-align: 1px; }
+.bd-count { display: inline-block; margin-right: 12px; }
+.bd-warn { color: var(--warn, #b45309); font-size: 12.5px; margin-left: 12px; }
 .banner { border: 1px solid #6b2a2a; background: #2a1616; color: #ffc9c9; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
 .banner.info { border-color: var(--border); background: var(--surface); color: var(--text-2); }
 .banner:empty { display: none; }
@@ -299,6 +302,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
   <section class="tab" id="tab-builds">
     <div class="card"><h2>Builds <small id="bdNote"></small> <button type="button" id="bdReload" class="lnk" style="font-size:12px">reload</button></h2>
       <div id="bdAge" style="font-size:12.5px;color:var(--muted)"></div>
+      <div id="bdCounts" style="font-size:12.5px;margin-top:4px"></div>
       <div style="font-size:12.5px;margin-top:6px">Each card leads with the end goal (the 2nd job, with its gear and cards, stats, skills and playstyle). The middle steps the engine uses to get there are below it. Where the code or the docs say nothing, the part reads "not defined". Source: legion/builds.go, legion/data/buildgear.json, docs/classes/*.md.</div>
     </div>
     <div id="bdCards"><div class="empty">loading builds...</div></div>
@@ -1523,9 +1527,15 @@ onShow.players = () => { if (!PL.res) refreshPlayers(); };
 
 // ======================= Builds tab (DB09): end goal first, middle steps below =======================
 let BD = null;
+const bdTag = s => s === 'draft' ? ' <span class="bd-draft">DRAFT</span>' : '';
 const bdPart = (label, p) => p.status === 'gap'
   ? `<div class="bd-part"><b>${esc(label)}:</b> <span class="st-down">not defined</span> <span style="color:var(--muted)">(gap: ${esc(p.note)})</span></div>`
-  : `<div class="bd-part"><b>${esc(label)}:</b> ${p.lines.map(l => `${esc(l.text)} <span style="color:var(--muted)">[${esc(l.source)}]</span>`).join('<br>')}</div>`;
+  : `<div class="bd-part"><b>${esc(label)}:</b>${bdTag(p.status)} ${p.lines.map(l => `${esc(l.text)} <span style="color:var(--muted)">[${esc(l.source)}]</span>`).join('<br>')}</div>`;
+// plan_check: the points and goals the plan needs, as warnings (draft figures from the design file)
+const bdPlan = pc => !pc || pc.status === 'gap' ? '' :
+  `<div class="bd-part"><b>Plan check</b>${bdTag('draft')}: ${pc.warnings.length
+    ? pc.warnings.map(w => `<div class="bd-warn">Warning: ${esc(w)}</div>`).join('')
+    : '<span style="color:var(--muted)">no warnings</span>'} <span style="color:var(--muted)">[${esc(pc.source)}]</span></div>`;
 const bdGear = slots => Object.entries(slots || {}).map(([s, n]) => `${esc(s)}: ${esc(n)}`).join(' · ') || '–';
 function bdCard(b, live) {
   const L = live && live.per_build ? live.per_build[b.id] : null;
@@ -1535,12 +1545,21 @@ function bdCard(b, live) {
   const steps = L ? `<ol>${b.steps.stats.map((s, i) => `<li>${esc(s.label)} <span style="color:var(--muted)">· ${fmt(L.stat_steps[i].bots)} bots on this step now</span></li>`).join('')}</ol>` : '';
   const sks = L ? `<ol>${b.steps.skills.map((s, i) => `<li>${esc(s.name)} ${s.lv} <span style="color:var(--muted)">· ${fmt(L.skill_steps[i].bots)} bots now</span></li>`).join('')}</ol>` : '';
   const gearSteps = L ? Object.entries(L.gear_steps).map(([k, n]) => `${esc(k)}: ${fmt(n)}`).join(' · ') : '';
-  const ms = b.milestones.map(m => `<tr><td>${esc(m.range)}</td><td>${bdGear(m.gear.slots)}</td><td>${m.cards.map(c => esc(c.name)).join(', ') || '–'}</td>` +
-    `<td class="bd-gap">gap: ${esc(m.stats.note)}</td><td class="bd-gap">gap: ${esc(m.skills.note)}</td></tr>`).join('');
+  const ms = b.milestones.map(m => {
+    const gear = m.gear.status === 'gap' ? `<span class="bd-gap">gap: ${esc(m.gear.note)}</span>` : bdGear(m.gear.slots);
+    const st = m.stats.status === 'draft'
+      ? `${Object.entries(m.stats.values).map(([k, v]) => `${esc(k)} ${v}`).join(' · ')}${bdTag('draft')}<div class="bd-gap">spare ${esc(m.stats.points.spare)} points, source ${esc(m.stats.source)}</div>`
+      : `<span class="bd-gap">gap: ${esc(m.stats.note)}</span>`;
+    const sk = m.skills.status === 'draft'
+      ? `${m.skills.items.map(s => `${esc(s.name)} ${s.lv}`).join(' · ') || '–'}${bdTag('draft')}<div class="bd-gap">unspent ${esc(m.skills.unspent)}, source ${esc(m.skills.source)}</div>`
+      : `<span class="bd-gap">gap: ${esc(m.skills.note)}</span>`;
+    return `<tr><td>${esc(m.range)}</td><td>${gear}</td><td>${m.cards.map(c => esc(c.name)).join(', ') || '–'}</td><td>${st}</td><td>${sk}</td></tr>`;
+  }).join('');
   return `<div class="card sec bd-card" id="bd-${esc(b.id)}">
     <h2>${esc(b.name)} <small>${esc(b.class.line)} · plan <code>${esc(b.id)}</code>${b.base ? ' · variant of ' + esc(b.base) : ''}</small></h2>
     <div style="font-size:12.5px">${esc(b.summary)}</div>
     <div style="font-size:12px;color:var(--muted);margin-top:4px">${counts}</div>
+    ${bdPlan(b.plan_check)}
     <h3>End goal (${esc(b.class.name)})</h3>
     <div class="bd-part"><b>Equipment:</b> ${bdGear(e.gear.slots)}</div>
     <div class="bd-part"><b>Cards:</b><br>${cards}</div>
@@ -1570,6 +1589,10 @@ async function refreshBuilds() {
   const lv = BD.live || {};
   const ageS = BD.generated_epoch ? Date.now() / 1000 - BD.generated_epoch : null;
   $('bdNote').textContent = `${BD.builds.length} build paths · ${BD.gaps.length} not-defined gaps`;
+  const pc = BD.part_counts || {};
+  const pn = {solo: 'Solo', mvp: 'MVP', pvp: 'PvP'};
+  $('bdCounts').innerHTML = ['solo', 'mvp', 'pvp'].filter(k => pc[k]).map(k =>
+    `<span class="bd-count"><b>${pn[k]}</b>: ${fmt(pc[k].defined)} defined in code or docs · ${fmt(pc[k].draft)} draft only (owner review)${pc[k].gap ? ' · ' + fmt(pc[k].gap) + ' not defined' : ''}</span>`).join(' ');
   $('bdAge').textContent = `Build data exported ${BD.generated} (${ageTxt(ageS)} old, tools/dashboard/buildexport.py) · bot counts from ${lv.snapshot || 'no DB snapshot'}${lv.snapshot_t ? ' (' + ageTxt(Date.now() / 1000 - lv.snapshot_t) + ' old)' : ''}${lv.error ? ' · ' + lv.error : ''}`;
   $('bdCards').innerHTML = BD.builds.map(b => bdCard(b, lv)).join('');
 }
