@@ -64,5 +64,6 @@ One line per rule: ID, statement, date. Owner words in `archive.md`.
 - EC32. Bots read the Prontera market (what sells, at what price, what buyers want that nobody sells) and farm the gaps, but only if a map safe for their level drops the item. (2026-11-14)
 - EC33. Bots say what they find in natural #trade/#global talk, rate-limited to about 10-30 public lines a minute, so other bots and humans hear it and can act on it (farm it, list it, buy it). (2026-11-14)
 - EC34. A glut (price near or under NPC value, many sellers) sends bots to farm items that pay better, so the price recovers. (2026-11-14)
+- EC37. Junk is judged by value per weight: low-value, heavy items are dropped or left on the ground, and high-value items are kept to sell. This applies to the whole Legion, bots and Ayla's party alike, and cuts town runs. (2026-11-15)
 - EC35. Merchants with an open shop occasionally announce its rare items (cards, katana and the like) in #trade so buyers know; natural wording, not spam, within the EC33 rate limit. (2026-11-14)
 - EC36. A solo bot, or a party gathering at a Kafra before setting out, uses idle time for errands (sell, store, restock). A party member does errands only on the party town run (PT22/PT24) or at 50% weight (EC28); otherwise it farms near the party (PT18). (2026-11-14)

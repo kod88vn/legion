@@ -1,5 +1,24 @@
 # STATUS - read this first
 
+## 2026-11-15 09:05 local: everything shut down for a system redesign (owner order)
+The owner said "we need a system redesign. Shut down everything". All six containers are stopped (`docker stop`: legion,
+legion-core, openkore-ayla, rathena, agency, db), all loops are stopped (sentinel, partycheck, dispatcher, aylalog,
+bugq watch, unwall), and `stack.hold` is set. Nothing was deleted. Do not start anything until the owner says so; the
+"all systems on" order of 2026-11-14 (G21, PR37) no longer applies. The owner's complaints that the redesign must answer:
+- Ayla's party sat idle or scattered most of the time and made about 33-45k base exp/h at level 83.
+- The self-learning loop did not work: the league was blind after every restart, fixes were loaded without being
+  verified in the log, and the bug queue was not triaged (65 distinct open problems after a dedupe).
+- The main session coded and loaded instead of only listening and assigning.
+- The goal "runs without AI" is not reached; the agents are meant to build toward it.
+Not deployed, left on branches: batch/regular-2 (market-stall, loot-filter, rotate-safe, travel-share),
+fix/metrics-loop (meter persistence, leaderboard), fix/sentinel-algo, fix/rotation-off; on main but not in an image:
+catch-up-first 496790d. Ayla's partylead.pl on main is dce4c68 (the last loaded version is b3028a5).
+
+### 2026-11-15: the Constitution is in force
+Read `CONSTITUTION.md` first. The redesign starts from it, part by part with the owner. The owner agreed that retiring
+the watchdog, party watcher, QA and the other agents was a mistake; they come back in the redesign. Nothing has been
+started.
+
 **Nothing is running, on purpose.** The owner said on 2026-11-14: "go ahead and proceed to implement, do not start any
 server, we will test after I restart this machine". Do not start containers, background loops, minds or agents until
 the owner says so.

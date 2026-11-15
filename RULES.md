@@ -4,6 +4,9 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 
 **Goal (PR03).** A Matrix-like simulation of real people. Judge every choice by "what would real players and a normal society do?" When no rule covers a case, pick the most natural human behaviour: no mechanical shortcuts, no mass actions, believable pacing. Everything built is on (G21, PR37); ask only before hard-to-reverse actions (G22).
 
+## The Constitution comes first
+`CONSTITUTION.md` (approved by the owner, 2026-11-15) is the highest law, above everything in this file and in `docs/rules/`. Read it in full before anything else; it is never shortened or summarised here. A line below that conflicts with it is void, and the conflict is reported to the owner.
+
 ## Hard gates (the full register with enforcement is `docs/rules/gates.md`)
 - G01 (SA01) Never drive any client with the real mouse or keyboard. Only the Wine client on virtual display :98, or OpenKore.
 - G02 (SA02) No fullscreen for the owner's client.
@@ -17,7 +20,7 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 - G10 (ST01) The server caps at transcendent classes: no 3rd or 4th jobs.
 - G11 (EC02) A wrong build is deleted and restarted only on bot accounts, never on humans or Ayla's party.
 - G12 (AY09) Nothing may send away Ayla's zeny if it would leave her under 10,000z; under 10,000z she sends none.
-- G13 (PR23) The main session never controls Ayla (no map orders, rallies, party lines or moves); it has root-cause bugs fixed. Passing the owner's own words to Ayla or her Haiku helper (AY20) is not control; owner-ordered restarts of her OpenKore are done by a subagent (G14).
+- G13 (PR23) The main session never controls Ayla (no map orders, rallies, party lines or moves); it sends her nothing (Constitution 1.3) and has root-cause bugs fixed. The owner's own instructions to her (AY20) and owner-ordered restarts of her OpenKore go through an agent.
 - G14 (PR11) The main session does no coding: it listens to the owner and bug reports and assigns fixers. All coding, fixes and deploys are done by subagents.
 - G15 (PR29) Deploys never recreate rathena by accident: only `legion`/`legion-core` with `--no-deps`. Recreating rathena also recreates Ayla's OpenKore and the legion containers.
 - G16 (PR30) Restart or recreate rathena at most once an hour.

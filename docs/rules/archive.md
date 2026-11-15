@@ -1507,6 +1507,31 @@ Kind: behaviour spec. First date: undated (2026-11-13 or earlier).
 - Show world data, the minds (talk to them), guilds, and parties with each member's HP, SP and zeny.
 ```
 
+## EC37 - Junk by value per weight, whole Legion (2026-11-15)
+```text
+"another rule for the entire legion. for all junks, there's a weight/value ratio. Drop those lovel values to reduce town run frequency. Keep higher value to sell"
+```
+
+## PT33 - Town-run requests answered; 50% weight is critical (2026-11-15)
+```text
+"party member is asking for town run and ayla is not repsonding. ALso 50% is a critial town run, must go even if ayla not responding. Can catch up later"
+```
+
+## AY23 - Ayla collects her group (2026-11-15)
+```text
+"ayla also needs to have a tendency to go and collect her group. Just not so easy that made her bounce back and forth all the time. Have some 10 seconds delay to wait for catch up. If they don't then come back. If they have town run then leave them"
+```
+
+## PT32b - Catch up with the leader first, then fight (2026-11-15)
+```text
+"make the rule so party member always try to catch up with party leader first, engaging mobs second"
+```
+
+## DB04 - Retired agents under a collapsed Retired section (2026-11-15)
+```text
+"dashboars still showed a lot of agents that were retired. Check and remove" / answer: "1"
+```
+
 ## DB02 - Owner can close and reopen mind chats
 
 Kind: behaviour spec. First date: undated (2026-11-13 or earlier).
@@ -1846,6 +1871,16 @@ Kind: process rule. First date: 2026-11-14.
 "keep the alchemist in the guild but remove it from the party, let it be an indepenent bot. Replace it with a monk who can fight and buff"
 ```
 
+## GD06 - Owner's GM account joins Starveil (2026-11-15)
+```text
+"add my GM account to her guild"
+```
+
+## AY11 (changed, 2026-11-15)
+```text
+"reduce her party to 5: priest, crusader, hunter, wiz and herself"
+```
+
 ## AY05 (owner reversed to Haiku control)
 ```text
 "openkore crashed. Restart. Let haiku control Ayla again to avoid this issue. Must keep openkore running"
@@ -1873,4 +1908,25 @@ Resolved by newest owner word per PR41; see coverage.md.
 ## AY15 (confirmed)
 ```text
 "do rotate, keep priest and role functions, feel free to swap"
+```
+
+## AY15 (stopped, 2026-11-15)
+```text
+"ok, stop the rotation experiment it does not work"
+```
+
+## C1 (constitution, 2026-11-15)
+```text
+"the biggest problem is several master hard rules you kept ignoreing. These must be the constitution that no fololowing up rules can override: 1 the main session does not do any fucking shit, it listen to my rant, collect buf report and assign tasks to fixer only."
+```
+
+## Constitution (approved 2026-11-15; text in `CONSTITUTION.md`)
+```text
+"let's first draft the highest order of rules - constitution: I need you to rwrite it not like an add on but as a dedicated holy bible: 1 main session communicates with owner, it does not actually do anything, it listens, assign tasks only. 2 the matrix like mechanism. I explained this before, I want you to rewrite it. 3 the self learning/improving loop, the disaster was mainly here, you did not fix the bug queue, the system agents went offline and you did not know. Get those 3 thiungs right. Write the constitution and let me review"
+"ok, write it down. I agree the retired agents were done mistakenly. This must be thr prompt every agent reads. Cannot be shorted, cannot be ignored"
+```
+
+## PR42
+```text
+"the constitution must be read upfront. You do not need to repeat the points. Just make it so every agent read it at first. Avoid duplication as general rule to avoid wasting tokens"
 ```

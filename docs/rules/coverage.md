@@ -152,14 +152,20 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | AY08 | Every mind can look up game data (drops, mobs, maps) | behaviour spec | RULES 5 (l.475) | docs/rules/process.md | moved (applies to all agents) |
 | AY09 | Ayla keeps at least 10,000 zeny | hard gate | RULES 5 (l.479) | RULES.md as G12 | kept as hard gate |
 | AY10 | Ayla's party gets a Hunter and an Alchemist | behaviour spec | RULES 5 (l.482) | docs/rules/ayla.md | merged into AY11 roster line |
-| AY11 | Ayla's party gets a Crusader (party of 7) | behaviour spec | RULES 5 (l.485) | docs/rules/ayla.md | kept |
+| GD06 | Owner's GM account wander joins guild Starveil (2026-11-15) | behaviour spec | RULES 5 | docs/rules/ayla.md | kept |
+| AY11 | Ayla's party of 5: Ayla, Priest, Crusader, Hunter, Wizard (2026-11-15) | behaviour spec | RULES 5 (l.485) | docs/rules/ayla.md | replaced |
 | AY12 | Ayla founds guild Starveil, recruits all jobs, no Emperium | behaviour spec | RULES 5 (l.487) | docs/rules/ayla.md | kept |
 | AY13 | Ayla is a real guild leader: resources, balanced recruiting | behaviour spec | RULES 5 (l.491) | docs/rules/ayla.md | kept |
 | AY14 | Old seed bot AIBot is switched off | server setting | RULES 5 (l.496) | docs/rules/settings.md | moved |
-| AY15 | Rotate party members through other jobs; keep the priest | behaviour spec | RULES 5 (l.498) | docs/rules/ayla.md | kept |
+| AY15 | No member rotation in Ayla's party (rotation experiment stopped 2026-11-15) | behaviour spec | RULES 5 (l.498) | docs/rules/ayla.md | replaced |
 | AY16 | Always close popups on Ayla's screen | behaviour spec | RULES 5 (l.499) | docs/rules/ayla.md | kept |
 | AY17 | Owner watches Ayla in the TigerVNC window | behaviour spec | RULES 5 (l.502) | docs/rules/ayla.md | replaced (see the 2026-11-14 AY17 row) |
 | DB01 | Dashboard shows world, minds, guilds, parties with HP/SP/zeny | behaviour spec | RULES 6 (l.505) | docs/rules/process.md | moved |
+| EC37 | Junk judged by value per weight across the whole Legion; keep high-value items to sell (2026-11-15) | behaviour spec | RULES 4 | docs/rules/economy.md | kept |
+| PT33 | Town-run requests answered; a member at 50% weight goes to town even if the leader is silent (2026-11-15) | behaviour spec | RULES 4 | docs/rules/parties.md | kept |
+| AY23 | Ayla collects her group: 10 s wait, then go back; no bouncing; town-run members left (2026-11-15) | behaviour spec | RULES 5 | docs/rules/ayla.md | kept |
+| PT32b | Party members catch up with the leader first, then engage monsters (2026-11-15) | behaviour spec | RULES 4 | docs/rules/parties.md | kept |
+| DB04 | Retired agents under a collapsed Retired section, nothing removed (2026-11-15) | behaviour spec | RULES 6 | docs/rules/process.md | kept |
 | DB02 | Owner can close and reopen mind chats | behaviour spec | RULES 6 (l.506) | docs/rules/process.md | moved |
 | CL01 | Every class uses AoE skills on crowds, aimed at the central mob | behaviour spec | CLASSES All (l.22) | docs/classes/all.md | kept |
 | CL02 | Tanks are active: pull, take aggro, deal damage | behaviour spec | CLASSES All (l.28) | docs/classes/all.md | kept |
@@ -198,6 +204,8 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | AY17 | No watch client for Ayla; owner watches via GM account; OpenKore log in a terminal | ayla | owner 2026-11-14 | docs/rules/ayla.md | replaced |
 | PT30 | Duplicate of the existing leader-plan rule (parties.md l.55-57); merged there, not a new line | parties | owner 2026-11-14 | docs/rules/parties.md | merged |
 | PR41-review | 2026-11-15 conflict review applied (20 items) | process | main | docs/rules/* | amended |
+| PR42 | Nothing is written twice; the constitution is read first and once, never restated (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| Constitution | Highest law, three articles (main session, the Matrix world, the self-improving loop); every agent reads it in full; G13, PR23 and AY21 amended to fit (2026-11-15) | constitution | owner 2026-11-15 | CONSTITUTION.md | new, above all rules |
 
 Changes after the trim: 2026-11-14 the owner removed the human part of G20 and added gate G25 (no in-world
 discrimination between humans and other players); GD06 has no human exception. Owner's words in `archive.md` (G20, G25, GD06).

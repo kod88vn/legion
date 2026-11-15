@@ -10,7 +10,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - PR12. Puppet masters run as their own agents outside the main session. One-shot runs woken by a dispatcher script are from the approved redesign brief, not an owner quote. (2026-11-14)
 - PR11 / G14. The main session listens to the owner and to bug reports and assigns fixers. It does no coding. All coding,
   fixes and deploys are done by subagents. (2026-11-14)
-- PR23 / G13. The main session never sends orders to Ayla. Owner-reported problems go to a fixer as root-cause bugs. Passing the owner's own words to Ayla or her Haiku helper (AY20) is not control; owner-ordered restarts of her OpenKore are done by a subagent (G14). (2026-11-14)
+- PR23 / G13. The main session never sends orders to Ayla. Owner-reported problems go to a fixer as root-cause bugs. It sends her nothing (Constitution 1.3); the owner's own instructions to her (AY20) and owner-ordered restarts of her OpenKore go through an agent. (2026-11-14, amended 2026-11-15)
 - PR31 / G24. Only the deploy agent runs go vet/test and image builds; fixers hand over "code ready". The deploy agent may stop
   stray golang build/test containers that block a deploy, never rathena, Ayla, legion or the db. (2026-11-14)
 - PR36. (from the approved redesign brief, not an owner quote) Scripts do the watching (sentinel, partycheck, league analyst, dispatcher and sentinel heartbeats). An AI agent is
@@ -59,6 +59,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
   under the same ID, and a row in `coverage.md`; a new hard gate also gets a G ID in `gates.md` and the core. A new rule that
   replaces an old one edits the old line. (2026-11-14)
 - PR01. Rules are short plain lines with an ID and a date. They never repeat the owner's prompt. (2026-11-14)
+- PR42. Nothing is written twice. A rule, fact or instruction lives in one place and everything else points to it; every agent reads the constitution first and exactly once, and no prompt, brief, skill, rule or reply restates it. (2026-11-15)
 - G15 / G16 / G17. Deploy rules: legion/legion-core only with `--no-deps`; rathena restart at most once an hour; deploys every
   3 hours as one batch assigned by the main session, run by the deploy agent only, for both legion and legion-core (excepted: critical unblocking fixes, Ayla fixes (AY21) and owner-asked dashboard changes (DB03), deployed at once by the deploy agent with --critical); working subagents report "built" and never deploy (PR32). Details in `gates.md`; the deploy scripts are described in `docs/handover/startup-old.md` (0.4 and 0.5) and `tools/deploy/`.
 - Engineering notes that behave like rules (Windows git, engine flags default off, lessons about locks): `docs/design/REDESIGN.md` section 2.
@@ -67,6 +68,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - DB01. The dashboard shows world data, the minds (the owner can talk to them there), guilds, and parties with each member's HP, SP
   and zeny. (2026-11-14)
 - DB02. The owner can close and reopen the mind chats. (2026-11-14)
+- DB04. Retired agents (no activity: watcher, watchdog, qa-travel, life, deploy, econ) sit under a collapsed "Retired" section on the dashboard; nothing is removed. Chat, market, guild leaders, build and Ayla stay in the main grid, because they are the running system. (2026-11-15)
 - PR38. The bots' own code decides what they do. AI agents observe and keep improving and fixing that code so bots make better decisions on their own; they do not play the bots. Goal to build toward: only the puppet-master class runs, once a day; every change should move toward that. Exception: Ayla's Haiku helper may steer her through guarded commands when her code is stuck, crashed or deciding badly (AY05); every gap it covers is filed as a code bug. The 'only puppet masters, once a day' aim is a goal, not current state; until then AY05 and PR18 run. (2026-11-14)
 - PR39. Every system agent, script and watchdog (sentinel, partycheck, Ayla's watchdog and Haiku helper, qa, watcher, fixers that notice side bugs) files every problem it sees into the bug queue, so the main session can assign a fix; a problem seen but not filed is itself a bug. (2026-11-14)
 - DB03. Dashboard changes the owner asks for deploy right away, like Ayla fixes (AY21); they never wait for the 3-hour batch. (2026-11-14)

@@ -21,18 +21,19 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
   drops best (rate x spawns) at a fitting level, not on a beginner map. (2026-11-14)
 - AY09 / G12. Nothing (her mind, aylagear top-ups, guild funding, gifts, deals) may send away Ayla's zeny if it would leave her under
   10,000z; under 10,000z she sends none and saves up. (2026-11-14)
-- AY11. The party has seven members: Ayla, Priest, Knight, Wizard, Hunter, Monk (fights and buffs; replaced the Alchemist, who stays in Starveil as an independent bot, 2026-11-14), Crusader (bot characters of a
-  fitting level, run like her other friends). Also AY10 (Hunter and Alchemist join) (superseded: the Alchemist left the party, AY11 2026-11-14). (2026-11-14)
+- AY23. Ayla collects her group: when a member lags, she waits about 10 s for it to catch up, then goes back to collect it if it hasn't; she does not bounce back and forth. A member on a town run is left to come back on its own. (2026-11-15)
+- GD06. The owner's GM account `wander` (Wanderer) joins Ayla's guild Starveil. It is not a party member and does not trade or talk in public. (2026-11-15)
+- AY11. The party has five members: Ayla, Priest, Crusader, Hunter, Wizard (bot characters of a fitting level, run like her other friends; members who leave stay in Starveil as independent bots). Earlier rosters of seven (Knight, Monk, Alchemist; AY10) are superseded. (2026-11-15)
 - AY12. Ayla founds the guild Starveil with /guild (no Emperium needed, `guild_emperium_check: no`) and recruits players of every
   job. (2026-11-14)
 - AY13. As Starveil's leader Ayla plans resources (zeny, storage, member gear, alchemist potion supply), grows the membership,
   recruits a balanced roster (tanks, healers, AoE casters, ranged, support/crafting), forms parties from her members and keeps
   every member progressing. (2026-11-14)
-- AY15. Ayla's party rotates members to test other jobs and builds: the priest stays and every role (healer, tank, melee, ranged, caster, support) stays covered; a member is rotated by swapping in another character of a fitting level, never by resetting a build (G20). (2026-11-15, owner confirmed)
+- AY15. No member rotation in Ayla's party: the rotation experiment is stopped; her party keeps its current members (ayla_rotation_off). (2026-11-15, replaces the rotation rule)
 - AY16. Any dialog Ayla's OpenKore opens (NPC talk, storage, deal, mail) is closed as soon as the action is done. (2026-11-14)
 - AY17. Ayla runs like a normal bot with no watching client (no Wine client, no VNC window); the owner watches the world with his GM account, and Ayla's OpenKore log is shown in a plain terminal window. (2026-11-14, replaces "the owner watches Ayla live in the TigerVNC window")
 - AY18. Ayla has zero downtime: she is never idle or stuck for any length of time; any idle stretch is a bug whose root cause is fixed. (2026-11-14)
 - AY19. Ayla has the basic behaviour of a normal bot on her own (pick a fitting map, farm, loot, sell, restock, keep the party moving) with no AI system around; her mind only adds to it, and nothing about her stops when the mind, dispatcher or any agent is down. (2026-11-14)
 - AY20. The owner can give Ayla instructions at any time in plain words (for example "do a town run with the party"); her Haiku helper carries them out at once through her guarded commands, ahead of everything else. The main session still never steers her on its own (G13). (2026-11-14)
-- AY21. Fixes for Ayla deploy immediately as soon as they are built (plugin reload or critical deploy); they never wait for the 3-hour batch. (2026-11-14)
+- AY21. Fixes for Ayla deploy immediately as soon as they are built (plugin reload or critical deploy), by an agent and never by the main session, and each is verified live before the next (Constitution 1.4, 3.5); they never wait for the 3-hour batch. (2026-11-14, amended 2026-11-15)
 - AY22. When the priest is more than 15 cells behind or on another map, Ayla holds up to 10 s fighting what comes near (PT18), then goes back to collect it; she travels at the priest's pace (continues only while it is within 6 cells). For the priest this overrides PT07/PT08. (2026-11-14/15)

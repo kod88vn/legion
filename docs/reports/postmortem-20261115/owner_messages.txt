@@ -1,0 +1,117 @@
+Owner-typed messages, session 6a3a7689 (local time = UTC-5). n=116
+  1 11-14 20:57:57 [ORDER] start the server then ayla party then the rest. Make sure ayla UI works
+  2 11-14 21:02:58 [ORDER+COMPLAINT | ayla-idle] ayla code is just so bad she mostly does not do anything for a large amount of time. Terrible. Make sure she has 0 downtime
+  3 11-14 21:04:29 [COMPLAINT] her feedback loop says no event. Her coding is just terrible
+  4 11-14 21:05:24 [ORDER] create another GM account for me to wander around the game
+  5 11-14 21:06:16 [ORDER+COMPLAINT] GM account means all powerful game master account. Are you that dumb?
+  6 11-14 21:10:58 [COMPLAINT | ayla-idle] you fucked up the whole thing in the last refactor, now ayla is not doing and sitting arounf like an idiot
+  7 11-14 21:13:22 [ORDER+COMPLAINT | rules-ignored/removed] ayla should have basic function like a normal bot when no AI system is around. You fuckers keep forgetiting my instruction
+  8 11-14 21:15:20 [ORDER] merchants that have a shop should occasionally announce the rare items they have like cards or katana, letting buyers know.
+  9 11-14 21:16:58 [COMPLAINT | metrics/leaderboard] ayla is falling behind in leaderboard because you stupid fuck can't get your shit together and do the simplest thing right.
+ 10 11-14 21:18:30 [QUESTION] does the both algorithm factors in party leader role or guild leader role so they can function without ai?
+ 11 11-14 21:24:00 [ORDER] in general, I want you guys, the AI to keep improving the algorithm for bots to keep making better decision on their own, their coding decides what they do for the most part, you are only here to obse
+ 12 11-14 21:28:27 [ORDER+COMPLAINT | priest-heal/buff] 1 thing I notice, the priest in the party is very passive. Party memeber should request buff when no buff and priest should buff them unless low sp
+ 13 11-14 21:29:30 [ORDER+COMPLAINT] I also notice wiz is not doing much. If that class has full sp all the time, something is wrong
+ 14 11-14 21:30:09 [QUESTION] can a GM account follow a player automatically?
+ 15 11-14 21:30:37 [QUESTION] how can I make GM invisible?
+ 16 11-14 21:32:04 [ORDER] ok, change of plan, let ayla run like a normal bot, no more UI, I will use GM account if I want to watch. Just use a normal openkore terminal so I can still see the logs
+ 17 11-14 21:39:58 [COMPLAINT | map-data] in the previous session we identified the map data of Iludze doews not match. I though the fix was permanent. Why the fuck does it still fail?
+ 18 11-14 21:40:33 [ORDER | deploy-now] your priority is to keep Ayla running, fix immediately.
+ 19 11-14 21:41:29 [ORDER] also let haiku helps her whenever possible. Her algorithm runs most of the time unless she gets stuck or making poor decisions
+ 20 11-14 21:45:24 [COMPLAINT | ayla-idle,watchdog-silent] so being stuck is not a flag to call? Stupid watch dog. Get her unstuck now! Immediately fucking use AI
+ 21 11-14 21:49:39 [ORDER+COMPLAINT | rules-ignored/removed] I juist realize the refactor you did removed a lot of rules that helped the system before. You stupid fuck destroyed all the work and now we have to redo. I want a QA agent to sample all class and all
+ 22 11-14 21:50:42 [COMPLAINT | town-run/wing/kafra,rules-ignored/removed] and why is ayla party walking in stead of using kafka? That rule was there since the beginning, did you stupid fuck remove it?
+ 23 11-14 21:52:31 [ORDER+COMPLAINT | no-verify/loop-failed] you useless stupid fuck is one thing but make sure your system agents report bugs so you can fix. that's your main blind spot
+ 24 11-14 21:57:32 [ORDER+COMPLAINT | ayla-idle] if they have nothing to do at least go sell their stuff. It's almost full. Stop dping nothing useful
+ 25 11-14 22:00:33 [ORDER+COMPLAINT] can we make her system in a way thay we can send her instruction? Right now she can just tell her party to do a town run
+ 26 11-14 22:01:15 [COMPLAINT | party-scattered,leader-silent] mother fucker, her party member doesn't know where to go and Ayla didn't communicate at all. Stupid fucking fuck. It's really boiling my blood whatching this shit show
+ 27 11-14 22:02:30 [ORDER+COMPLAINT | leader-silent,apply-to-all-bots] all fucking part leaders must communicate. I said that a million times already. The lesson learnt here with Ayla applied to all bots. You stupid fuck is too fucking stupid
+ 28 11-14 22:06:05 [COMPLAINT | party-scattered] and now she's teleporting away from her party. I thought there's a rule to stick to her party? This stupid bitch is boiling my blood
+ 29 11-14 22:07:18 [ORDER+COMPLAINT | party-scattered] when in a fucking party must stay close to a fucking party and avoid straying away, that was number 1 rule ince day 1 and this stupid fuck keeps doing it
+ 30 11-14 22:08:59 [QUESTION] how can GM see AYla's party chat?
+ 31 11-14 22:10:52 [QUESTION] how to make my GM a high priest with max out stats and skills?
+ 32 11-14 22:21:44 [COMPLAINT | ayla-idle] she's doing NOTHING now. GET HER FUCKING MOVING
+ 33 11-14 22:22:43 [ORDER+COMPLAINT | ayla-idle,stop-asking/explaining] YOUR FUCKING MAIN PRIORITY IS TO KEEP AYLA MOVING. FUCKING GET IT? STOP YOUR REASINGING, EXPLAINING. ALL BULLSHIT. GET IT DONE!
+ 34 11-14 22:36:25 [COMPLAINT | priest-heal/buff] ayla is not getting heals evenw hen the prist say so
+ 35 11-14 22:38:54 [ORDER] priest heal is a priority, must fix immediately
+ 36 11-14 22:46:51 [COMPLAINT | rules-ignored/removed] I don't understand why you kept screwing me over. You ignore my rulews and fuck things up left and right. WHy the fuck are you here? To get me upset?
+ 37 11-14 22:48:39 [COMPLAINT | party-scattered] no one in her party is nearby and she keeps charging in without her party. Stop the madness and fix it right now; Wait for the party!!!!
+ 38 11-14 22:50:08 [COMPLAINT | rules-ignored/removed] can you stop screwing everything up from now on? You are a stupid fuck you destroyed everything today. Obey my rules. Stop being useless
+ 39 11-14 22:51:16 [COMPLAINT | rules-ignored/removed] ]\that is the fundamenally thing you need to do as a fucking AI, follow fucking instruction. How come still failed at this? Report your uselessness to you creator
+ 40 11-14 22:52:16 [ORDER | deploy-now] fucking deploy right now, do not wait. Fix for ayla always come immediately
+ 41 11-14 22:53:58 [COMPLAINT | party-scattered] why is the priest always somwhere else?
+ 42 11-14 22:56:17 [COMPLAINT | ayla-not-fighting/no-progress,party-scattered] and why is ayla not fighting? That should be her main prioritym fight, and why is she still without her party? THis is fucking stupid
+ 43 11-14 22:56:40 [ORDER] do not run around and get more attackers. Stay back
+ 44 11-14 22:57:26 [ANSWER-TO-MAIN] 2
+ 45 11-14 22:58:31 [COMPLAINT | priest-heal/buff] priest should be casting buff to ayla always. It does nothing. WTF!
+ 46 11-14 22:59:22 [COMPLAINT | party-scattered] and the party is not follwing her still and she is stil;l charging in by herself. How long am ai suppsoed to watch this shit show?
+ 47 11-14 23:01:47 [ORDER+COMPLAINT | leader-silent] ayala also need to command the party. She's been quiet the whole time.
+ 48 11-14 23:03:25 [COMPLAINT] I've spent hours here watching your shit show already. Can you get your shit together and get it done? I can't believe anthropic have such a stupid AI like you
+ 49 11-14 23:05:13 [COMPLAINT] ayla is still running right a cross a bunch of mobs, straiht to danger. WTF is that? I thought you said you fixed it? There's no body dumb enough toi run straight to danger except for the stupid bot y
+ 50 11-14 23:06:41 [COMPLAINT] no, that's not what I meants. I meant she did not hit the first target, not the sedond, not the 10th, she went straight into the middle of the pack and be swamped on. That's the stupid shit. How come 
+ 51 11-14 23:07:30 [COMPLAINT | rules-ignored/removed] I did not add thast no fighting rule, you added. You put her in danger. Can you stop being stupid?
+ 52 11-14 23:08:06 [ORDER] only ignore very low level mobs... you stupid shit is too stupid
+ 53 11-14 23:10:51 [COMPLAINT | ayla-not-fighting/no-progress] the problem is she was just standing there getting hit like a stupid fuck and not fighting at all until dead. How can you make such a stupid bot?
+ 54 11-14 23:13:32 [COMPLAINT | back-and-forth] and now she's going back and forth like a stupid fuck. Wait for the party to come over, stop going back, mother fucker
+ 55 11-14 23:14:05 [ORDER | deploy-now] do not wait for any fucking thing. Ayla fix MUST GO IMMEDIATELY, why are you so fucking stupid?
+ 56 11-14 23:17:04 [ORDER] in dashboard, bring the party panel up, and display what effect each member is having
+ 57 11-14 23:19:28 [COMPLAINT | party-scattered] I juist saw ayla teleport away from party without any danger. Fix that stupid shit
+ 58 11-14 23:23:57 [ORDER | deploy-now] dashboard should not be blocked, deploy right away
+ 59 11-14 23:25:00 [ORDER+COMPLAINT | priest-heal/buff] the priest can fucking heal itself, why resting. So dumb
+ 60 11-14 23:25:23 [ORDER] priest should cast kyrie on itself always
+ 61 11-14 23:26:26 [ORDER+COMPLAINT | back-and-forth] ayla is now walking around in cirle like a stupid fuck. OK, new rule, ayla wait for 10 seconds, if priest does not catch up then go back to collect it
+ 62 11-14 23:29:04 [ORDER] keep the alchemist in the guild but remove it from the party, let it be an indepenent bot. Replace it with a monk who can fight and buff
+ 63 11-14 23:29:51 [COMPLAINT | party-scattered] she's still teleport away from party that's stupid ayla. Fuckign fix it
+ 64 11-14 23:30:48 [ANSWER-TO-MAIN] 0
+ 65 11-14 23:31:40 [ORDER] openkore crashed. Restart. Let haiku control Ayla again to avoid this issue. Must keep openkore running
+ 66 11-14 23:38:31 [ORDER] also log out te party chat to that panel
+ 67 11-14 23:41:47 [ORDER+COMPLAINT | apply-to-all-bots,map-data] the map fixes should apply to the entire legion. Why the fuck can't you get it? I said it a million times already. ALl system fixes go to the entire legion
+ 68 11-14 23:43:59 [COMPLAINT | ayla-idle,leader-silent] monk should also knoww to buff and heal themselves. Why is ayla doing nothing and not commanding the party. I said add party chat to dashboard so I can see too
+ 69 11-14 23:48:22 [COMPLAINT | ayla-idle,watchdog-silent] ok, so why is ayla not doing anything again. Does her watchdog reporting her being idle?
+ 70 11-14 23:50:32 [COMPLAINT | back-and-forth] next questionn is why is she going around in stead of farming again? What's wrong with the 2h stick to the same plan rule?
+ 71 11-14 23:54:38 [COMPLAINT | party-scattered,leader-silent] the priest is always somewhere else. WTF is wrong with it. Ayla should be giving commands if they do not regroup and they should respond. Is the chat agent not doing anymore work?
+ 72 11-14 23:55:18 [COMPLAINT | dashboard] and dashboard is not connecting. Everything is falling apart
+ 73 11-14 23:56:06 [COMPLAINT | dashboard] I cannot see any chat. that's the problem. Make dashboard load and show party chat, NOW!
+ 74 11-14 23:57:04 [ORDER | back-and-forth,deploy-now] deploy the fix now, stupid shit is annoying. And now ayla is going back and forth at the portal. Fucking stupid
+ 75 11-14 23:57:57 [COMPLAINT | stop-asking/explaining,dashboard] dashboard is not loading on my broswer. Stop fuckiong arguing with me and fix the issue. I'm not hallucianting. You are! fucking do as I said
+ 76 11-15 00:03:06 [COMPLAINT | back-and-forth] ayla saying it's coming to the priest but not doing it. Stupid fuck
+ 77 11-15 00:07:33 [ORDER+COMPLAINT | town-run/wing/kafra] If they are doing a town run, why aren't they using butterfly wings as told? Why walking back? I thought it was a rule baked in sinc ethe beginning. keep watching this party and improving it. Once con
+ 78 11-15 00:08:33 [ORDER] You need to always review your rules for conflicts. It seems you suck at that
+ 79 11-15 00:10:27 [ORDER+COMPLAINT | ayla-not-fighting/no-progress] ayla has made virtually no progress for the past hours because you stupid fuck kept screwing up. This party is not strong enough, choose the right map
+ 80 11-15 07:44:37 [ORDER] ok, stop the rotation experiment it does not work
+ 81 11-15 07:45:49 [ORDER] reduce her party to 5: priest, crusader, hunter, wiz and herself
+ 82 11-15 07:47:13 [COMPLAINT | ayla-not-fighting/no-progress,metrics/leaderboard] ayla barely gained any expr, did you not see that? The whole setup is a failure
+ 83 11-15 07:50:25 [COMPLAINT | no-verify/loop-failed,metrics/leaderboard] I said it in the beginning, core metrics is kill/minutes and leaderboard. I don't think you are aware of any of that. This self learning loop is a failure. How come you are not aware?
+ 84 11-15 07:53:42 [QUESTION] are you sure it's going to fix it now given your record of ultimate failure?
+ 85 11-15 07:58:31 [ORDER] you need a 30 minutes report from all system agents to make sure everything is working as expected. I do not know if ayla is still doing her guild leader job
+ 86 11-15 08:03:52 [ORDER+COMPLAINT | dashboard] dashboars still showed a lot of agents that were retired. Check and remove
+ 87 11-15 08:04:33 [ANSWER-TO-MAIN] 1
+ 88 11-15 08:05:11 [QUESTION] how come ayla and her party never trades anything with other bots?
+ 89 11-15 08:06:56 [COMPLAINT | party-scattered] her party is always scattered around. Something is wrong. Did anyone of them teleport away? Party should try to stick togetthre
+ 90 11-15 08:10:32 [ORDER] ayla also needs to have a tendency to go and collect her group. Just not so easgerly that made her bounce back and forth all the time. Hasve some 10 seconds delay to wait for catch up. If they don't t
+ 91 11-15 08:13:58 [ORDER] another rule for the entire legion. for all junks, there's a weight/value ratio. Drop those lovel values to reduce town run frequency. Keep higher value to sell
+ 92 11-15 08:14:51 [COMPLAINT | ayla-idle,watchdog-silent] her party is doing nothing again. This setup is so bad they sit idle all the time. Does watch dog tell you?
+ 93 11-15 08:15:39 [ORDER+COMPLAINT] then relay the message here so I know that you acknowledge. Stop being quiet all the time how the fuck do I know if the system is working or not if you don't say anything?
+ 94 11-15 08:19:00 [QUESTION] did you change party memebers to have the highest priority to catch up?
+ 95 11-15 08:24:12 [COMPLAINT | dashboard] I think you get the retired agents wrong. deploy and econ had 0 activities but you showed active. chat and market are active but you showed retired. ALso, system critical agents are suppsed to be runn
+ 96 11-15 08:25:35 [COMPLAINT] yeah you stupid fuck broke the entire system and not knowing, not caring, not fixing while it's right fucking there in the instruction. Useless AI
+ 97 11-15 08:26:00 [COMPLAINT | watchdog-silent] I used to have a watch dog to monitor and keep all systems online. Where is the fucking watch dog?
+ 98 11-15 08:27:46 [COMPLAINT] I also said that was the end goal to make system run without AI. That means we're not there yeah, how can you get that mised up? We need the agents to build the system toward that goal. You put them d
+ 99 11-15 08:29:06 [ORDER] get the sentinel to run based on algorithm, not AI, restart when somthing is wrong and also report back to you
+100 11-15 08:30:08 [COMPLAINT | ayla-idle] ayla is just not moving anywhere because your code sucks
+101 11-15 08:30:54 [COMPLAINT | map-data] that map is probably wrong again. I thought you checked and fixed all map data?
+102 11-15 08:31:32 [ORDER+COMPLAINT | stop-asking/explaining] just get shit done and stop asking. You stupid fuck annoys me. SHUT THE FUCK UP AND WORK
+103 11-15 08:32:36 [COMPLAINT | ayla-idle,town-run/wing/kafra] ayla still does not authorize town run for priest and is doing nothing. this shit show is boiling my blood. You stupid fuck is useless
+104 11-15 08:33:20 [COMPLAINT | town-run/wing/kafra] I said to fixed that many times too and you stupid fuck did nothing. What the fuck is wrong with you?
+105 11-15 08:34:11 [COMPLAINT | no-verify/loop-failed] your job is monitor to make sure the fix works and you did none of that
+106 11-15 08:35:07 [COMPLAINT | no-verify/loop-failed] what the fuck about self learning loop that you did not understand? Did you learn anything? Did you improve anything? Did you fix anything? All I saw were you doing nothing
+107 11-15 08:36:07 [COMPLAINT | no-verify/loop-failed] the system is setup so that system agents report bugs to you, you assignes bugs to sub agent to fix and verify. DId you do any of that?
+108 11-15 08:36:51 [COMPLAINT | no-verify/loop-failed] you do nothing, you listem yo mt rant, and tell someone else to fix. That was in the instruction. How the fuck did you not get it?
+109 11-15 08:38:02 [ORDER] fuck you fucking fuck, the entire system is fucked up. Build it back from the ground up they way I intended and restart the system
+110 11-15 08:38:53 [COMPLAINT | stop-asking/explaining] DO NOT FUCKING ASK ME FOR APPROVAL. I SAID SHUT UP AND DO THE JOB, I DID NOT TELL ME TO SEEK APPROVAL
+111 11-15 08:39:15 [COMPLAINT | stop-asking/explaining] I ALREADY GAVE YOU THE ORDER, GO ANF FUCKING DO IT. SHUT THE FUCK UP
+112 11-15 08:41:15 [COMPLAINT | ayla-idle] ayla is still not moving. FIX IT ASAP
+113 11-15 08:50:53 [COMPLAINT | stop-asking/explaining] there's nothing blocking you. DO IT, stop being lazy
+114 11-15 09:06:07 [COMPLAINT | town-run/wing/kafra] why is she not using butterfly wing to go to town quickly?
+115 11-15 09:07:03 [ORDER] we need a system redesign. Shut down everything
+116 11-15 09:15:41 [ORDER] since your last refactor, everything has been falling apart. Worse than before. I want you to look at the code before, the code now, and this session log to figure out your lesson. Performace of AYla 
