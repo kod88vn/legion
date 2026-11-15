@@ -160,6 +160,9 @@ func recentDeathsFor(m string, lv int) float64 {
 // deadlyFor (b.mu held): m has had too many deaths lately among bots of our level band, per 10 bots standing there
 // (a busy beginner field always sees some Novice deaths)
 func (b *Bot) deadlyFor(m string) bool {
+	if b.walkBanned(m) { // farmshare.go: given up lately, we could not get there
+		return true
+	}
 	l, _ := mapLoad(m)
 	return recentDeathsFor(m, b.BaseLvOr()) > 6*(1.2-b.P.Risk)*math.Max(1, float64(l)/10)
 }

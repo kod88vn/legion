@@ -168,6 +168,11 @@ type Tuning struct {
 	// ON by default (rally_park_off true switches it off); rally_park_cap_min 0 = 12 (Ayla's rally timeout)
 	RallyParkOff    bool `json:"rally_park_off"`
 	RallyParkCapMin int  `json:"rally_park_cap_min"`
+	// farmshare.go: capped Kafra waits, no pointless waits, no-route loop guard, hourly Kafra cap lifted for long walks.
+	// ON by default (farm_share_off true switches it off); 0 = defaults (60 s wait cap, 900 cells long walk)
+	FarmShareOff       bool `json:"farm_share_off"`
+	KafraWaitCapSec    int  `json:"kafra_wait_cap_sec"`
+	KafraLongWalkCells int  `json:"kafra_long_walk_cells"`
 	PotHPAcolyte    int  `json:"pot_hp_acolyte"`
 	PotSPTarget     int  `json:"pot_sp_target"`
 	// parcel.go (economy batch 17): surplus gear mailed to vendors. Off by default; parcel_test_bots (comma-separated
