@@ -1486,6 +1486,9 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			return
 		default:
 		}
+		if b.handoffParked(stop) { // handoff.go: the account belongs to the other instance (or waits for it)
+			continue
+		}
 		pin := b.pinned()
 		if pin != nil && time.Now().Before(pin.Hold) {
 			b.mu.Lock()

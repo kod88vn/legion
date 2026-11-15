@@ -439,7 +439,7 @@ func registerHumanGuild(mux *http.ServeMux, bots []*Bot) {
 				minLv = lv - 30
 			}
 		}
-		local := localGuildScan(bots, guild, minLv, now)
+		local := localGuildScan(withAdopted(bots), guild, minLv, now) // handoff.go: adopted party friends too
 		if q.Get("local") == "1" {
 			writeJSON(w, local)
 			return
