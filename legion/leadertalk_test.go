@@ -101,7 +101,11 @@ func TestLeaderLines(t *testing.T) {
 type ltCapture struct {
 	sync.Mutex
 	lines []string
+	wg    sync.WaitGroup // the narrator's delayed lines in flight (ltGo)
 }
+
+// settle: every line the narrator started so far has been said (no sleeping).
+func (c *ltCapture) settle() { c.wg.Wait() }
 
 func (c *ltCapture) said(sub string) bool {
 	c.Lock()
@@ -122,15 +126,25 @@ func (c *ltCapture) n() int {
 
 func ltTestSetup(t *testing.T) (*ltCapture, func()) {
 	c := &ltCapture{}
-	oldSay, oldRand, oldUnit := ltSay, ltRand, ltUnit
+	oldSay, oldRand, oldUnit, oldGo := ltSay, ltRand, ltUnit, ltGo
 	ltSay = func(b *Bot, line string) {
 		c.Lock()
 		c.lines = append(c.lines, b.charName()+" : "+line)
 		c.Unlock()
 	}
 	ltRand = func() float64 { return 0 }
-	ltUnit = time.Millisecond
-	return c, func() { ltSay, ltRand, ltUnit = oldSay, oldRand, oldUnit }
+	ltUnit = 0 // no real delay: the delayed lines are tracked and settle() waits for them
+	ltGo = func(f func()) {
+		c.wg.Add(1)
+		go func() {
+			defer c.wg.Done()
+			f()
+		}()
+	}
+	return c, func() {
+		c.settle()
+		ltSay, ltRand, ltUnit, ltGo = oldSay, oldRand, oldUnit, oldGo
+	}
 }
 
 func ltBot(name string) *Bot {
@@ -143,14 +157,12 @@ func ltPub(b *Bot, m string, x, y int, trip bool) {
 	pubs.Store(b.P.Name, v)
 }
 
+// waitFor: once everything the narrator started has been said, sub was among the lines.
 func waitFor(t *testing.T, c *ltCapture, sub string) {
-	for i := 0; i < 200; i++ {
-		if c.said(sub) {
-			return
-		}
-		time.Sleep(5 * time.Millisecond)
+	c.settle()
+	if !c.said(sub) {
+		t.Fatalf("never said %q; lines %v", sub, c.lines)
 	}
-	t.Fatalf("never said %q; lines %v", sub, c.lines)
 }
 
 func TestLeaderTalkTownRun(t *testing.T) {
@@ -165,7 +177,7 @@ func TestLeaderTalkTownRun(t *testing.T) {
 	ltPub(b, "prt_fild05", 104, 100, false)
 	p.leaderTalkTick(st, now) // first look: nothing said
 	p.leaderTalkTick(st, now.Add(4*time.Second))
-	time.Sleep(20 * time.Millisecond)
+	c.settle()
 	if c.n() != 0 {
 		t.Fatalf("said something with nothing going on: %v", c.lines)
 	}
@@ -175,7 +187,7 @@ func TestLeaderTalkTownRun(t *testing.T) {
 	waitFor(t, c, "prontera")
 	n := c.n()
 	p.leaderTalkTick(st, now.Add(12*time.Second)) // once per decision
-	time.Sleep(20 * time.Millisecond)
+	c.settle()
 	if c.n() != n {
 		t.Fatalf("plan said twice: %v", c.lines)
 	}
@@ -188,7 +200,7 @@ func TestLeaderTalkTownRun(t *testing.T) {
 	ltPub(a, "prt_fild05", 101, 100, false)
 	ltPub(b, "prt_fild05", 102, 100, false)
 	p.leaderTalkTick(st, now.Add(4*time.Minute))
-	time.Sleep(50 * time.Millisecond)
+	c.settle()
 	if c.n() != n+1 || st.trOpen {
 		t.Fatalf("town run end not said once: %v", c.lines)
 	}
@@ -209,7 +221,7 @@ func TestLeaderTalkTownRunLate(t *testing.T) {
 	ltPub(a, "payon", 50, 50, true)
 	p.leaderTalkTick(st, now.Add(30*time.Second))
 	p.leaderTalkTick(st, now.Add(5*time.Minute)) // leader back, Slowpoke still shopping: no "all back"
-	time.Sleep(30 * time.Millisecond)
+	c.settle()
 	if c.n() != 1 {
 		t.Fatalf("all back while a member shops: %v", c.lines)
 	}
@@ -230,7 +242,7 @@ func TestLeaderTalkRally(t *testing.T) {
 	p.leaderTalkTick(st, now)
 	p.Rally = rallyState{Town: "geffen", X: 120, Y: 60, Dest: "gef_fild07", At: now.Add(time.Second)}
 	p.leaderTalkTick(st, now.Add(30*time.Second))
-	time.Sleep(20 * time.Millisecond)
+	c.settle()
 	if c.n() != 0 {
 		t.Fatalf("wait line too early: %v", c.lines)
 	}
@@ -241,7 +253,7 @@ func TestLeaderTalkRally(t *testing.T) {
 	}
 	n := c.n()
 	p.leaderTalkTick(st, now.Add(2*time.Minute+4*time.Second))
-	time.Sleep(20 * time.Millisecond)
+	c.settle()
 	if c.n() != n {
 		t.Fatalf("wait said twice: %v", c.lines)
 	}
