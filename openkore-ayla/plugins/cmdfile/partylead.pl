@@ -2394,20 +2394,35 @@ sub respawn_guard {
 # remembered, mob_target) or an unexplored cell, staying within 20 cells of the priest and pausing while the priest is
 # more than 10 cells away; never toward a group (another monster within 5 cells of the spot); not the same spot twice
 my ($fsIdleSince, $fsAt, @fsLast) = (0, 0);
+my ($fsWhyAt, $fsWhy) = (0, '');
+# why no leg (debug, every 30 s when it repeats): "[partylead] sweep waits: <reason>"
+sub fs_why { my ($r, $w) = @_; if ($w ne $fsWhy || time - $fsWhyAt > 30) { ($fsWhy, $fsWhyAt) = ($w, time); message "[partylead] sweep waits: $w\n", 'system' if $w !~ /^idle under/ } return $r }
+# a monster she attacks (mon_control attack flag not 0: plants / mushrooms are 0)
+sub fightable {
+	my $m = shift;
+	my $mc = eval { Misc::mon_control($m->{name}, $m->{nameID}) };
+	return 0 if ref $mc && defined $mc->{attack_auto} && $mc->{attack_auto} =~ /^0$/;
+	return 0 if ($m->{name} || '') =~ /\b(Plant|Mushroom|Shining Plant)\b/;
+	return 1;
+}
 sub farm_sweep {
 	return 0 unless $char && $field && $char->{pos_to};
 	my $here = $field->baseName;
 	return 0 if ($huntMap || '') eq '' || $here ne $huntMap || $char->{sitting} || $char->{dead} || $holding || $rally;
-	return 0 if AI::inQueue('attack', 'take', 'items_take', 'items_gather', 'NPC', 'sitting', 'sitAuto', 'sellAuto', 'buyAuto', 'storageAuto', 'teleport') || party_resting() || own_rest();
+	if (AI::inQueue('attack', 'take', 'items_take', 'items_gather', 'NPC', 'sitting', 'sitAuto', 'sellAuto', 'buyAuto', 'storageAuto', 'teleport') || party_resting() || own_rest()) {
+		return fs_why(0, 'busy: ' . join(',', grep { AI::inQueue($_) } qw(attack take items_take items_gather NPC sitting sitAuto sellAuto buyAuto storageAuto teleport)) . (party_resting() ? ' party resting' : '') . (own_rest() ? ' own rest' : ''));
+	}
 	my $me = my_pos();
-	my @mons = grep { $_->{pos_to} && defined $_->{pos_to}{x} && !$_->{dead} } @{$monstersList ? $monstersList->getItems() : []};
-	if (grep { blockDistance($me, $_->{pos_to}) <= 8 } @mons) { $fsIdleSince = 0; return 0 } # something to fight here
+	# only monsters she would attack count (live 76bbce6: a Red Plant 2 cells away - mon_control attack 0 - kept her
+	# frozen for 4 min: "something to fight here" that she never fights)
+	my @mons = grep { $_->{pos_to} && defined $_->{pos_to}{x} && !$_->{dead} && fightable($_) } @{$monstersList ? $monstersList->getItems() : []};
+	if (grep { blockDistance($me, $_->{pos_to}) <= 8 } @mons) { $fsIdleSince = 0; return fs_why(0, 'a monster within 8 cells') }
 	$fsIdleSince ||= time;
-	return 0 if time - $fsIdleSince < 8;
+	return fs_why(0, 'idle under 8 s') if time - $fsIdleSince < 8;
 	return 1 if AI::inQueue('route', 'move') && time - $fsAt < 12; # a leg under way
 	my $an = stick_anchor(stick_mates());
 	my $ap = $an ? $an->[1] : undef;
-	return 0 if $ap && blockDistance($me, $ap) > 10; # let the priest close up first (PT04)
+	return fs_why(0, "the priest $an->[0] is " . blockDistance($me, $ap) . " cells away") if $ap && blockDistance($me, $ap) > 10; # let the priest close up first (PT04)
 	my $ok = sub {
 		my ($x, $y) = @_;
 		return 0 unless eval { $field->isWalkable($x, $y) };
@@ -2433,7 +2448,7 @@ sub farm_sweep {
 			if ($ok->($x, $y)) { ($tx, $ty) = ($x, $y); last }
 		}
 	}
-	return 0 unless defined $tx;
+	return fs_why(0, 'no walkable leg cell found') unless defined $tx;
 	unshift @fsLast, int($tx / 6) . ',' . int($ty / 6); splice(@fsLast, 3) if @fsLast > 3;
 	$fsAt = time; $fsIdleSince = time;
 	AI::clear('route', 'move');
