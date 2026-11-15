@@ -3152,8 +3152,10 @@ sub pack_tick {
 		}
 		if (!$s0) {
 			my $pp = route_portal($here);
-			my ($far) = sort { $b->[3] <=> $a->[3] } grep { $_->[2] eq $here && defined $_->[3] && $_->[3] > 20 && !friend_dead($_->[0]) } @fr;
-			if ($far && (!$pp || blockDistance(my_pos(), $pp) <= 15)) {
+			# a straggler walk is capped to members within 40 cells, and skipped when the portal is closer than the member
+			# (bug: 107 cells back at 12:49 pulled her off the portal)
+			my ($far) = sort { $b->[3] <=> $a->[3] } grep { $_->[2] eq $here && defined $_->[3] && $_->[3] > 20 && $_->[3] <= 40 && !friend_dead($_->[0]) } @fr;
+			if ($far && (!$pp || (blockDistance(my_pos(), $pp) <= 15 && blockDistance(my_pos(), $pp) <= $far->[3]))) {
 				$pk{strag} = $s0 = {name => $far->[0], at => time};
 				$st = $far;
 				pk_say("$far->[0] we go to $nmS, come here first");
