@@ -235,7 +235,11 @@ func TestExchangeTierMatcher(t *testing.T) {
 }
 
 func TestExchangeEligibleStages(t *testing.T) {
-	withTuning(t, func(tn *Tuning) { tn.ExchangeTiersOn = true; tn.ExchangeAskStageSec = 60 })
+	withTuning(t, func(tn *Tuning) {
+		tn.ExchangeTiersOn = true
+		tn.ExchangeAskStageSec = 60
+		tn.ExchangeFirstRefusalSec = 120
+	})
 	resetExch()
 	defer resetExch()
 	exch.Lock()

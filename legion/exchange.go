@@ -14,9 +14,12 @@ package main
 // Free and discounted hand-overs are "favours": at most exchange_gifts_per_hour per giver; past that the giver sells
 // at the market price like anyone else.
 //
-// Ask order: a want is asked in party chat first, then guild chat, then #trade (exchange_ask_stage_sec per stage;
-// stages the buyer has no party / guild for are skipped). While the want is at the party stage only party members may
-// fill it; at the guild stage party, guild mates and friends; at the #trade stage anyone.
+// Ask order: a want is asked in party chat first, then guild chat, then #trade (stages the buyer has no party / guild
+// for are skipped). Party and guild only get first refusal: the kin stages together last exchange_first_refusal_sec
+// (default 40 s, split over the buyer's kin stages; never longer than exchange_ask_stage_sec per stage), then anyone
+// may fill the want. Vending shops (economy.go step 4) always sell. An urgent want (potions in the field, ammo) skips
+// the kin stages: anyone may fill it at once (audit 2026-11-14: 180 s per stage kept partied / guilded bots from
+// buying from Prontera sellers for minutes).
 //
 // Everything here is behind tuning exchange_tiers_on (default off): with it off every hook returns at once and the
 // matcher behaves exactly as before. Counters and a recent list: GET /api/exchange.
@@ -77,6 +80,34 @@ func exAskStage() time.Duration {
 		return time.Duration(v) * time.Second
 	}
 	return 3 * time.Minute
+}
+
+func exFirstRefusal() time.Duration {
+	if v := tune().ExchangeFirstRefusalSec; v > 0 {
+		return time.Duration(v) * time.Second
+	}
+	return 40 * time.Second
+}
+
+// exKinStage: the length of one kin ask stage for a buyer with these kin stages: the first-refusal window split over
+// them, capped by the configured ask stage.
+func exKinStage(ask, refusal time.Duration, inParty, inGuild bool) time.Duration {
+	n := 0
+	if inParty {
+		n++
+	}
+	if inGuild {
+		n++
+	}
+	if n == 0 {
+		return ask
+	}
+	return min(ask, refusal/time.Duration(n))
+}
+
+// exUrgent: a want that may not wait for kin: potions for a bot out of them in the field, ammo.
+func exUrgent(w *Want) bool {
+	return w != nil && (w.Why == "potions" || w.Why == "ammo" || isArrow(w.ItemID))
 }
 
 // ---------------------------------------------------------------- pure rules (unit tested)
@@ -379,10 +410,14 @@ func exchangeEligible(w *Want, buyer, s *econSnap, now time.Time) bool {
 	if !exchangeOn() || buyer == nil || s == nil || buyer.stocker || s.courier {
 		return true
 	}
+	if exUrgent(w) {
+		return true
+	}
 	exch.Lock()
 	defer exch.Unlock()
 	br := exch.rel[buyer.name]
-	_, idx := exAskChannel(now.Sub(w.Created), exAskStage(), br.party != "", br.guild != "")
+	inP, inG := br.party != "", br.guild != ""
+	_, idx := exAskChannel(now.Sub(w.Created), exKinStage(exAskStage(), exFirstRefusal(), inP, inG), inP, inG)
 	return exSellerAllowed(idx, exRelLocked(s.name, buyer.name))
 }
 
@@ -420,31 +455,70 @@ func exchangeTier(s, buyer *econSnap, h holding) (int, string) {
 	return each, tier
 }
 
-// exchangePrefer (matcher, econ.mu held): +1 when candidate seller s beats the current best seller bs for this buyer
-// by relation (party, then kin with a spare, then kin, then strangers), -1 when it is worse, 0 when equal.
+// exchangePrefer (matcher, econ.mu held): +1 when candidate seller s beats the current best seller bs for this buyer,
+// -1 when it is worse, 0 when equal. Relationship tier first (party, then guild mates / friends, then strangers);
+// within a tier the nearest seller wins (same map first, then fewer cells / map hops); a kin spare (a free hand-over)
+// only breaks a remaining tie.
 func exchangePrefer(buyer, s *econSnap, sItem int, bs *econSnap, bsItem int) int {
 	if !exchangeOn() || buyer == nil || s == nil || bs == nil {
 		return 0
 	}
 	exch.Lock()
 	defer exch.Unlock()
-	rank := func(x *econSnap, id int) int {
+	tier := func(x *econSnap) int {
 		switch exRelLocked(x.name, buyer.name) {
 		case relParty:
-			return 3
+			return 2
 		case relGuild, relFriend:
-			if exch.spare[x.name][id] {
-				return 2
-			}
 			return 1
 		}
 		return 0
 	}
-	a, b := rank(s, sItem), rank(bs, bsItem)
+	if r := cmpInt(tier(s), tier(bs)); r != 0 {
+		return r
+	}
+	if r := -exNearCmp(buyer, s, bs); r != 0 {
+		return r
+	}
+	if tier(s) == 1 {
+		return cmpBool(exch.spare[s.name][sItem], exch.spare[bs.name][bsItem])
+	}
+	return 0
+}
+
+// exNearCmp: -1 when a is nearer the buyer than b, +1 when farther, 0 when as near. Same map beats another map; on
+// the same map fewer cells, across maps fewer hops.
+func exNearCmp(buyer, a, b *econSnap) int {
+	as, bs := a.mapN == buyer.mapN, b.mapN == buyer.mapN
+	switch {
+	case as && !bs:
+		return -1
+	case bs && !as:
+		return 1
+	case as && bs:
+		return cmpInt(dist(a.x, a.y, buyer.x, buyer.y), dist(b.x, b.y, buyer.x, buyer.y))
+	}
+	if a.mapN == b.mapN {
+		return 0
+	}
+	return cmpInt(mapHops(a.mapN, a.x, a.y, buyer.mapN), mapHops(b.mapN, b.x, b.y, buyer.mapN))
+}
+
+func cmpInt(a, b int) int {
 	switch {
 	case a > b:
 		return 1
 	case a < b:
+		return -1
+	}
+	return 0
+}
+
+func cmpBool(a, b bool) int {
+	switch {
+	case a && !b:
+		return 1
+	case b && !a:
 		return -1
 	}
 	return 0
@@ -487,12 +561,13 @@ func exRecordLocked(r exRecord) {
 // exchangeAsk (want posting, econ.mu held): at the party / guild stage the want is asked there (once per stage, at
 // most one such line per bot every 5 minutes) instead of #trade. true = handled (the #trade code skips it).
 func exchangeAsk(w *Want, s *econSnap, now time.Time) bool {
-	if !exchangeOn() || s == nil || w == nil || w.InDeal || s.stocker {
+	if !exchangeOn() || s == nil || w == nil || w.InDeal || s.stocker || exUrgent(w) {
 		return false
 	}
 	exch.Lock()
 	r := exch.rel[s.name]
-	ch, idx := exAskChannel(now.Sub(w.Created), exAskStage(), r.party != "", r.guild != "")
+	inP, inG := r.party != "", r.guild != ""
+	ch, idx := exAskChannel(now.Sub(w.Created), exKinStage(exAskStage(), exFirstRefusal(), inP, inG), inP, inG)
 	if ch == "#trade" {
 		exch.Unlock()
 		return false
@@ -665,10 +740,11 @@ func exchangeReport() map[string]any {
 	exch.Unlock()
 	sort.SliceStable(recent, func(i, j int) bool { return recent[i].T.After(recent[j].T) })
 	return map[string]any{
-		"on":               exchangeOn(),
-		"kin_discount_pct": kinDiscountPct(),
-		"gifts_per_hour":   exGiftsPerHour(),
-		"ask_stage_sec":    int(exAskStage() / time.Second),
+		"on":                exchangeOn(),
+		"kin_discount_pct":  kinDiscountPct(),
+		"gifts_per_hour":    exGiftsPerHour(),
+		"ask_stage_sec":     int(exAskStage() / time.Second),
+		"first_refusal_sec": int(exFirstRefusal() / time.Second),
 		"rules": []string{"party member: free", "guild mate or friend: free when a spare (2+ owned, or not on the giver's build table), else kin_discount_pct of market",
 			"anyone else: market price", "ask order: party chat, guild chat, #trade", "favours (free / discounted) at most gifts_per_hour per giver"},
 		"counts":  counts,

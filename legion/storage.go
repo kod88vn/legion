@@ -86,6 +86,7 @@ func (b *Bot) onStorageOpen() {
 		return
 	}
 	k.Stored = true
+	noteGuildStored(b, b.storeCandidates()) // guildstore.go: a leader's / treasurer's storage holds guild stock (GD05)
 	n := 0
 	for _, idx := range b.storeCandidates() {
 		it := b.inv[idx]

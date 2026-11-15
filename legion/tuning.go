@@ -231,9 +231,11 @@ type Tuning struct {
 	KinDiscountPct       int  `json:"kin_discount_pct"`
 	ExchangeGiftsPerHour int  `json:"exchange_gifts_per_hour"`
 	ExchangeAskStageSec  int  `json:"exchange_ask_stage_sec"`
-	ChatJobsOn           bool `json:"chat_jobs_on"`
-	ChatJobWaitMinSec    int  `json:"chat_job_wait_min_sec"`
-	ChatJobWaitMaxSec    int  `json:"chat_job_wait_max_sec"`
+	// party / guild get first refusal on a want for this long in all (split over the buyer's kin stages), then anyone
+	ExchangeFirstRefusalSec int  `json:"exchange_first_refusal_sec"`
+	ChatJobsOn              bool `json:"chat_jobs_on"`
+	ChatJobWaitMinSec       int  `json:"chat_job_wait_min_sec"`
+	ChatJobWaitMaxSec       int  `json:"chat_job_wait_max_sec"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -259,7 +261,7 @@ var defaultTuning = Tuning{
 	ChatGlobalTrade: 0.45, ChatGlobalLFP: 0.80, ChatLocalReply: 0.6, ChatPartyReply: 0.5, ChatPartyHuman: 0.3,
 	ChatGuildLeader: 0.5, ChatReactBase: 0.25, ChatReactChattiness: 0.5, ChatReactJobChange: 0.25, ChatReactDeath: 0.3,
 	LfgGlobalPerMin: 6,
-	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
+	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ExchangeFirstRefusalSec: 40, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
 }
 
 var curTuning atomic.Value // *Tuning

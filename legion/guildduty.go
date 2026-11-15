@@ -589,6 +589,9 @@ func (b *Bot) guildBlockHunt() bool {
 	if g == nil || g.Kind != "guild" || !dutyOn() || partyOf(b) != nil {
 		return false
 	}
+	if !b.dutyWindowOpen(g, time.Now()) { // guildduty_window.go: outside the duty block the bot keeps its own goal
+		return false
+	}
 	for _, m := range g.Maps {
 		if b.soloMapOKFor(m, true) {
 			b.Goal, b.route = Goal{Mode: "hunt", Map: m, Set: "auto"}, nil
@@ -611,7 +614,7 @@ func (b *Bot) dutyGuildAnswer(guild string) (accept, ok bool) {
 	gduty.Lock()
 	defer gduty.Unlock()
 	k := gduty.kicked[b.charName()]
-	if k == nil || k.Stage == "joined" {
+	if !dutyKickApplies(k, b.P.Account, b.GuildID) { // guildduty_window.go: only the kicked character itself
 		return false, false
 	}
 	switch {
