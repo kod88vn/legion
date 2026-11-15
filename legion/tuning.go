@@ -184,9 +184,10 @@ type Tuning struct {
 	FarmShareOff       bool `json:"farm_share_off"`
 	KafraWaitCapSec    int  `json:"kafra_wait_cap_sec"`
 	KafraLongWalkCells int  `json:"kafra_long_walk_cells"`
-	// farmshare.go kafraMemberWait: a party member past kafra_wait_cap_sec at the Kafra buys or flies a Butterfly Wing,
-	// walks a safe route, or says so in party chat and waits at most kafra_member_wait_cap_sec (0 = 180) before it gives
-	// the goal up. ON by default (kafra_member_wait_off true switches it off: the old open-ended member wait).
+	// farmshare.go kafraMemberWait: a party member past kafra_wait_cap_sec at the Kafra buys or flies a Butterfly Wing
+	// (once per goal), walks a safe route, or asks the party to collect it and keeps waiting. After
+	// kafra_member_wait_cap_sec (0 = 180) a stuck leader of a bot-led party moves the party once; a human-led party is
+	// never moved. ON by default (kafra_member_wait_off true switches it off: the old open-ended member wait).
 	KafraMemberWaitOff    bool `json:"kafra_member_wait_off"`
 	KafraMemberWaitCapSec int  `json:"kafra_member_wait_cap_sec"`
 	PotHPAcolyte    int  `json:"pot_hp_acolyte"`

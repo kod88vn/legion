@@ -288,8 +288,9 @@ func markWingBuy(b *Bot, goal string) {
 	v.(map[string]int)[goal]++
 }
 
-// kafraMemberWait (b.mu held; kafraWaitSkip for a party member past the cap): acts on memberWaitPlan. Returns like
-// kafraWaitSkip: true = don't wait. Never gives the goal up: a stuck member keeps its party's map.
+// kafraMemberWait (b.mu held; kafraWaitSkip for a party member past the cap): acts on memberWaitPlan and returns
+// true when the bot should not wait. Never gives the goal up: a stuck member keeps its party's map. Only a bot-led
+// party's leader relocates it; a human-led party (Ayla's friends) is never moved by its bot members.
 func (b *Bot) kafraMemberWait(goal string, now time.Time, c *goalClock, in kafraWaitIn) bool {
 	p := partyOf(b)
 	mi := memberWaitIn{
@@ -298,7 +299,7 @@ func (b *Bot) kafraMemberWait(goal string, now time.Time, c *goalClock, in kafra
 		cap:       in.cap,
 		memberCap: kafraMemberWaitCap(),
 		safe:      b.routeSafeFrom(b.MapName, b.X, b.Y, goal),
-		leader:    p != nil && p.Leader == b,
+		leader:    p != nil && p.Leader == b && p.Human == "",
 		said:      c.saidGoal == goal,
 		moved:     c.movedGoal == goal,
 		wing:      c.wingedGoal != goal && savedStartBetter(b, goal) && b.escItemOK(itemButterflyWing, now),
@@ -310,6 +311,11 @@ func (b *Bot) kafraMemberWait(goal string, now time.Time, c *goalClock, in kafra
 	case "wing":
 		c.wingedGoal = goal
 		b.parkEvent(fmt.Sprintf("waited %ds in %s for the Kafra toward %s: Butterfly Wing to %s", int(in.waited.Seconds()), b.MapName, goal, b.savedTown))
+		if p != nil { // PT12: a member that leaves the party's area says so
+			b.partySay(styled(b.P.Typing, pick(
+				"flying to "+b.savedTown+" with a wing, the walk to "+goal+" is too rough, meet me there",
+				"taking a wing back to "+b.savedTown+", the way to "+goal+" is too dangerous for me")))
+		}
 		b.useEscapeItem(itemButterflyWing, now, "kafra wait "+b.MapName+" -> "+goal)
 	case "buy":
 		markWingBuy(b, goal)

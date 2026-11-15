@@ -296,6 +296,28 @@ func TestKafraMemberWaitThroughBot(t *testing.T) {
 		}
 	})
 
+	t.Run("human-led party: a leader bot never moves the party, members say once and wait", func(t *testing.T) {
+		b, c, r := memberRigSetup(t, true, false)
+		partyOf(b).Human = "Ayla"
+		memberWait(b, c, 61*time.Second)
+		if c.saidGoal != "mt_goal" {
+			t.Fatal("the bot in a human-led party must say its one line")
+		}
+		if memberWait(b, c, 6*time.Minute) {
+			t.Fatal("a stuck bot in a human-led party keeps waiting")
+		}
+		time.Sleep(20 * time.Millisecond)
+		if r.relocCount() != 0 {
+			t.Fatalf("a human-led party was moved %d times", r.relocCount())
+		}
+		if c.movedGoal != "" {
+			t.Fatal("the relocation was recorded for a human-led party")
+		}
+		if b.Goal.Map != "mt_goal" || b.Goal.Mode != "party" {
+			t.Fatalf("goal changed in a human-led party: %+v", b.Goal)
+		}
+	})
+
 	t.Run("buy once per goal, a clock reset after the trip does not buy again", func(t *testing.T) {
 		b, c, r := memberRigSetup(t, false, true)
 		if !memberWait(b, c, 61*time.Second) {
