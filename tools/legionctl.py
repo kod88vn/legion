@@ -47,6 +47,16 @@ Economy
   alchemists                     every guild's alchemist: path progress (Novice -> Merchant -> Alchemist), Pharmacy,
                                  guide/bowls/bottles/herbs, potion stock, what it brewed, its next step
   potions                        potion + alchemy material market: standard price, offers, wants, trades
+Exchange and chat jobs (docs/design/exchange.md; flags exchange_tiers_on, chat_jobs_on in tuning.json)
+  exchange [--json]              party / guild / friend hand-overs: rules, counters, recent hand-overs, intents
+  chat-jobs [list] [--peek] [--recent] [--json]   social lines waiting for words (listing = the chat agent's poll;
+                                 --peek looks without counting as the agent)
+  chat-jobs answer <id> <speaker> <text...> [--channel C] [--to NAME]   say this instead of the template line
+  chat-jobs answer <id> --json '[{"speaker":..,"channel":..,"text":..}, ...]'   several lines (a short exchange)
+  chat-jobs pass <id>            say the template line now
+  chat-intent <from> <need|offer> <item...> [--count N] [--max P] [--price P] [--note T]   what a human (or a messy
+                                 conversation) meant: the engine treats it like a want / an offer
+  chat-intent list               registered intents and what happened to them
 Minds bus (the owner watches these on the dashboard and can send orders)
   orders <mind>                  owner's unread messages to this mind (marks them read); "(no new orders)" if none
   think <mind> <text...> [--kind thought|decision|action|summary] [--status "short status line"]
@@ -481,6 +491,75 @@ def main(argv):
             ago = f"{m['seen_ago_s']}s ago" if "seen_ago_s" in m else "never"
             lt = (m.get("last_thought") or {}).get("text", "")
             print(f"{m['name']:<10} {m['status']:<7} seen {ago:<10} unread {m['unread']:<3} {lt[:90]}")
+
+    elif cmd == "exchange":
+        as_json = opt(args, "--json", flag=True)
+        r = call("/api/exchange")
+        if as_json:
+            out(r)
+            return
+        print(f"exchange tiers {'ON' if r['on'] else 'off'}  kin discount {r['kin_discount_pct']}% of market  "
+              f"favours/giver/hour {r['gifts_per_hour']}  ask stage {r['ask_stage_sec']}s")
+        for part, rep in (("main", r), ("core", r.get("core") or {})):
+            if rep.get("counts"):
+                print(f"{part} counts: " + ", ".join(f"{k} {v}" for k, v in sorted(rep["counts"].items())))
+            for x in (rep.get("recent") or [])[:15]:
+                print(f"  {x['t'][11:19]} {x['giver']} -> {x['taker']}: {x['count']}x {x['item']} [{x['tier']}/{x['relation']}] "
+                      f"{x['price']}z (market {x['market_each']}z ea) {x['status']}")
+            for i in (rep.get("intents") or [])[:10]:
+                print(f"  intent #{i['id']} {i['from']} {i['kind']} {i['count']}x {i['item']}: {i['status']}")
+
+    elif cmd == "chat-jobs":
+        sub = args.pop(0) if args and args[0] in ("list", "answer", "pass") else "list"
+        if sub == "list":
+            peek, recent, as_json = opt(args, "--peek", flag=True), opt(args, "--recent", flag=True), opt(args, "--json", flag=True)
+            qs = "&".join(x for x in ("peek=1" if peek else "", "recent=1" if recent else "") if x)
+            r = call("/api/chat-jobs" + ("?" + qs if qs else ""))
+            if as_json:
+                out(r)
+                return
+            print(f"chat jobs {'ON' if r['on'] else 'off'}; waiting {len(r.get('jobs') or [])}; wait {r.get('wait_sec')}s")
+            for j in r.get("jobs") or []:
+                print(f"[{j['id']}] {j['kind']} {j['channel']}{' -> ' + j['to'] if j.get('to') else ''} speaker {j['speaker']} "
+                      f"hears {','.join(j.get('hearers') or [])} deadline {str(j['deadline'])[11:19]}")
+                print(f"    facts {json.dumps(j.get('facts') or {}, ensure_ascii=False)}")
+                for l in j.get("template_lines") or []:
+                    print(f"    template: {l['speaker']} ({l['channel']}{' -> ' + l['to'] if l.get('to') else ''}): {l['text']}")
+            if recent:
+                for j in r.get("recent") or []:
+                    print(f"  done [{j['id']}] {j['kind']} {j['state']}: " + " | ".join(f"{l['speaker']}: {l['text']}" for l in j.get("said") or []))
+        elif sub == "pass":
+            if not args:
+                sys.exit("usage: chat-jobs pass <id>")
+            out(call(f"/api/chat-jobs/{q(args[0])}/lines", []))
+        else:
+            raw = opt(args, "--json")
+            ch, to = opt(args, "--channel"), opt(args, "--to")
+            if raw:
+                if not args:
+                    sys.exit("usage: chat-jobs answer <id> --json '[...]'")
+                lines = json.loads(raw)
+            else:
+                if len(args) < 3:
+                    sys.exit("usage: chat-jobs answer <id> <speaker> <text...> [--channel C] [--to NAME]")
+                line = {"speaker": args[1], "text": " ".join(args[2:])}
+                if ch:
+                    line["channel"] = ch
+                if to:
+                    line["to"] = to
+                lines = [line]
+            out(call(f"/api/chat-jobs/{q(args[0])}/lines", lines))
+
+    elif cmd == "chat-intent":
+        if args and args[0] == "list":
+            for i in call("/api/chat-intent").get("intents") or []:
+                print(f"#{i['id']} {i['t'][11:19]} {i['from']}{' (human)' if i['human'] else ''} {i['kind']} {i['count']}x {i['item']}: {i['status']}")
+            return
+        count, mx, price, note = opt(args, "--count", 1), opt(args, "--max", 0), opt(args, "--price", 0), opt(args, "--note", "")
+        if len(args) < 3 or args[1] not in ("need", "offer"):
+            sys.exit("usage: chat-intent <from> <need|offer> <item...> [--count N] [--max P] [--price P] [--note T]")
+        out(call("/api/chat-intent", {"from": args[0], "kind": args[1], "item": " ".join(args[2:]), "count": int(count),
+                                       "max_price": int(mx), "price": int(price), "note": note}))
 
     elif cmd == "wait":
         time.sleep(float(args[0]))

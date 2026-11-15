@@ -76,6 +76,15 @@ package main
 //   chat_react_chattiness     0.5
 //   chat_react_jobchange      0.25 ...then for a job change, this chance on top
 //   chat_react_death          0.3  ...for a death, this chance on top
+//
+//   Exchange and chat jobs (exchange.go, chatjobs.go, chatintent.go; docs/design/exchange.md)
+//   exchange_tiers_on         false party free, guild mate / friend free for a spare else kin_discount_pct, ask order
+//   kin_discount_pct          25   percent of the market price a guild mate / friend pays for a non-spare
+//   exchange_gifts_per_hour   3    free / discounted hand-overs per giver per hour (then market price)
+//   exchange_ask_stage_sec    180  a want is asked in party chat, then guild chat, then #trade, this long per stage
+//   chat_jobs_on              false social lines wait for a chat agent's words (only while one polls /api/chat-jobs)
+//   chat_job_wait_min_sec     20   how long a chat job waits for the agent (random between min and max)
+//   chat_job_wait_max_sec     40
 
 import (
 	"encoding/json"
@@ -201,6 +210,14 @@ type Tuning struct {
 	// lfg_global_per_min caps the LFG/LFM lines on #global
 	GoalPartiesOn   bool `json:"goal_parties_on"`
 	LfgGlobalPerMin int  `json:"lfg_global_per_min"`
+	// exchange.go / chatjobs.go (redesign package X): price by relationship and chat jobs, both default off
+	ExchangeTiersOn      bool `json:"exchange_tiers_on"`
+	KinDiscountPct       int  `json:"kin_discount_pct"`
+	ExchangeGiftsPerHour int  `json:"exchange_gifts_per_hour"`
+	ExchangeAskStageSec  int  `json:"exchange_ask_stage_sec"`
+	ChatJobsOn           bool `json:"chat_jobs_on"`
+	ChatJobWaitMinSec    int  `json:"chat_job_wait_min_sec"`
+	ChatJobWaitMaxSec    int  `json:"chat_job_wait_max_sec"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -224,6 +241,7 @@ var defaultTuning = Tuning{
 	ChatGlobalTrade: 0.45, ChatGlobalLFP: 0.80, ChatLocalReply: 0.6, ChatPartyReply: 0.5, ChatPartyHuman: 0.3,
 	ChatGuildLeader: 0.5, ChatReactBase: 0.25, ChatReactChattiness: 0.5, ChatReactJobChange: 0.25, ChatReactDeath: 0.3,
 	LfgGlobalPerMin: 6,
+	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
 }
 
 var curTuning atomic.Value // *Tuning

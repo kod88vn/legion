@@ -749,6 +749,7 @@ func serveAPI(addr string, bots []*Bot) {
 	registerMapSeen(mux)                        // seen.go: /api/mapseen (monsters in view per map; empty maps)
 	registerFriends(mux)                        // friends.go: /api/friends (friendships, guild changes due to friends)
 	registerLoyalty(mux)                        // loyalty.go: /api/guild-loyalty (loyalty, help requests, keep gifts)
+	registerExchange(mux, bots)                 // exchange.go: /api/exchange, /api/chat-jobs, /api/chat-intent
 	http.ListenAndServe(addr, coreForward(mux)) // instances.go: core-party requests go to the core instance
 }
 
