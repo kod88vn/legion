@@ -308,6 +308,16 @@ sub on_errand {
 # her own cell now (interpolated mid-walk; pos_to is where the walk ends)
 sub my_pos { my $p = eval { $char->position }; return (ref $p && defined $p->{x}) ? $p : $char->{pos_to} }
 # cells to the party's priest on her map (on screen, else Legion's API <= 30 s); 999 = not on her map / unknown
+# the party's priest is on another map than $m (by the engine API / party list): its map, else ''
+sub priest_elsewhere {
+	my $m = shift || '';
+	foreach my $u (values %{$char->{party}{users} || {}}) {
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || friend_cls($u->{name}) !~ /priest|acolyte/i;
+		my $pm = friend_map($u);
+		return $pm if $pm ne '' && $pm ne $m;
+	}
+	return '';
+}
 sub priest_dist {
 	my $here = $field ? $field->baseName : '';
 	my $best = 999;
@@ -2246,7 +2256,8 @@ sub tick_guarded {
 	AI::clear('take', 'items_take', 'items_gather') if time < $lootBlockUntil && AI::inQueue('take', 'items_take', 'items_gather');
 	hp_sample() if $net && $net->getState() == 5;
 	portal_back_guard() if $net && $net->getState() == 5;
-	if ($portalHoldUntil && time < $portalHoldUntil && $field && $field->baseName eq ($portalHoldMap || '') && AI::inQueue('route', 'move') && !AI::inQueue('teleport')) {
+	if ($portalHoldUntil && time < $portalHoldUntil && $field && $field->baseName eq ($portalHoldMap || '') && AI::inQueue('route', 'move') && !AI::inQueue('teleport')
+		&& !priest_elsewhere($portalHoldMap)) { # the hold never splits her from the priest: with the priest across the portal she goes to it
 		AI::clear('route', 'move'); # PORTAL_LOOP: hold on the town side
 	}
 	$lmSet = $config{lockMap} || '' if defined $lmSet;
@@ -2706,6 +2717,7 @@ sub wait_fields_for { return 0 } # owner 2026-11-14: rally / departure waits hol
 my %pk = (waitAt => 0, sayAt => 0, logAt => 0, goName => '', routeAt => 0, crossSaid => '', wf => undef);
 my @crossWings; # [time, map]
 sub pk_waiting { return $pk{waitAt} ? 1 : 0 }
+sub pk_prnear_recent { return time - ($pk{prLastNear} || 0) < 20 ? 1 : 0 } # the priest was within 15 cells lately
 sub pk_retreating { return ($pk{retreatSaid} || '') ne '' ? 1 : 0 } # back to the town's Kafra while the priest is away
 sub pk_lmhold { return $pk{lmHold} || '' }
 sub cross_danger { my $m = shift || ''; return $CROSS_DANGER{$m} && transit_fit_lv() < $CROSS_DANGER{$m} + 10 ? 1 : 0 }
@@ -3272,7 +3284,9 @@ sub stick_tick {
 			return 1;
 		}
 		# swarmed with no friend on this map (she got ahead of them on a crossing): back to the map the friends are on
-		if (!$an && $aggr >= 4 && time - $stickRunAt > 5 && !AI::inQueue('attack') && !$stickFlee) {
+		# not across a portal while the priest was within 15 cells in the last 20 s (it is right behind her at the portal:
+		# live 09:14, a fall-back / rejoin loop pay_dun01 <-> pay_dun02) - she fights at the entrance and waits for it
+		if (!$an && $aggr >= 4 && time - $stickRunAt > 5 && !AI::inQueue('attack') && !$stickFlee && !pk_prnear_recent()) {
 			my %on; $on{$_->[1]}++ foreach grep { $_->[1] ne '' && $_->[1] ne $here } @friends;
 			my ($fm) = sort { $on{$b} <=> $on{$a} } keys %on;
 			if ($fm) {
