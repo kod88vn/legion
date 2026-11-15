@@ -2760,10 +2760,16 @@ func (b *Bot) fight(e *Entity, moving bool, now time.Time) {
 	if b.kiteStep(e, moving, now) { // kite.go: a bow user steps back out of melee reach (hit and run), Ankle Snare
 		return
 	}
+	if b.casterKite(e, moving, now) { // casterkite.go: a Mage-line caster walls / backs off a monster next to it
+		return
+	}
 	if b.trapCast(e, now) { // trap.go: Claymore Trap / Land Mine where the monster will step (trapper Hunter)
 		return
 	}
 	if b.aoeCast(e, now) { // aoe.go: Mage/Wizard area spells on 3+ grouped monsters, Fire Wall against a walker
+		return
+	}
+	if b.casterActive(e, moving, now) { // casteractive.go (CL16): no group -> a spell on a party target in range, no melee chase
 		return
 	}
 	if b.weaponAoE(e, now) { // weaponskill.go: Archer-line Arrow Shower on 3+ grouped monsters

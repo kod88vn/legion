@@ -1139,6 +1139,9 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 			}
 		}
 	}
+	if !support && b.casterHelp(lead, members, leaderLeaving, moving, now) { // casteractive.go (CL16): SP to spare -> cast at a monster near the group
+		return true
+	}
 	// party members pick up drops near the group too (they used to leave everything, so at level 30+ they still had
 	// the starter Knife and no zeny for a weapon); the loot pays for their gear trips
 	if b.MaxWeight == 0 || b.Weight*100/b.MaxWeight < 80 {
