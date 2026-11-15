@@ -16,7 +16,7 @@ $table =~ s/^my //;
 eval "no strict q(vars); $table
 1" or die $@;
 my ($pass, $fail) = (0, 0);
-sub ok { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
+sub ok($$) { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
 sub level_map { # partylead.pl level_map without the crowd check
 	my ($plv, $heal) = @_;
 	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] };
@@ -50,5 +50,12 @@ ok(gm_eff_lv('melee', 60, 1.5, 1.4) == 68, 'good gear cap +8');
 ok(gm_eff_lv('melee', 8, 0, 0) == 8, 'beginner');
 ok(gm_eff_lv('melee', 80, 0, 0) == 40, 'half floor');
 ok(gm_party_lv([[30, 40, 0]], 1, 1) == 30, 'solo: no party bonus');
+# route safety (2026-11-14): orcsdun02's way crosses gef_fild10 (aggressive orcs to level 60)
+my %via = (orcsdun02 => ['gef_fild10'], orcsdun01 => ['gef_fild10']);
+my %dg = (gef_fild10 => 60);
+ok(gm_route_unsafe('orcsdun02', 58, \%via, \%dg) eq 'gef_fild10', 'orcsdun02 unsafe at 58');
+ok(gm_route_unsafe('orcsdun02', 65, \%via, \%dg) eq 'gef_fild10', 'orcsdun02 unsafe at 65 (60 >= 60)');
+ok(gm_route_unsafe('orcsdun02', 66, \%via, \%dg) eq '', 'orcsdun02 safe at 66');
+ok(gm_route_unsafe('gef_dun01', 58, \%via, \%dg) eq '', 'gef_dun01 safe');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);

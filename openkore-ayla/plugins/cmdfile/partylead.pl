@@ -2284,11 +2284,23 @@ sub pack_decide {
 	my $two = @f >= 2 ? 2 : 1;
 	# AY22 (owner 2026-11-14): with a priest online the priest is the anchor - within 10 cells on her map she goes on;
 	# behind (> 10 or another map) she stops and waits 10 s, then walks back to the priest (goto, until within 5)
+	# Pace (owner 2026-11-15): she travels in short legs at the priest's pace - on only with the priest within 6 cells;
+	# 7-15 cells: she waits for it. A collect starts only beyond 15 cells / another map, and never while the priest is
+	# coming toward her (distance shrinking): then she stands still. Collecting ends when the priest has been within
+	# 6 cells for 3 s ($s->{nearFor}); she walks on toward it only while the distance hasn't shrunk for 10 s.
 	if ($pr) {
 		my $prD = $pr->[2] eq $here && defined $pr->[3] ? $pr->[3] : undef;
-		my $ok = defined $prD && $prD <= 10 ? 1 : 0;
+		my $near6 = defined $prD && $prD <= 6 ? 1 : 0;
+		if ($s->{collecting}) {
+			return ('ok', $pr) if $near6 && ($s->{nearFor} || 0) >= 3;
+			return ('wait', $pr) if $near6 || $s->{shrinking}; # the priest is here / coming: never both walk
+			return ('goto', $pr);
+		}
+		my $ok = $near6;
 		$ok = 0 if $ok && $cross eq 'pre' && @near < $two; # crossing a dangerous map: the priest + one more within 10
 		return ('ok', $pr) if $ok;
+		return ('wait', $pr) if defined $prD && $prD <= 15; # pace: wait for it to close up
+		return ('wait', $pr) if $s->{shrinking};            # coming toward her: stand still
 		return ('goto', $pr) if ($s->{waited} || 0) >= 10;
 		return ('wait', $pr);
 	}
@@ -2371,6 +2383,8 @@ sub friend_cls {
 	return 'Priest' if $j =~ /^(4|8|15|4005|4009|4016)$/;
 	return '';
 }
+# one party line per decision: at most one of "coming to u" / "waiting for u" / "im at ..." every 30 s
+sub pk_say { my $t = shift; return if time - ($pk{lineAt} || 0) < 30; $pk{lineAt} = time; psay($t, 1, 0) }
 sub pack_tick {
 	# a lockMap held during the last tick's wait comes back first (the wait below takes it again if still waiting)
 	if (($pk{lmHold} || '') ne '') { $config{lockMap} = $pk{lmHold} if ($config{lockMap} || '') eq ''; $pk{lmHold} = '' }
@@ -2395,12 +2409,23 @@ sub pack_tick {
 	return 0 if !$farm && $dm ne '' && is_townmap($dm) && !$pk{wf}; # a town run back (the party meets at the Kafra)
 	my $cross = ($dm ne '' && $dm ne $here && cross_danger($here)) ? 'on' : ($nm ne '' && $nm ne $dm && cross_danger($nm)) ? 'pre' : '';
 	# fighting while she waits: released only when the priest + one friend (priest offline: 2 friends) are within 20
+	# the priest's distance over time: shrinking = it got closer within the last 10 s (or changed map within 20 s);
+	# nearFor = how long it has been within 6 cells
+	my ($prRow) = sort { (($a->[2] eq $here && defined $a->[3]) ? $a->[3] : 9999) <=> (($b->[2] eq $here && defined $b->[3]) ? $b->[3] : 9999) } grep { ($_->[1] || '') =~ /priest|acolyte/i } @fr;
+	my $prD = $prRow && $prRow->[2] eq $here && defined $prRow->[3] ? $prRow->[3] : undef;
+	if ($prRow && ($pk{prMap} || '') ne $prRow->[2]) { ($pk{prMap}, $pk{prMapAt}) = ($prRow->[2], time) }
+	if (defined $prD) {
+		if (!defined $pk{prBest} || $prD < $pk{prBest}) { ($pk{prBest}, $pk{prBestAt}) = ($prD, time) }
+		elsif ($prD > $pk{prBest} + 3) { $pk{prBest} = $prD }
+	} else { $pk{prBest} = undef }
+	my $shrinking = defined $prD ? (time - ($pk{prBestAt} || 0) < 10 ? 1 : 0) : ($prRow && time - ($pk{prMapAt} || 0) < 20 ? 1 : 0);
+	if (defined $prD && $prD <= 6) { $pk{nearSince} ||= time } else { $pk{nearSince} = 0 }
 	my ($act, $an) = pack_decide({here => $here, friends => \@fr, farm => $farm, leaving => ($leaving || $pk{wf} ? 1 : 0), cross => $cross,
-		waited => $pk{waitAt} ? time - $pk{waitAt} : 0});
-	if ($pk{goName} ne '') {
-		my ($g) = grep { $_->[0] eq $pk{goName} } @fr;
-		if ($g && !($g->[2] eq $here && defined $g->[3] && $g->[3] <= 5)) { ($act, $an) = ('goto', $g) }
-		else { $pk{goName} = ''; $pk{waitAt} = 0; $regroupTo = ''; message "[partylead] AY22: with the priest again - going on together\n", 'system' if $g }
+		waited => $pk{waitAt} ? time - $pk{waitAt} : 0, shrinking => $shrinking, collecting => ($pk{goName} ne '' ? 1 : 0),
+		nearFor => $pk{nearSince} ? time - $pk{nearSince} : 0});
+	if ($act eq 'ok' && $pk{goName} ne '') {
+		message "[partylead] AY22: with $pk{goName} again (within 6 cells for 3 s) - going on together\n", 'system';
+		($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
 	}
 	# gave up collecting (3 min, or the priest stuck far away): she holds and waits for 10 min before trying again
 	($act) = ('wait') if $act eq 'goto' && $pk{goGaveUp} && time - $pk{goGaveUp} < 600;
@@ -2446,14 +2471,14 @@ sub pack_tick {
 		if ($am ne '' && ($stuckFar || ($pk{goAt} && $pk{goName} eq $an->[0] && time - $pk{goAt} > 180))) {
 			$pk{goGaveUp} = time; ($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
 			my $out = $here =~ /^(.+?)_in\d*$/ ? $1 : $here;
-			psay("$an->[0] im at $out $cx,$cy, come to me", 1, 0);
+			pk_say("$an->[0] im at $out $cx,$cy, come to me");
 			message "[partylead] AY22: stopped collecting $an->[0] (" . ($stuckFar ? "stuck on $am for " . int((time - $pk{anSince}) / 60) . " min" : '3 min without reaching it') . ") - holding at $here\n", 'system';
 			$am = ''; # falls through to the wait below
 		}
 		if ($am ne '') {
 			# one owner of movement: lockMap set aside while she collects (no lockMap route between the ticks)
 			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
-			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; $pk{goAt} = time; $regroupTo = $am; psay("coming to u, $an->[0]", 1, 0); message "[partylead] AY22: $an->[0] fell behind ($am) - walking back to them\n", 'system' }
+			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; $pk{goAt} = time; $regroupTo = $am; pk_say("coming to u, $an->[0]"); message "[partylead] AY22: $an->[0] fell behind ($am) - walking back to them\n", 'system' }
 			my ($rdm) = route_maps();
 			# the route is made once and kept (re-made every 10 s it flipped between the Kafra and the walk: aldebaran <->
 			# mjolnir_12 ping-pong) - only when there is none, it points elsewhere, or she hasn't moved for 20 s
@@ -2470,10 +2495,10 @@ sub pack_tick {
 	# wait - clearing OpenKore's lockMap route every tick made it recalculate it every 0.5 s ("Calculating lockMap route")
 	if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
 	AI::clear('route', 'move') if AI::inQueue('route', 'move');
-	if (time - $pk{sayAt} >= 60) {
+	if (time - $pk{sayAt} >= 60 && $pk{waitAt} && time - $pk{waitAt} > 15) { # a short pace stop says nothing
 		$pk{sayAt} = time;
 		my $out = $here =~ /^(.+?)_in\d*$/ ? $1 : $here; # indoors (geffen_in): name the town, not the room
-		psay($out ne $here ? "waiting for u in $out, at the kafra" : "waiting for u at $here $cx,$cy", 1, 0);
+		pk_say($out ne $here ? "waiting for u in $out, at the kafra" : "waiting for u at $here $cx,$cy");
 	}
 	return 1;
 }

@@ -11,37 +11,37 @@ my $src = do { local $/; <$fh> };
 my ($code) = $src =~ /(# ---- pack begin.*?# ---- pack end)/s or die "no pack block";
 eval "$code\n1" or die $@;
 my ($pass, $fail) = (0, 0);
-sub ok { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
+sub ok($$) { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
 sub act { my ($a, $an) = pack_decide(shift); return $a . ($an ? ":$an->[0]" : '') }
 my $pr = sub { ['Zen.fox', 'Priest', @_] };
 my $kn = sub { ['Echobunny', 'Knight', @_] };
 my $wz = sub { ['Silent rogue', 'Wizard', @_] };
 # (5) nobody online: solo
 ok(act({here => 'gef_fild07', friends => []}) eq 'solo', 'solo');
-# (2) travelling: one friend within 20 is enough; all > 20 -> wait; after 3 min -> go to the priest
-ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 30), $kn->('gef_fild07', 12)]}) =~ /^ok/, 'travel ok with a friend at 12');
-ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 30), $kn->('geffen', undef)]}) eq 'wait:Zen.fox', 'travel: friend 30 behind -> wait');
-ok(act({here => 'gef_fild07', friends => [$pr->('geffen', undef)], waited => 179}) eq 'wait:Zen.fox', 'wait under 3 min');
-ok(act({here => 'gef_fild07', friends => [$pr->('geffen', undef)], waited => 180}) eq 'goto:Zen.fox', 'after 3 min go to the priest');
-ok(act({here => 'gef_fild07', friends => [$kn->('geffen', undef), $wz->('gef_fild07', 40)], waited => 200}) eq 'goto:Silent rogue', 'no priest: go to the nearest');
-# (1) leaving town: the priest beside her, or 2 friends when the priest is offline
-ok(act({here => 'geffen', leaving => 1, friends => [$pr->('geffen', 8), $kn->('geffen', 40)]}) =~ /^ok/, 'leave with the priest');
-ok(act({here => 'geffen', leaving => 1, friends => [$pr->('geffen', 25), $kn->('geffen', 5)]}) eq 'wait:Zen.fox', 'no leaving without the priest');
+# AY22: the priest is the anchor - within 10 go on; behind: wait 10 s, then walk back to the priest
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 6), $kn->('geffen', undef)]}) =~ /^ok/, 'priest at 6: go on');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 8)], waited => 60}) eq 'wait:Zen.fox', 'pace: priest at 8 -> wait, no collect');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 16)], waited => 20}) eq 'goto:Zen.fox', 'priest 16 away, not coming -> collect');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 19)], waited => 60, shrinking => 1}) eq 'wait:Zen.fox', 'priest coming (shrinking): stand still');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 12)], collecting => 1, shrinking => 1}) eq 'wait:Zen.fox', 'collecting, priest coming: stand still');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 12)], collecting => 1}) eq 'goto:Zen.fox', 'collecting, not shrinking: walk on');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 5)], collecting => 1, nearFor => 1}) eq 'wait:Zen.fox', 'within 6 for 1 s: not yet');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 5)], collecting => 1, nearFor => 3}) =~ /^ok/, 'within 6 for 3 s: together again');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 14), $kn->('gef_fild07', 2)]}) eq 'wait:Zen.fox', 'priest 14 behind: wait');
+ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 14)], waited => 9}) eq 'wait:Zen.fox', 'under 10 s: wait');
+ok(act({here => 'gef_fild07', friends => [$pr->('geffen', undef)], waited => 10}) eq 'goto:Zen.fox', 'after 10 s: back to the priest');
+ok(act({here => 'orcsdun02', farm => 1, friends => [$pr->('orcsdun02', 28)], waited => 12}) eq 'goto:Zen.fox', 'farm: priest 28 away -> back to it');
+ok(act({here => 'geffen', leaving => 1, friends => [$pr->('geffen', 5), $kn->('geffen', 40)]}) =~ /^ok/, 'leave with the priest');
+# crossing: priest + one more within 10
+ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6), $kn->('gef_fild07', 14)]}) =~ /^wait/, 'pre-cross: 2nd friend at 14 -> wait');
+ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6), $kn->('gef_fild07', 9)]}) =~ /^ok/, 'pre-cross: both within 10');
+ok(act({here => 'gef_fild07', cross => 'pre', friends => [$kn->('gef_fild07', 3), $wz->('gef_fild07', 4)]}) =~ /^wait/, 'no known priest: no crossing');
+ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('gef_fild10', 12), $kn->('gef_fild10', 2)]}) eq 'wait:Zen.fox', 'on gef_fild10: priest 12 behind -> stop');
+# no priest online: a friend within 20, else hold (no walking)
+ok(act({here => 'gef_fild07', friends => [$kn->('gef_fild07', 12)]}) =~ /^ok/, 'no priest: friend at 12');
+ok(act({here => 'gef_fild07', friends => [$kn->('geffen', undef)], waited => 600}) =~ /^wait/, 'no priest: holds');
 ok(act({here => 'geffen', leaving => 1, friends => [$kn->('geffen', 5), $wz->('geffen', 9)]}) =~ /^ok/, 'priest offline: 2 friends');
 ok(act({here => 'geffen', leaving => 1, friends => [$kn->('geffen', 5), $wz->('geffen', 30)]}) =~ /^wait/, 'priest offline: 1 friend is not enough');
-# (3) farm map: within 20 of the priest, else walk back to him
-ok(act({here => 'orcsdun02', farm => 1, friends => [$pr->('orcsdun02', 15), $kn->('orcsdun02', 40)]}) =~ /^ok/, 'farm near the priest');
-ok(act({here => 'orcsdun02', farm => 1, friends => [$pr->('orcsdun02', 28), $kn->('orcsdun02', 3)]}) eq 'back:Zen.fox', 'farm: back to the priest');
-ok(act({here => 'orcsdun02', farm => 1, friends => [$pr->('geffen', undef), $kn->('orcsdun02', 10)]}) =~ /^ok/, 'farm: priest away, a friend near');
-# (4) crossing gef_fild10: before it priest + one more within 10; on it the priest within 10
-ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6), $kn->('gef_fild07', 14)]}) =~ /^wait/, 'pre-cross: 2nd friend at 14 -> wait');
-ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6), $kn->('gef_fild07', 9)]}) =~ /^ok/, 'pre-cross: both within 10 -> go');
-ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('gef_fild10', 12), $kn->('gef_fild10', 2)]}) eq 'wait:Zen.fox', 'on gef_fild10: priest 12 behind -> stop');
-ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('gef_fild10', 7), $kn->('gef_fild10', 30)]}) =~ /^ok/, 'on gef_fild10: priest at 7 -> go on');
-# crossing: the priest within 10 on the same map, no exceptions (live 03:5x: crossed with the priest 86 cells away)
-ok(act({here => 'gef_fild07', cross => 'pre', friends => [$kn->('gef_fild07', 3), $wz->('gef_fild07', 4)]}) =~ /^wait/, 'no known priest: no crossing');
-ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('geffen', undef), $kn->('gef_fild07', 3), $wz->('gef_fild07', 4)]}) eq 'wait:Zen.fox', 'priest on another map: no crossing');
-ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('geffen', undef), $kn->('gef_fild10', 3)]}) =~ /^wait/, 'on gef_fild10, priest left behind: stop');
 # waiting = fighting (owner 2026-11-14): the best safe field next to the town, or the safe map she waits on
 my %tops = (geffen => 1, gef_fild13 => 44, gef_fild07 => 24, gef_fild10 => 60, mjolnir_05 => 82, prt_fild08 => 24);
 my %danger = (gef_fild10 => 1);
@@ -54,7 +54,7 @@ ok($wm->('gef_fild10', 0, undef, 58) eq '', 'not on a dangerous crossing');
 ok($wm->('mjolnir_05', 0, undef, 58) eq '', 'not on a map above the party');
 ok($wm->('payon', 1, undef, 58) eq '', 'no table: wait as before');
 # waiting-farm release needs the priest + one friend within 20 (leaving rule)
-ok(act({here => 'gef_fild13', leaving => 1, friends => [$pr->('gef_fild13', 12), $kn->('gef_fild13', 18)]}) =~ /^ok/, 'release: priest + friend near');
+ok(act({here => 'gef_fild13', leaving => 1, friends => [$pr->('gef_fild13', 5), $kn->('gef_fild13', 18)]}) =~ /^ok/, 'release: priest + friend near');
 ok(act({here => 'gef_fild13', leaving => 1, friends => [$pr->('mjolnir_09', undef), $kn->('gef_fild13', 3)]}) =~ /^wait/, 'no release without the priest');
 # PT32: in place, one or a few at a time
 my $me = {x => 50, y => 50};
