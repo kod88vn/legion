@@ -110,7 +110,28 @@ sub logline {
 		$o->{result} = $t;
 	}
 }
-# exp/h and kills/min over the last 10 min (samples every ~3 s; a level-up adds the rest of the old level)
+# kills counted from her exp gains (the rule partylead.pl's drained check uses in plan_track: every kill she or the
+# party makes shares exp with her; the target_died hook only sees some of her own). Checked every main loop (not only
+# every 3 s), so two kills 3 s apart count twice. One kill = one rise of her base exp (or a base level-up); the job
+# exp packet that follows is not counted again. At level 99 base exp stands still, so the job exp counts instead.
+# No kill is counted in a town (same town list as partylead.pl is_townmap). $sx{xkills} is a running total since
+# $sx{xsince} (survives a plugin reload; a new OpenKore process starts a new total - Legion's meter sees kills_since
+# change and counts no jump).
+sub xkill_check {
+	my ($b, $lv, $j, $jl) = map { num($char->{$_}) } qw(exp lv exp_job lv_job);
+	$sx{xsince} ||= int(time);
+	my $p = $sx{xprev};
+	$sx{xprev} = [$b, $lv, $j, $jl];
+	return unless $p;
+	my $gain = $lv > $p->[1] || ($lv == $p->[1] && $b > $p->[0]);
+	$gain = 1 if !$gain && $lv >= 99 && $lv == $p->[1] && $b == $p->[0] && ($jl > $p->[3] || ($jl == $p->[3] && $j > $p->[2]));
+	return unless $gain;
+	my $m = ($field && eval { $field->baseName }) || '';
+	my $town = defined &partylead::is_townmap ? partylead::is_townmap($m) : ($m =~ /^(prontera|payon|geffen|morocc|alberta|izlude|aldebaran|yuno|comodo|umbala)$|_in\d*$/);
+	$sx{xkills}++ unless $town;
+}
+# exp/h and kills/min over the last 10 min (samples every ~3 s; a level-up adds the rest of the old level).
+# kpm = kills from her exp gains (xkill_check); kpm_own = the target_died hook (her own killing blows it saw).
 sub meter {
 	my $now = time;
 	my ($b, $bm, $j, $jm, $lv, $jl) = map { num($char->{$_}) } qw(exp exp_max exp_job exp_job_max lv lv_job);
@@ -122,18 +143,21 @@ sub meter {
 		$sx{gj} += $gj if $gj > 0;
 	}
 	$sx{prev} = [$b, $bm, $j, $jm, $lv, $jl];
-	push @{$sx{samples}}, [$now, $sx{gb} || 0, $sx{gj} || 0, $sx{kills} || 0];
+	@{$sx{samples}} = () if $sx{samples} && @{$sx{samples}} && !defined $sx{samples}[0][4]; # samples from before this version
+	push @{$sx{samples}}, [$now, $sx{gb} || 0, $sx{gj} || 0, $sx{kills} || 0, $sx{xkills} || 0];
 	shift @{$sx{samples}} while @{$sx{samples}} > 1 && $now - $sx{samples}[0][0] > 600;
 	my $f = $sx{samples}[0];
 	my $min = ($now - $f->[0]) / 60;
-	my ($eh, $jh, $kpm) = (0, 0, 0);
+	my ($eh, $jh, $kpm, $own) = (0, 0, 0, 0);
 	if ($min >= 1) {
 		$eh = int((($sx{gb} || 0) - $f->[1]) / $min * 60);
 		$jh = int((($sx{gj} || 0) - $f->[2]) / $min * 60);
-		$kpm = int((($sx{kills} || 0) - $f->[3]) / $min * 100) / 100;
+		$own = int((($sx{kills} || 0) - $f->[3]) / $min * 100) / 100;
+		$kpm = int((($sx{xkills} || 0) - $f->[4]) / $min * 100) / 100;
 	}
 	return join(',', '"base_exp_pct":' . ($bm ? int(1000 * $b / $bm) / 10 : 0), '"job_exp_pct":' . ($jm ? int(1000 * $j / $jm) / 10 : 0),
-		'"exp_h":' . $eh, '"job_exp_h":' . $jh, '"kpm":' . $kpm, '"meter_min":' . int($min * 10) / 10);
+		'"exp_h":' . $eh, '"job_exp_h":' . $jh, '"kpm":' . $kpm, '"kpm_own":' . $own, '"meter_min":' . int($min * 10) / 10,
+		'"kills":' . ($sx{xkills} || 0), '"kills_since":' . num($sx{xsince}), '"kills_src":"exp"');
 }
 sub ev { my $e = shift; return 'null' unless ref $e; return '{' . join(',', map { "\"$_\":" . ($_ eq 'ts' ? num($e->{$_}) : str($e->{$_})) } sort keys %$e) . '}' }
 sub extras {
@@ -158,6 +182,7 @@ sub tick {
 	# queue b1794721505e1m: during a map change OpenKore isn't in game yet and $field / the position are the old map's
 	# - no write then (the reader drops a file older than 30 s); a new map is written at once, not after the 3 s step
 	return unless $net && $net->getState() == Network::IN_GAME() && $field;
+	eval { xkill_check() }; # every loop: the exp-gain kill count (before the 3 s write step)
 	my $nowMap = eval { $field->baseName } || '';
 	return if time - $last < 3 && $nowMap eq $lastMap;
 	$last = time;
