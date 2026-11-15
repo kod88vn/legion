@@ -298,6 +298,9 @@ type Tuning struct {
 	// level minus meter_fair_lv_gap (0 or less = 0.5). fair_spot_gate_on default ON.
 	FairSpotGateOn bool    `json:"fair_spot_gate_on"`
 	FairSpotShare  float64 `json:"fair_spot_share"`
+	// lfgstats.go / lfg.go (bug b1794773272q31): count the map check of every fitting join pair, not only the pairs that
+	// would beat the best candidate (costs one partyMapOK per fitting pair; off by default until measured)
+	LfgCountMaps bool `json:"lfg_count_maps"`
 	// partystick.go (PT04/PT06/PT31, 2026-11-14): no move / target / loot takes a grinding party member beyond
 	// together_cells of its party (party_stick_on), and no solo random Fly Wing / Teleport escape while party mates are
 	// on the map (party_stick_escape_on): run to the party, call for help, Butterfly Wing only when about to die. Both ON.

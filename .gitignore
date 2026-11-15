@@ -81,3 +81,5 @@ tools/puppet/workdir/.claude/
 
 # rathena copies used as gen_mapdensity.py input (conf/ and npc/ from ro-rathena; local only, see the generator docstring)
 tools/dev/rathena-*/
+legion/testdata/rathena/
+legion/data/lfgstats.json

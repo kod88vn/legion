@@ -288,6 +288,13 @@ func formPartyOpt(leader *Bot, members []*Bot, mapName string, refit bool, setup
 	return p
 }
 
+// partyGoalEnds: a goal that only meant "in this party" (or a restore / help leg of it). When the party ends the bot
+// must pick its own ground again: lfgGather only takes a free bot whose goal is an "auto" one, so a goal left as
+// "party-restore" or "help" kept it out of every party for good (bug b1794773272q31).
+func partyGoalEnds(g Goal) bool {
+	return g.Set == "party" || strings.HasPrefix(g.Set, "party-leader") || g.Set == "party-restore" || g.Set == "help"
+}
+
 func disband(p *Party) {
 	parties.Lock()
 	delete(parties.byName, p.Name)
@@ -304,7 +311,7 @@ func disband(p *Party) {
 			m.send(newPkt(0x0100).b) // leave party
 			m.mu.Lock()
 			m.PartyName, m.PartyID = "", 0
-			if m.Goal.Set == "party" || strings.HasPrefix(m.Goal.Set, "party-leader") {
+			if partyGoalEnds(m.Goal) {
 				m.Goal = Goal{}
 			}
 			m.mu.Unlock()
