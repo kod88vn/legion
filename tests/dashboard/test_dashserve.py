@@ -511,6 +511,31 @@ class OwnerRequests(Base):
         self.assertEqual(self.status("r_fresh", "declined", headers={"Origin": "http://evil.example",
                                                                     "Content-Type": "application/json"})[0], 403)
 
+    def raw_post(self, path, length_header):
+        """one raw HTTP POST, so the header can say anything (urllib would fix Content-Length itself)"""
+        import socket
+        host, port = self.srv.server_address
+        head = ("POST %s HTTP/1.1\r\nHost: 127.0.0.1:%d\r\nOrigin: %s\r\nContent-Type: application/json\r\n"
+                "Content-Length: %s\r\nConnection: close\r\n\r\n" % (path, port, self.url, length_header)).encode()
+        with socket.create_connection((host, port), timeout=5) as s:
+            s.sendall(head + b'{"status":"declined"}')
+            data = b""
+            while True:   # a hung handler shows up as socket.timeout here, not as a silent pass
+                chunk = s.recv(65536)
+                if not chunk:
+                    return data
+                data += chunk
+
+    def test_negative_content_length_is_refused_not_hung(self):
+        """rfile.read(-1) waits for the peer to close: a negative Content-Length must get a 400, never a hang"""
+        before = len(self.lines())
+        for bad in ("-1", "+5", "abc"):
+            data = self.raw_post("/api/ayla/requests/r_dec/status", bad)
+            self.assertTrue(data.startswith(b"HTTP/1.1 400"), (bad, data[:40]))
+            self.assertIn(b"bad Content-Length", data)
+        self.assertEqual(len(self.lines()), before)            # nothing was recorded
+        self.assertEqual(self.status("r_dec", "declined")[0], 200)   # the request is still pending and answerable
+
     def test_guards_on_the_request_routes(self):
         before = len(self.lines())
         evil = {"Origin": "http://evil.example", "Content-Type": "text/plain"}
@@ -601,6 +626,17 @@ class OwnerToolEngineDown(Base):
 
 
 class Small(unittest.TestCase):
+    def test_ctl_spots_escapes_every_engine_field(self):
+        """ctlSpots writes the engine's spot fields into innerHTML: each one goes through esc() (additive, G08)"""
+        import re
+        html = open(os.path.join(REPO, "legion", "dashboard.html"), encoding="utf-8").read()
+        m = re.search(r"async function ctlSpots\(lv\) \{(.*?)\n\}", html, re.S)
+        self.assertIsNotNone(m)
+        body = m.group(1)
+        for field in ("Map", "MinLv", "MaxLv", "Mobs"):
+            self.assertIn("esc(s.%s)" % field, body, field)
+            self.assertIsNone(re.search(r"\$\{s\.%s\}" % field, body), field)
+
     def test_go_time(self):
         import dashserve
         self.assertAlmostEqual(dashserve.go_time("2026-11-15T01:06:12.123456789Z"), 1794704772.123456, places=3)

@@ -41,6 +41,18 @@ def dpath(name):
     return os.path.join(data_dir(), name)
 
 
+# AY25 owner order requests: one 24 h window, read by the dashboard (tools/dashboard/dashserve.py) and by
+# tools/puppet/orders.py alike, so the briefing and the dashboard list the same orders.
+REQUEST_LIFETIME_S = 24 * 3600
+
+
+def request_live(t, now_s=None):
+    """True when an owner order request stamped t (epoch s) is still open: not older than REQUEST_LIFETIME_S and not
+    more than 5 min in the future."""
+    now_s = now() if now_s is None else now_s
+    return isinstance(t, (int, float)) and now_s - REQUEST_LIFETIME_S <= t <= now_s + 300
+
+
 def now():
     """Fake-able clock: LEGION_FAKE_NOW=<epoch seconds> pins it (tests, dry runs)."""
     v = os.environ.get("LEGION_FAKE_NOW")

@@ -223,7 +223,13 @@ func exFavourOK(times []time.Time, limit int, now time.Time) ([]time.Time, bool)
 const aylaName = "Ayla"
 const aylaZenyFloor = 10000
 
-func isAyla(name string) bool { return strings.EqualFold(strings.TrimSpace(name), aylaName) }
+// isAyla: the character under the G12 floor. Keyed on the engine party (enginePartyOn, G25/PR16): the human named in
+// engine_parties. Before the switch, the OpenKore-era Ayla is still known by her name, as ever; once she is on the
+// engine, the name stops mattering.
+func isAyla(name string) bool {
+	n := strings.TrimSpace(name)
+	return enginePartyOn(n) || !aylaEngineOn() && strings.EqualFold(n, aylaName)
+}
 
 // aylaSpendOK (G12): may Ayla's own bot send `amount` zeny (a mail gift, a trade price, a gear gift) and keep the floor?
 // Checked on her side of every send, not only when a human names her. Every other character is not limited here.

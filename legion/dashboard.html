@@ -1804,7 +1804,7 @@ async function ctlSpots(lv) {
   if (!res.ok || res.stale != null) return;
   CTL.spotsLv = lv;
   const sel = $('ctlMap'), cur = sel.value, rows = Array.isArray(res.data) ? res.data : [];
-  sel.innerHTML = rows.length ? rows.map(s => `<option value="${esc(s.Map)}">${esc(s.Map)} · lv ${s.MinLv}-${s.MaxLv} · ${s.Mobs} mobs</option>`).join('')
+  sel.innerHTML = rows.length ? rows.map(s => `<option value="${esc(s.Map)}">${esc(s.Map)} · lv ${esc(s.MinLv)}-${esc(s.MaxLv)} · ${esc(s.Mobs)} mobs</option>`).join('')
     : '<option value="">no map fits this level</option>';
   if (cur) sel.value = cur;
 }

@@ -97,15 +97,19 @@ def add(text, who="owner", path=None, now=None, requests=None):
     return row
 
 
-def pending_requests(path=None):
-    """engine era: requests the dashboard has not answered yet (no status row carries their id), oldest first"""
+def pending_requests(path=None, now=None):
+    """engine era: requests the dashboard has not answered yet (no status row carries their id), oldest first, not older
+    than 24 h (common.REQUEST_LIFETIME_S)"""
+    now = time.time() if now is None else now
     try:
         with open(path or requests_path(), encoding="utf-8") as f:
             rows = [json.loads(line) for line in f if line.strip()]
     except (OSError, ValueError):
         return []
     answered = {r.get("id") for r in rows if isinstance(r, dict) and r.get("kind") == "status"}
-    return [r for r in rows if isinstance(r, dict) and r.get("kind") == "request" and r.get("id") not in answered]
+    # the same 24 h cut as the dashboard (common.request_live): a stale order drops out of the briefing too
+    return [r for r in rows if isinstance(r, dict) and r.get("kind") == "request" and r.get("id") not in answered
+            and C.request_live(r.get("t"), now)]
 
 
 def open_orders(path=None):

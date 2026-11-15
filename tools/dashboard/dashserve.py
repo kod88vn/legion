@@ -690,7 +690,7 @@ def build_status(engine, watch, started):
 # {"kind":"order"|"request","id","t" (epoch s),"text", optional "value" and "hours"}, and status rows
 # {"kind":"status","id","status":"confirmed"|"declined","by"}. This module reads it and appends status rows; the file is
 # append-only, so the two writers never clash. A pending order older than REQ_LIFETIME_S drops out of the list.
-REQ_LIFETIME_S = 24 * 3600
+REQ_LIFETIME_S = C.REQUEST_LIFETIME_S   # one window for the dashboard and tools/puppet/orders.py (common.request_live)
 REQ_LIST = "/api/ayla/requests"
 REQ_STATUS = re.compile(r"^/api/ayla/requests/([A-Za-z0-9_-]{1,80})/status$")
 REQ_LOCK = threading.Lock()
@@ -715,7 +715,7 @@ def pending_requests(now=None):
     out = []
     for rid, r in asked.items():
         t = r.get("t")
-        if rid in answered or not isinstance(t, (int, float)) or not (now - REQ_LIFETIME_S <= t <= now + 300):
+        if rid in answered or not C.request_live(t, now):
             continue
         row = {"id": rid, "t": t, "text": str(r.get("text") or "")[:400]}
         if r.get("value") is not None:
@@ -830,8 +830,20 @@ class Handler(BaseHTTPRequestHandler):
             return 403, "a write must be application/json"
         return None
 
+    def body_length(self):
+        """Content-Length as a byte count: 0 when absent, None when malformed (negative, signed or not a number).
+        rfile.read(-1) would wait for the peer to close, so a bad value is refused, never passed on."""
+        raw = (self.headers.get("Content-Length") or "").strip()
+        if not raw:
+            return 0
+        return int(raw) if re.fullmatch(r"[0-9]{1,12}", raw) else None
+
+    def refuse_bad_length(self):
+        self.close_connection = True   # the body is not read, so the connection cannot be reused
+        return self.send_json(400, {"error": "bad Content-Length"})
+
     def refuse_write(self, code, why):
-        n = int(self.headers.get("Content-Length") or 0)
+        n = self.body_length() or 0
         if n > 0:
             self.rfile.read(min(n, 1 << 20))   # drain the body so the connection stays in step
         self.close_connection = True
@@ -839,7 +851,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def request_status(self, rid):
         """POST /api/ayla/requests/{id}/status {"status":"confirmed"|"declined"}: appends the status row (guarded)."""
-        n = int(self.headers.get("Content-Length") or 0)
+        n = self.body_length()
+        if n is None:
+            return self.refuse_bad_length()
         if n > 4096:
             return self.refuse_write(413, "too large")
         try:
@@ -879,7 +893,9 @@ class Handler(BaseHTTPRequestHandler):
     def proxy(self, method):
         body = None
         if method == "POST":
-            n = int(self.headers.get("Content-Length") or 0)
+            n = self.body_length()
+            if n is None:
+                return self.refuse_bad_length()
             if n > 1 << 20:
                 return self.send(413, "text/plain; charset=utf-8", b"too large")
             body = self.rfile.read(n) if n else b""

@@ -14,10 +14,13 @@ Sources, by era:
             API's dist_lead, filled because the party is human-led), status.json, and the last 5 min of her container log
             (wsl docker logs ro-openkore-ayla): exp gained, kills, deaths, map changes.
   engine    the same party, found by the member named Ayla: an engine party has no human (Party.Human is ""). The distance
-            is computed from the members' x, y and map (dist_lead is not filled for engine parties). kills and deaths are
-            deltas of the members' running totals against the last recorded snapshot (negative deltas clamped to 0).
-            kpm and zph come from the Ayla row of <data>/meter_bots.json ("bots", fresh within 1 h). The API has no exp
-            total for engine parties, so exp is reported as n/a in this era.
+            is computed from the members' x, y and map (dist_lead is not filled for engine parties), and only while Ayla
+            is online (an offline Ayla has no distances: -1). kills and deaths are deltas of the members' running totals
+            against the last recorded snapshot (negative deltas clamped to 0). exp: the party view's base_exp (her exp
+            total) and exp_per_h (exp/h, last 10 min) for every member, engine parties included; exp_5m is the delta of
+            her base_exp against the last recorded snapshot. Older API answers without these fields report n/a.
+            kpm and zph come from the Ayla row of <data>/meter_bots.json ("bots", fresh within 1 h): the 60-minute window
+            (the file is written with the 1h window), and the printed line says so.
 
 Read only. It sends no command to any character, to OpenKore or to the engine, and never touches Ayla's AI (G05).
 Plain code, no AI (Constitution 3.8): it holds a single-instance lock (<data>/aylawatch.lock), writes its heartbeat
@@ -56,6 +59,7 @@ LOCK_STALE = 360          # a round is 300 s plus up to 60 s of docker; an older
 RECORD = "aylawatch.jsonl"
 METER_BOTS = "meter_bots.json"
 MAX_METER_AGE = 3600      # a meter_bots.json older than this is not read as current
+METER_WINDOW_MIN = 60     # kpm and zph in meter_bots.json are the 1h window (meterapi.go meterWriteBots: mw60)
 INTENT_CHARS = 60
 
 RE_EXP = re.compile(r"You have gained (\d+)/")
@@ -213,20 +217,28 @@ def engine_view(party, meter, prev):
     others = [m for m in rows if not is_ayla(m)]
     ax, ay = _int(me.get("x"), None), _int(me.get("y"), None)
     amap = str(me.get("map") or "")
+    ayla_on = bool(me.get("online"))   # an offline Ayla has no position to measure from: no distances
     dist = {}
     for m in others:
         n = str(m.get("name", "?"))
         mx, my = _int(m.get("x"), None), _int(m.get("y"), None)
-        if (m.get("online") and None not in (ax, ay, mx, my) and same_map(m.get("map"), amap)):
+        if (ayla_on and m.get("online") and None not in (ax, ay, mx, my) and same_map(m.get("map"), amap)):
             dist[n] = chebyshev(mx, my, ax, ay)
         else:
             dist[n] = -1
-    totals = {str(m.get("name", "?")): {"kills": max(0, _int(m.get("kills"), 0)),
-                                        "deaths": max(0, _int(m.get("deaths"), 0))} for m in rows}
+    totals = {}
+    for m in rows:
+        t = {"kills": max(0, _int(m.get("kills"), 0)), "deaths": max(0, _int(m.get("deaths"), 0))}
+        if _int(m.get("base_exp"), -1) >= 0:   # the party view's exp total, when the API has it (partydash.go)
+            t["exp"] = _int(m.get("base_exp"))
+        totals[str(m.get("name", "?"))] = t
     members_map = {str(m.get("name", "?")): str(m.get("map") or "") for m in rows}
     have_prev = prev is not None and isinstance(prev.get("totals"), dict)
     kills_5m = deaths_5m = None
+    exp_5m = None
     map_changed = []
+    ay_key = str(me.get("name") or "")
+    exp_total = totals.get(ay_key, {}).get("exp")
     if have_prev:
         pt = prev["totals"]
         kills_5m = deaths_5m = 0
@@ -234,6 +246,9 @@ def engine_view(party, meter, prev):
             if n in pt and isinstance(pt[n], dict):
                 kills_5m += max(0, cur["kills"] - _int(pt[n].get("kills"), 0))
                 deaths_5m += max(0, cur["deaths"] - _int(pt[n].get("deaths"), 0))
+        # her exp over the snapshot gap, only against a record that carries her exp total (older records do not)
+        if exp_total is not None and isinstance(pt.get(ay_key), dict) and "exp" in pt[ay_key]:
+            exp_5m = max(0, exp_total - _int(pt[ay_key].get("exp"), 0))
         pm = prev.get("members_map") or {}
         map_changed = sorted(n for n, mp in members_map.items() if n in pm and pm[n] != mp)
     zeny = _int(me.get("zeny"))
@@ -243,8 +258,9 @@ def engine_view(party, meter, prev):
         "lv": _int(me.get("level"), None),
         "zeny": zeny if zeny >= 0 else None,
         "party_zeny": sum(max(0, _int(m.get("zeny"), 0)) for m in others),
-        "exp_5m": None,               # the engine API has no exp total for an engine party
-        "exp_h": None,
+        "exp_5m": exp_5m,             # her base_exp over the snapshot gap (needs a record with her exp)
+        "exp_total": exp_total,       # her base_exp counter (partydash.go member field), None when absent
+        "exp_h": _int(me.get("exp_per_h"), None),   # exp/h over the last 10 min (partydash.go), None when absent
         "kills_5m": kills_5m,
         "deaths_5m": deaths_5m,
         "kills_total": sum(t["kills"] for t in totals.values()),
@@ -308,7 +324,7 @@ def collect(era, now, status_path, data_dir, opener=urllib.request.urlopen, run=
         if party is not None:
             snap.update(engine_view(party, meter, prev))
         else:
-            snap.update({"map": None, "x": None, "y": None, "zeny": None, "exp_5m": None, "exp_h": None,
+            snap.update({"map": None, "x": None, "y": None, "zeny": None, "exp_5m": None, "exp_h": None, "exp_total": None,
                          "kills_5m": None, "deaths_5m": None, "map_changes": None, "members_map": {}, "totals": {},
                          "distance": {}, "members": 0, "kpm": None, "zph": None, "deaths_h": None})
     else:
@@ -327,12 +343,13 @@ def summary(snap):
     """One printed line for the main session: the old aylawatch.sh fields plus the engine-era ones."""
     dist = " ".join("%s:%s" % (n[:6], d) for n, d in sorted((snap.get("distance") or {}).items()))
     wd = " ; ".join(snap.get("watchdog") or []) or "-"
-    s = ("%s [%s] %s %s,%s lock=%s intent=%s | 5m: exp %s kills %s deaths %s mapchg %s | zeny %s | dist %s"
-         " | kpm %s zph %s | wd %s | status %ss") % (
+    s = ("%s [%s] %s %s,%s lock=%s intent=%s | 5m: exp %s kills %s deaths %s mapchg %s | exp/h %s total %s | zeny %s"
+         " | dist %s | kpm %s zph %s (%d-min window) | wd %s | status %ss") % (
         time.strftime("%H:%M", time.localtime(snap["t"])), snap["era"], _show(snap.get("map")), _show(snap.get("x")),
         _show(snap.get("y")), _show(snap.get("lock_map")), _show(snap.get("intent")), _show(snap.get("exp_5m")),
         _show(snap.get("kills_5m")), _show(snap.get("deaths_5m")), _show(snap.get("map_changes")),
-        _show(snap.get("zeny")), dist or "-", _show(snap.get("kpm")), _show(snap.get("zph")), wd,
+        _show(snap.get("exp_h")), _show(snap.get("exp_total")),
+        _show(snap.get("zeny")), dist or "-", _show(snap.get("kpm")), _show(snap.get("zph")), METER_WINDOW_MIN, wd,
         snap.get("status_age"))
     if snap.get("errors"):
         s += " | ERR " + "; ".join(snap["errors"])

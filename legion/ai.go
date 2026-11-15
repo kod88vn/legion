@@ -1676,6 +1676,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 				return
 			}
 		}
+		b.collectLagClear(b.collectName) // the collect is over: its lag grace is spent (together.go)
 		b.collectName = "" // together / busy fighting / gone: drop the promise so the member stops waiting for us
 	}
 	// party tank leader (tanklead.go): take whatever targets a member off it - before going on with our own target
@@ -1765,6 +1766,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 			}
 		}
 		if !found {
+			b.collectLagClear(b.collectName) // the collect that was running has ended: its lag grace is spent
 			b.collectName = ""
 			bd := 99
 			for _, m := range p.Members {
