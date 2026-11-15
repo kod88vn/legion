@@ -4,13 +4,30 @@
 #   default     : she is in a town and not shopping / fighting / talking to an NPC
 #   --anywhere  : (safety-critical fixes) any map, when no monster attacks her, HP > 80%, not attacking / routing
 #                 through a portal / talking to an NPC, and no rally / departure / hold running
-# For partylead: never while a rally or departure runs. Waits up to 2 h per plugin.
+#   --stuck-ok  : also reload when her position (map + cell in status.json) has not changed for 3+ min, even while a
+#                 rally / departure / hold runs (2026-11-15: a rally stuck on izlude 24,98 blocked a critical fix; the
+#                 reload is a plugin reload, not an order to her)
+# For partylead: never while a rally or departure runs (unless --stuck-ok and she is stuck). Waits up to 2 h per plugin.
 # Usage (WSL): bash /mnt/g/RO/legion/tools/rogui/ayla_safe_reload.sh --anywhere partylead aylagear
 CMDS=/mnt/g/RO/legion/openkore-ayla/control/commands.txt
 ST=/mnt/g/RO/legion/openkore-ayla/logs/status.json
 TOWNS='"map":"(prontera|payon|geffen|morocc|alberta|aldebaran|izlude|yuno|comodo|umbala)"'
-ANY=0; [ "$1" = "--anywhere" ] && { ANY=1; shift; }
+ANY=0; STUCKOK=0
+while [ $# -gt 0 ]; do case "$1" in --anywhere) ANY=1; shift;; --stuck-ok) STUCKOK=1; shift;; *) break;; esac; done
+LASTPOS=''; POSSINCE=$(date +%s)
+pos() { grep -oE '"(map)":"[^"]*"|"(x|y)":[0-9]+' "$ST" | head -3 | tr '
+' ' '; }
+stuck() {   # same map + cell for 180 s or more (checked every loop pass)
+  local p now; p=$(pos); now=$(date +%s)
+  [ -n "$p" ] || return 1
+  if [ "$p" != "$LASTPOS" ]; then LASTPOS=$p; POSSINCE=$now; return 1; fi
+  [ $((now - POSSINCE)) -ge 180 ]
+}
 calm() {
+  if [ $STUCKOK = 1 ] && stuck; then
+    docker logs --tail 5 ro-openkore-ayla 2>&1 | grep -qE '\[dead' && return 1
+    echo "$(date -u +%H:%M:%S) stuck at $LASTPOS for $(($(date +%s) - POSSINCE)) s: reload allowed (--stuck-ok)"; return 0
+  fi
   local tail; tail=$(docker logs --tail 40 ro-openkore-ayla 2>&1 | sed -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g')
   echo "$tail" | tail -3 | grep -qE '\[(sellAuto|buyAuto|storageAuto|NPC|attack|teleport|dead)' && return 1
   echo "$tail" | grep -qE 'attacks you|is casting .* on you' && return 1

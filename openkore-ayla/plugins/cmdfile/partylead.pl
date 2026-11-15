@@ -1502,15 +1502,44 @@ sub wd_target {
 	return $m if defined $m && $m ne '';
 	return $homeMap ne '' ? $homeMap : 'prt_fild08';
 }
+# ---- reports (owner 2026-11-15: "why did her watchdog report nothing while she was stuck?"): every action or finding
+# of the watchdog goes to her log as a "[watchdog] ..." line AND into the bug queue - logs/bugqueue.jsonl (this
+# container's logs mount = openkore-ayla/logs on the host), which tools/system/bugq.py reads next to
+# legion/data/bugqueue.jsonl (same record format). Deduped: one queue item per cause and map per hour.
+my %wdReported; # "cause|map" -> last queue write
+sub wd_report {
+	my ($cause, $map, $text, $action) = @_;
+	my $line = "[watchdog] $cause $text" . ($action ? " -> $action" : '');
+	message "$line\n", 'system';
+	my $k = "$cause|$map";
+	return if time - ($wdReported{$k} || 0) < 3600;
+	$wdReported{$k} = time;
+	my @l = localtime;
+	my $e = {id => sprintf("w%d-ayla", int(time * 1000)), t => sprintf("%04d-%02d-%02dT%02d:%02d:%02d", $l[5] + 1900, $l[4] + 1, @l[3, 2, 1, 0]),
+		from => 'ayla-watchdog', priority => ($cause eq 'STUCK' || $cause eq 'IDLE' ? 'high' : 'normal'), status => 'open',
+		key => lc("ayla-watchdog-$cause-$map"), metric => ($cause eq 'WRONG_MAP' ? 'zph' : 'idle'), bots => 1,
+		text => "Ayla watchdog $cause on $map: $text" . ($action ? " (action: $action)" : ''),
+		evidence => sprintf("char %s B%d job %s; map %s cell %d,%d; homeMap %s (%s, %d min old); lockMap %s; rally %s; goto %s; party level %d",
+			$char->{name}, $char->{lv} || 0, $char->{jobID} || '?', $map, $char->{pos_to}{x} || 0, $char->{pos_to}{y} || 0,
+			$homeMap || '-', $homeBy, $homeAt ? int((time - $homeAt) / 60) : -1, $config{lockMap} || '-', ($rally ? $rally->{town} : '-'), $gotoMap || '-', party_fit_lv())};
+	if (open(my $f, '>>', 'logs/bugqueue.jsonl')) { print $f JSON::PP->new->canonical->encode($e), "\n"; close $f }
+}
+my ($lowSince, $lowMap) = (0, '');
 sub watchdog_tick {
 	my $now = time;
 	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
 	my $pos = "$char->{pos_to}{x},$char->{pos_to}{y}";
 	my $here = $field->baseName;
+	# same cell since when (a failing route / rally recalculates forever without a step: NOT progress)
+	if ($pos ne $wdPos || $here ne ($wdStuckMap || '')) { ($wdStuckSince, $wdStuckMap) = ($now, $here) }
+	my $moving = $now - $wdStuckSince < 20;
+	# a rally counts as busy only while she walks toward it or waits at its Kafra (live 2026-11-15: a rally whose route
+	# failed on izlude 24,98 kept the watchdog quiet for 12 min)
+	my $rallyOk = $rally && ($here eq $rally->{town} || $moving);
 	my $busy = AI::inQueue('attack', 'take', 'items_take', 'items_gather', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'teleport', 'skill_use', 'deal')
-		|| $char->{sitting} || own_rest() || $char->{dead} || $rally || (defined &aylagear::busy && aylagear::busy());
+		|| $char->{sitting} || own_rest() || $char->{dead} || $rallyOk || (defined &aylagear::busy && aylagear::busy());
 	# a real route (to another map, or a far cell) counts as progress while she is actually moving along it
-	if (!$busy && AI::inQueue('route', 'move') && $pos ne $wdPos) {
+	if (!$busy && AI::inQueue('route', 'move') && $moving) {
 		my $ri = AI::findAction('route');
 		my $ra = (defined $ri && $ri ne '') ? AI::args($ri) : undef;
 		my $rm = ($ra && ref $ra && $ra->{dest} && $ra->{dest}{map}) ? $ra->{dest}{map} : '';
@@ -1519,31 +1548,40 @@ sub watchdog_tick {
 	}
 	$busy = 1 if $exp != $wdExp && $wdExp; # she is gaining exp: she kills
 	# stuck on one cell while a rally / route to another map keeps failing ("Cannot calculate a route from izlude
-	# (24,98)", live 2026-11-15: 12 min until the rally timed out, then the same route again): after 3 min she gives the
-	# destination up for 2 h (unless the mind ordered it), drops the rally and flies to her save point (Butterfly Wing)
-	if ($pos ne $wdPos || $here ne ($wdStuckMap || '')) { ($wdStuckSince, $wdStuckMap) = ($now, $here) }
-	elsif (($rally && $here ne $rally->{town} || AI::inQueue('route', 'move')) && !AI::inQueue('attack', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal')
-		&& !$char->{sitting} && !own_rest() && $now - $wdStuckSince > 180) {
+	# (24,98)", live 2026-11-15): after 3 min the plugin cancels the rally itself, drops the goto and flies to her save
+	# point (Butterfly Wing); the same destination failing twice is skipped for 2 h (unless the mind ordered it)
+	if (($rally && $here ne $rally->{town} || AI::inQueue('route', 'move')) && !AI::inQueue('attack', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal')
+		&& !$char->{sitting} && !own_rest() && !$char->{dead} && $now - $wdStuckSince > 180) {
 		my $dest = $rally ? ($rally->{thenGoto} || $rally->{dest} || $rally->{town}) : ($gotoMap || $config{lockMap} || '');
-		message "[partylead] stuck on $here $pos for " . int($now - $wdStuckSince) . " s (no route to " . ($dest || '?') . "): dropping it, back to the save point
-", 'system';
-		# the second time for the same destination it is skipped for 2 h (the first may be just a bad start cell)
+		wd_report('STUCK', $here, "$here $pos for " . int(($now - $wdStuckSince) / 60) . " min, route to " . ($dest || '?') . " fails" . ($rally ? " (rally $rally->{town})" : ''),
+			($rally ? 'rally cancelled, ' : '') . 'respawn to ' . ($config{saveMap} || 'the save point'));
 		if ($dest ne '' && ++$wdStuckN{$dest} >= 2 && !mind_fresh()) { $crowdedAt{$dest} = $now + 3600; $wdStuckN{$dest} = 0 }
-		end_rally("can't find a way there", 0) if $rally;
-		$depart = undef; $gotoMap = '';
+		if ($rally) { end_rally("can't find a way there", 0); $rally = undef }
+		$depart = undef; $gotoMap = ''; $holding = 0;
 		AI::clear('route', 'move');
 		Commands::run('respawn');
-		$wdStuckSince = $now;
-		$wdProdAt = $now; $wdAct = $now;
+		($wdStuckSince, $wdProdAt, $wdAct) = ($now, $now, $now);
+		$wdExp = $exp; $wdPos = $pos;
 		return;
 	}
+	# a map far below her level for 5+ min (not a short crossing): report it - fit_tick moves her unless a fresh order holds her
+	my $top = map_top($here);
+	if ($top && !is_townmap($here) && ($char->{lv} || 0) >= $top + 15) {
+		($lowSince, $lowMap) = ($now, $here) if $lowMap ne $here;
+		if ($now - $lowSince > 300) {
+			wd_report('WRONG_MAP', $here, "on $here (worth to level $top) for " . int(($now - $lowSince) / 60) . " min at base $char->{lv}; party level " . party_fit_lv() . ", target " . ($homeMap || '-') . (mind_fresh() ? " (mind's order)" : ''),
+				mind_fresh() ? "kept: the mind's order is fresh" : "own map choice re-checked");
+			$lowSince = $now; # next log line in 5 min (the queue item once an hour)
+			$fitAt = 0 unless mind_fresh(); # re-check the map choice now
+		}
+	} else { $lowMap = '' }
 	$wdExp = $exp; $wdPos = $pos;
 	if ($busy) { $wdProdAt = $now; return }
 	return if $now - $wdProdAt < WD_IDLE;
 	return if $now - $wdAct < WD_IDLE; # one step per minute at most
 	$wdAct = $now; $wdFired++;
 	my $tgt = wd_target();
-	message "[partylead] watchdog: no productive action for " . int($now - $wdProdAt) . " s (map $here, holding=$holding): default action = farm $tgt (#$wdFired)\n", 'system';
+	wd_report('IDLE', $here, "no productive action for " . int($now - $wdProdAt) . " s on $here $pos (holding=$holding" . ($rally ? ", rally $rally->{town}" : '') . ", #$wdFired)", "farm $tgt");
 	Commands::run('stand') if $char->{sitting};
 	if ($holding) { restore() }       # a stalled hold never outlives a minute of nothing
 	$depart = undef if $depart;       # nor a stalled departure wait
