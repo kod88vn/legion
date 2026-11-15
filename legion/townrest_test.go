@@ -8,17 +8,30 @@ import (
 
 // townrest_test.go: tick-level check of the town rest (heal.go lowHPGuard + the ai.go rest rule around ai.go:1583-1619).
 // The real think() needs the whole world, so each tick runs lowHPGuard and, when it hands the tick back, the ai.go rest
-// rule as a model: sit while under restAt, stand at the done line. The server is modelled too: sitting regenerates
-// faster than walking, eating removes the food from the bag and adds its HP. Asserts a bounded rest, no snack past the
-// done line, and that the bot leaves the rest once it is back over the line.
+// rule as a model. The server is modelled too:
+//   - natural regen: sitting 1% per tick, standing a quarter of that, and NONE at 50% weight or more (rAthena);
+//   - eating removes the food from the bag and adds its HP; drinking a potion removes it and heals 55 (Red Potion);
+//   - ai.go starts no rest at 50% weight or more (its sit condition and its done line both check overRegenWeight).
 
 type townTick struct {
 	ticks      int
 	hpReached  int  // first tick at or over the done line (-1: never)
 	eaten      int  // snacks eaten in total
 	eatenAfter int  // snacks eaten once the done line was reached
-	sittingEnd bool // still seated at the end
+	drunk      int  // potions drunk in total
+	sat        int  // ticks spent seated
 	restEnd    bool // lowHPGuard still owns the bot at the end
+}
+
+func useBagItem(b *Bot, ids func(int) bool, heal int) bool {
+	for _, it := range b.inv {
+		if ids(it.ItemID) && it.Count > 0 && (heal <= 0 || heal <= b.MaxHP-b.HP) {
+			it.Count--
+			b.HP = min(b.MaxHP, b.HP+max(heal, 0))
+			return true
+		}
+	}
+	return false
 }
 
 func runTownRest(b *Bot, ticks int, done float64, now time.Time) townTick {
@@ -28,7 +41,7 @@ func runTownRest(b *Bot, ticks int, done float64, now time.Time) townTick {
 	for i := 0; i < ticks; i++ {
 		now = now.Add(time.Second)
 		r.ticks = i + 1
-		if b.Sitting && i > 0 && b.wantSit == false {
+		if b.Sitting && !b.wantSit {
 			b.Sitting = false // the stand command is in: the server stands the bot
 		}
 		owned := b.lowHPGuard(nil, false, now)
@@ -37,32 +50,39 @@ func runTownRest(b *Bot, ticks int, done float64, now time.Time) townTick {
 			if r.hpReached >= 0 {
 				r.eatenAfter++
 			}
-			// the server eats the food: bag count down, HP up
-			for _, it := range b.inv {
+			for _, it := range b.inv { // the food that fits: one eaten, its HP added
 				if h := foodHeal[it.ItemID]; h > 0 && it.Count > 0 && h <= b.MaxHP-b.HP {
 					it.Count--
-					b.HP += h
+					b.HP = min(b.MaxHP, b.HP+h)
 					break
 				}
 			}
 		}
+		if owned && strings.Contains(b.State, "drinking a potion") {
+			r.drunk++
+			useBagItem(b, isHealPotion, 55)
+		}
 		if !owned {
-			if b.hpFrac() < restAt && !b.Sitting {
+			// ai.go:1610 sits only when not over the regen weight; ai.go:1588 ends a rest at that weight
+			if b.hpFrac() < restAt && !b.Sitting && !b.overRegenWeight() {
 				b.wantSit = true
 				b.Sitting = true // the server confirms the sit
-			} else if b.wantSit && b.hpFrac() >= 0.95 {
+			} else if b.wantSit && (b.hpFrac() >= 0.95 || b.overRegenWeight()) {
 				b.wantSit = false
 				b.Sitting = false
 			}
 		}
 		if b.Sitting {
-			b.HP += b.MaxHP / 100 // sitting: 1% per tick
-		} else {
-			b.HP += b.MaxHP / 400 // standing: a quarter of that
+			r.sat++
 		}
-		if b.HP > b.MaxHP {
-			b.HP = b.MaxHP
+		if !b.overRegenWeight() { // rAthena: no natural regen at 50% weight or more
+			if b.Sitting {
+				b.HP += b.MaxHP / 100
+			} else {
+				b.HP += b.MaxHP / 400
+			}
 		}
+		b.HP = min(b.MaxHP, b.HP)
 		if r.hpReached < 0 && b.hpFrac() >= done {
 			r.hpReached = i + 1
 		}
@@ -71,7 +91,6 @@ func runTownRest(b *Bot, ticks int, done float64, now time.Time) townTick {
 		}
 		r.restEnd = owned
 	}
-	r.sittingEnd = b.Sitting
 	return r
 }
 
@@ -94,8 +113,8 @@ func TestTownRestBlacksmithReachesDoneLine(t *testing.T) {
 	b := townBlacksmith(2233, true)
 	r := runTownRest(b, 600, lowHPDone, time.Now())
 	if r.hpReached < 0 {
-		t.Fatalf("58%% in town never reached the %.0f%% done line in %d ticks (hp %d/%d, sitting %v)",
-			lowHPDone*100, r.ticks, b.HP, b.MaxHP, b.Sitting)
+		t.Fatalf("58%% in town never reached the %.0f%% done line in %d ticks (hp %d/%d)",
+			lowHPDone*100, r.ticks, b.HP, b.MaxHP)
 	}
 	if r.hpReached > 200 {
 		t.Fatalf("rest took %d ticks to reach %.0f%%", r.hpReached, lowHPDone*100)
@@ -137,5 +156,36 @@ func TestTownRestWizardPartyGoalElsewhere(t *testing.T) {
 	}
 	if r.eatenAfter > 0 {
 		t.Fatalf("%d snacks eaten after the done line", r.eatenAfter)
+	}
+}
+
+// Overweight (60% weight, no natural regen) with potions in the bag: the bot drinks its way to the line; it does not sit
+// and wait for regen that never comes.
+func TestTownRestOverweightDrinksPotions(t *testing.T) {
+	b := townBlacksmith(2233, false)
+	b.MaxWeight, b.Weight = 1000, 600
+	b.inv[1] = &InvItem{ItemID: itemRedPotion, Count: 20}
+	b.buffAt["lowrest"] = time.Now() // already resting (a rest starts under 45% in town, so 58% alone does not start one)
+	r := runTownRest(b, 200, lowHPDone, time.Now())
+	if r.hpReached < 0 {
+		t.Fatalf("overweight with 20 potions never reached 60%% (hp %d/%d, drunk %d)", b.HP, b.MaxHP, r.drunk)
+	}
+	if r.sat > 3 {
+		t.Fatalf("overweight: sat %d ticks waiting for regen that does not come", r.sat)
+	}
+}
+
+// Overweight with no potion and no food: no regen, so the bot must not sit for it. lowHPGuard hands the tick back
+// (the trip logic sells first) and the rest does not start.
+func TestTownRestOverweightNoPotionsDoesNotSit(t *testing.T) {
+	b := townBlacksmith(2233, false)
+	b.MaxWeight, b.Weight = 1000, 600
+	b.buffAt["lowrest"] = time.Now() // already resting
+	r := runTownRest(b, 200, lowHPDone, time.Now())
+	if r.sat > 0 {
+		t.Fatalf("overweight with nothing to drink sat %d ticks for no regen", r.sat)
+	}
+	if r.restEnd {
+		t.Fatalf("overweight with nothing to drink still holds the bot in a rest: %q", b.State)
 	}
 }
