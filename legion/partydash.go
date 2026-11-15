@@ -15,31 +15,34 @@ import (
 var roleNames = map[int]string{roleTank: "tank", roleRanged: "ranged", roleSupport: "support", roleMelee: "melee", roleNone: "-"}
 
 type partyMemberView struct {
-	Name     string       `json:"name"`
-	Class    string       `json:"class"`
-	Level    int          `json:"level"`
-	JobLevel int          `json:"job_level"`
-	Role     string       `json:"role"`
-	Online   bool         `json:"online"`
-	Map      string       `json:"map"`
-	X        int          `json:"x"`
-	Y        int          `json:"y"`
-	HP       float64      `json:"hp"`
-	SP       float64      `json:"sp"`
-	Zeny     int          `json:"zeny"`
-	Weight   int          `json:"weight,omitempty"`     // current weight, raw server units (1/10 of what the client shows)
-	MaxWt    int          `json:"max_weight,omitempty"` // weight limit, same units; 0 = unknown (e.g. a human leader)
-	State    string       `json:"state"`
-	Leader   bool         `json:"leader,omitempty"`
-	Human    bool         `json:"human,omitempty"`
-	HasStats bool         `json:"has_stats,omitempty"` // a human whose own HP/SP/zeny/weight are known (humanstats.go)
-	Waiting  bool         `json:"waiting,omitempty"`   // waiting at the checkpoint town (leader's map too dangerous)
-	WithLead bool         `json:"with_leader"`         // on the same map as the leader
-	Kills    int          `json:"kills"`
-	Deaths   int          `json:"deaths"`
-	GearNext *gearStep    `json:"gear_next,omitempty"` // gearpool.go: next gear step, cost, funded by, party turn
-	Effects  []effectView `json:"effects,omitempty"`   // effects.go: active buffs/debuffs with time left
-	Detail   *humanDetail `json:"detail,omitempty"`    // partyintent.go: a human leader's intent, last decision / order, meter
+	Name               string       `json:"name"`
+	Class              string       `json:"class"`
+	Level              int          `json:"level"`
+	JobLevel           int          `json:"job_level"`
+	Role               string       `json:"role"`
+	Online             bool         `json:"online"`
+	Map                string       `json:"map"`
+	X                  int          `json:"x"`
+	Y                  int          `json:"y"`
+	HP                 float64      `json:"hp"`
+	SP                 float64      `json:"sp"`
+	Zeny               int          `json:"zeny"`
+	Weight             int          `json:"weight,omitempty"`     // current weight, raw server units (1/10 of what the client shows)
+	MaxWt              int          `json:"max_weight,omitempty"` // weight limit, same units; 0 = unknown (e.g. a human leader)
+	State              string       `json:"state"`
+	Leader             bool         `json:"leader,omitempty"`
+	Human              bool         `json:"human,omitempty"`
+	HasStats           bool         `json:"has_stats,omitempty"` // a human whose own HP/SP/zeny/weight are known (humanstats.go)
+	Waiting            bool         `json:"waiting,omitempty"`   // waiting at the checkpoint town (leader's map too dangerous)
+	WithLead           bool         `json:"with_leader"`         // on the same map as the leader
+	Kills              int          `json:"kills"`
+	Deaths             int          `json:"deaths"`
+	GearNext           *gearStep    `json:"gear_next,omitempty"`     // gearpool.go: next gear step, cost, funded by, party turn
+	Effects            []effectView `json:"effects,omitempty"`       // effects.go: active buffs/debuffs with time left
+	Intent             string       `json:"intent,omitempty"`        // partyintent.go: a human leader's intent (= detail.intent, flat)
+	LastDec            *humanEvent  `json:"last_decision,omitempty"` // partyintent.go: = detail.last_decision, flat
+	*PartyMemberExtras              // partyintent.go: bots: distance to the human leader, kpm, exp/h
+	Detail             *humanDetail `json:"detail,omitempty"` // partyintent.go: a human leader's intent, last decision / order, meter
 }
 
 type partyView struct {
@@ -60,6 +63,7 @@ type partyView struct {
 	GearLog    []string               `json:"gear_log,omitempty"`  // recent gear pool events (gifts, turns done)
 	Need       bool                   `json:"need,omitempty"`      // lfg.go: formed around goals (ends with them)
 	Purpose    string                 `json:"purpose,omitempty"`   // lfg.go: what the party farms
+	Helper     *helperRun             `json:"helper,omitempty"`    // partyintent.go: the Haiku helper's last run (Ayla's party)
 	Chat       []partyChatLine        `json:"chat,omitempty"`      // partyintent.go: a human-led party's chat, newest first
 }
 
@@ -80,6 +84,7 @@ func registerPartyDash(mux *http.ServeMux) {
 			v := partyView{Name: p.Name, Human: p.Human, Map: p.Map, Checkpoint: p.Checkpoint,
 				FormedMin: int(now.Sub(p.Formed).Minutes()), EvenShare: p.ShareSet, Rally: rallyView(p, now), Need: need, Purpose: purpose}
 			leadMap, leadX, leadY := "", 0, 0
+			humMap, humX, humY := "", 0, 0 // the human leader's freshest position (status.json, else the bots' sight)
 			if p.Human != "" {
 				v.Leader = p.Human
 				hm := partyMemberView{Name: p.Human, Class: "human", Role: "leader", Leader: true, Human: true, State: "played by a person / OpenKore", HP: -1, SP: -1, Zeny: -1}
@@ -91,6 +96,7 @@ func registerPartyDash(mux *http.ServeMux) {
 					hm.Map, hm.X, hm.Y, hm.HP = h.Map, h.X, h.Y, -1
 					leadMap = h.Map
 					leadX, leadY = h.X, h.Y
+					humMap, humX, humY = h.Map, h.X, h.Y
 					v.Map = h.Map
 				}
 				hm.Level = humanLevel(p.Human)
@@ -98,6 +104,13 @@ func registerPartyDash(mux *http.ServeMux) {
 					fillHumanStats(&hm, s)
 				}
 				hm.Detail = humanDetailOf(p.Human) // partyintent.go
+				if hm.Detail != nil {
+					hm.Intent, hm.LastDec = hm.Detail.Intent, hm.Detail.LastDecision
+					if hm.Detail.Fresh && hm.Detail.Map != "" {
+						humMap, humX, humY = hm.Detail.Map, hm.Detail.X, hm.Detail.Y
+					}
+				}
+				v.Helper = helperLastRun("ayla")
 				v.Chat = partyChatOf(p.Human)
 				hm.WithLead = true
 				v.Members = append(v.Members, hm)
@@ -120,12 +133,24 @@ func registerPartyDash(mux *http.ServeMux) {
 					}
 				}
 				mv.Zeny = m.Zeny
+				var mx *PartyMemberExtras
+				if p.Human != "" {
+					mx = &PartyMemberExtras{DistLead: -1, LeadMap: humMap}
+					mx.ExpH, mx.ExpMin = expSample(mv.Name, m.BaseLv, m.BaseExp, now) // partyintent.go
+					if m.Online && humMap != "" && m.MapName == humMap && humX+humY > 0 {
+						mx.DistLead = dist(m.X, m.Y, humX, humY)
+					}
+				}
 				mv.Weight, mv.MaxWt = m.Weight, m.MaxWeight
 				if m.Online {
 					mv.GearNext = m.gearStepView()
 					mv.Effects = m.effectsOf(now) // effects.go
 				}
 				m.mu.Unlock()
+				if mx != nil {
+					mx.KPM = meterKPM(mv.Name)
+					mv.PartyMemberExtras = mx
+				}
 				mv.WithLead = mv.Online && leadMap != "" && mv.Map == leadMap
 				if mv.WithLead && leadX+leadY > 0 && dist(mv.X, mv.Y, leadX, leadY) > togetherCells() {
 					mv.WithLead = false // "together" means close to the leader, not just the same map

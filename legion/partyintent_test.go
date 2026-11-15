@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -20,5 +21,26 @@ func TestPartyChatDedupeAndOrder(t *testing.T) {
 	}
 	if n := len(partyChatOf("TestHuman")); n != partyChatKeep {
 		t.Fatalf("kept %d", n)
+	}
+}
+
+func TestExpSampleAndMemberJSONRoundTrip(t *testing.T) {
+	t0 := time.Unix(5000, 0)
+	expSample("ExpTester", 10, 100, t0)
+	expSample("ExpTester", 10, 600, t0.Add(time.Minute))
+	h, m := expSample("ExpTester", 11, 400, t0.Add(2*time.Minute)) // level-up: +400 of the new level
+	if m != 2 || h != 27000 {
+		t.Fatalf("exp/h %d over %v min", h, m)
+	}
+	// the main instance decodes the core's party JSON (mergeCoreParties): the embedded extras must survive
+	in := []partyView{{Name: "x", Human: "H", Members: []partyMemberView{{Name: "b", PartyMemberExtras: &PartyMemberExtras{DistLead: 7, KPM: 1.5}},
+		{Name: "H", Human: true, Intent: "farming", Detail: &humanDetail{humanExtras: humanExtras{Intent: "farming"}}}}}}
+	raw, _ := json.Marshal(in)
+	var out []partyView
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out[0].Members[0].PartyMemberExtras == nil || out[0].Members[0].DistLead != 7 || out[0].Members[1].Intent != "farming" || out[0].Members[1].Detail.Intent != "farming" {
+		t.Fatalf("round trip lost fields: %s", raw)
 	}
 }

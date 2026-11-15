@@ -50,8 +50,8 @@ type BotSummary struct {
 	GuildLeader bool `json:"guild_leader,omitempty"`
 	// healerstick.go: the engine party (who it follows) and the in-game party the server put it in. The field was missing,
 	// so tools read "party: None" for Ayla's priest although it was in her party (2026-11-14)
-	Party       string `json:"party,omitempty"`
-	GameParty   string `json:"game_party,omitempty"`
+	Party     string `json:"party,omitempty"`
+	GameParty string `json:"game_party,omitempty"`
 }
 
 func (b *Bot) summary() BotSummary {
@@ -612,6 +612,10 @@ func serveAPI(addr string, bots []*Bot) {
 			out["rally"] = rallyView(p, now)
 			if s, ok := humanStatusOf(p.Human); ok {
 				out["human_effects"] = humanEffectsView(s, now) // effects.go: the human's own buffs/debuffs
+			}
+			if d := humanDetailOf(p.Human); d != nil {
+				out["human_detail"] = d // partyintent.go: intent, last decision / order, meter, restarts (last known when stale)
+				out["human_intent"] = d.Intent
 			}
 			var mem []map[string]interface{}
 			for _, m := range p.Members {
