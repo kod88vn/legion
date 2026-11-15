@@ -12,7 +12,7 @@ package main
 //        zeny  - the piece is sold by an NPC / only traded: earn its price (the bot buys it on a real-need town run)
 //        level - the band is complete: gain 1-2 base levels
 //      gear/card goals are "fixed" (they need one of their drop maps); zeny/level goals are "flexible" (any safe map).
-//      Healers (Acolyte line, support build) get "heal": they look for a party of similar level (+-10).
+//      Healers (Acolyte line, support build) get "heal": they look for a party in the level band (PT35, partyLvOK).
 //      A goal ends when met, after its deadline (cards rarely drop: 60 min) or when it no longer applies (a better
 //      piece, a new band); the bot then picks the next one. Solo bots hunt on their goal map (chooseHuntingGround).
 //   2. LFG/LFM (lfgTick, every 20 s): a free bot posts one short #global line for its goal ("LFP payon cave 2,
@@ -20,7 +20,7 @@ package main
 //      field, lv45-50"). Posts are rate-limited server-wide (lfg_global_per_min, default 6 a minute; #global stays
 //      for important lines). Someone with a compatible goal answers by whisper and joins: a party is formed (the
 //      poster leads unless it is the healer) or the poster's party grows. A party wants a healer first (Priest /
-//      Acolyte, then a Monk), then the roles it lacks; max 5 + 1 healer; levels within 10 of the party. Without a
+//      Acolyte, then a Monk), then the roles it lacks; max 5 + 1 healer; levels within the PT35 band (lfgLvFits). Without a
 //      match a bot simply farms solo.
 //   3. No permanent parties (goalPartyCheck / goalTick): a member whose goal is met and whose next goal is elsewhere
 //      leaves politely ("got my Ninja Suit! gl guys"); a member whose fixed goal isn't served by the party's map for
@@ -719,13 +719,18 @@ func (b *Bot) partyGoalFit(now time.Time) {
 		// leaves politely and leaderPartyManager forms its guild party around its goal
 		line, why = pick("gotta go run my guild's party, ty all", "guild calls, ty for the party gl", "off to lead my guild pt, gl guys"), "guild leader leads its own party"
 	case healer:
-		sum, n := 0, 0
+		// PT35: the same band as joining (lfgLvFits), with 2 levels of slack: the spread outgrew the band, or the
+		// party's map gives the healer no real exp any more (it was +-12 around the average, against a +-10 join band)
+		var levels []int
 		for _, o := range others {
-			if s, ok := peek(o.P.Name); ok && s.Known {
-				sum, n = sum+s.Lv, n+1
+			if s, ok := peek(o.P.Name); ok && s.Known && s.Lv > 0 {
+				levels = append(levels, s.Lv)
 			}
 		}
-		if n > 0 && abs(sum/n-lv) > 12 {
+		switch healerLeaveWhy(lv, levels, pm) {
+		case "exp":
+			line, why = pick("i get almost no exp here anymore, gonna find a party closer to my lvl. ty all", "this place is too low for me now, gl all!"), "healer level gap"
+		case "band":
 			line, why = pick("you guys outlevel me now, gl all!", "gonna find a party closer to my lvl, ty all", "lvl gap is too big now, ty for the party"), "healer level gap"
 		}
 	case p.gearTurnHolder(b):
@@ -948,10 +953,88 @@ var lfg = struct {
 const (
 	lfgPostLife   = 10 * time.Minute // a post can be answered this long
 	lfgRepost     = 10 * time.Minute // one post per bot / party per this
-	lfgLvBand     = 10               // levels within the party's average
 	lfgMaxMembers = 5                // non-healers in a party
 	lfgMaxHops    = 6
 )
+
+// ---------------------------------------------------------------- party level band (PT35)
+//
+// PT35 (owner, 2026-11-15: "wider band for party"): parties form across a level band as wide as the server's
+// even-share range allows. rAthena shares exp evenly while the party's base-level spread (strongest - weakest) is
+// within party_share_level; this server sets 99 (rathena/conf/import/inter_conf.txt), so even share works at any
+// spread up to the level cap, and every bot party asks for it at creation (party.go 0x07d7). The band is therefore
+// the spread, tuning party_lv_spread (default 99 = party_share_level; set 15 for the stock rAthena value). The old
+// band was +-10 around the party's average (lfgLvBand), which left lv83-90 bots without partners (bug b1794772058nfq).
+// What still keeps a party sensible is the map, not a level number: a newcomer must survive the party's map
+// (lfgMapOK / partyMapOK, the weakest member decides) and the map must still give it real exp (mapExpPoor, the
+// strongest member decides). Where the map is picked after the group (guild leader parties, role parties, Starveil
+// member parties) partyLvOK applies the same exp rule to the best guide spot for the weakest member (partyExpTop).
+
+// partyLvSpread: the widest base-level spread a bot party takes (tuning party_lv_spread).
+func partyLvSpread() int { return tune().PartyLvSpread }
+
+// partyExpTop: the highest base level that still gets real exp on the best guide spot for a weakest member at lo
+// (a spot it may farm: Min <= lo+2, as the pickers allow; then mapExpPoor's margin over that spot's Max).
+func partyExpTop(lo int) int {
+	top := 0
+	for _, g := range guideSpots {
+		if g.Min <= lo+2 && g.Max+partyExpPoorMarginLv > top {
+			top = g.Max + partyExpPoorMarginLv
+		}
+	}
+	if top == 0 {
+		return lo + partyExpPoorMarginLv
+	}
+	return top
+}
+
+// partyLvOK: a party whose known base levels span lo..hi fits PT35's band: the spread is within party_lv_spread and
+// the strongest still gets real exp on a map for the weakest. slack loosens both (a leave check uses 2 against the
+// join check's 0, so nobody joins and leaves at once).
+func partyLvOK(lo, hi, slack int) bool {
+	if lo > hi {
+		lo, hi = hi, lo
+	}
+	return hi-lo <= partyLvSpread()+slack && hi <= partyExpTop(lo)+slack
+}
+
+// lfgLvFits: candidate c fits party P's levels (PT35): the spread with c stays in the band, and P's map still gives c
+// real exp unless c's own item goal is on that map (a high level farming a card on a low map is a real reason).
+func lfgLvFits(c *lfgCand, P *lfgParty) bool {
+	if P.avg <= 0 {
+		return true // nobody's level known yet: can't judge
+	}
+	if !partyLvOK(min(P.lo, c.lv), max(P.hi, c.lv), 0) {
+		return false
+	}
+	if P.m != "" && mapExpPoor(P.m, c.lv) && !(c.g != nil && c.g.fixed() && c.g.serves(P.m)) {
+		return false
+	}
+	return true
+}
+
+// healerLeaveWhy: why a healer of base level lv leaves a party on map pm whose other known members are at levels
+// ("" = it stays). "exp": the map gives it no real exp any more (mapExpPoor at lv-2). "band": the spread outgrew the
+// band (partyLvOK with 2 levels of slack, so a healer that just joined does not leave at once). No others: stays.
+func healerLeaveWhy(lv int, levels []int, pm string) string {
+	if len(levels) == 0 {
+		return ""
+	}
+	lo, hi := lv, lv
+	for _, l := range levels {
+		lo, hi = min(lo, l), max(hi, l)
+	}
+	switch {
+	case mapExpPoor(pm, lv-2):
+		return "exp"
+	case !partyLvOK(lo, hi, 2):
+		return "band"
+	}
+	return ""
+}
+
+// lfgLvFit: lfgFits' level check (injectable: the PT35 snapshot test compares the old +-10 band)
+var lfgLvFit = lfgLvFits
 
 // lfgCand: a free bot looking for (or open to) a party, snapshot without locks
 type lfgCand struct {
@@ -1001,7 +1084,7 @@ func lfgFits(c *lfgCand, P *lfgParty) bool {
 	} else if P.nonHealers >= lfgMaxMembers {
 		return false
 	}
-	if P.avg > 0 && abs(c.lv-P.avg) > lfgLvBand {
+	if !lfgLvFit(c, P) {
 		return false
 	}
 	if !c.healer && c.g != nil && !c.g.serves(P.m) {
@@ -1319,7 +1402,7 @@ func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) 
 			anchor = nil
 			bs := -1 << 30
 			for _, o := range cs {
-				if used[o.b] || o == c || o.healer || o.m == "" || abs(o.lv-c.lv) > lfgLvBand {
+				if used[o.b] || o == c || o.healer || o.m == "" { // the level band is lfgFits' (lfgLvFit, PT35)
 					continue
 				}
 				P := soloParty(o)

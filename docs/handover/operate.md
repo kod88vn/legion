@@ -32,7 +32,9 @@
     farming Ninja Suit, lv52 assassin"), parties without a healer post "LFM priest for ...". Server-wide budget
     `lfg_global_per_min` (default 6). Matching needs one side to have posted: answerer whispers, joins (keeper invites)
     or a new party forms (poster leads; a healer poster joins the best solo farmer). Party wants: healer first (1 per
-    party), then Monk, then missing roles; caps tank 2 / ranged 3 / melee 2, 5 non-healers + 1 healer, level +-10,
+    party), then Monk, then missing roles; caps tank 2 / ranged 3 / melee 2, 5 non-healers + 1 healer, level band PT35
+    (lfg.go partyLvOK/lfgLvFits: spread <= tuning `party_lv_spread`, default 99 = rAthena party_share_level, and the
+    party map still gives the newcomer real exp, mapExpPoor; the old band was +-10 around the average),
     partyMapOK with the newcomer (goalMapSafe for an item-goal anchor: safe is enough, exp-poor is fine).
   - Ends: a member whose goal is met and whose next goal is elsewhere leaves ("got my X! gl guys"), a fixed goal not
     served by the party map for 10 min leaves, a healer >12 levels off the party leaves, the leader leaving ends the

@@ -2257,12 +2257,17 @@ func partyMapOK(ms []*Bot, m string) bool {
 // exp, a map with room, then (all full) the least crowded fitting map with real exp, then the least crowded at all.
 func partyMapNear(ms []*Bot, from string, x, y int, skip string) string {
 	type stage struct {
-		mode int
-		room bool
+		mode         int
+		room, strong bool
 	}
-	for _, st := range []stage{{partyStrict, true}, {partyRelaxedPassive, true}, {partyAnySafe, true},
-		{partyStrict, false}, {partyRelaxedPassive, false}, {partyAnySafe, false}} {
-		if m := partyMapSearch(ms, from, x, y, skip, st.mode, st.room); m != "" {
+	stages := []stage{{partyStrict, true, false}, {partyRelaxedPassive, true, false}, {partyAnySafe, true, false},
+		{partyStrict, false, false}, {partyRelaxedPassive, false, false}, {partyAnySafe, false, false}}
+	if partyMixedLevels(ms) { // PT35: a mixed-level party first takes a map the strongest member still gets exp on
+		stages = append([]stage{{partyStrict, true, true}, {partyRelaxedPassive, true, true},
+			{partyStrict, false, true}, {partyRelaxedPassive, false, true}}, stages...)
+	}
+	for _, st := range stages {
+		if m := partyMapSearchExp(ms, from, x, y, skip, st.mode, st.room, st.strong); m != "" {
 			crowdNote(m, len(ms)) // crowd.go: reserve the seats so the next picker sees them
 			return m
 		}
@@ -2316,14 +2321,39 @@ func partyMapNearTier(ms []*Bot, from string, x, y int, skip string, allowPoor b
 	if allowPoor {
 		modes = []int{partyAnySafe}
 	}
-	for _, room := range []bool{true, false} {
-		for _, md := range modes {
-			if m := partyMapSearch(ms, from, x, y, skip, md, room); m != "" {
-				return m
+	strongs := []bool{false}
+	if !allowPoor && partyMixedLevels(ms) {
+		strongs = []bool{true, false} // PT35: a mixed-level party first takes maps the strongest member gets exp on
+	}
+	for _, strong := range strongs {
+		for _, room := range []bool{true, false} {
+			for _, md := range modes {
+				if m := partyMapSearchExp(ms, from, x, y, skip, md, room, strong); m != "" {
+					return m
+				}
 			}
 		}
 	}
 	return ""
+}
+
+// partyMaxBase: the strongest known BASE level among the online members (0 = none known). No bot locks.
+func partyMaxBase(ms []*Bot) int {
+	hi := 0
+	for _, b := range ms {
+		if s, ok := peek(b.P.Name); ok && s.Online && s.Known && s.Lv > 0 {
+			hi = max(hi, s.Lv)
+		}
+	}
+	return hi
+}
+
+// partyMixedLevels: the online members' base levels differ (a PT35 mixed-level party). Its map pickers look first for
+// maps that still give the strongest member real exp (mapExpPoor at its level), and only then for any map that suits
+// the weakest member (the old choice, kept as the fallback).
+func partyMixedLevels(ms []*Bot) bool {
+	lo := partyMinBase(ms)
+	return lo < 999 && partyMaxBase(ms) > lo
 }
 
 // partyPassiveRelaxOK: guide spot g is a mostly passive map a little over the party (partyRelaxedPassive).
@@ -2343,19 +2373,31 @@ const (
 	partyAnySafe
 )
 
+// partyHops: the walk length a party picker counts to a map (a var so the PT35 mixed-level test can stand in routes).
+var partyHops = mapHops
+
 // partyMapSearch: one stage of partyMapNear (reserves nothing). roomOnly: maps with room for the party (crowd.go), nearest first;
 // otherwise the least crowded fitting map (crowdPct), distance breaking ties (+1 map change per 50% over the cap).
 func partyMapSearch(ms []*Bot, from string, x, y int, skip string, mode int, roomOnly bool) string {
+	return partyMapSearchExp(ms, from, x, y, skip, mode, roomOnly, false)
+}
+
+// partyMapSearchExp: partyMapSearch. strong (PT35, mixed-level parties): only maps that still give the strongest
+// member real exp (mapExpPoor at its base level), and never the last-resort mode.
+func partyMapSearchExp(ms []*Bot, from string, x, y int, skip string, mode int, roomOnly, strong bool) string {
 	minLv, fitLv, known, _ := partyFitLv(ms)
 	if known == 0 {
 		return ""
 	}
-	minBase := partyMinBase(ms)
+	minBase, maxBase := partyMinBase(ms), partyMaxBase(ms)
 	best, bh, bmin := "", 1e9, 0
 	var cands []pickCand
 	for pass := 0; pass < 1; pass++ {
 		for _, g := range guideSpots {
 			if mode != partyAnySafe && mapExpPoor(g.Map, minBase) {
+				continue
+			}
+			if strong && (mode == partyAnySafe || mapExpPoor(g.Map, maxBase)) {
 				continue
 			}
 			if bad, _ := leaderAvoids(ms[0].P.Name, g.Map, time.Now()); bad {
@@ -2372,7 +2414,7 @@ func partyMapSearch(ms []*Bot, from string, x, y int, skip string, mode int, roo
 			} else if g.Min > minLv+2 || fitShare(g.Map, fitLv) < minFitShare || partyMapTooHard(g.Map, minLv) {
 				continue
 			}
-			h := mapHops(from, x, y, g.Map)
+			h := partyHops(from, x, y, g.Map)
 			if h > 8 {
 				continue // across the world: never a party pick (walks of 10-15 min)
 			}

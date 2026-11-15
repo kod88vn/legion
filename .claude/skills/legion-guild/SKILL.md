@@ -34,7 +34,7 @@ mini-bosses too) and every field and dungeon. Never say you can't find the data:
 Each guild's leader character is always online (the engine relogs it) and should be on the server leaderboard. Every
 cycle: `python tools/legionctl.py leader guild01` (level, rank, party, free members with class/role/level, suggested
 party + best map). If it isn't leading a full party, `python tools/legionctl.py leader-party guild01 [map]
-[--members a,b,c]` (auto-picks tank/priest/ranged within 10 levels). `leaderboard` shows the top players.
+[--members a,b,c]` (auto-picks tank/priest/ranged closest in level, within the party level band). `leaderboard` shows the top players.
 
 Guilds (identity and leadership style; keep them consistent):
 

@@ -64,16 +64,22 @@ func formRoleParties(m string, cands []*Bot) {
 	}
 	sort.SliceStable(by[roleTank], func(i, j int) bool { return tankRank(by[roleTank][i]) < tankRank(by[roleTank][j]) })
 	used := map[*Bot]bool{}
+	// PT35: the closest level to the tank within the band (lfg.go partyLvOK over the group so far)
+	var lo, hi int
 	pick := func(role int, lv int) *Bot {
 		var best *Bot
-		bd := 16
+		bd := 1 << 30
 		for _, c := range by[role] {
 			if used[c] {
 				continue
 			}
-			if d := abs(c.BaseLvOr() - lv); d < bd {
+			clv := c.BaseLvOr()
+			if d := abs(clv - lv); d < bd && partyLvOK(min(lo, clv), max(hi, clv), 0) {
 				best, bd = c, d
 			}
+		}
+		if best != nil {
+			lo, hi = min(lo, best.BaseLvOr()), max(hi, best.BaseLvOr())
 		}
 		return best
 	}
@@ -82,6 +88,7 @@ func formRoleParties(m string, cands []*Bot) {
 			continue
 		}
 		lv := tank.BaseLvOr()
+		lo, hi = lv, lv
 		used[tank] = true
 		var group []*Bot
 		for _, role := range []int{roleSupport, roleRanged, roleRanged, roleMelee} {
@@ -107,12 +114,14 @@ func formRoleParties(m string, cands []*Bot) {
 			rest = append(rest, c)
 		}
 	}
+	// rest is sorted weakest first: the lead is the group's weakest, so checking each candidate against it bounds the spread
+	// and the exp rule for every member. A change to this sort order breaks that pairwise check.
 	sort.Slice(rest, func(i, j int) bool { return rest[i].BaseLvOr() < rest[j].BaseLvOr() })
 	for i := 0; i+1 < len(rest); i += 3 {
 		lead := rest[i]
 		var group []*Bot
 		for _, c := range rest[i+1 : min(i+3, len(rest))] {
-			if c.BaseLvOr()-lead.BaseLvOr() <= 15 {
+			if partyLvOK(lead.BaseLvOr(), c.BaseLvOr(), 0) { // PT35 band (was 15 over the lowest)
 				group = append(group, c)
 			}
 		}

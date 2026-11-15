@@ -8,7 +8,7 @@ package main
 //     wait for an online slot, isn't kicked by human-party pins, and the run loop relogs it after any disconnect
 //     (bot.go run). It plays its main character and skips the town hang-out after login (levelling first).
 //   - leaderPartyManager: every minute an online leader that isn't leading a party gets a full tank / priest /
-//     ranged party from its guild (in-game roster first, persona guild as fallback), within 10 levels, at the best
+//     ranged party from its guild (in-game roster first, persona guild as fallback), within the PT35 level band, at the best
 //     party spot of the strategy guide (strategy.go guideSpots) for the party's level range.
 //   - levelBook + /api/leaderboard: the server's top characters (Legion bots, last known level kept in
 //     data/levels.json so offline characters keep their place) and the rank of every guild leader.
@@ -221,25 +221,30 @@ func guildMates(l *Bot, g *GuildDef, bots []*Bot) []*Bot {
 }
 
 // pickLeaderParty: tank, support, ranged, then a 2nd ranged / melee, each the closest in level to the leader
-// (within 10 levels so even EXP share works); the leader fills its own role.
+// within the PT35 band (lfg.go partyLvOK over the leader and everyone picked so far: even exp share works and the
+// strongest still gets real exp on a map for the weakest); the leader fills its own role.
 func pickLeaderParty(l *Bot, cands []*Bot) []*Bot {
 	l.mu.Lock()
 	lv, lrole := l.BaseLvOr(), partyRole(l)
 	l.mu.Unlock()
 	used := map[*Bot]bool{}
+	lo, hi := lv, lv
 	pick := func(role int) *Bot {
 		var best *Bot
-		bd := 11
+		bd, blv := 1<<30, 0
 		for _, c := range cands {
 			if used[c] {
 				continue
 			}
 			c.mu.Lock()
-			r, d := partyRole(c), abs(c.BaseLvOr()-lv)
+			r, clv := partyRole(c), c.BaseLvOr()
 			c.mu.Unlock()
-			if r == role && d < bd {
-				best, bd = c, d
+			if d := abs(clv - lv); r == role && d < bd && partyLvOK(min(lo, clv), max(hi, clv), 0) {
+				best, bd, blv = c, d, clv
 			}
+		}
+		if best != nil {
+			lo, hi = min(lo, blv), max(hi, blv)
 		}
 		return best
 	}
@@ -274,7 +279,7 @@ func bestPartySpot(members []*Bot) string {
 	// leader (hops cost score), beginners stay within 3 maps of their home town, and the pick is kept for 20 minutes
 	// while it still fits (no re-pick every leaderPartyManager minute).
 	l := members[0]
-	minLv, maxLv, aoe, allRanged, fitLv, minBase := 999, 0, false, true, 999, 999
+	minLv, maxLv, aoe, allRanged, fitLv, minBase, maxBase := 999, 0, false, true, 999, 999, 0
 	l.mu.Lock()
 	from, fx, fy, lname := l.MapName, l.X, l.Y, l.P.Name
 	l.mu.Unlock()
@@ -289,7 +294,7 @@ func bestPartySpot(members []*Bot) string {
 			lv = max(1, lv-partyFragileLv) // ai.go: low HP, dies first in a crowd
 		}
 		m.mu.Unlock()
-		minLv, maxLv, fitLv, minBase = min(minLv, lv), max(maxLv, lv), min(fitLv, tl), min(minBase, base)
+		minLv, maxLv, fitLv, minBase, maxBase = min(minLv, lv), max(maxLv, lv), min(fitLv, tl), min(minBase, base), max(maxBase, base)
 		aoe = aoe || aoeFamily(cls)
 		allRanged = allRanged && (r == roleRanged || r == roleSupport)
 	}
@@ -312,7 +317,10 @@ func bestPartySpot(members []*Bot) string {
 	partySpotPick.Lock()
 	prev := partySpotPick.m[lname]
 	partySpotPick.Unlock()
-	if prev.m != "" && time.Since(prev.at) < 20*time.Minute {
+	// PT35: a mixed-level party looks first for spots that still give its strongest member real exp (mapExpPoor at its
+	// base level); the spot must suit the weakest either way. Only then the old choice (room first, then any).
+	mixed := minBase < 999 && maxBase > minBase
+	if prev.m != "" && time.Since(prev.at) < 20*time.Minute && !(mixed && mapExpPoor(prev.m, maxBase)) {
 		for _, g := range guideSpots {
 			if g.Map == prev.m && fits(g) && !mapCrowded(prev.m) { // crowd.go: a full map is given up
 				return prev.m
@@ -321,13 +329,24 @@ func bestPartySpot(members []*Bot) string {
 	}
 	beginner := minBase < beginnerLv()
 	best, bs := "", -1e9
+	type pass struct{ strong, room bool }
+	passes := []pass{{false, true}, {false, false}}
+	if mixed {
+		passes = []pass{{true, true}, {true, false}, {false, true}, {false, false}}
+	}
 	// crowd.go: a map with room for the party first (the party's own map: not crowded), then any fitting one
-	for pass := 0; pass < 2 && best == ""; pass++ {
+	for _, ps := range passes {
+		if best != "" {
+			break
+		}
 		for _, g := range guideSpots {
 			if !fits(g) {
 				continue // the weakest member's target filter must accept most monsters there
 			}
-			if pass == 0 && (g.Map == from && mapCrowded(g.Map) || g.Map != from && !mapHasRoom(g.Map, len(members))) {
+			if ps.strong && mapExpPoor(g.Map, maxBase) {
+				continue
+			}
+			if ps.room && (g.Map == from && mapCrowded(g.Map) || g.Map != from && !mapHasRoom(g.Map, len(members))) {
 				continue
 			}
 			h := 0
@@ -393,7 +412,7 @@ func formLeaderParty(l *Bot, g *GuildDef, bots []*Bot, members []*Bot, mapName s
 		members = pickLeaderParty(l, guildMates(l, g, bots))
 	}
 	if len(members) == 0 {
-		return nil, "", fmt.Errorf("no free guild members within 10 levels of %s online", l.charName())
+		return nil, "", fmt.Errorf("no free guild members in %s's level band online", l.charName())
 	}
 	if mapName == "" {
 		mapName = bestPartySpot(append([]*Bot{l}, members...))

@@ -987,8 +987,8 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 	if restHold && b.restGuard(members, rester, moving, now) {
 		return true
 	}
-	// carrying a much lower-level human: let them fight their own monsters (otherwise we take every kill, and with a
-	// gap over 15 levels the server doesn't even share the exp); only step in when they're hurt or being hit
+	// carrying a much lower-level human: let them fight their own monsters (otherwise we take every kill and they learn
+	// nothing; this server shares exp at any gap, party_share_level 99); only step in when they're hurt or being hit
 	carry := false
 	if human {
 		if hl := humanLevel(p.Human); hl > 0 && b.BaseLvOr()-hl > 15 {

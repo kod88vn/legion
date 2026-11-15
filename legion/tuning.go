@@ -315,6 +315,10 @@ type Tuning struct {
 	// for an online bot of an untested class/build in the same role. ON by default (ayla_rotation_off true stops it).
 	AylaRotationOff   bool    `json:"ayla_rotation_off"`
 	AylaRotationHours float64 `json:"ayla_rotation_hours"`
+	// lfg.go (PT35, 2026-11-15): the widest base-level spread (strongest - weakest) a bot party takes. Default 99 =
+	// the server's party_share_level (rathena/conf/import/inter_conf.txt), so even exp share always works; the map
+	// (survivable for the weakest, real exp for the strongest) is what keeps parties sensible. 15 = stock rAthena.
+	PartyLvSpread int `json:"party_lv_spread"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -349,6 +353,7 @@ var defaultTuning = Tuning{
 	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept",
 	AmbientTalkOn: true, AmbientTalkDiv: 150, AmbientTalkMaxPerMin: 3,
 	IdleErrandWaitSec: 45, IdleErrandWeightPct: 35, IdleErrandSlots: 85, IdleErrandCooldownMin: 10,
+	PartyLvSpread: 99,
 }
 
 var curTuning atomic.Value // *Tuning
@@ -398,6 +403,7 @@ func (t *Tuning) sanitize() {
 		}
 	}
 	pos(&t.PartyLeash, d.PartyLeash)
+	pos(&t.PartyLvSpread, d.PartyLvSpread)
 	pos(&t.IdleErrandWaitSec, d.IdleErrandWaitSec)
 	pos(&t.IdleErrandWeightPct, d.IdleErrandWeightPct)
 	pos(&t.IdleErrandSlots, d.IdleErrandSlots)

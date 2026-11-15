@@ -460,7 +460,7 @@ func humanPartyManager(bots []*Bot, stop <-chan struct{}) {
 				lead.event("party", "", fmt.Sprintf("created %s for %s", p.Name, p.Human))
 				continue
 			}
-			// friends levelling together share exp evenly (the server only shares within 15 levels)
+			// friends levelling together share exp evenly (within party_share_level: 99 on this server, PT35)
 			if !p.ShareSet && time.Since(shareSentAt[p.Name]) > 30*time.Minute {
 				lead.mu.Lock()
 				isLeader := strings.EqualFold(lead.partyLeader, lead.charName())

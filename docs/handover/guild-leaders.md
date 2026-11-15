@@ -13,7 +13,7 @@
   never starts "calling it a day" and `logoutSignal` never fires; `kickSession` (human-party pins) is a no-op; after
   any disconnect the run loop logs straight back in (counted as `relogs`). They play their `main` character (pickChar).
 - Levelling: `leaderPartyManager` (every 60 s) gives an online leader (basic skill >= 7) a tank/priest/ranged party of
-  free guild members (in-game roster, then persona guild) within 10 levels, at `bestPartySpot` (strategy.go guide).
+  free guild members (in-game roster, then persona guild) within the PT35 level band (lfg.go partyLvOK, closest level first), at `bestPartySpot` (strategy.go guide).
   party.go still disbands bot parties after 90 min; the manager re-forms one with a fresh spot a minute later.
   With `goal_parties_on` (lfg.go, see "Need-driven parties"): leaderGoalParty instead - the party forms around the
   leader's goal and ends with it.

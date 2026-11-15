@@ -47,7 +47,7 @@
   guide, next gear pieces bought; boss prep later; state in data/human-guild-week.json), the pool (half the online
   members' spare, 5k max each) and **actions** with exact commands: found, invite, guide (fund the alchemist's
   Potion Creation Guide), fund (the weakest-geared member's shop piece when the pool covers it), party (main-instance
-  members without a party grouped within 10 levels on bestPartySpot -> `legionctl party ...`), carry (members 15+
+  members without a party grouped within the PT35 level band on bestPartySpot -> `legionctl party ...`), carry (members 15+
   levels under the median), recruit-line (#global text of the gaps), week.
 - `POST /api/human-guild/fund {"to","amount","why"}` (`ayla.sh guild-fund NAME AMOUNT WHY`): Starveil members of both
   instances mail zeny by RODEX (2% fee), each at most 5,000z and half its spare, once an hour; a guide-saving
