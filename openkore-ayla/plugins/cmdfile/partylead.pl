@@ -1679,14 +1679,14 @@ sub gm_party_lv {
 # one measured window (legion/gearscore.go perfVerdict; no fair-kill data here): n members, minutes, kills, deaths.
 # -3: deaths >= 1.5 per member-hour, or under 0.25 kills per member-minute with a death; +2: no deaths and >= 2 kills
 # per member-minute (the party farms it easily)
+# owner 2026-11-15 "this party is not strong enough, choose the right map": a death steps down at once (-5); a step up
+# (+3) only after 20+ min on the map with 0 deaths and good kills (1.5+ per member per minute)
 sub gm_verdict {
 	my ($n, $min, $k, $d) = @_;
 	return 0 if $n <= 0 || $min <= 0;
-	my $bm = $n * $min;
-	my ($kpm, $dph) = ($k / $bm, $d / ($bm / 60));
-	return -3 if $dph >= 1.5 || $d > 0 && $kpm < 0.25;
-	return 0 if $d > 0;
-	return 2 if $kpm >= 2;
+	return -5 if $d > 0;
+	return 0 if $min < 20;
+	return 3 if $k / ($n * $min) >= 1.5;
 	return 0;
 }
 # a farm map whose route crosses a map with aggressive monsters at or above the party's level - 5 is out (owner
@@ -1727,9 +1727,37 @@ sub gm_self_lv {
 # (-15..+10) is kept
 my ($gmKills, $gmDeaths) = (0, 0);
 my %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
-my $gmOff = 0;
+# the step starts conservative: monsters ~10 levels under the gear-rated party level (owner 2026-11-15), kept in
+# logs/ayla_step.json across reloads; the first load of this version re-picks the map at once (PLAN_CHANGE)
+my $gmOff = -10;
+our $forceRepick = 0;
+sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 2}); close $f } }
+eval {
+	if (open(my $f, '<', 'logs/ayla_step.json')) { local $/; my $d = JSON::PP->new->decode(<$f>); close $f; $gmOff = $d->{off} if $d && defined $d->{off} && ($d->{v} || 0) >= 2 }
+	else { $forceRepick = 1 }
+};
 sub gm_kill { $gmKills++ }
-sub gm_died { $gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths }
+sub gm_died {
+	$gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths;
+	# one death steps down at once (owner 2026-11-15)
+	my $old = $gmOff; $gmOff -= 5; $gmOff = -20 if $gmOff < -20;
+	message "[partylead] gear maps: died on " . ($field ? $field->baseName : '?') . " -> step $old -> $gmOff (one map easier)\n", 'system';
+	step_save(); $gmRecheck = 1; %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
+}
+# HP regularly under 50% on the farm map (30%+ of 5 min of samples) steps down too
+my @hpSamples; my $hpSampleAt = 0;
+sub hp_sample {
+	return unless $char && $field && $char->{hp_max} && !is_townmap($field->baseName) && time - $hpSampleAt >= 2;
+	$hpSampleAt = time;
+	push @hpSamples, [time, $char->{hp} / $char->{hp_max} < 0.5 ? 1 : 0];
+	@hpSamples = grep { time - $_->[0] < 300 } @hpSamples;
+	return if @hpSamples < 100;
+	my $low = grep { $_->[1] } @hpSamples;
+	return if $low / @hpSamples < 0.3;
+	my $old = $gmOff; $gmOff -= 3; $gmOff = -20 if $gmOff < -20;
+	message "[partylead] gear maps: HP under 50% in " . int(100 * $low / @hpSamples) . "% of the last 5 min -> step $old -> $gmOff\n", 'system';
+	@hpSamples = (); step_save(); $gmRecheck = 1;
+}
 sub gm_step_offset {
 	return $gmOff unless $char && $field;
 	my $here = $field->baseName;
@@ -1745,11 +1773,12 @@ sub gm_step_offset {
 		return $gmOff;
 	}
 	my $el = (time - $gmWin{at}) / 60;
-	return $gmOff if $el < 8;
+	return $gmOff if $el < 20; # step up only after 20+ min of measured success (deaths step down in gm_died)
 	my $v = gm_verdict($n, $el, $k - $gmWin{k}, $d - $gmWin{d});
 	if ($v) {
 		my $old = $gmOff;
-		$gmOff += $v; $gmOff = -15 if $gmOff < -15; $gmOff = 10 if $gmOff > 10;
+		$gmOff += $v; $gmOff = -20 if $gmOff < -20; $gmOff = 10 if $gmOff > 10;
+		step_save();
 		message "[partylead] gear maps: party on $here " . sprintf('%.1f', ($k - $gmWin{k}) / ($n * $el)) . " kills/min each, " . ($d - $gmWin{d}) . " deaths in " . int($el) . " min -> step $old -> $gmOff\n", 'system';
 		$gmRecheck = 1; # fit_tick re-checks the map choice now
 	}
@@ -1814,6 +1843,22 @@ sub fit_tick {
 	return if time - $fitAt < FIT_EVERY && !$gmRecheck;
 	$gmRecheck = 0;
 	$fitAt = time;
+	if ($forceRepick) { # owner order 2026-11-15: re-pick now, conservative (PT16 plan change)
+		my @fr0 = online_friends();
+		return if @fr0 && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr0) && time - $fitLoadAt < 300;
+		$forceRepick = 0; step_save();
+		my ($m, $why) = choose_map();
+		if (defined $m && $m ne '') {
+			my $old = plan_map() || $homeMap || '-';
+			if ($old ne $m) {
+				wd_report('PLAN_CHANGE', $old, "$old -> $m: owner: party too weak ($why)", 'new plan on arrival');
+				$plan = undef; plan_save();
+				($homeMap, $homeAt, $homeBy) = ('', 0, 'auto');
+				auto_goto($m, "owner: party too weak; $why");
+			}
+		}
+		return;
+	}
 	return if mind_fresh();
 	if ((my $pc = plan_map()) ne '') { # PT16: one map for ~2 h
 		my ($tm) = party_turn();
@@ -2037,6 +2082,7 @@ sub tick_guarded {
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
+	hp_sample() if $net && $net->getState() == 5;
 	portal_back_guard() if $net && $net->getState() == 5;
 	$lmSet = $config{lockMap} || '' if defined $lmSet;
 }

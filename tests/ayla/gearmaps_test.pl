@@ -39,10 +39,10 @@ ok($plv == 58, "party level $plv (want 58: Zen.fox 56 - 6 fragile + healer 4 + t
 ok(level_map($plv, 1) eq 'orcsdun02', "map " . level_map($plv, 1));
 ok(level_map($old, 1) eq 'gl_church', "old map " . level_map($old, 1));
 # steps
-ok(gm_verdict(7, 10, 30, 3) == -3, 'deaths step down');
-ok(gm_verdict(7, 10, 160, 0) == 2, 'easy farming steps up');
-ok(gm_verdict(7, 10, 60, 0) == 0, 'par holds');
-ok(gm_verdict(7, 10, 60, 1) == 0, 'one death holds');
+ok(gm_verdict(7, 10, 30, 1) == -5, 'one death steps down at once');
+ok(gm_verdict(7, 10, 160, 0) == 0, 'no step up before 20 min');
+ok(gm_verdict(7, 20, 240, 0) == 3, '20 min, 1.7 kills/min each, 0 deaths: step up');
+ok(gm_verdict(7, 20, 140, 0) == 0, '20 min, 1 kill/min each: hold');
 ok(level_map($plv - 3, 1) ne level_map($plv, 1) || 1, 'step down');
 printf "after one step down (%d): %s; after one step up (%d): %s\n", $plv - 3, level_map($plv - 3, 1), $plv + 2, level_map($plv + 2, 1);
 # very good gear rates above the level (capped), beginners unrated, never under half
@@ -57,5 +57,9 @@ ok(gm_route_unsafe('orcsdun02', 58, \%via, \%dg) eq 'gef_fild10', 'orcsdun02 uns
 ok(gm_route_unsafe('orcsdun02', 65, \%via, \%dg) eq 'gef_fild10', 'orcsdun02 unsafe at 65 (60 >= 60)');
 ok(gm_route_unsafe('orcsdun02', 66, \%via, \%dg) eq '', 'orcsdun02 safe at 66');
 ok(gm_route_unsafe('gef_dun01', 58, \%via, \%dg) eq '', 'gef_dun01 safe');
+# owner 2026-11-15: start conservative - the party rated 58 farms at 58 - 10
+printf "conservative pick for 58-10=48 (healer): %s; step up 51: %s, 60: %s; step down 43: %s
+", level_map(48, 1), level_map(51, 1), level_map(60, 1), level_map(43, 1);
+ok(level_map(48, 1) eq 'pay_dun02', 'party 58 starts on pay_dun02');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);
