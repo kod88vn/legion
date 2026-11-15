@@ -287,6 +287,12 @@ type Tuning struct {
 	// pt32.go (PT32/PR16, 2026-11-14): a party member fights in place - a new target within 8 cells of it or a party
 	// mate, no other aggressive monster on the way, none while 2+ monsters are on it. ON (owner rule).
 	PartyFightInPlaceOn bool `json:"party_fight_in_place_on"`
+	// idleerrand.go (EC36): a bot waiting in a town sells / restocks (default on; idle_errand_off switches it off)
+	IdleErrandOff         bool `json:"idle_errand_off"`
+	IdleErrandWaitSec     int  `json:"idle_errand_wait_sec"`
+	IdleErrandWeightPct   int  `json:"idle_errand_weight_pct"`
+	IdleErrandSlots       int  `json:"idle_errand_slots"`
+	IdleErrandCooldownMin int  `json:"idle_errand_cooldown_min"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -318,6 +324,7 @@ var defaultTuning = Tuning{
 	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
 	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
+	IdleErrandWaitSec: 45, IdleErrandWeightPct: 35, IdleErrandSlots: 85, IdleErrandCooldownMin: 10,
 }
 
 var curTuning atomic.Value // *Tuning
@@ -367,6 +374,10 @@ func (t *Tuning) sanitize() {
 		}
 	}
 	pos(&t.PartyLeash, d.PartyLeash)
+	pos(&t.IdleErrandWaitSec, d.IdleErrandWaitSec)
+	pos(&t.IdleErrandWeightPct, d.IdleErrandWeightPct)
+	pos(&t.IdleErrandSlots, d.IdleErrandSlots)
+	pos(&t.IdleErrandCooldownMin, d.IdleErrandCooldownMin)
 	pos(&t.CasterBoltFloorPct, d.CasterBoltFloorPct)
 	pos(&t.CasterHelpSPPct, d.CasterHelpSPPct)
 	pos(&t.TogetherCells, d.TogetherCells)

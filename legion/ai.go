@@ -379,6 +379,7 @@ func (b *Bot) think() {
 				b.forceTown = ""
 			}
 		}
+		b.idleErrand(p, now) // idleerrand.go (EC36): waiting in a town with a heavy bag -> sell / restock meanwhile
 		// economy run 9: standing in a town (a rally, waiting at the Kafra, passing through) with the money for a piece
 		// this town sells: buy it now - any town visit, not only a party "town run"
 		if b.trip == nil && b.errand == nil && b.kafra == nil && now.After(b.buffAt["townbuy"]) {
