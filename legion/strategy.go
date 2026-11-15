@@ -14,7 +14,8 @@ package main
 //   - EXP level modifier: monsters 1-10 levels ABOVE you give 105-140% exp, +16 or more drops to 40%;
 //     monsters 6-20 below give 85-95%, 21+ below 60% -> 10%. So a spot's band starts a few levels under the
 //     monsters' level and ends ~15 above it.
-//   - party exp is shared only if all members are within 15 base levels (rAthena party_share_level).
+//   - party exp is shared evenly while the party's base-level spread is within party_share_level: 15 in stock
+//     rAthena, 99 on this server (rathena/conf/import/inter_conf.txt), i.e. at any spread (PT35, lfg.go partyLvOK).
 //   - mob_count_rate is 200% on this server: fields are twice as crowded as on iRO, aggressive maps hurt more.
 // Bots prefer these spots for their level band, then fall back to the generic spawn-table search (SpotsFor).
 

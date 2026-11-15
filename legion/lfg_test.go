@@ -46,7 +46,7 @@ func TestLfgFits(t *testing.T) {
 		t.Fatal("a healer within 10 levels joins a party without one")
 	}
 	if lfgFits(&lfgCand{lv: 55, role: roleSupport, healer: true, at: m}, P) {
-		t.Fatal("level band +-10")
+		t.Fatal("PT35: pay_fild04 (guide lv22-36) gives a lv55 healer no real exp")
 	}
 	P.healer = true
 	if lfgFits(healer, P) {

@@ -335,7 +335,7 @@ func memberPartyGroups(bots []*Bot, guild string) []memberPartyGroup {
 		g := []fb{free[0]}
 		rest := []fb{}
 		for _, x := range free[1:] {
-			if len(g) < 5 && free[0].lv-x.lv <= 10 {
+			if len(g) < 5 && partyLvOK(x.lv, free[0].lv, 0) { // PT35 band (was 10 under the leader)
 				g = append(g, x)
 			} else {
 				rest = append(rest, x)

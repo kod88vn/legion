@@ -8,7 +8,7 @@ package main
 //     wait for an online slot, isn't kicked by human-party pins, and the run loop relogs it after any disconnect
 //     (bot.go run). It plays its main character and skips the town hang-out after login (levelling first).
 //   - leaderPartyManager: every minute an online leader that isn't leading a party gets a full tank / priest /
-//     ranged party from its guild (in-game roster first, persona guild as fallback), within 10 levels, at the best
+//     ranged party from its guild (in-game roster first, persona guild as fallback), within the PT35 level band, at the best
 //     party spot of the strategy guide (strategy.go guideSpots) for the party's level range.
 //   - levelBook + /api/leaderboard: the server's top characters (Legion bots, last known level kept in
 //     data/levels.json so offline characters keep their place) and the rank of every guild leader.
@@ -221,25 +221,30 @@ func guildMates(l *Bot, g *GuildDef, bots []*Bot) []*Bot {
 }
 
 // pickLeaderParty: tank, support, ranged, then a 2nd ranged / melee, each the closest in level to the leader
-// (within 10 levels so even EXP share works); the leader fills its own role.
+// within the PT35 band (lfg.go partyLvOK over the leader and everyone picked so far: even exp share works and the
+// strongest still gets real exp on a map for the weakest); the leader fills its own role.
 func pickLeaderParty(l *Bot, cands []*Bot) []*Bot {
 	l.mu.Lock()
 	lv, lrole := l.BaseLvOr(), partyRole(l)
 	l.mu.Unlock()
 	used := map[*Bot]bool{}
+	lo, hi := lv, lv
 	pick := func(role int) *Bot {
 		var best *Bot
-		bd := 11
+		bd, blv := 1<<30, 0
 		for _, c := range cands {
 			if used[c] {
 				continue
 			}
 			c.mu.Lock()
-			r, d := partyRole(c), abs(c.BaseLvOr()-lv)
+			r, clv := partyRole(c), c.BaseLvOr()
 			c.mu.Unlock()
-			if r == role && d < bd {
-				best, bd = c, d
+			if d := abs(clv - lv); r == role && d < bd && partyLvOK(min(lo, clv), max(hi, clv), 0) {
+				best, bd, blv = c, d, clv
 			}
+		}
+		if best != nil {
+			lo, hi = min(lo, blv), max(hi, blv)
 		}
 		return best
 	}
@@ -393,7 +398,7 @@ func formLeaderParty(l *Bot, g *GuildDef, bots []*Bot, members []*Bot, mapName s
 		members = pickLeaderParty(l, guildMates(l, g, bots))
 	}
 	if len(members) == 0 {
-		return nil, "", fmt.Errorf("no free guild members within 10 levels of %s online", l.charName())
+		return nil, "", fmt.Errorf("no free guild members in %s's level band online", l.charName())
 	}
 	if mapName == "" {
 		mapName = bestPartySpot(append([]*Bot{l}, members...))

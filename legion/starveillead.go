@@ -16,7 +16,7 @@ package main
 //               member's next shop gear piece - guildPlan's "guide"/"fund" advice, now done. One gift per member per 6 h.
 //   Keep gifts  members loyalty.go lists at risk get a keep gift from the pool (bot leaders pay theirs from their own
 //               purse; Ayla's purse is never touched): one per member per day, one per guild per 2 h, as keepMember.
-//   Parties     every 15 min one party of 3-5 free members within 10 levels at the best spot for them all
+//   Parties     every 15 min one party of 3-5 free members within the PT35 level band at the best spot for them all
 //               (memberPartyGroups), announced by Ayla in guild chat - guildPlan's "party" advice, now done.
 //   Direction   autopilot directions and carry blocks already run for Starveil (guildduty.go dutyAutopilotRound,
 //               dutyRunPlans); a leader-set direction from her mind replaces them as for any guild.
