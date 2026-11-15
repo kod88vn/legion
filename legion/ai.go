@@ -2766,6 +2766,9 @@ func (b *Bot) fight(e *Entity, moving bool, now time.Time) {
 	if b.aoeCast(e, now) { // aoe.go: Mage/Wizard area spells on 3+ grouped monsters, Fire Wall against a walker
 		return
 	}
+	if b.casterActive(e, moving, now) { // casteractive.go (CL16): no group -> a spell on a party target in range, no melee chase
+		return
+	}
 	if b.weaponAoE(e, now) { // weaponskill.go: Archer-line Arrow Shower on 3+ grouped monsters
 		return
 	}

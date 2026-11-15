@@ -155,6 +155,11 @@ type Tuning struct {
 	DropRatesFromConf bool `json:"drop_rates_from_conf"`
 	// skillaudit.go (run 6): true = don't hold skills until the predicted can-act time (for a before/after measurement)
 	SkillCanactOff bool `json:"skill_canact_off"`
+	// casteractive.go (CL16): true = Mage-line casters back to the old single-target/no-help behaviour; bolt floor
+	// and help threshold in % of max SP
+	CasterActiveOff    bool `json:"caster_active_off"`
+	CasterBoltFloorPct int  `json:"caster_bolt_floor_pct"`
+	CasterHelpSPPct    int  `json:"caster_help_sp_pct"`
 	// reset.go (run 7): true = no new natural build resets start (a running one still finishes / fetches its items)
 	ResetsOff      bool    `json:"resets_off"`
 	DropRateMul    float64 `json:"drop_rate_mul"`
@@ -240,6 +245,7 @@ type Tuning struct {
 var defaultTuning = Tuning{
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
+	CasterBoltFloorPct: 35, CasterHelpSPPct: 60,
 
 	BeginnerLv: 20, StayCrowd: 70, TargetLvOver: 2, TargetLvAggression: 6, TargetLvMin: 8,
 	RoamGiveUpSec: 120, CrowdSpawnsPerBot: 5, CrowdRoamPct: 30, RoamCrowdSec: 75, GhostTargetSec: 10, LeaderCollectSec: 90, TripUrgentWeightPct: 90, TripBagPct: 70, TripMinIntervalMin: 45,
@@ -309,6 +315,8 @@ func (t *Tuning) sanitize() {
 		}
 	}
 	pos(&t.PartyLeash, d.PartyLeash)
+	pos(&t.CasterBoltFloorPct, d.CasterBoltFloorPct)
+	pos(&t.CasterHelpSPPct, d.CasterHelpSPPct)
 	pos(&t.TogetherCells, d.TogetherCells)
 	pos(&t.CollectStopCells, d.CollectStopCells)
 	pos(&t.GearReserveZenyDiv, d.GearReserveZenyDiv)
