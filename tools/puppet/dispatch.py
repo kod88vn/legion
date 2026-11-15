@@ -18,6 +18,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -56,13 +57,32 @@ def wsl_path(p):
 
 
 def ayla_cmd(nt=None):
-    """the command line Ayla's mind uses for her interface. ayla.sh needs WSL: it calls docker (in WSL) and writes
-    /mnt/g/... paths. From Windows (the CLI's Bash tool is Git Bash) it must go through wsl.exe; when the dispatcher
-    itself runs inside WSL, plain bash works."""
+    """the command line Ayla's watcher uses for her (read-only) log. ayla.sh needs WSL: it calls docker (in WSL).
+    From Windows (the CLI's Bash tool is Git Bash) it must go through wsl.exe - and with NO argument that starts with
+    '/': Git Bash (MSYS) rewrites '/mnt/g/...' into 'C:/Program Files/Git/mnt/g/...', so wsl's bash got a path that
+    doesn't exist (exit 127, puppet_calls.jsonl 2026-11-15 02:1x), and the mind's retry with MSYS_NO_PATHCONV=1 in
+    front no longer matched the allowed prefix (denied). So: --cd with the Windows repo path + a relative script path.
+    When the dispatcher itself runs inside WSL (no Windows CLI), plain bash works."""
     nt = (os.name == "nt" or WIN_MIND) if nt is None else nt
     if nt:
-        return f"wsl -d {WSL_DISTRO} -- bash {wsl_path(AYLA_SH)}"
+        return f"wsl -d {WSL_DISTRO} --cd {win_path(REPO.replace(chr(92), '/'))} -- bash tools/rogui/ayla.sh"
     return f"bash {wsl_path(AYLA_SH)}"
+
+
+def mind_env():
+    """environment of the CLI child. A Windows claude.exe started from WSL gets only the variables named in WSLENV;
+    MSYS_NO_PATHCONV / MSYS2_ARG_CONV_EXCL switch Git Bash's path rewriting off for every command the mind runs (a
+    second guard next to ayla_cmd's slash-free form)."""
+    env = dict(os.environ)
+    env["MSYS_NO_PATHCONV"] = "1"
+    env["MSYS2_ARG_CONV_EXCL"] = "*"
+    if WIN_MIND:
+        names = [n for n in env.get("WSLENV", "").split(":") if n]
+        for n in ("MSYS_NO_PATHCONV", "MSYS2_ARG_CONV_EXCL"):
+            if n not in names:
+                names.append(n)
+        env["WSLENV"] = ":".join(names)
+    return env
 
 HOUR = 3600.0
 GUILDS = [f"guild{i:02d}" for i in range(1, 11)]
@@ -79,19 +99,33 @@ ROLES["chat"] = dict(brief="chat", model="haiku", interval=0, offset=0, call_cap
                      min_gap=30, bus="chat")
 ROLES["build"] = dict(brief="build", model="sonnet", interval=0, offset=0, call_cap=0.35, hourly_cap=0.60,
                       min_gap=1800, bus="build")
-ROLES["ayla"] = dict(brief="ayla", model="sonnet", interval=5 * 60, offset=20, call_cap=0.25, hourly_cap=1.50,
-                     min_gap=120, bus="ayla")
+# owner PR38 / AY05 (amended 2026-11-15): her algorithm (partylead.pl) plays her; her dedicated Haiku helper watches and
+# steps in only when she is stuck or deciding badly (guarded ayla.sh commands), and every intervention files a code-fix
+# item. min_gap 300 = at most one call (so one intervention) per 5 min. Woken by her watchdog's reports too.
+ROLES["ayla"] = dict(brief="ayla", model="haiku", interval=10 * 60, offset=20, call_cap=0.08, hourly_cap=0.40,
+                     min_gap=300, bus="ayla")
 
 CALL_TIMEOUT = 300
 ORDER_GAP = 120  # an owner order wakes a role at most this often
 
 
 # ----------------------------------------------------------------- command line for the Claude CLI
+# ayla.sh actions the helper may use: reads (docker logs, deals.log, status/lead print), and the guarded plugin orders
+# for stepping in (partylead rally cancel, goto + lockMap, a Butterfly Wing respawn). Never `cmd` with free text: no
+# bare ai / ai off / ai manual can be formed (G05; cmdfile.pl blocks them too).
+AYLA_READ = ["log", "chat", "deals", "lead", "status"]
+AYLA_ACT = ["rally cancel", "map", "cmd respawn"]
+BUGQ = os.path.join(REPO, "tools", "system", "bugq.py").replace("\\", "/")
+WD_QUEUE = os.path.join(REPO, "openkore-ayla", "logs", "bugqueue.jsonl")  # partylead.pl wd_report writes here
+
+
 def allowed_tools(role, python="python"):
-    """Bash only, and only legionctl (Ayla's mind also gets ayla.sh, her own interface)."""
+    """Bash only, and only legionctl (Ayla's watcher also reads her console log through ayla.sh, read-only actions)."""
     tools = [f"Bash({python} {mind_path(CTL)}:*)"]
     if role == "ayla":
-        tools.append(f"Bash({ayla_cmd()}:*)")
+        tools += [f"Bash({ayla_cmd()} {a}:*)" for a in AYLA_READ]
+        tools += [f"Bash({ayla_cmd()} {a})" if a == "cmd respawn" else f"Bash({ayla_cmd()} {a}:*)" for a in AYLA_ACT]
+        tools.append(f"Bash({python} {mind_path(BUGQ)} add:*)")
     return tools
 
 
@@ -100,8 +134,14 @@ def allowed_tools(role, python="python"):
 DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-cancel", "guild-kick"]
 
 
-def denied_tools(python="python"):
-    return [f"Bash({python} {mind_path(CTL)} {c}:*)" for c in DENIED_CTL]
+# the watcher only observes and files: no words, prices, directions or chat jobs in the world either
+DENIED_WATCHER = ["say", "whisper", "party-say", "shop", "remember", "chat-jobs", "chat-intent", "guild-direction-set",
+                  "guild-direction-clear", "guild-pardon", "leader", "boss-check"]
+
+
+def denied_tools(python="python", role=""):
+    cmds = DENIED_CTL + (DENIED_WATCHER if role == "ayla" else [])
+    return [f"Bash({python} {mind_path(CTL)} {c}:*)" for c in cmds]
 
 
 def load_brief(role):
@@ -125,7 +165,7 @@ def build_command(role, claude="claude", python="python", model=None, call_cap=N
            "--safe-mode",  # no CLAUDE.md, skills, hooks, MCP: the big project rules are not loaded
            "--tools", "Bash",
            "--allowedTools", *allowed_tools(role, python),
-           "--disallowedTools", *denied_tools(python),
+           "--disallowedTools", *denied_tools(python, role),
            "--permission-mode", "dontAsk",
            "--max-budget-usd", f"{call_cap if call_cap is not None else cfg['call_cap']:.2f}",
            "--output-format", "json",
@@ -303,6 +343,7 @@ class Signals:
         self.pending_human = 0
         self.pending_ayla = None
         self.ayla_seen = {}  # event class -> last time it woke her (a repeating class must not wake her every 2 min)
+        self.wd_offset = None  # bytes of her watchdog's queue file already seen
 
     def _ayla_wake(self, cls, cooldown):
         now = time.time()
@@ -357,7 +398,38 @@ class Signals:
         # her own state (no event ever carries it): standing in town / idle for most of 10 min wakes her mind
         if ayla_idle_state(api.get("/api/meter/neo") or {}):
             self._ayla_wake("idle", 600)
+        # her watchdog's reports (partylead.pl wd_report: STUCK / WRONG_MAP / IDLE) wake her helper
+        for cause in self.watchdog_reports():
+            self._ayla_wake("watchdog:" + cause, 300)
         out["ayla_event"] = self.pending_ayla
+        return out
+
+    def watchdog_reports(self, path=None):
+        """causes of new lines in her watchdog's queue file since the last poll (the first poll only sets the offset)"""
+        path = path or WD_QUEUE
+        try:
+            size = os.path.getsize(path)
+        except OSError:
+            return []
+        if self.wd_offset is None or size < self.wd_offset:
+            self.wd_offset = size
+            return []
+        out = []
+        try:
+            with open(path, "rb") as f:
+                f.seek(self.wd_offset)
+                chunk = f.read(size - self.wd_offset)
+            self.wd_offset = size
+        except OSError:
+            return []
+        for line in chunk.decode("utf-8", "replace").splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            m = re.match(r"Ayla watchdog (\w+)", str(r.get("text", "")))
+            if r.get("from") == "ayla-watchdog" and m and m.group(1).lower() not in out:
+                out.append(m.group(1).lower())
         return out
 
     def consumed(self, role):
@@ -410,7 +482,7 @@ def run_call(role, trigger, args, sched=None, sig=None):
         cmd = build_command(role, args.claude, args.python, args.model, args.call_cap)
         os.makedirs(WORKDIR, exist_ok=True)
         p = subprocess.run(cmd, input=text, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                           timeout=CALL_TIMEOUT, cwd=WORKDIR)
+                           timeout=CALL_TIMEOUT, cwd=WORKDIR, env=mind_env())
         row["exit"] = p.returncode
         row.update(parse_result(p.stdout))
         if p.returncode != 0:

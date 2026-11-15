@@ -13,4 +13,7 @@ Every call, in this order:
 6. If you hit an engine gap (broken command, missing data, bots misbehaving): `python {CTL} bug "<text>" --from {ROLE}`
    with names, map, numbers. Then carry on.
 
+Bash: one plain command per call (or a few allowed commands joined with `&&`), started exactly with the prefix shown.
+No shell loops, pipes, `$(...)`, variables, redirections, heredocs or `VAR=value` in front: they are refused. For many
+items run one command each.
 Look up game facts, never guess: `drops "<item>"`, `mob "<monster>"`, `mapinfo <map>`. Be brief; stop when done.
