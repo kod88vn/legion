@@ -81,3 +81,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Gear:** Mace[4] / Waghnak[4] -> knuckles or a Morning Star; SP gear (Sohee shoes, INT headgear); Andre, race cards,
   Mantis, Picky, Raydric.
 
+### Build milestones and playstyle (draft for owner review, 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Acolyte-line build are in `legion/data/buildmilestones.json` (builds priest, priest_me, priest_battle, monk, monk_asura, monk_occult). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
+- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
+  - `priest`: INT 99 first leaves AGI, DEX and VIT at 1 until about base level 65; the plan costs 1,688 points (1,273 exist) so DEX ends 70 and VIT 65. 110 skill points are listed: Lex Aeterna, Turn Undead, Magnus Exorcismus, Resurrection and Safety Wall are never reached, which the boss-role text (Lex Aeterna before big hits) assumes. Real Renewal support Priests carry DEX 40+ and VIT 30+ much earlier.
+  - `monk`: Asura Strike (and Throw Spirit Sphere 3) is never reached; STR ends 82. `monk_asura` reaches Asura with INT 67 of 70.
