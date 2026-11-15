@@ -153,3 +153,35 @@ func TestFriendsSaveKeepsDecay(t *testing.T) {
 		t.Fatalf("saved eff %+v", d.Pairs)
 	}
 }
+
+// The counters snapshot runs every meter_persist_sec (default 300); a value under a minute is ignored.
+func TestMeterPersistTuning(t *testing.T) {
+	dir := withDataDir(t)
+	os.WriteFile(filepath.Join(dir, "tuning.json"), []byte(`{"meter_persist_sec": 30}`), 0644)
+	meterLoadTuning()
+	if got := meterTune().PersistSec; got != 300 {
+		t.Fatalf("persist sec %d, want 300 (values under 60 fall back)", got)
+	}
+	os.WriteFile(filepath.Join(dir, "tuning.json"), []byte(`{"meter_persist_sec": 600}`), 0644)
+	meterLoadTuning()
+	if got := meterTune().PersistSec; got != 600 {
+		t.Fatalf("persist sec %d, want 600", got)
+	}
+	meterTuneCur.Store(nil)
+}
+
+// A crash leaves ".meter_state*.tmp" behind; the start removes it, but only this instance's own temp files.
+func TestMeterOrphanTempRemoved(t *testing.T) {
+	dir := withDataDir(t)
+	mine := filepath.Join(dir, ".meter_state.json.gz.123.tmp")
+	other := filepath.Join(dir, ".meter_state.core.json.gz.456.tmp")
+	os.WriteFile(mine, []byte("x"), 0644)
+	os.WriteFile(other, []byte("x"), 0644)
+	meterRestoreLoad()
+	if _, err := os.Stat(mine); !os.IsNotExist(err) {
+		t.Fatal("orphan temp of this instance not removed")
+	}
+	if _, err := os.Stat(other); err != nil {
+		t.Fatal("the other instance's temp file was removed")
+	}
+}

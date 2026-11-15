@@ -53,7 +53,7 @@ def _verdict_previous(tag):
         import league
         rec = league.record_verdict()
         if rec:
-            print("verdict for %s: %s%s" % (rec.get("tag"), rec.get("verdict"), " (partial window)" if rec.get("partial") else ""))
+            print("verdict for %s: %s" % (rec.get("tag"), rec.get("verdict")))
         return rec
     except Exception as e:  # the verdict is measurement, not a gate
         sys.stderr.write("WARNING: deploy verdict not recorded: %s\n" % e)

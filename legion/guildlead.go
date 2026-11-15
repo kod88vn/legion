@@ -159,10 +159,7 @@ func updateLevelBook(bots []*Bot, save bool) {
 	raw, err := json.Marshal(levelBook.m)
 	levelBook.Unlock()
 	if err == nil {
-		tmp := levelBookPath() + ".tmp"
-		if os.WriteFile(tmp, raw, 0644) == nil {
-			os.Rename(tmp, levelBookPath())
-		}
+		writeFileAtomic(levelBookPath(), raw) // fsynced temp + rename
 	}
 }
 

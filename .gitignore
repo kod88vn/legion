@@ -24,6 +24,9 @@ legion/data/parties*.json
 legion/data/friends*.json
 legion/data/minds.json
 legion/data/levels.json
+legion/data/levels.core.json
+legion/data/meter_bots.json
+legion/data/overview.json
 legion/data/char_levels.json
 legion/data/resets_pending*.json
 legion/data/markdowns*.json

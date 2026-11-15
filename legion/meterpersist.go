@@ -6,7 +6,7 @@ package main
 // meter.jsonl row after a deploy held only the minutes since it.
 //
 // The meter goroutine writes <data>/meter_state.json.gz (core instance: meter_state.core.json.gz) every
-// meterPersistEvery: each metered bot's last 60 one-minute slots, its session total and start, and Ayla's samples. The
+// The snapshot runs every meter_persist_sec (tuning, 300 s): each metered bot's last 60 one-minute slots, its session total and start, and Ayla's samples. The
 // write is atomic (temp file in the same directory, fsync, rename): a reader or a crash never sees half a file.
 // main() loads it once before any bot starts (meterRestoreLoad); a bot's saved counters are put back the first time it
 // logs in with that character (meterLogin -> meterRestoreInto). Time while the engine was down is not online time
@@ -28,7 +28,6 @@ import (
 )
 
 const (
-	meterPersistEvery = time.Minute
 	meterSessKeep     = 2 * time.Hour // a snapshot older than this restores the 1-hour slots only, not the session
 	meterStateVersion = 1
 )
@@ -75,6 +74,14 @@ func meterStatePath() string {
 
 // meterRestoreLoad: once in main() before any bot runs. A missing or broken file starts empty.
 func meterRestoreLoad() {
+	// a crash between the temp write and the rename leaves ".meter_state*.tmp" (several MB): removed at start. Only
+	// this instance's own base name, so the core never deletes the main's temp file or the reverse.
+	if tmps, _ := filepath.Glob(filepath.Join(*dataDir, "."+filepath.Base(meterStatePath())+".*.tmp")); len(tmps) > 0 {
+		for _, p := range tmps {
+			os.Remove(p)
+		}
+		log.Printf("meter: removed %d orphan temp file(s)", len(tmps))
+	}
 	f, err := meterReadState(meterStatePath())
 	if err != nil {
 		if !os.IsNotExist(err) {

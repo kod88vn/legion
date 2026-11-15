@@ -37,9 +37,10 @@ type meterTuning struct {
 	MinOnlinePct int  `json:"meter_min_online_pct"` // a bot counts in a window's cohort with >= this % of the window online (25)
 	PeriodSec    int  `json:"meter_period_sec"`     // aggregation period (15)
 	HistoryOff   bool `json:"meter_history_off"`    // true: no meter.jsonl rows
+	PersistSec   int  `json:"meter_persist_sec"`    // counters snapshot (meter_state*.json.gz) every this many s (300)
 }
 
-var meterTuningDefault = meterTuning{FairLvGap: 15, MinOnlinePct: 25, PeriodSec: 15}
+var meterTuningDefault = meterTuning{FairLvGap: 15, MinOnlinePct: 25, PeriodSec: 15, PersistSec: 300}
 
 var meterTuneCur atomic.Pointer[meterTuning]
 
@@ -66,6 +67,9 @@ func meterLoadTuning() {
 	}
 	if t.PeriodSec < 5 {
 		t.PeriodSec = meterTuningDefault.PeriodSec
+	}
+	if t.PersistSec < 60 { // a snapshot at least every minute is a write-load bug, not a setting
+		t.PersistSec = meterTuningDefault.PersistSec
 	}
 	meterTuneCur.Store(&t)
 }
@@ -433,7 +437,7 @@ func meterLoop(bots []*Bot) {
 			}
 			v := meterBuild(rows, now)
 			meterCur.Store(v)
-			if now.Sub(lastSave) >= meterPersistEvery {
+			if now.Sub(lastSave) >= time.Duration(meterTune().PersistSec)*time.Second {
 				lastSave = now
 				meterPersist(bots, now) // meterpersist.go: counters survive a restart
 			}

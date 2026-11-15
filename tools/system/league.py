@@ -209,7 +209,7 @@ def verdict_record(dep, res, now_t, window_h=3.0):
                       "change_pct": None if pct is None else round(pct, 2), "verdict": v})
     summary = ", ".join("%s %d" % (k, counts[k]) for k in ("KEEP", "REVERT", "INCONCLUSIVE", "NO DATA") if k in counts)
     partial = now_t < dep["epoch"] + window_h * 3600
-    return {"kind": "verdict", "t": C.iso(now_t), "epoch": int(now_t), "tag": dep.get("tag", "?"),
+    return {"kind": "verdict", "t": C.iso(now_t), "tag": dep.get("tag", "?"),
             "deploy_epoch": dep["epoch"], "partial": partial, "window_h": window_h,
             "verdict": (summary or "no fixes") + (" (partial window)" if partial else ""), "items": items}
 

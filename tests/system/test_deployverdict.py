@@ -88,6 +88,38 @@ class DeployVerdictTests(unittest.TestCase):
         self.assertIsNone(L.record_verdict())            # final: written once
         self.assertEqual(len(self.verdicts()), 2)
 
+    def test_puppet_and_bugq_ignore_a_newest_verdict(self):
+        import bugq
+        import io
+        import contextlib
+        sys.path.insert(0, os.path.join(REPO, "tools", "puppet"))
+        import dispatch
+        self.meter_rows()
+        self.clock(T0)
+        D.record("img1", ["legion"], None, [D.parse_fix("archer ledge|kpm|archer")])
+        self.clock(T0 + 3 * 3600 + 100)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            D.record("img2", ["legion"], None, [D.parse_fix("x|kpm|archer")])
+        self.assertEqual(len(self.verdicts()), 1)
+        # a verdict written later than the last deploy is the newest line of the file: it must not be read as a deploy
+        C.append_jsonl(C.dpath("deploys.jsonl"), {"kind": "verdict", "t": C.iso(T0 + 5 * 3600), "tag": "img1",
+                                                  "deploy_epoch": T0, "verdict": "KEEP 1"})
+        self.assertEqual(dispatch.last_deploy(self.d), (T0 + 3 * 3600 + 100, "img2"))
+        self.assertEqual(bugq.last_deploy_epoch(), T0 + 3 * 3600 + 100)
+        # the verdict line stays readable and its text is not doubled on the console
+        self.assertEqual(out.getvalue().count("partial window"), 0)
+        self.assertNotIn("(partial window) (partial window)", out.getvalue())
+
+    def test_verdict_only_file_is_no_deploy(self):
+        import bugq
+        sys.path.insert(0, os.path.join(REPO, "tools", "puppet"))
+        import dispatch
+        C.append_jsonl(C.dpath("deploys.jsonl"), {"kind": "verdict", "t": C.iso(T0), "tag": "img1",
+                                                  "deploy_epoch": T0, "verdict": "KEEP 1"})
+        self.assertEqual(dispatch.last_deploy(self.d), (None, None))
+        self.assertIsNone(bugq.last_deploy_epoch())
+
 
 if __name__ == "__main__":
     unittest.main()
