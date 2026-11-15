@@ -81,9 +81,13 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   the shortfall (peco.go pecoFundRound), Riding 1 first after the Swordman part in every Knight/Crusader plan.
 - Before the 30% key-buff floor, the 60% rule kept Knights from ever casting Two-Hand Quicken.
 
-### Build milestones and playstyle (draft for owner review, 2026-11-15)
-- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Swordman-line build are in `legion/data/buildmilestones.json` (builds knight, knight_spear, knight_pierce, crusader, crusader_gc, crusader_spear). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
-- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
-  - `knight`: STR 90 / AGI 85 cost more than the 1,273 points of level 99; a plan-following Knight ends STR 85, AGI 75.
-  - `crusader`, `crusader_gc`: Sacrifice (Devotion) needs Reflect Shield 5 and Grand Cross 4 and is never reached inside the 88 skill points; the boss-role text that promises Devotion on the priest does not happen. `crusader_gc` also ends Holy Cross 6, no Reflect Shield, INT 92.
-  - `knight_spear` lists 101 skill points (Endure 10 and Pierce 10 stay at 1 and 6); `crusader_spear` ends Grand Cross 3 of 5.
+### Build milestones and playstyle (rebalanced 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every build of this line are in `legion/data/buildmilestones.json` (`knight`, `crusader`, `knight_spear`, `crusader_gc`, `knight_pierce`, `crusader_spear`). Gear is by band in `buildgear.json`; the party role stays in code.
+- Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:
+  - `knight` (Two-Hand Sword Knight): stat goals 1,408 before (budget 1,273), skill points 87 before (budget 88), not reached before: STR 90; AGI 85; now stat goals 1,272 (spare 1), skill points 87, ends STR 90, AGI 75, VIT 61, DEX 30, not reached now: none.
+  - `crusader` (VIT Holy Cross Crusader): stat goals 1,180 before (budget 1,273), skill points 93 before (budget 88), not reached before: Grand Cross 0/4; Sacrifice 0/1; now stat goals 1,269 (spare 4), skill points 85, ends STR 75, VIT 89, INT 40, DEX 55, not reached now: none.
+  - `knight_spear` (Brandish Spear Knight): stat goals 1,236 before (budget 1,273), skill points 101 before (budget 88), not reached before: Endure 1/10; Pierce 6/10; now stat goals 1,265 (spare 8), skill points 81, ends STR 90, AGI 20, VIT 83, DEX 55, not reached now: none.
+  - `crusader_gc` (INT/VIT Grand Cross Crusader): stat goals 1,340 before (budget 1,273), skill points 115 before (budget 88), not reached before: INT 99; Holy Cross 6/10; Demon Bane 4/5; Heal 0/5; Smite 0/3; Shield Boomerang 0/3; Shield Reflect 0/5; Sacrifice 0/1; Cavalier Mastery 0/5; now stat goals 1,273 (spare 0), skill points 82, ends VIT 85, INT 90, DEX 60, not reached now: none.
+  - `knight_pierce` (AGI/STR Pierce Lancer Knight): stat goals 1,270 before (budget 1,273), skill points 89 before (budget 88), not reached before: Endure 9/10; now stat goals 1,270 (spare 3), skill points 79, ends STR 90, AGI 70, VIT 60, DEX 40, not reached now: none.
+  - `crusader_spear` (STR/VIT Spear Crusader): stat goals 1,152 before (budget 1,273), skill points 90 before (budget 88), not reached before: Grand Cross 3/5; now stat goals 1,241 (spare 32), skill points 79, ends STR 90, AGI 30, VIT 80, DEX 50, not reached now: none.
+- Existing characters: a changed plan keeps the earlier goals in `Legacy` / `LegacyStats` (builds.go), so they are not wrong builds; `tests/tools/test_wrongbuilds_replay.py` replays the pre-rebalance plans through the wrongbuilds.py rules.

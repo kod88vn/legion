@@ -196,11 +196,7 @@ the classic name in brackets where they differ. The owner's words for each class
   gems - economy item.
 - Knight / Crusader Pecos: Riding comes early now, but most riders lack the 3,500 / 4,500z (economy).
 
-### Build milestones (draft for owner review, 2026-11-15; EC39)
-- `legion/data/buildmilestones.json` holds, for every build in `builds.go`, the stats and skills reached by the end of each gear band
-  (replay of the ordered plans, `tools/design/gen_milestones.py`) and the solo / MVP / PvP playstyle. Test:
-  `tests/tools/test_buildmilestones.py`. Gear stays in `buildgear.json`; the party role stays in code.
-- Limits that shape every plan: 1,273 stat points at level 99; skill points 9 (Novice) + 39 (first job, changes at job 40) + 49
-  (every second job caps at job level 50 here) = 88 for the plan. 17 builds list stat goals beyond 1,273 points and 16 list more skill
-  points than 88, so their tails are never reached (per class: the "Build milestones" section of each class file).
-
+### Build milestones (rebalanced 2026-11-15; EC39)
+- `legion/data/buildmilestones.json` holds, for every build in `builds.go`, the stats and skills reached by the end of each gear band (replay of the ordered plans, `tools/design/gen_milestones.py`) and the solo / MVP / PvP playstyle. Tests: `tests/tools/test_buildmilestones.py` (budgets, reach) and `tests/tools/test_wrongbuilds_replay.py` (old plans flag nothing). Gear stays in `buildgear.json`; the party role stays in code.
+- Limits that shape every plan: 1,273 stat points at level 99; skill points 9 (Novice, Basic Skill, outside the plan) + 39 (first job, changes at job 40) + 49 (every second job caps at job level 50 here) = 88 for the plan.
+- Before the 2026-11-15 rebalance 17 plans listed stat goals above 1,273 points, 16 listed more than 88 skill points, and 25 left at least one goal unreached. Now 37 of 37 plans reach every goal; the largest stat total is 1,273 and the largest skill total 88. Per line: the class file's "Build milestones" section.

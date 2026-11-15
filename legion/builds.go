@@ -82,43 +82,46 @@ var vendorFirst = sk(36, 5, 39, 3, 41, 3)
 
 var builds = map[string]*Build{
 	"knight": {ID: "knight", Name: "Two-Hand Sword Knight", Class: 7, First: 1, Branch: 0,
-		Stats: st(stSTR, 20, stAGI, 20, stVIT, 20, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 35, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 50, stSTR, 80, stAGI, 75, stDEX, 40, stVIT, 60, stSTR, 90, stAGI, 85),
+		Stats:       st(stSTR, 20, stAGI, 20, stVIT, 20, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 35, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 50, stSTR, 80, stAGI, 70, stVIT, 60, stDEX, 30, stSTR, 90, stAGI, 75, stVIT, 61),
+		LegacyStats: st(stSTR, 20, stAGI, 20, stVIT, 20, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 35, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 50, stSTR, 80, stAGI, 75, stDEX, 40, stVIT, 60, stSTR, 90, stAGI, 85),
 		// owner 2026-11-14 ("knights must follow the official path to get peco as soon as possible"): Riding 1 is the
 		// FIRST Knight skill (prereq Endure 1, in the Swordman part); peco.go rents the bird at once.
 		// build review 2026-11-14 (iRO Wiki Knight, 2H sword): Two-Hand Quicken -> Riding + Cavalier Mastery 5 (peco.go;
 		// run 4: right after the core buff - with Riding at job ~26 only 24 of 105 Knights had it, median job 19; Cavalier
 		// Mastery 5 straight after so the ride costs no ASPD) -> Auto Counter -> Bowling Bash -> Magnum Break 10, HP
 		// Recovery 10, Endure 10 (Renewal: +MDEF). 2nd-job order isn't wrong-build checked; the old order is Legacy.
-		Skills:  sk(2, 1, 5, 10, 3, 10, 7, 5, 6, 5, 8, 1, 4, 7, 63, 1, 60, 10, 64, 5, 61, 5, 62, 10, 7, 10, 4, 10, 8, 10),
-		Legacy:  sk(2, 1, 5, 10, 3, 10, 7, 5, 6, 5, 8, 1, 4, 7, 60, 10, 61, 5, 62, 10, 63, 1, 64, 5, 7, 10, 4, 10, 8, 10),
+		Skills:  sk(2, 1, 5, 10, 3, 10, 7, 10, 6, 5, 8, 10, 4, 10, 63, 1, 60, 10, 64, 5, 61, 5, 62, 10),
+		Legacy:  sk(2, 1, 5, 10, 3, 10, 7, 5, 6, 5, 8, 1, 4, 7, 63, 1, 60, 10, 64, 5, 61, 5, 62, 10, 7, 10, 4, 10, 8, 10, 2, 1, 5, 10, 3, 10, 7, 5, 6, 5, 8, 1, 4, 7, 60, 10, 61, 5, 62, 10, 63, 1, 64, 5, 7, 10, 4, 10, 8, 10),
 		Weapons: []int{1201, 1116, 1151, 1154, 1157}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "AGI/STR two-hand sword knight: Two-Hand Quicken + Bowling Bash, end goal Knight"},
 	"crusader": {ID: "crusader", Name: "VIT Holy Cross Crusader", Class: 14, First: 1, Branch: 1,
-		Stats: st(stVIT, 20, stSTR, 20, stDEX, 15, stINT, 10, stVIT, 40, stSTR, 40, stDEX, 30, stINT, 25, stVIT, 60, stSTR, 60, stDEX, 45, stVIT, 80, stSTR, 75, stDEX, 55, stINT, 40),
+		Stats:       st(stVIT, 20, stSTR, 20, stDEX, 15, stINT, 10, stVIT, 40, stSTR, 40, stDEX, 30, stINT, 25, stVIT, 60, stSTR, 60, stDEX, 45, stVIT, 80, stSTR, 75, stDEX, 55, stINT, 40, stVIT, 89),
+		LegacyStats: st(stVIT, 20, stSTR, 20, stDEX, 15, stINT, 10, stVIT, 40, stSTR, 40, stDEX, 30, stINT, 25, stVIT, 60, stSTR, 60, stDEX, 45, stVIT, 80, stSTR, 75, stDEX, 55, stINT, 40),
 		// build review 2026-11-14 (iRO Wiki Crusader): Faith -> Holy Cross -> Auto Guard, then Riding + Cavalier Mastery
 		// 5 (peco.go rents the Grand Peco once riding costs no ASPD), Shield Boomerang, Reflect Shield, Grand Cross
 		// run 4: Riding + Cavalier Mastery 5 right after Holy Cross 10 (only 4 of 81 Crusaders had Riding at job ~38)
-		Skills:  sk(5, 10, 6, 5, 2, 10, 8, 1, 4, 10, 7, 3, 63, 1, 248, 7, 253, 10, 64, 5, 248, 10, 249, 10, 250, 3, 251, 5, 252, 5, 254, 4, 255, 1),
-		Legacy:  sk(5, 10, 6, 5, 2, 10, 8, 1, 4, 10, 7, 3, 248, 7, 253, 10, 248, 10, 249, 10, 250, 3, 251, 5, 252, 5, 254, 4, 63, 1, 64, 1, 255, 1),
+		Skills:  sk(5, 10, 6, 5, 8, 10, 4, 10, 7, 3, 63, 1, 64, 5, 248, 10, 253, 10, 249, 5, 250, 3, 251, 3, 252, 5, 254, 4, 255, 1),
+		Legacy:  sk(5, 10, 6, 5, 2, 10, 8, 1, 4, 10, 7, 3, 63, 1, 248, 7, 253, 10, 64, 5, 248, 10, 249, 10, 250, 3, 251, 5, 252, 5, 254, 4, 255, 1, 5, 10, 6, 5, 2, 10, 8, 1, 4, 10, 7, 3, 248, 7, 253, 10, 248, 10, 249, 10, 250, 3, 251, 5, 252, 5, 254, 4, 63, 1, 64, 1, 255, 1),
 		Weapons: []int{1201, 1104, 1107, 1110, 1113, 1126, 1119, 1129}, Armors: armorHeavy, Extras: append(append([]int{}, extrasMelee...), shields...),
 		Summary: "VIT/STR shield crusader: Holy Cross and Auto Guard, end goal Crusader"},
 	"wizard": {ID: "wizard", Name: "INT/DEX Wizard", Class: 9, First: 2, Branch: 0,
-		Stats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 60),
+		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
 		// run 6: Storm Gust 10 right after Jupitel 3 (trace 13:15: lv56-62 Wizards had Earth Spike / Heaven's Drive and
 		// no Storm Gust, the Renewal Wizard's farming spell); Earth Spike / Heaven's Drive follow.
-		// AoE build (owner 2026-11-14: "mage/wiz build should focus on AOE spells"). Mage: Fire Bolt 5 / Lightning Bolt 5
-		// (prerequisites and early single-target), Fire Ball 5, Thunder Storm 5, Sight + Fire Wall 5 (kiting), Cold Bolt
-		// 5 + Frost Diver / Napalm Beat / Stone Curse (Wizard prerequisites) = 34; Wizard: Jupitel 3, Earth Spike 3,
-		// Heaven's Drive 5, Storm Gust 10, Jupitel 5, Lord of Vermilion 10, Sightrasher 2, Meteor Storm 10, Quagmire 3;
-		// a Mage's remaining 15 points fill Thunder Storm / Fire Bolt / Lightning Bolt to 10 (the Wizard goals above are
-		// not learnable by a Mage, so it skips them). Existing bolt Mages (Legacy) put every new point into the first
-		// unmet goals here, i.e. area spells; they are not wrong builds (tools/wrongbuilds.py accepts Legacy caps).
-		Skills:  sk(19, 5, 20, 5, 17, 5, 21, 5, 10, 1, 18, 5, 14, 5, 15, 1, 11, 1, 16, 1, 84, 3, 89, 10, 90, 3, 91, 5, 84, 5, 85, 10, 81, 2, 83, 10, 92, 3, 21, 10, 19, 10, 20, 10, 17, 10, 14, 10, 84, 10, 18, 10),
-		Legacy:  sk(19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 84, 10, 89, 10, 90, 3, 91, 3, 21, 1, 85, 10, 18, 5, 81, 2, 83, 5),
+		// AoE build (owner 2026-11-14: "mage/wiz build should focus on AOE spells"). Mage: Fire Bolt 10 / Cold Bolt 10 /
+		// Lightning Bolt 10 (Lightning Bolt 4 for Thunder Storm), Fire Ball 5, Fire Wall 5 (kiting), Thunder Storm 5, Sight 1,
+		// Napalm Beat / Frost Diver / Stone Curse 1 (Wizard prerequisites). Wizard: Jupitel 5, Storm Gust 10, Lord of
+		// Vermilion 10, Earth Spike 3, Heaven's Drive 5, Sightrasher 2, Meteor Storm 4. Rebalance 2026-11-15: 88 skill points
+		// hold these only with Meteor Storm at 4; the bolts stay at 10 because Legacy Mages (bolts 10/10/10) keep their caps
+		// and are not wrong builds (tools/wrongbuilds.py accepts Legacy caps).
+		Skills:  sk(19, 5, 17, 5, 20, 4, 21, 5, 10, 1, 18, 5, 11, 1, 15, 1, 16, 1, 19, 10, 14, 10, 20, 10, 84, 5, 89, 10, 90, 3, 91, 5, 85, 10, 81, 2, 83, 4),
+		Legacy:  sk(19, 5, 20, 5, 17, 5, 21, 5, 10, 1, 18, 5, 14, 5, 15, 1, 11, 1, 16, 1, 84, 3, 89, 10, 90, 3, 91, 5, 84, 5, 85, 10, 81, 2, 83, 10, 92, 3, 21, 10, 19, 10, 20, 10, 17, 10, 14, 10, 84, 10, 18, 10, 19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 84, 10, 89, 10, 90, 3, 91, 3, 21, 1, 85, 10, 18, 5, 81, 2, 83, 5),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX AoE wizard: Fire Ball, Thunder Storm and Fire Wall as a Mage, then Storm Gust, Lord of Vermilion, Meteor Storm and Heaven's Drive on grouped monsters; end goal Wizard"},
 	"sage": {ID: "sage", Name: "INT/DEX Battle Sage", Class: 16, First: 2, Branch: 1,
-		Stats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 60),
+		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
 		// run 6 (owner rule "Mages are AoE builds"; QA 13:10: Sage-plan Mages lv40-50 had bolts 10/10/10 and no area spell
 		// but Napalm until job ~40): the Mage part is now bolts 5 -> Fire Ball 5 -> Thunderstorm 5 -> bolts 10 -> Fire
 		// Wall 5 (49 points); the old bolts-first order stays valid through Legacy, its new points go to the area spells.
@@ -126,35 +129,38 @@ var builds = map[string]*Build{
 		// (Wind monsters, skills.go boltFor) first, then Free Cast, Magic Rod / Spell Breaker (vs casters), Advanced
 		// Book 10, the endows (need their elemental stones - no endow AI yet), Dispell. Auto Spell is a melee-Sage skill:
 		// left out (existing Sages that took it are not wrong builds: 2nd-job skills aren't checked; Legacy below).
-		Skills:  sk(19, 5, 14, 5, 20, 5, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 21, 5, 19, 10, 14, 10, 20, 10, 18, 5, 274, 5, 283, 1, 90, 5, 91, 5, 275, 1, 278, 4, 276, 1, 277, 5, 274, 10, 278, 10, 280, 2, 281, 2, 282, 2, 289, 5),
-		Legacy:  sk(19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 274, 5, 283, 1, 90, 5, 91, 5, 275, 1, 278, 4, 279, 10, 276, 3, 280, 2, 281, 2, 278, 10, 274, 10),
+		Skills:  sk(19, 10, 14, 5, 20, 5, 10, 1, 16, 1, 11, 1, 15, 1, 17, 5, 21, 5, 18, 5, 274, 10, 283, 1, 90, 3, 91, 5, 275, 1, 278, 10, 276, 1, 277, 5, 289, 5),
+		Legacy:  sk(19, 5, 14, 5, 20, 5, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 21, 5, 19, 10, 14, 10, 20, 10, 18, 5, 274, 5, 283, 1, 90, 5, 91, 5, 275, 1, 278, 4, 276, 1, 277, 5, 274, 10, 278, 10, 280, 2, 281, 2, 282, 2, 289, 5, 19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 274, 5, 283, 1, 90, 5, 91, 5, 275, 1, 278, 4, 279, 10, 276, 3, 280, 2, 281, 2, 278, 10, 274, 10),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX caster sage: bolts, Earth Spike, Heaven's Drive on groups, Free Cast; end goal Sage"},
 	"hunter": {ID: "hunter", Name: "DEX/AGI Bow Hunter", Class: 11, First: 3, Branch: 0,
-		Stats: st(stDEX, 20, stAGI, 10, stDEX, 40, stAGI, 20, stVIT, 10, stLUK, 10, stDEX, 60, stAGI, 40, stLUK, 20, stVIT, 20, stDEX, 80, stAGI, 60, stLUK, 30, stDEX, 99, stAGI, 75, stVIT, 30, stLUK, 40),
+		Stats:       st(stDEX, 20, stAGI, 10, stDEX, 40, stAGI, 20, stVIT, 10, stLUK, 10, stDEX, 60, stAGI, 40, stLUK, 20, stVIT, 20, stDEX, 80, stAGI, 60, stLUK, 30, stDEX, 99, stAGI, 75, stVIT, 30, stVIT, 40),
+		LegacyStats: st(stDEX, 20, stAGI, 10, stDEX, 40, stAGI, 20, stVIT, 10, stLUK, 10, stDEX, 60, stAGI, 40, stLUK, 20, stVIT, 20, stDEX, 80, stAGI, 60, stLUK, 30, stDEX, 99, stAGI, 75, stVIT, 30, stLUK, 40),
 		// build review 2026-11-14 (iRO Wiki Hunter: Blitz Beat / Arrow Shower builds): falcon first (legion.txt rents it),
 		// then the passives and area damage the engine really uses - Beast Bane 10, Arrow Shower 10 (5x5 from lv6,
 		// weaponskill.go), Owl's Eye 10 - before the traps (no trap AI yet; Trap items are sold in few towns)
-		Skills:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 126, 1, 127, 1, 129, 5, 128, 10, 126, 10, 47, 10, 43, 10, 115, 1, 117, 3, 116, 5, 120, 1, 121, 1, 119, 1, 122, 1, 118, 1, 123, 5),
-		Legacy:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 126, 1, 127, 1, 129, 5, 128, 10, 115, 1, 117, 3, 116, 5, 120, 1, 121, 1, 119, 1, 122, 1, 118, 1, 123, 5, 126, 10, 43, 8),
+		Skills:  sk(46, 10, 43, 10, 44, 10, 45, 5, 47, 10, 126, 10, 127, 1, 129, 5, 128, 10),
+		Legacy:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 126, 1, 127, 1, 129, 5, 128, 10, 126, 10, 47, 10, 43, 10, 115, 1, 117, 3, 116, 5, 120, 1, 121, 1, 119, 1, 122, 1, 118, 1, 123, 5, 46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 126, 1, 127, 1, 129, 5, 128, 10, 115, 1, 117, 3, 116, 5, 120, 1, 121, 1, 119, 1, 122, 1, 118, 1, 123, 5, 126, 10, 43, 8),
 		Weapons: []int{1701, 1704, 1707, 1710, 1714, 1718}, Armors: armorLight, Extras: extrasMelee,
 		Summary: "DEX/AGI hunter: Double Strafe on one monster, Arrow Shower on groups, falcon Blitz Beat; end goal Hunter"},
 	"bard": {ID: "bard", Name: "DEX/INT Bard", Class: 19, First: 3, Branch: 1,
-		Stats: st(stDEX, 20, stAGI, 10, stDEX, 40, stAGI, 25, stVIT, 15, stDEX, 60, stAGI, 40, stVIT, 25, stINT, 20, stDEX, 80, stAGI, 55, stVIT, 40, stINT, 40, stDEX, 99),
+		Stats:       st(stDEX, 20, stAGI, 10, stVIT, 15, stDEX, 40, stAGI, 25, stDEX, 60, stAGI, 40, stVIT, 25, stINT, 20, stDEX, 80, stAGI, 55, stVIT, 40, stINT, 40, stDEX, 99, stINT, 60),
+		LegacyStats: st(stDEX, 20, stAGI, 10, stDEX, 40, stAGI, 25, stVIT, 15, stDEX, 60, stAGI, 40, stVIT, 25, stINT, 20, stDEX, 80, stAGI, 55, stVIT, 40, stINT, 40, stDEX, 99),
 		// support Bard (main 2026-11-14): after the Archer basics the party songs come first - Dissonance 3 opens them;
 		// A Poem of Bragi, Assassin Cross of Sunset, A Whistle, Apple of Idun (song.go plays them with an instrument in
 		// a party; solo the bow build stays). Music Lessons 10 / Musical Strike 5 come after; existing Bards already
 		// have them (2nd-job skills are not wrong-build checked; Legacy keeps the old order).
-		Skills:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 304, 1, 305, 1, 315, 1, 317, 3, 321, 10, 320, 10, 319, 10, 322, 10, 315, 10, 316, 5),
-		Legacy:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 315, 10, 316, 5, 304, 1, 305, 1, 317, 3, 321, 10, 319, 5),
+		Skills:  sk(46, 10, 43, 10, 44, 10, 45, 5, 304, 1, 315, 1, 317, 3, 319, 10, 320, 10, 321, 10, 322, 10),
+		Legacy:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 304, 1, 305, 1, 315, 1, 317, 3, 321, 10, 320, 10, 319, 10, 322, 10, 315, 10, 316, 5, 46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 315, 10, 316, 5, 304, 1, 305, 1, 317, 3, 321, 10, 319, 5),
 		Weapons: []int{1701, 1704, 1707, 1710, 1714}, Armors: armorLight, Extras: extrasMelee,
 		Summary: "DEX bard: Double Strafe solo; in a party a support singer (Bragi, Assassin Cross, Whistle, Apple of Idun); end goal Bard"},
 	"dancer": {ID: "dancer", Name: "DEX/INT Dancer", Class: 20, First: 3, Branch: 1,
-		Stats: st(stDEX, 20, stAGI, 10, stDEX, 40, stAGI, 25, stVIT, 15, stDEX, 60, stAGI, 40, stVIT, 25, stINT, 20, stDEX, 80, stAGI, 55, stVIT, 40, stINT, 40, stDEX, 99),
+		Stats:       st(stDEX, 20, stAGI, 10, stVIT, 15, stDEX, 40, stAGI, 25, stDEX, 60, stAGI, 40, stVIT, 25, stINT, 20, stDEX, 80, stAGI, 55, stVIT, 40, stINT, 40, stDEX, 99, stINT, 60),
+		LegacyStats: st(stDEX, 20, stAGI, 10, stDEX, 40, stAGI, 25, stVIT, 15, stDEX, 60, stAGI, 40, stVIT, 25, stINT, 20, stDEX, 80, stAGI, 55, stVIT, 40, stINT, 40, stDEX, 99),
 		// support Dancer (main 2026-11-14): Ugly Dance 3 opens the dances - Service for You, Humming, Please Don't Forget
 		// Me, Fortune's Kiss (song.go, whip in hand in a party); Dance Lessons 10 / Throw Arrow 5 after.
-		Skills:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 304, 1, 305, 1, 323, 1, 325, 3, 330, 10, 327, 10, 328, 10, 329, 10, 323, 10, 324, 5),
-		Legacy:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 323, 10, 324, 5, 304, 1, 305, 1, 325, 3, 330, 10, 327, 5),
+		Skills:  sk(46, 10, 43, 10, 44, 10, 45, 5, 304, 1, 323, 1, 325, 3, 327, 10, 328, 10, 329, 10, 330, 10),
+		Legacy:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 304, 1, 305, 1, 323, 1, 325, 3, 330, 10, 327, 10, 328, 10, 329, 10, 323, 10, 324, 5, 46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 43, 10, 323, 10, 324, 5, 304, 1, 305, 1, 325, 3, 330, 10, 327, 5),
 		Weapons: []int{1701, 1704, 1707, 1710, 1714}, Armors: armorLight, Extras: extrasMelee,
 		Summary: "DEX dancer: Double Strafe solo; in a party a support dancer (Service for You, Humming, Please Don't Forget Me, Fortune's Kiss); end goal Dancer"},
 	// acolyte-line plans learn Heal first (QA 2026-11-14: a monk-plan acolyte in a party had Divine Protection 6 and no
@@ -163,169 +169,207 @@ var builds = map[string]*Build{
 		// owner 2026-11-14 ("acolyte build seems wrong. It should max out intelligence"): INT first to 99, then DEX
 		// (cast time) and VIT. Characters built under the old INT/VIT/DEX steps (LegacyStats) aren't wrong builds:
 		// every new point goes to INT until 99.
-		Stats:       st(stINT, 99, stDEX, 40, stVIT, 40, stDEX, 70, stVIT, 70, stDEX, 90, stVIT, 90),
-		LegacyStats: st(stINT, 20, stVIT, 15, stDEX, 10, stINT, 40, stVIT, 30, stDEX, 25, stINT, 60, stVIT, 50, stDEX, 35, stINT, 80, stVIT, 70, stDEX, 45, stINT, 99, stVIT, 85),
-		Skills:      sk(28, 5, 22, 5, 34, 10, 29, 10, 28, 10, 35, 1, 24, 1, 33, 2, 73, 10, 74, 3, 66, 3, 67, 3, 70, 7, 75, 1, 26, 2, 27, 4, 25, 1, 31, 1, 68, 4, 76, 3, 74, 5, 72, 1, 9, 4, 54, 1, 77, 3, 76, 5, 78, 1, 12, 1, 79, 10, 75, 5),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 15, stINT, 40, stDEX, 30, stVIT, 30, stINT, 60, stDEX, 45, stVIT, 45, stINT, 80, stDEX, 60, stVIT, 60, stINT, 99, stVIT, 70),
+		LegacyStats: st(stINT, 99, stDEX, 40, stVIT, 40, stDEX, 70, stVIT, 70, stDEX, 90, stVIT, 90, stINT, 20, stVIT, 15, stDEX, 10, stINT, 40, stVIT, 30, stDEX, 25, stINT, 60, stVIT, 50, stDEX, 35, stINT, 80, stVIT, 70, stDEX, 45, stINT, 99, stVIT, 85),
+		Skills:      sk(28, 10, 22, 5, 34, 10, 29, 10, 33, 2, 24, 1, 31, 1, 73, 8, 74, 5, 66, 3, 68, 4, 70, 3, 72, 1, 54, 1, 9, 4, 76, 5, 78, 1, 77, 3, 12, 1, 79, 10),
+		Legacy:      sk(28, 5, 22, 5, 34, 10, 29, 10, 28, 10, 35, 1, 24, 1, 33, 2, 73, 10, 74, 3, 66, 3, 67, 3, 70, 7, 75, 1, 26, 2, 27, 4, 25, 1, 31, 1, 68, 4, 76, 3, 74, 5, 72, 1, 9, 4, 54, 1, 77, 3, 76, 5, 78, 1, 12, 1, 79, 10, 75, 5),
 		Weapons:     []int{1601, 1604, 1607, 1610}, Armors: armorHoly, Extras: append(append([]int{}, extrasHoly...), shields...),
 		Summary: "INT/VIT/DEX support priest: Heal, Blessing, Increase AGI, Kyrie, Magnificat; end goal Priest"},
 	// ---- build variants (owner 2026-11-14: "make sure we have all varieties of builds with matching gears"): common
 	// Renewal alternatives to the main plans above. New characters get one with a realistic spread (planForClass);
 	// existing characters keep their plan. Each has its own gear table in data/buildgear.json (falls back to Base).
 	"knight_spear": {ID: "knight_spear", Base: "knight", Name: "Brandish Spear Knight", Class: 7, First: 1, Branch: 0,
-		Stats:   st(stSTR, 20, stVIT, 20, stDEX, 15, stAGI, 10, stSTR, 40, stVIT, 40, stDEX, 30, stSTR, 60, stVIT, 55, stDEX, 45, stAGI, 20, stSTR, 80, stVIT, 70, stDEX, 55, stSTR, 90, stVIT, 80),
-		Skills:  sk(5, 5, 6, 5, 8, 1, 7, 10, 4, 10, 5, 10, 6, 10, 63, 1, 55, 10, 56, 5, 58, 3, 57, 10, 64, 5, 59, 5, 58, 10, 56, 10, 8, 10),
-		Weapons: []int{1201, 1401, 1404, 1451, 1454}, Armors: armorHeavy, Extras: extrasMelee,
+		Stats:       st(stSTR, 20, stVIT, 20, stDEX, 15, stAGI, 10, stSTR, 40, stVIT, 40, stDEX, 30, stSTR, 60, stVIT, 55, stDEX, 45, stAGI, 20, stSTR, 80, stVIT, 70, stDEX, 55, stSTR, 90, stVIT, 80, stVIT, 83),
+		LegacyStats: st(stSTR, 20, stVIT, 20, stDEX, 15, stAGI, 10, stSTR, 40, stVIT, 40, stDEX, 30, stSTR, 60, stVIT, 55, stDEX, 45, stAGI, 20, stSTR, 80, stVIT, 70, stDEX, 55, stSTR, 90, stVIT, 80),
+		Skills:      sk(5, 5, 6, 5, 8, 10, 7, 5, 4, 10, 63, 1, 55, 10, 56, 10, 57, 10, 58, 5, 64, 5, 59, 5),
+		Legacy:      sk(5, 5, 6, 5, 8, 1, 7, 10, 4, 10, 5, 10, 6, 10, 63, 1, 55, 10, 56, 5, 58, 3, 57, 10, 64, 5, 59, 5, 58, 10, 56, 10, 8, 10),
+		Weapons:     []int{1201, 1401, 1404, 1451, 1454}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "STR/VIT spear knight on a Peco: Brandish Spear on groups, Pierce on large monsters; end goal Knight"},
 	"crusader_gc": {ID: "crusader_gc", Base: "crusader", Name: "INT/VIT Grand Cross Crusader", Class: 14, First: 1, Branch: 1,
-		Stats:   st(stVIT, 20, stINT, 20, stDEX, 15, stSTR, 10, stVIT, 40, stINT, 40, stDEX, 30, stVIT, 60, stINT, 60, stDEX, 45, stVIT, 80, stINT, 80, stDEX, 60, stINT, 99),
-		Skills:  sk(4, 10, 6, 5, 8, 1, 2, 10, 5, 10, 7, 10, 63, 1, 248, 10, 253, 6, 254, 10, 249, 5, 35, 1, 22, 5, 23, 5, 28, 5, 250, 3, 251, 3, 252, 5, 255, 1, 253, 10, 64, 5),
-		Weapons: []int{1201, 1104, 1107, 1110, 1113, 1126, 1119, 1129}, Armors: armorHeavy, Extras: append(append([]int{}, extrasMelee...), shields...),
-		Summary: "INT/VIT holy crusader: Grand Cross on undead/demon crowds, Heal; end goal Crusader"},
+		Stats:       st(stVIT, 20, stINT, 20, stDEX, 15, stVIT, 40, stINT, 40, stDEX, 30, stVIT, 60, stINT, 60, stDEX, 45, stVIT, 80, stINT, 80, stDEX, 60, stINT, 90, stVIT, 85),
+		LegacyStats: st(stVIT, 20, stINT, 20, stDEX, 15, stSTR, 10, stVIT, 40, stINT, 40, stDEX, 30, stVIT, 60, stINT, 60, stDEX, 45, stVIT, 80, stINT, 80, stDEX, 60, stINT, 99),
+		Skills:      sk(4, 10, 6, 5, 8, 10, 5, 10, 248, 10, 253, 10, 249, 5, 250, 3, 251, 3, 252, 5, 254, 10, 255, 1),
+		Legacy:      sk(4, 10, 6, 5, 8, 1, 2, 10, 5, 10, 7, 10, 63, 1, 248, 10, 253, 6, 254, 10, 249, 5, 35, 1, 22, 5, 23, 5, 28, 5, 250, 3, 251, 3, 252, 5, 255, 1, 253, 10, 64, 5),
+		Weapons:     []int{1201, 1104, 1107, 1110, 1113, 1126, 1119, 1129}, Armors: armorHeavy, Extras: append(append([]int{}, extrasMelee...), shields...),
+		Summary: "INT/VIT holy crusader: Grand Cross on undead/demon crowds, Devotion for the party; end goal Crusader"},
 	"hunter_blitz": {ID: "hunter_blitz", Base: "hunter", Name: "DEX/INT Blitz Hunter", Class: 11, First: 3, Branch: 0,
-		Stats:   st(stDEX, 20, stINT, 10, stDEX, 40, stINT, 25, stAGI, 10, stDEX, 60, stINT, 40, stLUK, 20, stDEX, 80, stINT, 55, stVIT, 20, stDEX, 99, stINT, 70, stVIT, 30),
-		Skills:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 126, 1, 127, 1, 129, 5, 128, 10, 126, 10, 47, 10, 43, 10, 115, 1, 117, 3, 116, 5),
-		Weapons: []int{1701, 1704, 1707, 1710, 1714, 1718}, Armors: armorLight, Extras: extrasCast,
+		Stats:       st(stDEX, 20, stINT, 10, stDEX, 40, stVIT, 20, stINT, 25, stAGI, 10, stDEX, 60, stINT, 40, stLUK, 20, stDEX, 80, stINT, 55, stDEX, 99, stINT, 70, stVIT, 30, stVIT, 50),
+		LegacyStats: st(stDEX, 20, stINT, 10, stDEX, 40, stINT, 25, stAGI, 10, stDEX, 60, stINT, 40, stLUK, 20, stDEX, 80, stINT, 55, stVIT, 20, stDEX, 99, stINT, 70, stVIT, 30),
+		Skills:      sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 4, 126, 1, 127, 1, 129, 5, 128, 10, 126, 10, 47, 10, 43, 10, 115, 1, 117, 3, 116, 5),
+		Weapons:     []int{1701, 1704, 1707, 1710, 1714, 1718}, Armors: armorLight, Extras: extrasCast,
 		Summary: "DEX/INT falcon hunter: Blitz Beat (INT/DEX damage) and Double Strafe; end goal Hunter"},
 	"priest_me": {ID: "priest_me", Base: "priest", Name: "Magnus Exorcismus Priest", Class: 8, First: 4, Branch: 0,
-		Stats:   st(stINT, 99, stDEX, 60, stVIT, 40, stDEX, 90, stVIT, 70),
-		Skills:  sk(28, 5, 22, 5, 34, 10, 29, 10, 28, 10, 35, 1, 24, 1, 33, 2, 73, 5, 31, 1, 66, 3, 68, 4, 70, 3, 12, 1, 72, 1, 9, 4, 54, 1, 76, 5, 77, 3, 78, 1, 79, 10, 74, 5, 73, 10, 70, 7, 75, 5),
-		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorHoly, Extras: append(append([]int{}, extrasHoly...), shields...),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 25, stINT, 60, stDEX, 50, stVIT, 40, stINT, 80, stDEX, 65, stVIT, 55, stINT, 99, stDEX, 70, stVIT, 60),
+		LegacyStats: st(stINT, 99, stDEX, 60, stVIT, 40, stDEX, 90, stVIT, 70),
+		Skills:      sk(28, 10, 22, 5, 34, 10, 29, 10, 33, 2, 24, 1, 31, 1, 73, 10, 74, 3, 66, 3, 68, 4, 70, 3, 72, 1, 54, 1, 9, 4, 76, 5, 78, 1, 77, 3, 12, 1, 79, 10),
+		Legacy:      sk(28, 5, 22, 5, 34, 10, 29, 10, 28, 10, 35, 1, 24, 1, 33, 2, 73, 5, 31, 1, 66, 3, 68, 4, 70, 3, 12, 1, 72, 1, 9, 4, 54, 1, 76, 5, 77, 3, 78, 1, 79, 10, 74, 5, 73, 10, 70, 7, 75, 5),
+		Weapons:     []int{1601, 1604, 1607, 1610}, Armors: armorHoly, Extras: append(append([]int{}, extrasHoly...), shields...),
 		Summary: "INT/DEX exorcist priest: heals the party and clears undead/demons with Magnus Exorcismus; end goal Priest"},
 	"monk": {ID: "monk", Name: "AGI/STR Combo Monk", Class: 15, First: 4, Branch: 1,
-		Stats: st(stSTR, 20, stAGI, 20, stVIT, 15, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 25, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 40, stDEX, 35, stINT, 15, stSTR, 80, stAGI, 80, stVIT, 50, stDEX, 45, stSTR, 90),
+		Stats:       st(stSTR, 20, stAGI, 20, stVIT, 15, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 25, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 40, stDEX, 35, stSTR, 80, stAGI, 80, stVIT, 50, stSTR, 85, stAGI, 85),
+		LegacyStats: st(stSTR, 20, stAGI, 20, stVIT, 15, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 25, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 40, stDEX, 35, stINT, 15, stSTR, 80, stAGI, 80, stVIT, 50, stDEX, 45, stSTR, 90),
 		// build review run 3: the combo first (Triple Attack 5 opens Chain Combo, Chain Combo 3 opens Combo Finish), then
 		// Triple Attack 10 - 66 of 75 Monks had Triple Attack and no Chain Combo; 2nd-job order isn't wrong-build checked
-		Skills:  sk(28, 3, 22, 10, 23, 10, 29, 10, 34, 6, 259, 5, 261, 5, 265, 5, 263, 5, 272, 5, 273, 5, 263, 10, 262, 1, 270, 3, 259, 10, 266, 3, 267, 3, 271, 5),
-		Legacy:  sk(28, 3, 22, 10, 23, 10, 29, 10, 34, 6, 259, 5, 261, 5, 265, 5, 263, 10, 272, 5, 273, 5, 262, 1, 270, 3, 259, 10, 266, 3, 267, 3, 271, 5),
+		Skills:  sk(28, 3, 22, 10, 23, 10, 29, 10, 259, 5, 261, 5, 265, 5, 263, 10, 272, 5, 273, 3, 262, 1, 270, 3, 266, 3, 267, 3, 271, 5),
+		Legacy:  sk(28, 3, 22, 10, 23, 10, 29, 10, 34, 6, 259, 5, 261, 5, 265, 5, 263, 5, 272, 5, 273, 5, 263, 10, 262, 1, 270, 3, 259, 10, 266, 3, 267, 3, 271, 5, 28, 3, 22, 10, 23, 10, 29, 10, 34, 6, 259, 5, 261, 5, 265, 5, 263, 10, 272, 5, 273, 5, 262, 1, 270, 3, 259, 10, 266, 3, 267, 3, 271, 5),
 		Weapons: []int{1501, 1504, 1801, 1803, 1805, 1807}, Armors: armorHoly, Extras: extrasHoly,
 		Summary: "AGI/STR combo monk: Triple Attack > Chain Combo > Combo Finish, end goal Monk"},
 	"blacksmith": {ID: "blacksmith", Name: "STR/DEX Axe Blacksmith", Class: 10, First: 5, Branch: 0,
 		Stats:   st(stSTR, 20, stDEX, 15, stVIT, 10, stAGI, 10, stSTR, 40, stDEX, 30, stVIT, 25, stAGI, 25, stSTR, 60, stDEX, 45, stVIT, 40, stAGI, 45, stSTR, 80, stDEX, 55, stAGI, 60, stVIT, 50, stLUK, 20, stSTR, 90),
-		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 110, 2, 111, 5, 105, 1, 107, 2, 112, 3, 113, 5, 107, 10, 112, 5, 114, 5, 110, 5, 108, 1, 109, 5, 39, 10),
+		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 153, 1, 110, 2, 111, 5, 105, 1, 107, 2, 112, 3, 113, 5, 107, 10, 112, 5, 114, 5, 110, 5, 108, 1, 109, 5, 39, 10),
+		Legacy:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 110, 2, 111, 5, 105, 1, 107, 2, 112, 3, 113, 5, 107, 10, 112, 5, 114, 5, 110, 5, 108, 1, 109, 5, 39, 10),
 		Weapons: []int{1201, 1301, 1351, 1354, 1357, 1360}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "STR/DEX axe blacksmith: Adrenaline Rush + Power Thrust, vends on the side; end goal Blacksmith"},
 	"alchemist": {ID: "alchemist", Name: "STR/INT Alchemist", Class: 18, First: 5, Branch: 1,
-		Stats: st(stSTR, 20, stDEX, 15, stINT, 10, stVIT, 15, stSTR, 40, stDEX, 30, stVIT, 30, stINT, 25, stSTR, 60, stDEX, 45, stVIT, 45, stINT, 40, stSTR, 75, stDEX, 60, stVIT, 60),
+		Stats:       st(stSTR, 20, stDEX, 15, stINT, 10, stVIT, 15, stSTR, 40, stDEX, 30, stVIT, 30, stINT, 25, stSTR, 60, stDEX, 45, stVIT, 45, stINT, 40, stSTR, 75, stDEX, 60, stVIT, 60, stINT, 60, stSTR, 85),
+		LegacyStats: st(stSTR, 20, stDEX, 15, stINT, 10, stVIT, 15, stSTR, 40, stDEX, 30, stVIT, 30, stINT, 25, stSTR, 60, stDEX, 45, stVIT, 45, stINT, 40, stSTR, 75, stDEX, 60, stVIT, 60),
 		// Potion Research 5 -> Pharmacy 5 first as an Alchemist (alchemy.go: the guild alchemist brews potions), then Axe Mastery
-		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 227, 5, 228, 5, 226, 10, 231, 5, 238, 1, 244, 1, 243, 1, 247, 1, 227, 10, 228, 10, 229, 5, 230, 5),
+		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 153, 1, 227, 5, 228, 5, 226, 10, 231, 5, 238, 1, 244, 1, 243, 1, 247, 1, 227, 10, 228, 10, 229, 5, 230, 5),
+		Legacy:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 227, 5, 228, 5, 226, 10, 231, 5, 238, 1, 244, 1, 243, 1, 247, 1, 227, 10, 228, 10, 229, 5, 230, 5),
 		Weapons: []int{1201, 1301, 1351, 1354, 1357}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "STR/INT alchemist: Acid Terror / Demonstration and potions, end goal Alchemist"},
 	"assassin": {ID: "assassin", Name: "Crit Katar Assassin", Class: 12, First: 6, Branch: 0,
 		// a katar right after the Main Gauche (build review 2026-11-14): Sonic Blow and Katar Mastery need one, and
 		// all 31 online Assassins (lv51-76) held a dagger, saving for an 8,500z Dirk - Sonic Blow was never cast
-		Stats:   st(stAGI, 20, stSTR, 20, stDEX, 10, stAGI, 40, stSTR, 35, stLUK, 15, stVIT, 15, stAGI, 60, stSTR, 50, stLUK, 30, stDEX, 25, stVIT, 30, stAGI, 80, stSTR, 70, stLUK, 40, stDEX, 35, stAGI, 90, stSTR, 85, stVIT, 40),
-		Skills:  sk(48, 10, 49, 10, 50, 5, 51, 2, 52, 10, 53, 1, 51, 3, 134, 4, 136, 10, 134, 10, 135, 2, 137, 5, 138, 5, 139, 5, 135, 5, 140, 5),
-		Weapons: []int{1201, 1207, 1250, 1254, 1252}, Armors: armorThief, Extras: extrasMelee,
+		Stats:       st(stAGI, 20, stSTR, 20, stDEX, 10, stVIT, 15, stAGI, 40, stSTR, 35, stLUK, 15, stAGI, 60, stSTR, 50, stLUK, 30, stDEX, 25, stVIT, 30, stAGI, 80, stSTR, 70, stLUK, 40, stDEX, 35, stSTR, 80, stVIT, 40),
+		LegacyStats: st(stAGI, 20, stSTR, 20, stDEX, 10, stAGI, 40, stSTR, 35, stLUK, 15, stVIT, 15, stAGI, 60, stSTR, 50, stLUK, 30, stDEX, 25, stVIT, 30, stAGI, 80, stSTR, 70, stLUK, 40, stDEX, 35, stAGI, 90, stSTR, 85, stVIT, 40),
+		Skills:      sk(48, 10, 49, 10, 50, 5, 51, 2, 52, 10, 53, 1, 51, 3, 134, 4, 136, 10, 134, 10, 135, 2, 137, 5, 138, 5, 139, 5, 135, 5, 140, 5),
+		Weapons:     []int{1201, 1207, 1250, 1254, 1252}, Armors: armorThief, Extras: extrasMelee,
 		Summary: "AGI/LUK/STR crit katar assassin, dodges hits so can tank for a party: Double Attack, Katar Mastery, Sonic Blow; end goal Assassin"},
 	"rogue": {ID: "rogue", Name: "AGI/STR Dagger Rogue", Class: 17, First: 6, Branch: 1,
-		Stats:   st(stAGI, 20, stSTR, 20, stDEX, 15, stAGI, 40, stSTR, 35, stVIT, 20, stDEX, 25, stAGI, 60, stSTR, 50, stVIT, 30, stDEX, 40, stAGI, 75, stSTR, 70, stVIT, 40, stDEX, 50, stAGI, 85, stSTR, 80),
-		Skills:  sk(48, 10, 49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 210, 4, 211, 4, 212, 4, 213, 2, 214, 5, 212, 10, 219, 5, 44, 10, 46, 5, 225, 4),
-		Weapons: []int{1201, 1207, 1210, 1213, 1216, 1222}, Armors: armorThief, Extras: append(append([]int{}, extrasMelee...), shields...),
+		Stats:       st(stAGI, 20, stSTR, 20, stVIT, 20, stDEX, 15, stAGI, 40, stSTR, 35, stDEX, 25, stAGI, 60, stSTR, 50, stVIT, 30, stDEX, 40, stAGI, 75, stSTR, 70, stVIT, 40, stDEX, 50, stAGI, 85, stSTR, 80),
+		LegacyStats: st(stAGI, 20, stSTR, 20, stDEX, 15, stAGI, 40, stSTR, 35, stVIT, 20, stDEX, 25, stAGI, 60, stSTR, 50, stVIT, 30, stDEX, 40, stAGI, 75, stSTR, 70, stVIT, 40, stDEX, 50, stAGI, 85, stSTR, 80),
+		Skills:      sk(48, 10, 49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 210, 4, 211, 4, 212, 4, 213, 2, 214, 5, 212, 10, 219, 5, 44, 10, 46, 5, 225, 4),
+		Weapons:     []int{1201, 1207, 1210, 1213, 1216, 1222}, Armors: armorThief, Extras: append(append([]int{}, extrasMelee...), shields...),
 		Summary: "AGI/VIT evasion rogue (party dodge tank): Double Attack + Backstab and Raid, end goal Rogue"},
 	// ---- build variants, run 4 (build-and-strategy agent 2026-11-14; iRO Wiki class pages / Renewal build guides).
 	// The 1st-job part copies the main plan where it can (same early character), the 2nd-job part is the variant.
 	"sage_support": {ID: "sage_support", Base: "sage", Name: "Support Sage", Class: 16, First: 2, Branch: 1,
-		Stats: st(stINT, 20, stDEX, 15, stVIT, 15, stINT, 40, stDEX, 30, stVIT, 30, stINT, 60, stDEX, 45, stVIT, 45, stINT, 80, stDEX, 60, stVIT, 60, stINT, 99, stDEX, 70, stVIT, 70),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 15, stINT, 40, stDEX, 30, stVIT, 30, stINT, 60, stDEX, 45, stVIT, 45, stINT, 80, stDEX, 60, stVIT, 60, stINT, 99, stDEX, 70),
+		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 15, stINT, 40, stDEX, 30, stVIT, 30, stINT, 60, stDEX, 45, stVIT, 45, stINT, 80, stDEX, 60, stVIT, 60, stINT, 99, stDEX, 70, stVIT, 70),
 		// bolts as a Mage (same as the battle Sage), then Earth Spike / Heaven's Drive to fight, Free Cast, Spell Breaker
 		// and Dispell (vs casters / buffed bosses), the endows for the party's melee, Volcano / Deluge / Whirlwind and
 		// Magnetic Earth (party ground buffs; a Blue Gemstone each), Study 10. VIT for a tougher support.
-		Skills:  sk(19, 5, 14, 5, 20, 5, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 21, 5, 19, 10, 14, 10, 20, 10, 18, 5, 274, 5, 283, 1, 90, 3, 91, 3, 275, 1, 278, 4, 276, 1, 277, 3, 289, 5, 280, 2, 281, 2, 282, 2, 285, 3, 286, 3, 287, 3, 288, 1, 274, 10, 283, 3),
+		Skills:  sk(19, 10, 14, 5, 20, 5, 10, 1, 16, 1, 11, 1, 15, 1, 17, 5, 274, 10, 283, 3, 280, 2, 281, 2, 282, 2, 285, 3, 286, 3, 287, 3, 288, 1, 276, 1, 277, 3, 289, 5, 90, 3, 91, 5),
+		Legacy:  sk(19, 5, 14, 5, 20, 5, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 21, 5, 19, 10, 14, 10, 20, 10, 18, 5, 274, 5, 283, 1, 90, 3, 91, 3, 275, 1, 278, 4, 276, 1, 277, 3, 289, 5, 280, 2, 281, 2, 282, 2, 285, 3, 286, 3, 287, 3, 288, 1, 274, 10, 283, 3),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/VIT/DEX support sage: endows, Dispell, Volcano / Deluge / Whirlwind and Magnetic Earth for the party, bolts and Heaven's Drive to fight; end goal Sage"},
 	"monk_asura": {ID: "monk_asura", Base: "monk", Name: "Asura Strike Monk", Class: 15, First: 4, Branch: 1,
-		Stats: st(stSTR, 20, stINT, 15, stDEX, 15, stVIT, 15, stSTR, 40, stINT, 30, stDEX, 30, stVIT, 25, stSTR, 60, stINT, 45, stDEX, 45, stVIT, 40, stSTR, 80, stINT, 60, stDEX, 55, stVIT, 50, stSTR, 90, stINT, 70),
+		Stats:       st(stSTR, 20, stINT, 15, stDEX, 15, stVIT, 15, stSTR, 40, stINT, 30, stDEX, 30, stVIT, 25, stSTR, 60, stINT, 45, stDEX, 45, stVIT, 40, stSTR, 80, stINT, 60, stDEX, 55, stVIT, 50, stSTR, 85, stINT, 70),
+		LegacyStats: st(stSTR, 20, stINT, 15, stDEX, 15, stVIT, 15, stSTR, 40, stINT, 30, stDEX, 30, stVIT, 25, stSTR, 60, stINT, 45, stDEX, 45, stVIT, 40, stSTR, 80, stINT, 60, stDEX, 55, stVIT, 50, stSTR, 90, stINT, 70),
 		// Acolyte part as the combo Monk (Iron Fists needs Divine Protection 10 + Demon Bane 10); Monk: the Asura chain
 		// first (Iron Fists 5, Spirit Spheres 5, Absorb 1, Fury 3, Occult Impaction 3, Throw Spirit Sphere 3, Asura 5),
 		// then Dodge 5 -> Root 2 -> Spiritual Cadence 5 (SP regen while sitting with spheres), Fury 5, Iron Fists 10,
 		// Triple Attack 5. weaponskill.go asuraBurst: Fury, then Asura Strike at high SP on a tough monster.
-		Skills:  sk(28, 3, 22, 10, 23, 10, 29, 10, 34, 6, 259, 5, 261, 5, 262, 1, 270, 3, 266, 3, 267, 3, 271, 5, 265, 5, 269, 2, 260, 5, 270, 5, 259, 10, 263, 5),
+		Skills:  sk(28, 3, 22, 10, 23, 10, 29, 10, 34, 6, 259, 10, 261, 5, 262, 1, 270, 5, 266, 3, 267, 3, 271, 5, 265, 5, 269, 2, 260, 5, 263, 5),
+		Legacy:  sk(28, 3, 22, 10, 23, 10, 29, 10, 34, 6, 259, 5, 261, 5, 262, 1, 270, 3, 266, 3, 267, 3, 271, 5, 265, 5, 269, 2, 260, 5, 270, 5, 259, 10, 263, 5),
 		Weapons: []int{1501, 1504, 1801, 1803, 1805, 1807}, Armors: armorHoly, Extras: extrasHoly,
 		Summary: "STR/INT/DEX Asura monk: Fury + Asura Strike burst on tough monsters, sits with Spiritual Cadence to refill SP; end goal Monk"},
 	"alchemist_battle": {ID: "alchemist_battle", Base: "alchemist", Name: "STR/DEX Battle Alchemist", Class: 18, First: 5, Branch: 1,
-		Stats: st(stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 10, stSTR, 40, stDEX, 30, stVIT, 30, stAGI, 20, stSTR, 60, stDEX, 45, stVIT, 45, stAGI, 30, stSTR, 80, stDEX, 55, stVIT, 55, stSTR, 90),
+		Stats:       st(stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 10, stSTR, 40, stDEX, 30, stVIT, 30, stAGI, 20, stSTR, 60, stDEX, 45, stVIT, 45, stAGI, 30, stSTR, 80, stDEX, 55, stVIT, 55, stSTR, 90, stVIT, 70, stDEX, 65),
+		LegacyStats: st(stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 10, stSTR, 40, stDEX, 30, stVIT, 30, stAGI, 20, stSTR, 60, stDEX, 45, stVIT, 45, stAGI, 30, stSTR, 80, stDEX, 55, stVIT, 55, stSTR, 90),
 		// Merchant part as the main plan; Alchemist: Axe Mastery 10 first, then Pharmacy 5 for Acid Terror / Bomb
 		// (progress.go: only with the bottle in the bag), homunculus, Aid Potion, Potion Research / Pharmacy 10 last
-		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 226, 10, 227, 5, 228, 5, 230, 5, 229, 5, 238, 1, 244, 1, 243, 1, 247, 1, 231, 5, 227, 10, 228, 10),
+		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 153, 1, 226, 10, 227, 5, 228, 5, 230, 5, 229, 5, 238, 1, 244, 1, 243, 1, 247, 1, 231, 5, 227, 10, 228, 10),
+		Legacy:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 226, 10, 227, 5, 228, 5, 230, 5, 229, 5, 238, 1, 244, 1, 243, 1, 247, 1, 231, 5, 227, 10, 228, 10),
 		Weapons: []int{1201, 1301, 1351, 1354, 1357}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "STR/DEX battle alchemist: Axe Mastery, Acid Terror and Bomb, homunculus; end goal Alchemist"},
 	"alchemist_potion": {ID: "alchemist_potion", Base: "alchemist", Name: "INT/DEX/LUK Potion Alchemist", Class: 18, First: 5, Branch: 1,
-		Stats: st(stINT, 20, stDEX, 20, stSTR, 15, stVIT, 15, stINT, 40, stDEX, 40, stSTR, 30, stVIT, 25, stLUK, 15, stINT, 60, stDEX, 55, stLUK, 30, stVIT, 35, stINT, 80, stDEX, 70, stLUK, 45, stINT, 90, stDEX, 80, stLUK, 60),
+		Stats:       st(stINT, 20, stDEX, 20, stSTR, 15, stVIT, 15, stINT, 40, stDEX, 40, stSTR, 30, stVIT, 25, stLUK, 15, stINT, 60, stDEX, 55, stLUK, 30, stVIT, 35, stINT, 80, stDEX, 70, stLUK, 45, stDEX, 75, stINT, 85, stLUK, 50),
+		LegacyStats: st(stINT, 20, stDEX, 20, stSTR, 15, stVIT, 15, stINT, 40, stDEX, 40, stSTR, 30, stVIT, 25, stLUK, 15, stINT, 60, stDEX, 55, stLUK, 30, stVIT, 35, stINT, 80, stDEX, 70, stLUK, 45, stINT, 90, stDEX, 80, stLUK, 60),
 		// the guild's brewer (Renewal brew rate: Potion Research, Pharmacy, job level, INT, DEX, LUK): Merchant with
 		// Vending early (sells its potions) and Overcharge; Potion Research 10 + Pharmacy 10 first, Aid Potion, then the
 		// homunculus, Bomb / Acid Terror, Axe Mastery last. alchemy.go prefers it as a guild's alchemist.
-		Skills:  sk(36, 5, 39, 3, 41, 3, 42, 5, 37, 3, 38, 10, 36, 10, 42, 10, 227, 5, 228, 5, 227, 10, 228, 10, 231, 5, 238, 1, 244, 1, 243, 1, 247, 1, 229, 5, 230, 5, 226, 10),
+		Skills:  sk(36, 5, 39, 3, 41, 3, 42, 5, 37, 3, 38, 10, 153, 1, 42, 10, 227, 5, 228, 5, 227, 10, 228, 10, 231, 5, 238, 1, 244, 1, 243, 1, 247, 1, 229, 5, 230, 5, 226, 10),
+		Legacy:  sk(36, 5, 39, 3, 41, 3, 42, 5, 37, 3, 38, 10, 36, 10, 42, 10, 227, 5, 228, 5, 227, 10, 228, 10, 231, 5, 238, 1, 244, 1, 243, 1, 247, 1, 229, 5, 230, 5, 226, 10),
 		Weapons: []int{1201, 1301, 1351, 1354, 1357}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "INT/DEX/LUK potion alchemist: brews and sells the guild's potions (SP potions too), Aid Potion for the party; end goal Alchemist"},
 	"blacksmith_mace": {ID: "blacksmith_mace", Base: "blacksmith", Name: "VIT/STR Mace Blacksmith", Class: 10, First: 5, Branch: 0,
-		Stats: st(stSTR, 20, stVIT, 15, stDEX, 15, stSTR, 40, stVIT, 30, stDEX, 30, stSTR, 60, stVIT, 45, stDEX, 40, stAGI, 15, stSTR, 80, stVIT, 60, stDEX, 50, stSTR, 90, stVIT, 70),
+		Stats:       st(stSTR, 20, stVIT, 15, stDEX, 15, stSTR, 40, stVIT, 30, stDEX, 30, stSTR, 60, stVIT, 45, stDEX, 40, stAGI, 15, stSTR, 80, stVIT, 60, stDEX, 50, stSTR, 90, stVIT, 70, stVIT, 80, stSTR, 95),
+		LegacyStats: st(stSTR, 20, stVIT, 15, stDEX, 15, stSTR, 40, stVIT, 30, stDEX, 30, stSTR, 60, stVIT, 45, stDEX, 40, stAGI, 15, stSTR, 80, stVIT, 60, stDEX, 50, stSTR, 90, stVIT, 70),
 		// a sturdier battle smith with a mace (Adrenaline Rush works with maces): Merchant part as the main plan; Hammer
 		// Fall 5 first (stuns the crowd around the target), Adrenaline Rush, Power-Thrust, Maximize Power, Skin
 		// Tempering early. No forging (no forge AI).
-		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 110, 5, 111, 5, 105, 1, 107, 2, 112, 3, 113, 5, 114, 5, 109, 5, 107, 10, 112, 5, 108, 1, 39, 10),
+		Skills:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 153, 1, 110, 5, 111, 5, 105, 1, 107, 10, 112, 5, 113, 5, 114, 5, 109, 5, 108, 1),
+		Legacy:  sk(36, 5, 39, 3, 42, 10, 41, 3, 37, 3, 38, 10, 36, 10, 110, 5, 111, 5, 105, 1, 107, 2, 112, 3, 113, 5, 114, 5, 109, 5, 107, 10, 112, 5, 108, 1, 39, 10),
 		Weapons: []int{1201, 1501, 1504, 1507, 1510, 1519, 1513}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "VIT/STR mace blacksmith: Hammer Fall stuns, Adrenaline Rush + Power Thrust, tough enough to off-tank; end goal Blacksmith"},
 	"assassin_sonic": {ID: "assassin_sonic", Base: "assassin", Name: "STR/AGI Sonic Blow Assassin", Class: 12, First: 6, Branch: 0,
-		Stats: st(stAGI, 20, stSTR, 20, stDEX, 15, stAGI, 40, stSTR, 40, stDEX, 25, stVIT, 15, stAGI, 60, stSTR, 60, stDEX, 35, stVIT, 30, stAGI, 80, stSTR, 80, stDEX, 45, stAGI, 90, stSTR, 90, stVIT, 40),
+		Stats:       st(stAGI, 20, stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 40, stSTR, 40, stDEX, 25, stAGI, 60, stSTR, 60, stDEX, 35, stVIT, 30, stAGI, 80, stSTR, 80, stDEX, 45, stVIT, 40, stAGI, 85, stSTR, 85),
+		LegacyStats: st(stAGI, 20, stSTR, 20, stDEX, 15, stAGI, 40, stSTR, 40, stDEX, 25, stVIT, 15, stAGI, 60, stSTR, 60, stDEX, 35, stVIT, 30, stAGI, 80, stSTR, 80, stDEX, 45, stAGI, 90, stSTR, 90, stVIT, 40),
 		// non-crit katar: Sonic Blow is the damage (STR/DEX, no LUK). Thief part as the main plan; Katar Mastery 4 ->
 		// Sonic Blow 10 -> Katar Mastery 10 -> Enchant Poison 5 (skillbuff.go) -> Cloaking 2 -> Grimtooth 5 ...
 		Skills:  sk(48, 10, 49, 10, 50, 5, 51, 2, 52, 10, 53, 1, 51, 3, 134, 4, 136, 10, 134, 10, 138, 5, 135, 2, 137, 5, 132, 5, 138, 10, 139, 3),
 		Weapons: []int{1201, 1207, 1250, 1254, 1252}, Armors: armorThief, Extras: extrasMelee,
 		Summary: "STR/AGI/DEX katar assassin: Sonic Blow on everything, Enchant Poison, Grimtooth; end goal Assassin"},
 	"assassin_dagger": {ID: "assassin_dagger", Base: "assassin", Name: "AGI/STR Dagger Assassin", Class: 12, First: 6, Branch: 0,
-		Stats: st(stAGI, 20, stSTR, 20, stDEX, 15, stAGI, 40, stSTR, 35, stDEX, 25, stVIT, 15, stAGI, 60, stSTR, 55, stDEX, 35, stLUK, 10, stVIT, 30, stAGI, 80, stSTR, 75, stDEX, 50, stLUK, 20, stAGI, 90, stSTR, 80),
+		Stats:       st(stAGI, 20, stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 40, stSTR, 35, stDEX, 25, stAGI, 60, stSTR, 55, stDEX, 35, stLUK, 10, stVIT, 30, stAGI, 80, stSTR, 75, stDEX, 50, stLUK, 20, stSTR, 80, stAGI, 85, stDEX, 55),
+		LegacyStats: st(stAGI, 20, stSTR, 20, stDEX, 15, stAGI, 40, stSTR, 35, stDEX, 25, stVIT, 15, stAGI, 60, stSTR, 55, stDEX, 35, stLUK, 10, stVIT, 30, stAGI, 80, stSTR, 75, stDEX, 50, stLUK, 20, stAGI, 90, stSTR, 80),
 		// dagger + Double Attack (procs only with a dagger) and poison: Righthand Mastery, Enchant Poison 10, Poison
 		// React, Venom Dust, Lefthand Mastery (dual daggers later - the engine equips one weapon today), Venom Splasher.
 		Skills:  sk(48, 10, 49, 10, 50, 5, 51, 2, 52, 10, 53, 1, 51, 3, 132, 5, 138, 10, 139, 5, 140, 5, 135, 3, 133, 5, 141, 10, 135, 5, 139, 9),
 		Weapons: []int{1201, 1207, 1210, 1213, 1216, 1222}, Armors: armorThief, Extras: extrasMelee,
 		Summary: "AGI/STR dagger assassin: Double Attack, Enchant Poison and Envenom with a dagger; end goal Assassin"},
 	"rogue_bow": {ID: "rogue_bow", Base: "rogue", Name: "DEX/AGI Bow Rogue", Class: 17, First: 6, Branch: 1,
-		Stats: st(stDEX, 20, stAGI, 15, stDEX, 40, stAGI, 30, stVIT, 15, stDEX, 60, stAGI, 45, stLUK, 10, stVIT, 25, stDEX, 80, stAGI, 60, stVIT, 35, stDEX, 99, stAGI, 70, stLUK, 20),
-		// Thief part as the main plan; Rogue: Vulture's Eye 10 -> Double Strafe 10 (progress.go, bow + arrows), then the
-		// Back Stab line to Plagiarism 5 (copies a skill monsters cast on it: Gank 4, Mug 4, Back Stab 4, Stalk 2, Raid 5,
-		// Snatch 5)
-		Skills:  sk(48, 10, 49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 4, 211, 4, 212, 4, 213, 2, 214, 5, 219, 5, 225, 5),
+		Stats:       st(stDEX, 20, stVIT, 15, stAGI, 15, stDEX, 40, stAGI, 30, stDEX, 60, stAGI, 45, stLUK, 10, stVIT, 25, stDEX, 80, stAGI, 60, stVIT, 35, stDEX, 99, stAGI, 70, stLUK, 20, stVIT, 45, stAGI, 80),
+		LegacyStats: st(stDEX, 20, stAGI, 15, stDEX, 40, stAGI, 30, stVIT, 15, stDEX, 60, stAGI, 45, stLUK, 10, stVIT, 25, stDEX, 80, stAGI, 60, stVIT, 35, stDEX, 99, stAGI, 70, stLUK, 20),
+		// Thief part as the main plan; Rogue (bow): Vulture's Eye 10 -> Double Strafe 10 (progress.go, bow + arrows), then
+		// Snatcher 4 and Steal Coin 4. Back Stab / Raid / Intimidate / Plagiarism are out: Back Stab needs a dagger, so a
+		// bow rogue cannot use it (rebalance 2026-11-15). Earlier bow rogues keep those goals in Legacy.
+		Skills:  sk(49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 10, 211, 4, 213, 5, 124, 1),
+		Legacy:  sk(48, 10, 49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 4, 211, 4, 212, 4, 213, 2, 214, 5, 219, 5, 225, 5),
 		Weapons: []int{1201, 1701, 1704, 1707, 1710, 1713, 1714}, Armors: armorThief, Extras: extrasMelee,
-		Summary: "DEX/AGI bow rogue: Double Strafe from range with Vulture's Eye, Plagiarism; end goal Rogue"},
+		Summary: "DEX/AGI bow rogue: Double Strafe from range with Vulture's Eye, Snatcher and Steal Coin; end goal Rogue"},
 	// ---- build variants, run 5 (owner 2026-11-14: "the builds of the legions still lack variety"; CLASSES.md "Build
 	// variety across the Legion"). Every class line gets 2-3 sensible Renewal builds; tools/variety.py spreads them.
 	"knight_pierce": {ID: "knight_pierce", Base: "knight", Name: "AGI/STR Pierce Lancer Knight", Class: 7, First: 1, Branch: 0,
 		Stats: st(stSTR, 20, stAGI, 15, stVIT, 15, stDEX, 10, stSTR, 40, stAGI, 30, stVIT, 30, stDEX, 20, stSTR, 60, stAGI, 45, stVIT, 45, stDEX, 30, stSTR, 80, stAGI, 60, stVIT, 55, stDEX, 40, stSTR, 90, stAGI, 70, stVIT, 60),
 		// a Peco lancer: Pierce (multi-hit on bigger monsters, progress.go offense) with a one-hand spear and a shield,
 		// Spear Boomerang, Brandish Spear on crowds later; Riding + Cavalier Mastery early (peco.go)
-		Skills:  sk(5, 10, 6, 5, 8, 1, 7, 5, 4, 10, 6, 10, 63, 1, 55, 10, 56, 5, 64, 5, 56, 10, 59, 5, 58, 3, 57, 10, 8, 10),
+		Skills:  sk(5, 5, 6, 5, 8, 10, 7, 5, 4, 10, 63, 1, 55, 10, 56, 10, 64, 5, 59, 5, 58, 3, 57, 10),
+		Legacy:  sk(5, 10, 6, 5, 8, 1, 7, 5, 4, 10, 6, 10, 63, 1, 55, 10, 56, 5, 64, 5, 56, 10, 59, 5, 58, 3, 57, 10, 8, 10),
 		Weapons: []int{1201, 1401, 1404, 1407, 1451, 1454}, Armors: armorHeavy, Extras: append(append([]int{}, extrasMelee...), shields...),
 		Summary: "AGI/STR lancer knight on a Peco: Pierce and Spear Boomerang with a spear and shield, Brandish Spear on groups; end goal Knight"},
 	"crusader_spear": {ID: "crusader_spear", Base: "crusader", Name: "STR/VIT Spear Crusader", Class: 14, First: 1, Branch: 1,
-		Stats: st(stSTR, 20, stVIT, 20, stDEX, 15, stSTR, 40, stVIT, 40, stDEX, 30, stAGI, 10, stSTR, 60, stVIT, 55, stDEX, 40, stAGI, 20, stSTR, 80, stVIT, 65, stDEX, 50, stAGI, 30, stSTR, 90, stVIT, 70),
+		Stats:       st(stSTR, 20, stVIT, 20, stDEX, 15, stSTR, 40, stVIT, 40, stDEX, 30, stAGI, 10, stSTR, 60, stVIT, 55, stDEX, 40, stAGI, 20, stSTR, 80, stVIT, 65, stDEX, 50, stAGI, 30, stSTR, 90, stVIT, 70, stVIT, 80),
+		LegacyStats: st(stSTR, 20, stVIT, 20, stDEX, 15, stSTR, 40, stVIT, 40, stDEX, 30, stAGI, 10, stSTR, 60, stVIT, 55, stDEX, 40, stAGI, 20, stSTR, 80, stVIT, 65, stDEX, 50, stAGI, 30, stSTR, 90, stVIT, 70),
 		// Swordman part as the main plan; Crusader: Spear Mastery 10 -> Spear Quicken (two-handed spear ASPD buff,
 		// skillbuff.go key buff) -> Riding / Cavalier -> Faith 7 -> Holy Cross 10 (stronger with a two-handed spear)
-		Skills:  sk(5, 10, 6, 5, 2, 10, 8, 1, 4, 10, 7, 3, 63, 1, 55, 10, 258, 5, 64, 5, 258, 10, 248, 7, 253, 10, 248, 10, 254, 5),
+		Skills:  sk(5, 5, 6, 5, 8, 10, 4, 10, 7, 3, 63, 1, 64, 5, 55, 10, 258, 5, 248, 10, 253, 10, 254, 5),
+		Legacy:  sk(5, 10, 6, 5, 2, 10, 8, 1, 4, 10, 7, 3, 63, 1, 55, 10, 258, 5, 64, 5, 258, 10, 248, 7, 253, 10, 248, 10, 254, 5),
 		Weapons: []int{1201, 1401, 1404, 1407, 1451, 1454}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "STR/VIT spear crusader on a Grand Peco: Spear Quicken and Holy Cross with a two-handed spear; end goal Crusader"},
 	"wizard_fire": {ID: "wizard_fire", Base: "wizard", Name: "INT/DEX Fire Wizard", Class: 9, First: 2, Branch: 0,
-		Stats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 45, stINT, 99, stDEX, 85, stVIT, 55),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 60),
+		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 45, stINT, 99, stDEX, 85, stVIT, 55),
 		// fire AoE: Fire Bolt / Fire Ball / Fire Wall as a Mage (Thunderstorm 1 for Meteor Storm), then Sightrasher 2 ->
 		// Meteor Storm 10, Heaven's Drive for fire-resistant crowds, Lord of Vermilion later (aoe.go picks the element)
-		Skills:  sk(19, 10, 17, 5, 10, 1, 18, 5, 20, 4, 21, 1, 17, 10, 11, 1, 16, 1, 18, 10, 14, 1, 81, 2, 83, 5, 90, 3, 91, 5, 83, 10, 92, 3, 84, 5, 85, 10, 21, 10, 20, 10),
+		Skills:  sk(19, 10, 17, 10, 18, 5, 10, 1, 21, 1, 20, 4, 16, 1, 11, 1, 81, 2, 83, 10, 84, 5, 85, 10, 90, 3, 91, 5),
+		Legacy:  sk(19, 10, 17, 5, 10, 1, 18, 5, 20, 4, 21, 1, 17, 10, 11, 1, 16, 1, 18, 10, 14, 1, 81, 2, 83, 5, 90, 3, 91, 5, 83, 10, 92, 3, 84, 5, 85, 10, 21, 10, 20, 10),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX fire wizard: Fire Ball, Fire Wall and Meteor Storm on groups, Heaven's Drive vs fire monsters; end goal Wizard"},
 	"wizard_frost": {ID: "wizard_frost", Base: "wizard", Name: "INT/DEX Frost Wizard", Class: 9, First: 2, Branch: 0,
-		Stats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 60),
+		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
 		// water AoE: Cold Bolt / Frost Diver / Thunderstorm as a Mage, then Jupitel 3 -> Storm Gust 10 (freezes the crowd),
 		// Lord of Vermilion, Heaven's Drive / Quagmire
-		Skills:  sk(14, 10, 15, 5, 16, 1, 11, 1, 20, 4, 21, 5, 10, 1, 19, 1, 15, 10, 21, 10, 20, 5, 84, 3, 89, 5, 87, 1, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 92, 5, 84, 10),
+		Skills:  sk(14, 10, 15, 10, 20, 4, 11, 1, 16, 1, 21, 5, 19, 1, 84, 5, 89, 10, 85, 10, 91, 5, 84, 10, 90, 3, 87, 10),
+		Legacy:  sk(14, 10, 15, 5, 16, 1, 11, 1, 20, 4, 21, 5, 10, 1, 19, 1, 15, 10, 21, 10, 20, 5, 84, 3, 89, 5, 87, 1, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 92, 5, 84, 10),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX frost wizard: Storm Gust freezes the crowd, Lord of Vermilion and Cold Bolt; end goal Wizard"},
 	"sage_hindsight": {ID: "sage_hindsight", Base: "sage", Name: "INT/AGI Hindsight Sage", Class: 16, First: 2, Branch: 1,
-		Stats: st(stINT, 20, stDEX, 15, stAGI, 10, stINT, 40, stDEX, 30, stAGI, 20, stSTR, 10, stINT, 60, stDEX, 45, stAGI, 35, stSTR, 20, stINT, 75, stDEX, 60, stAGI, 50, stSTR, 30, stINT, 90, stDEX, 70, stAGI, 60),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stAGI, 10, stINT, 40, stDEX, 30, stVIT, 20, stAGI, 20, stINT, 60, stDEX, 45, stVIT, 30, stAGI, 35, stINT, 75, stDEX, 60, stVIT, 40, stAGI, 50, stINT, 90, stDEX, 70, stAGI, 60),
+		LegacyStats: st(stINT, 20, stDEX, 15, stAGI, 10, stINT, 40, stDEX, 30, stAGI, 20, stSTR, 10, stINT, 60, stDEX, 45, stAGI, 35, stSTR, 20, stINT, 75, stDEX, 60, stAGI, 50, stSTR, 30, stINT, 90, stDEX, 70, stAGI, 60),
 		// melee with a book: Hindsight (Auto Spell) casts bolts on its own while it hits (skillbuff.go key buff; bot.go
 		// answers the server's spell list 0x0afb); Study 10 = book ASPD; Earth Spike / Heaven's Drive join the list at
 		// Hindsight 6 / 9
-		Skills:  sk(19, 10, 14, 10, 20, 10, 16, 1, 10, 1, 11, 1, 17, 5, 21, 5, 11, 4, 13, 3, 274, 5, 275, 1, 278, 4, 279, 5, 283, 1, 90, 3, 91, 5, 279, 10, 274, 10, 278, 10, 276, 1, 277, 3, 289, 1),
+		Skills:  sk(19, 10, 14, 10, 20, 10, 16, 1, 10, 1, 11, 1, 15, 1, 17, 5, 274, 10, 275, 1, 278, 10, 279, 5),
+		Legacy:  sk(19, 10, 14, 10, 20, 10, 16, 1, 10, 1, 11, 1, 17, 5, 21, 5, 11, 4, 13, 3, 274, 5, 275, 1, 278, 4, 279, 5, 283, 1, 90, 3, 91, 5, 279, 10, 274, 10, 278, 10, 276, 1, 277, 3, 289, 1),
 		Weapons: []int{1201, 1550, 1551, 1552}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/AGI melee sage: Hindsight fires bolts on every hit, book in hand; end goal Sage"},
 	"hunter_agi": {ID: "hunter_agi", Base: "hunter", Name: "AGI/DEX Auto-Attack Hunter", Class: 11, First: 3, Branch: 0,
-		Stats: st(stDEX, 15, stAGI, 15, stDEX, 30, stAGI, 35, stDEX, 45, stAGI, 55, stVIT, 15, stLUK, 10, stDEX, 60, stAGI, 75, stLUK, 20, stDEX, 75, stAGI, 90, stVIT, 30, stDEX, 85),
+		Stats:       st(stDEX, 15, stAGI, 15, stVIT, 15, stDEX, 30, stAGI, 35, stDEX, 45, stAGI, 55, stLUK, 10, stDEX, 60, stAGI, 75, stLUK, 20, stDEX, 75, stAGI, 90, stVIT, 30, stDEX, 85, stVIT, 50),
+		LegacyStats: st(stDEX, 15, stAGI, 15, stDEX, 30, stAGI, 35, stDEX, 45, stAGI, 55, stVIT, 15, stLUK, 10, stDEX, 60, stAGI, 75, stLUK, 20, stDEX, 75, stAGI, 90, stVIT, 30, stDEX, 85),
 		// ASPD hunter: auto-attacks fast with a bow, Double Strafe on tough targets, falcon procs (Blitz Beat 5);
 		// Owl's Eye / Vulture's Eye / Improve Concentration first
 		Skills:  sk(46, 5, 43, 3, 44, 10, 45, 10, 43, 10, 47, 5, 46, 10, 126, 1, 127, 1, 129, 5, 128, 10, 126, 10, 47, 10, 115, 1, 117, 3),
@@ -339,21 +383,24 @@ var builds = map[string]*Build{
 		Weapons: []int{1501, 1504, 1507, 1510, 1519, 1513}, Armors: armorHoly, Extras: append(append([]int{}, extrasHoly...), shields...),
 		Summary: "STR/INT battle priest: mace, Blessing / Increase AGI / Impositio on itself, heals the party; end goal Priest"},
 	"bard_arrow": {ID: "bard_arrow", Base: "bard", Name: "DEX/AGI Arrow Bard", Class: 19, First: 3, Branch: 1,
-		Stats: st(stDEX, 20, stAGI, 15, stDEX, 40, stAGI, 30, stVIT, 10, stDEX, 60, stAGI, 50, stVIT, 20, stLUK, 10, stDEX, 80, stAGI, 65, stVIT, 30, stDEX, 99, stAGI, 75),
+		Stats:       st(stDEX, 20, stVIT, 10, stAGI, 15, stDEX, 40, stAGI, 30, stDEX, 60, stAGI, 50, stVIT, 20, stLUK, 10, stDEX, 80, stAGI, 65, stVIT, 30, stDEX, 99, stAGI, 75, stVIT, 50),
+		LegacyStats: st(stDEX, 20, stAGI, 15, stDEX, 40, stAGI, 30, stVIT, 10, stDEX, 60, stAGI, 50, stVIT, 20, stLUK, 10, stDEX, 80, stAGI, 65, stVIT, 30, stDEX, 99, stAGI, 75),
 		// a bow DPS bard: the full Archer kit (Arrow Shower 10, Owl's Eye 10), Music Lessons, Melody Strike, Impressive
 		// Riff for later; it keeps the bow in a party too (song.go songSupport: no support singing)
 		Skills:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 10, 47, 10, 304, 1, 305, 1, 315, 10, 316, 5, 317, 3, 320, 10),
 		Weapons: []int{1701, 1704, 1707, 1710, 1714}, Armors: armorLight, Extras: extrasMelee,
 		Summary: "DEX/AGI bard: a Double Strafe / Arrow Shower archer with a bow; end goal Bard"},
 	"dancer_arrow": {ID: "dancer_arrow", Base: "dancer", Name: "DEX/AGI Arrow Dancer", Class: 20, First: 3, Branch: 1,
-		Stats:   st(stDEX, 20, stAGI, 15, stDEX, 40, stAGI, 30, stVIT, 10, stDEX, 60, stAGI, 50, stVIT, 20, stLUK, 10, stDEX, 80, stAGI, 65, stVIT, 30, stDEX, 99, stAGI, 75),
-		Skills:  sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 10, 47, 10, 304, 1, 305, 1, 323, 10, 324, 5, 325, 3, 327, 10),
-		Weapons: []int{1701, 1704, 1707, 1710, 1714}, Armors: armorLight, Extras: extrasMelee,
+		Stats:       st(stDEX, 20, stVIT, 10, stAGI, 15, stDEX, 40, stAGI, 30, stDEX, 60, stAGI, 50, stVIT, 20, stLUK, 10, stDEX, 80, stAGI, 65, stVIT, 30, stDEX, 99, stAGI, 75, stVIT, 50),
+		LegacyStats: st(stDEX, 20, stAGI, 15, stDEX, 40, stAGI, 30, stVIT, 10, stDEX, 60, stAGI, 50, stVIT, 20, stLUK, 10, stDEX, 80, stAGI, 65, stVIT, 30, stDEX, 99, stAGI, 75),
+		Skills:      sk(46, 10, 43, 3, 44, 10, 45, 10, 47, 5, 43, 10, 47, 10, 304, 1, 305, 1, 323, 10, 324, 5, 325, 3, 327, 10),
+		Weapons:     []int{1701, 1704, 1707, 1710, 1714}, Armors: armorLight, Extras: extrasMelee,
 		Summary: "DEX/AGI dancer: a Double Strafe / Arrow Shower archer with a bow; end goal Dancer"},
 	// ---- build variants, run 6 (owner 2026-11-14: "the builds of the legions still lack variety"): the builds run 5
 	// left out for want of AI. variantskill.go plays them.
 	"rogue_strip": {ID: "rogue_strip", Base: "rogue", Name: "DEX/STR Divest Rogue", Class: 17, First: 6, Branch: 1,
-		Stats: st(stAGI, 20, stSTR, 20, stDEX, 15, stDEX, 35, stSTR, 35, stAGI, 30, stVIT, 20, stDEX, 55, stSTR, 50, stAGI, 40, stVIT, 30, stDEX, 75, stSTR, 65, stAGI, 50, stVIT, 40, stDEX, 90, stSTR, 80),
+		Stats:       st(stAGI, 20, stSTR, 20, stVIT, 20, stDEX, 15, stDEX, 35, stSTR, 35, stAGI, 30, stDEX, 55, stSTR, 50, stAGI, 40, stVIT, 30, stDEX, 75, stSTR, 65, stAGI, 50, stVIT, 40, stSTR, 80, stAGI, 60, stVIT, 45),
+		LegacyStats: st(stAGI, 20, stSTR, 20, stDEX, 15, stDEX, 35, stSTR, 35, stAGI, 30, stVIT, 20, stDEX, 55, stSTR, 50, stAGI, 40, stVIT, 30, stDEX, 75, stSTR, 65, stAGI, 50, stVIT, 40, stDEX, 90, stSTR, 80),
 		// Thief part as the main plan; Rogue: Gank 4, Mug 4 -> Divest Helm 5 -> Shield 5 -> Armor 5 -> Weapon 5 (the
 		// strip line; success grows with DEX), Back Stab 10, Stalk 2, Raid 5, Gangster's Paradise 1, Snatch 3.
 		// variantskill.go stripTarget: Divest Weapon (-25% ATK) then Divest Shield (-15% DEF) on strong monsters.
@@ -361,7 +408,8 @@ var builds = map[string]*Build{
 		Weapons: []int{1201, 1207, 1210, 1213, 1216, 1222}, Armors: armorThief, Extras: append(append([]int{}, extrasMelee...), shields...),
 		Summary: "DEX/STR strip rogue: Divest Weapon / Shield on bosses and tough monsters so the party takes less and hits harder, Back Stab; end goal Rogue"},
 	"hunter_trap": {ID: "hunter_trap", Base: "hunter", Name: "DEX/INT Trapper Hunter", Class: 11, First: 3, Branch: 0,
-		Stats: st(stDEX, 20, stAGI, 10, stDEX, 40, stINT, 20, stAGI, 15, stDEX, 60, stINT, 40, stVIT, 15, stDEX, 80, stINT, 55, stVIT, 25, stAGI, 25, stDEX, 99, stINT, 70, stVIT, 35),
+		Stats:       st(stDEX, 20, stAGI, 10, stDEX, 40, stVIT, 15, stINT, 20, stAGI, 15, stDEX, 60, stINT, 40, stDEX, 80, stINT, 55, stVIT, 25, stAGI, 25, stDEX, 99, stINT, 70, stVIT, 35, stVIT, 50),
+		LegacyStats: st(stDEX, 20, stAGI, 10, stDEX, 40, stINT, 20, stAGI, 15, stDEX, 60, stINT, 40, stVIT, 15, stDEX, 80, stINT, 55, stVIT, 25, stAGI, 25, stDEX, 99, stINT, 70, stVIT, 35),
 		// Archer part as the main plan; Hunter: the trap line first - Skid Trap 1, Land Mine 5, Ankle Snare 1, Flasher /
 		// Freezing / Sandman 1 (prerequisites), Blast Mine 5, Shockwave 1, Claymore Trap 5 - then the falcon (Beast Bane 1,
 		// Falconry, Blitz Beat 5, Steel Crow 10, Beast Bane 10), Ankle Snare 3. Renewal trap damage grows with DEX / INT /
@@ -370,7 +418,8 @@ var builds = map[string]*Build{
 		Weapons: []int{1701, 1704, 1707, 1710, 1714, 1718}, Armors: armorLight, Extras: extrasCast,
 		Summary: "DEX/INT trapper hunter: Claymore Trap and Land Mine where monsters step, Double Strafe and the falcon in between; end goal Hunter"},
 	"monk_occult": {ID: "monk_occult", Base: "monk", Name: "VIT/STR Occult Tank Monk", Class: 15, First: 4, Branch: 1,
-		Stats: st(stSTR, 20, stVIT, 20, stDEX, 15, stAGI, 10, stSTR, 40, stVIT, 40, stDEX, 30, stINT, 15, stSTR, 60, stVIT, 55, stDEX, 40, stINT, 25, stSTR, 80, stVIT, 70, stDEX, 50, stINT, 35, stSTR, 90, stVIT, 80),
+		Stats:       st(stSTR, 20, stVIT, 20, stDEX, 15, stAGI, 10, stSTR, 40, stVIT, 40, stDEX, 30, stINT, 15, stSTR, 60, stVIT, 55, stDEX, 40, stINT, 25, stSTR, 80, stVIT, 70, stDEX, 50, stINT, 35, stSTR, 90, stVIT, 75),
+		LegacyStats: st(stSTR, 20, stVIT, 20, stDEX, 15, stAGI, 10, stSTR, 40, stVIT, 40, stDEX, 30, stINT, 15, stSTR, 60, stVIT, 55, stDEX, 40, stINT, 25, stSTR, 80, stVIT, 70, stDEX, 50, stINT, 35, stSTR, 90, stVIT, 80),
 		// Acolyte part as the combo Monk; Monk: Iron Fists 5, Spirit Spheres 5, Occult Impaction 5 (damage grows with the
 		// target's DEF), Dodge 5, the combo to Combo Finish 3 (Mental Strength's prerequisite), Mental Strength 5 (Steel
 		// Body: DEF/MDEF 90 when mobbed or on a boss), Iron Fists 10, Absorb 1, Root 2, Spiritual Cadence 5.
