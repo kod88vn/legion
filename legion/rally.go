@@ -324,10 +324,13 @@ func (p *Party) rallyTick(now time.Time) {
 		}
 		return
 	}
+	if p.Human != "" && humanRallySync(p, now) { // rallysync.go: her rally state drives the members' rally
+		return
+	}
 	ms := p.rallyMembers(now)
 	r := p.rallyInfo()
 	if r.Town != "" {
-		if now.Sub(r.At) > rallyTimeout {
+		if now.Sub(r.At) > rallyTimeout && p.Human == "" { // a human-led party's rally ends with her (rallysync.go)
 			p.endRally(false, "abandoned after 5 min", now)
 			return
 		}
@@ -382,7 +385,7 @@ func (p *Party) rallyTick(now time.Time) {
 			}
 		}
 		if !all {
-			if stalled {
+			if stalled && p.Human == "" { // human-led: no own "no progress" clock (rallysync.go)
 				p.endRally(false, "no progress for 2 min", now)
 				return
 			}
