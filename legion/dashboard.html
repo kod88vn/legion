@@ -154,7 +154,7 @@ a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; }
   <div class="card" id="mindsCard">
     <h2>Minds <small id="mindsNote">what the LLM minds are thinking · type an order to talk to one (refreshes every 5 s)</small></h2>
     <div class="mgrid" id="minds"><div class="empty">loading minds...</div></div>
-    <details class="mretired" id="mindsRetired"><summary>Retired (7)</summary><div class="mgrid" id="mindsRetiredGrid"></div></details>
+    <details class="mretired" id="mindsRetired"><summary>Retired (6)</summary><div class="mgrid" id="mindsRetiredGrid"></div></details>
     <div class="chips" id="mindChips"></div>
   </div>
 
@@ -510,6 +510,7 @@ function renderMinds() {
   $('mindsNote').textContent = `${active} active · ${vis.length - active} idle/quiet · ${M.list.reduce((s, m) => s + (m.unread || 0), 0)} unread orders · refreshes every 5 s`;
   const grid = $('minds'), retGrid = $('mindsRetiredGrid');
   const mainVis = vis.filter(m => !RETIRED.has(m.name)), retVis = vis.filter(m => RETIRED.has(m.name));
+  $('mindsRetired').querySelector('summary').textContent = `Retired (${retVis.length})`;
   if (!vis.length) grid.innerHTML = '<div class="empty">no mind has checked in yet. Minds post here with <code>legionctl think &lt;mind&gt; "..."</code>; you can leave orders for one below before it starts.</div>';
   else if (grid.querySelector('.empty')) grid.innerHTML = '';
   for (const m of vis) {
