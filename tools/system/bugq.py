@@ -36,10 +36,28 @@ def qpath():
     return C.dpath(QUEUE)
 
 
+def extra_paths():
+    """append-only queue files written by other writers in the same format. Ayla's OpenKore watchdog (partylead.pl
+    wd_report) can't reach legion/data from its container, so it writes openkore-ayla/logs/bugqueue.jsonl (its logs
+    mount). LEGION_BUGQ_EXTRA (os.pathsep-separated) overrides; with LEGION_DATA set (tests) there is no default extra."""
+    env = os.environ.get("LEGION_BUGQ_EXTRA")
+    if env is not None:
+        return [p for p in env.split(os.pathsep) if p]
+    if os.environ.get("LEGION_DATA"):
+        return []
+    return [os.path.join(C.ROOT, "openkore-ayla", "logs", "bugqueue.jsonl")]
+
+
 def load():
-    """id -> merged entry (insertion order = first appearance)."""
+    """id -> merged entry (insertion order = first appearance). Updates (close, assign) always go to the main file;
+    they merge over an entry from an extra file by id."""
     out = {}
-    for r in C.read_jsonl(qpath()):
+    rows = []
+    for p in extra_paths():
+        if os.path.exists(p):
+            rows += list(C.read_jsonl(p))
+    rows += list(C.read_jsonl(qpath()))
+    for r in rows:
         i = r.get("id")
         if not i:
             continue
