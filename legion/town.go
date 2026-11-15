@@ -64,6 +64,9 @@ func (b *Bot) buyPotCount() int {
 	return n
 }
 
+// heavyTripGap: the least time between two "bag is heavy" trips, even over the regen line (ai.go trip block)
+const heavyTripGap = 10 * time.Minute
+
 // outOfPotions: the one restock trigger for a trip (needTrip) and for a party friend's hold in town before it goes in
 // (together.go escortGate). The two must agree: a hold on a higher potion minimum than the trip starts waited with
 // no trip, forever (QA 2026-11-15: Zen.fox 15 Red Potions held in Payon from 09:05 to the end of the log).

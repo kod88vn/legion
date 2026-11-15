@@ -63,7 +63,9 @@ func (b *Bot) idleErrand(p *Party, now time.Time) {
 	}
 	town := townOf(b.MapName)
 	shopTown := town != "" && potionShop(town) != nil
-	why := idleErrandWhy(t, now.Sub(b.buffAt["idlewait:since"]), shopTown, b.weightPct(), b.invSlots(), b.hasLoot(), b.needsPots(), b.Zeny)
+	// the restock errand only for real potion need (fewer than 3 real potions, the same line as the trip trigger in
+	// town.go outOfPotions): a bot with 14 potions and low SP made "restocking while waiting" trips (QA 2026-11-15)
+	why := idleErrandWhy(t, now.Sub(b.buffAt["idlewait:since"]), shopTown, b.weightPct(), b.invSlots(), b.hasLoot(), b.realPotCount() < 3, b.Zeny)
 	if why == "" {
 		return
 	}

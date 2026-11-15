@@ -57,6 +57,21 @@ func TestEscortRestockAgreesAndTimesOut(t *testing.T) {
 	escortRestockClear(b)
 }
 
+// QA 2026-11-15 (triage P7): an idle "restocking while waiting" errand needs a real potion need, not SP or 14 potions;
+// a heavy-bag trip is not repeated within heavyTripGap.
+func TestIdleRestockAndHeavyRepeat(t *testing.T) {
+	tn := tune()
+	if got := idleErrandWhy(tn, time.Hour, true, 10, 10, false, false, 5000); got != "" {
+		t.Errorf("14 potions must not start a restock errand: %q", got)
+	}
+	if got := idleErrandWhy(tn, time.Hour, true, 10, 10, false, true, 5000); got != "restocking while waiting" {
+		t.Errorf("a real potion need starts the errand: %q", got)
+	}
+	if heavyTripGap < 5*time.Minute {
+		t.Fatal("heavyTripGap must block the back-to-back trips seen in QA")
+	}
+}
+
 // QA 2026-11-15 (h90): a member does not cross dungeon floors alone; floors are crossed with a friend on the floor.
 func TestDungeonFloorNeedsFriend(t *testing.T) {
 	if dungeonFamily("pay_dun03") != "pay_dun" || dungeonFamily("payon") != "" {
