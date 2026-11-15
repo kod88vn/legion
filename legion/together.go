@@ -1105,7 +1105,11 @@ var humanTrail = struct {
 	sync.Mutex
 	m  map[string][]string
 	at map[string]time.Time
-}{m: map[string][]string{}, at: map[string]time.Time{}}
+	ts map[string][]time.Time // when she reached each map of m
+}{m: map[string][]string{}, at: map[string]time.Time{}, ts: map[string][]time.Time{}}
+
+// humanTrailFresh: a step of her road older than this no longer guides members (she left that road)
+const humanTrailFresh = 5 * time.Minute
 
 // humanTrailNote: she is on map m now (called with every fresh view of her).
 func humanTrailNote(name, m string, now time.Time) {
@@ -1115,9 +1119,9 @@ func humanTrailNote(name, m string, now time.Time) {
 	key := strings.ToLower(name)
 	humanTrail.Lock()
 	defer humanTrail.Unlock()
-	t := humanTrail.m[key]
-	if now.Sub(humanTrail.at[key]) > 15*time.Minute {
-		t = nil // an old road is no guide
+	t, ts := humanTrail.m[key], humanTrail.ts[key]
+	if now.Sub(humanTrail.at[key]) > 15*time.Minute || len(ts) != len(t) {
+		t, ts = nil, nil // an old road is no guide
 	}
 	humanTrail.at[key] = now
 	if len(t) > 0 && t[len(t)-1] == m {
@@ -1125,15 +1129,15 @@ func humanTrailNote(name, m string, now time.Time) {
 	}
 	for i, x := range t { // back on a map she crossed: cut the loop
 		if x == m {
-			t = t[:i]
+			t, ts = t[:i], ts[:i]
 			break
 		}
 	}
-	t = append(t, m)
+	t, ts = append(t, m), append(ts, now)
 	if len(t) > 12 {
-		t = t[len(t)-12:]
+		t, ts = t[len(t)-12:], ts[len(ts)-12:]
 	}
-	humanTrail.m[key] = t
+	humanTrail.m[key], humanTrail.ts[key] = t, ts
 }
 
 // humanTrailNext: from map `from` (one she crossed on her way to `cur`), the map she went to next; "" if `from` isn't
@@ -1141,12 +1145,20 @@ func humanTrailNote(name, m string, now time.Time) {
 func humanTrailNext(name, cur, from string) string {
 	humanTrail.Lock()
 	defer humanTrail.Unlock()
-	t := humanTrail.m[strings.ToLower(name)]
+	t, ts := humanTrail.m[strings.ToLower(name)], humanTrail.ts[strings.ToLower(name)]
 	if len(t) == 0 || t[len(t)-1] != cur {
 		return ""
 	}
+	return trailNextFresh(t, ts, from, time.Now())
+}
+
+// trailNextFresh: the map after `from` on her road, only if she took that step within humanTrailFresh
+func trailNextFresh(t []string, ts []time.Time, from string, now time.Time) string {
 	for i := 0; i < len(t)-1; i++ {
 		if t[i] == from {
+			if i+1 < len(ts) && now.Sub(ts[i+1]) > humanTrailFresh {
+				return "" // an old step: follow her current map instead
+			}
 			return t[i+1]
 		}
 	}

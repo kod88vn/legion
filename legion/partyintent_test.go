@@ -29,6 +29,26 @@ func TestPartyChatPersists(t *testing.T) {
 	}
 }
 
+func TestLeadPosPick(t *testing.T) {
+	now := time.Unix(20000, 0)
+	st := &humanDetail{Map: "pay_dun00", X: 26, Y: 166, StatusTS: now.Unix() - 1, Fresh: true, Online: true}
+	// the party data moved her after the warp (newer than status.json): the party map wins
+	m, x, y := "pay_arche", 39, 131
+	if src := leadPosPick(st, &m, &x, &y, now, now); src != "party_newer" || m != "pay_arche" || x != 39 {
+		t.Fatalf("%s %s %d,%d", src, m, x, y)
+	}
+	// same map: status.json's cell (fresher than sight)
+	m, x, y = "pay_dun00", 20, 175
+	if src := leadPosPick(st, &m, &x, &y, now.Add(-time.Minute), now); src != "status" || x != 26 {
+		t.Fatalf("%s %d", src, x)
+	}
+	// a party update over 2 min old on another map: status.json
+	m, x, y = "payon", 0, 0
+	if src := leadPosPick(st, &m, &x, &y, now.Add(-3*time.Minute), now); src != "status_newer" || m != "pay_dun00" {
+		t.Fatalf("%s %s", src, m)
+	}
+}
+
 func TestLeadPosSource(t *testing.T) {
 	now := time.Unix(10000, 0)
 	m, x, y := "pay_dun00", 0, 0 // party packets: map, no cell

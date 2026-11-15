@@ -147,10 +147,16 @@ sub extras {
 		'"prev_start":' . num($st->{prev_start}));
 }
 
+my $lastMap = '';
 sub tick {
-	return if time - $last < 3;
-	$last = time;
 	return unless $char && $char->{name};
+	# queue b1794721505e1m: during a map change OpenKore isn't in game yet and $field / the position are the old map's
+	# - no write then (the reader drops a file older than 30 s); a new map is written at once, not after the 3 s step
+	return unless $net && $net->getState() == Network::IN_GAME() && $field;
+	my $nowMap = eval { $field->baseName } || '';
+	return if time - $last < 3 && $nowMap eq $lastMap;
+	$last = time;
+	$lastMap = $nowMap;
 	my $ex = eval { extras() };
 	$ex = '"extras_error":' . str(substr($@ || 'unknown', 0, 200)) unless defined $ex;
 	my $online = ($net && $net->getState() == Network::IN_GAME()) ? 1 : 0;

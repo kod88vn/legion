@@ -533,7 +533,15 @@ func rallyHeard(p *Party, text string) {
 	}
 	now := time.Now()
 	parties.Lock()
-	if p.Rally.Town != "" || now.Before(p.Rally.Next) {
+	// her newest meeting point replaces an older rally in another town (live 00:36: Echobunny / vex_x18 waited at the
+	// Payon Kafra for her earlier rally while she called "meet at the kafra in geffen"); the same town keeps it
+	if p.Rally.Town != "" && p.Rally.Town != town {
+		old := p.Rally.Town
+		p.Rally.Town, p.Rally.AllAt, p.Rally.SplitSince = "", time.Time{}, time.Time{}
+		p.Rally.Last, p.Rally.LastAt, p.Rally.Next = "replaced by "+p.Human+"'s meeting in "+town, now, time.Time{}
+		log.Printf("party %s: rally in %s replaced by %s's new meeting point %s", p.Name, old, p.Human, town)
+	}
+	if p.Rally.Town != "" || now.Before(p.Rally.Next) && !strings.EqualFold(p.Human, strings.TrimSpace(text[:i])) {
 		parties.Unlock()
 		return
 	}
