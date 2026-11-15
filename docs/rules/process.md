@@ -69,3 +69,5 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - DB01. The dashboard shows world data, the minds (the owner can talk to them there), guilds, and parties with each member's HP, SP
   and zeny. (2026-11-14)
 - DB02. The owner can close and reopen the mind chats. (2026-11-14)
+- PR38. The bots' own code decides what they do. AI agents observe and keep improving and fixing that code so bots make better decisions on their own; they do not play the bots. Goal to build toward: only the puppet-master class runs, once a day; every change should move toward that. (2026-11-14)
+- PR39. Every system agent, script and watchdog (sentinel, partycheck, Ayla's watchdog and Haiku helper, qa, watcher, fixers that notice side bugs) files every problem it sees into the bug queue, so the main session can assign a fix; a problem seen but not filed is itself a bug. (2026-11-14)

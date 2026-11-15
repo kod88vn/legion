@@ -62,5 +62,8 @@
   "mail_trades": true,
   "goal_parties_on": true,
   "drop_rates_from_conf": true,
-  "skill_canact_off": false
+  "skill_canact_off": false,
+  "guild_duty_on": true,
+  "exchange_tiers_on": true,
+  "chat_jobs_on": true
 }

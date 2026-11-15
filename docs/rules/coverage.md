@@ -53,6 +53,7 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | SA01 | Never drive a client with the real mouse or keyboard | hard gate | RULES 1 (l.138) | RULES.md as G01 | kept as hard gate |
 | SA02 | No fullscreen for the owner's client | hard gate | RULES 1 (l.140) | RULES.md as G02 | kept as hard gate |
 | SA03 | No GM account for watching | hard gate | RULES 1 (l.141) | RULES.md as G03 | kept as hard gate |
+| G03b | Owner GM account allowed for his own wandering | hard gate | owner 2026-11-14 | RULES.md G03 | amended |
 | SA04 | GM test account allowed; stays out of economy, parties, public chat | hard gate | RULES 1 (l.142) | RULES.md as G04 | kept as hard gate |
 | SA05 | Never turn Ayla's AI off | hard gate | RULES 1 (l.146) | RULES.md as G05 | kept as hard gate |
 | SA06 | Re-seeds never touch human characters | hard gate | RULES 1 (l.149) | RULES.md as G06 | kept as hard gate |
@@ -176,6 +177,21 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | CL13 | Arrows are basic utilities; buying arrows is an errand | behaviour spec | CLASSES Archer (l.439) | docs/classes/archer.md | merged into EC26 and PT23 |
 | CL14 | Merchant: guild Alchemist brews potions (pointer) | behaviour spec | CLASSES Merchant (l.605) | docs/classes/merchant.md | merged into EC11 |
 | PR37 | All systems on whenever the world runs; do not re-ask what the owner already answered | process | owner 2026-11-14 | docs/rules/process.md | new rule |
+| AY18 | Ayla has zero downtime, never idle or stuck | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
+| AY19 | Ayla plays like a normal bot without any AI; the mind only adds | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
+| EC35 | Shop merchants occasionally announce rare items in #trade | economy | owner 2026-11-14 | docs/rules/economy.md | new rule |
+| PR38 | Code decides; AI observes and improves code; goal: only puppet masters, once a day | process | owner 2026-11-14 | docs/rules/process.md | new rule |
+| AY05 | Ayla's code decides; her Haiku only unsticks her (rally cancel, respawn) and files the fix; no map picks | ayla | owner 2026-11-14 | docs/rules/ayla.md | replaced |
+| PT29 | Members ask for buffs; priest buffs unless low SP, never passive | parties | owner 2026-11-14 | docs/rules/parties.md | new rule |
+| PR39 | Every system agent/script/watchdog files every problem it sees into the bug queue | process | owner 2026-11-14 | docs/rules/process.md | new rule |
+| EC36 | Waiting time used for errands (sell, store, restock), esp. with a near-full bag | economy | owner 2026-11-14 | docs/rules/economy.md | new rule |
+| AY20 | Owner sends Ayla plain instructions; her Haiku carries them out at once | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
+| PT31 | Members stay with the party; no solo random Teleport escapes; retreat to tank/priest, wing to party Kafra only if dying | parties | owner 2026-11-14 | docs/rules/parties.md | new rule |
+| AY21 | Ayla fixes deploy immediately, never wait for the 3-hour batch | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
+| PT32 | Fight in place near the party; no running around pulling extra attackers; stay back | parties | owner 2026-11-14 | docs/rules/parties.md | new rule |
+| CL16 | A caster with full SP most of the time is a bug; it must spend SP on spells | classes | owner 2026-11-14 | docs/classes/mage.md | new rule |
+| AY17 | No watch client for Ayla; owner watches via GM account; OpenKore log in a terminal | ayla | owner 2026-11-14 | docs/rules/ayla.md | replaced |
+| PT30 | Duplicate of the existing leader-plan rule (parties.md l.55-57); merged there, not a new line | parties | owner 2026-11-14 | docs/rules/parties.md | merged |
 
 Changes after the trim: 2026-11-14 the owner removed the human part of G20 and added gate G25 (no in-world
 discrimination between humans and other players); GD06 has no human exception. Owner's words in `archive.md` (G20, G25, GD06).

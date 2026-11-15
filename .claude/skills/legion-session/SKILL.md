@@ -33,6 +33,10 @@ Nothing starts unless the owner says so. When he does:
 4. **Bug-queue watcher** (background; its exit wakes you): `python tools/system/bugq.py watch`. When it exits, read what it
    printed ("what to assign"), act, and start it again.
 5. **Party check** (background): `python tools/system/partycheck.py`.
+5b. **Unwall loop** (background): `python tools/unwall.py --loop` (moves walled-in bots every 30 s; dropped in the
+   refactor by mistake, restored 2026-11-14).
+5c. **After any restart or recreate, verify live state** before saying anything works: `bash tools/system/fieldcheck.sh`
+   (OpenKore fields), Ayla online and farming in her log, `python tools/system/bugq.py summary` triaged.
 6. Ayla's keeper and the watch client (`tools/rogui/keeper.sh`, `ai-display.sh`, `ai-client.sh`) only when the owner wants
    her online. `keeper.sh` does nothing while `stack.hold` exists.
 **Stopping:** `python tools/system/stackctl.py down` first (writes `stack.hold`, removes `stack.up`, so the keeper and the gate
