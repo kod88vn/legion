@@ -204,6 +204,7 @@ type Bot struct {
 	partyLeader     string               // in-game party leader (only they can invite)
 	pin             *Pin                 // pinned online on one character (human-led party)
 	equipped        map[uint32]*InvItem  // slot -> worn item
+	gateMemo        gateMemo             // buildmilestones.go: the memoized EC39 gear gate
 	gearFailed      map[int]bool         // items the server refused to equip
 	invSeen         bool                 // the server sent the inventory this session: gear/trip decisions wait for it
 	invWaitFrom     time.Time            // session start (invReady falls back to 20 s after it)

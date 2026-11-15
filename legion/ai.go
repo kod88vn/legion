@@ -849,9 +849,14 @@ func (b *Bot) chooseHuntingGround() {
 			// buildgear.go nextBuildPiece (economy run 7, owner: each bot farms or trades to perfect its build): a
 			// drop-only next piece is farmed where it drops, when that map is one of the fitting, safe candidates
 			buildPick := false
-			// EC39: gear-gated, the next piece's drop map is the goal every time (not 80% of the time)
-			_, unmet := b.gearGate(b.BaseLvOr())
-			if pc := b.nextBuildPiece(); pc != nil && pc.Source == "drop" && (unmet != nil || b.rng.Float64() < 0.8) {
+			// EC39: a gated bot's goal is its failing gear piece (buildmilestones.go gearGoalPiece), farmed every time;
+			// otherwise the build's next piece, drop maps 80% of the time
+			_, goal := b.gearGate(b.BaseLvOr())
+			pc := b.nextBuildPiece()
+			if goal != nil {
+				pc = gearGoalPiece(*goal, b.BaseLvOr())
+			}
+			if pc != nil && pc.Source == "drop" && (goal != nil || b.rng.Float64() < 0.8) {
 			farm:
 				for _, f := range pc.Farm {
 					for _, c := range cs {
@@ -863,6 +868,15 @@ func (b *Bot) chooseHuntingGround() {
 							break farm
 						}
 					}
+				}
+			}
+			// EC39: a shop piece is a zeny goal while gated: earn its price on the best-paying map of the candidates
+			if goal != nil && pc != nil && pc.Source == "shop" && !buildPick {
+				if z := b.bestZenyMap(near); z != "" {
+					if z != pickMap {
+						b.event("info", "", fmt.Sprintf("saving zeny for %s (%s) on %s", pc.Name, goal.Slot, z))
+					}
+					pickMap, buildPick = z, true
 				}
 			}
 			// opportunity.go (run 8, owner: farm what the Prontera market lacks): the money goal's map when it fits,

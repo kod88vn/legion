@@ -2,40 +2,57 @@ package main
 
 // buildmilestones.go (EC39, owner 2026-11-15: "list the stats, gears, skills at certain level range for bots to
 // achieve ... Farm certain maps unless gear requirements are met"). Every build has milestones per level band (the
-// bands of buildgear.go: 1-20, 21-40, 41-60, 61-80, 81-99). A milestone is the gear a bot should wear by the band's
-// first level: a weapon attack (MATK for casters), a body armor DEF and a number of cards. It is read from the build's
-// own weapon and armor routes (builds.go Weapons / Armors): the strongest route item reached by the band's first
-// level (the weakest route item when none is reached). Stats and skills stay in the Build's Stats / Skills.
+// bands of buildgear.go: 1-20, 21-40, 41-60, 61-80, 81-99): the weapon attack (MATK for casters) and the body armor
+// DEF a bot should wear by the band's first level, plus the cards that band asks for. The source is the guide's band
+// lists in data/buildgear.json, with the build's own routes (builds.go Weapons / Armors) when the guide lists nothing
+// reachable. An item counts only once the character reaches its MinLv; a band with nothing reachable has no milestone.
 //
-// Gate: a bot at level 21+ whose worn gear misses the current band's milestone is capped at the ceiling of the last
-// band its gear meets (20 when it meets none). Every map picker reads the effective level (gearpower.go powerLv), so
-// the cap moves the solo pickers, the party pickers (the published Gate, party.go) and the guild leaders together.
-// Band 1-20 is never gated: everyone starts with the Knife. The gear goal is the unmet milestone's item (EC38: the
-// next step); chooseHuntingGround farms its drop map every time while gated. tuning gear_gate_on, default ON.
+// Gate (no cliff): the worn weapon and armor give a gear level each - the highest level the value is adequate for,
+// interpolated linearly between the milestone points (a value at 85% of a milestone counts as meeting it). The gear
+// level is the lower of the two. The gated level is that gear level plus one band of tolerance (20), kept between
+// base-15 (the most a bot is ever dropped) and base. So a bot one band behind its gear is not gated at all, and the
+// drop grows smoothly for bots further behind. The fair gate (fairgate.go) uses base-15 as its line too, so the two
+// never fight. Cards do not count toward the gate: they stay a gear goal in the table.
 //
-// Dashboard: milestoneTable() is the one table (the engine and the Builds tab read it).
+// The gear goal is the piece that fails in the slot that is lower (weapon or armor): the first milestone item the
+// bot does not yet meet. The picker (ai.go chooseHuntingGround) farms for it: a shop piece is a zeny goal on a map fit
+// for the gated level, a drop piece is farmed where it drops. The gate is memoized per bot and refreshed when the
+// worn gear changes (Bot.gateMemo). Tuning gear_gate_on, default ON. The table is served at /api/buildmilestones.
 
 import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
 
-// milestoneTolPct: a worn piece meets its milestone at this percentage of the value (85 = 15% under is still enough).
-const milestoneTolPct = 85
+const (
+	milestoneTolPct = 85 // a worn piece meets a milestone at this percentage of its value
+	gateTolerance   = 20 // gear level + one band before a bot is gated
+	gateMaxDrop     = 15 // never gated more than this far below base level (fairgate.go's line)
+)
 
 type gearMilestone struct {
 	Min, Max   int  // level band
 	Magic      bool // caster build: the weapon's MATK is the value
 	Weapon     int  // weapon attack (MATK for casters) to hold, raw item value
 	Armor      int  // body armor DEF to wear, raw item value
-	Cards      int  // cards in the worn gear by the band (0 for 1-40, 1 for 41-60, 2 from 61)
-	WeaponItem int  // item id the weapon milestone reads (0 = none in the route)
-	ArmorItem  int  // item id the armor milestone reads (0 = none in the route)
+	Cards      int  // cards the band asks for (goal only, not the gate): 0 for 1-40, 1 for 41-60, 2 from 61
+	WeaponItem int  // item id the weapon milestone reads (0 = nothing reachable)
+	ArmorItem  int  // item id the armor milestone reads (0 = nothing reachable)
+}
+
+// gearGoal: the piece that fails the gate: its item id and the slot it sits in ("weapon" or "armor").
+type gearGoal struct {
+	Item int
+	Slot string
 }
 
 func gearGateOn() bool { return tune().GearGateOn }
 
-// milestoneCache: per build; the guide file (data/buildgear.json) is re-checked every 5 min like buildGearTable.
 var milestoneCache = struct {
 	sync.Mutex
 	m       map[string][]gearMilestone
@@ -43,24 +60,19 @@ var milestoneCache = struct {
 	mod     time.Time
 }{m: map[string][]gearMilestone{}}
 
-// routePickAt: the item of a route (weakest first) that a character reaches by lv with the highest value; the first
-// known item when none is reached (value: Atk, Matk or Def of the item).
+// routePickAt: the item of a route that a character reaches by lv (MinLv <= lv) with the highest value; nil when
+// none is reached (a band whose only listed items are too high has no milestone: an early band never asks for
+// end-game armor).
 func routePickAt(route []int, lv int, value func(*Item) int) *Item {
-	var best, first *Item
+	var best *Item
 	for _, id := range route {
 		x := items[id]
-		if x == nil {
+		if x == nil || x.MinLv > lv {
 			continue
 		}
-		if first == nil {
-			first = x
-		}
-		if x.MinLv <= lv && (best == nil || value(x) > value(best)) {
+		if best == nil || value(x) > value(best) {
 			best = x
 		}
-	}
-	if best == nil {
-		return first
 	}
 	return best
 }
@@ -75,9 +87,8 @@ func cardsForBand(min int) int {
 	return 0
 }
 
-// milestonesFor: the milestones of one build, one per band (not cached: see milestonesOf). The source is the guide's
-// band lists in data/buildgear.json (the same bands the Builds tab and the exporter read: the weapon and armor the
-// guide lists for the band); the build's own routes (builds.go Weapons / Armors) fill what the guide leaves out.
+// milestonesFor: the milestones of one build, one per band (not cached: see milestonesOf). guide = the build's entry
+// in data/buildgear.json (nil when there is none).
 func milestonesFor(p *Build, guide *bgBuild) []gearMilestone {
 	lookupOnce.Do(loadLookup)
 	magic := buildStyle(p) == "magic"
@@ -100,16 +111,14 @@ func milestonesFor(p *Build, guide *bgBuild) []gearMilestone {
 			}
 		}
 		wroute, aroute := p.Weapons, p.Armors
-		if len(gw) > 0 {
-			wroute = gw
-		}
-		if len(ga) > 0 {
-			aroute = ga
-		}
-		if w := routePickAt(wroute, be[0], wval); w != nil {
+		if w := routePickAt(gw, be[0], wval); w != nil {
+			m.WeaponItem, m.Weapon = w.ID, wval(w)
+		} else if w := routePickAt(wroute, be[0], wval); w != nil {
 			m.WeaponItem, m.Weapon = w.ID, wval(w)
 		}
-		if a := routePickAt(aroute, be[0], func(x *Item) int { return x.Def }); a != nil {
+		if a := routePickAt(ga, be[0], func(x *Item) int { return x.Def }); a != nil {
+			m.ArmorItem, m.Armor = a.ID, a.Def
+		} else if a := routePickAt(aroute, be[0], func(x *Item) int { return x.Def }); a != nil {
 			m.ArmorItem, m.Armor = a.ID, a.Def
 		}
 		out = append(out, m)
@@ -150,7 +159,7 @@ func milestonesOf(p *Build) []gearMilestone {
 	return ms
 }
 
-// milestoneTable: every build's milestones (build id -> bands), for the dashboard export and tests.
+// milestoneTable: every build's milestones (build id -> bands): the one table the engine and the Builds tab read.
 func milestoneTable() map[string][]gearMilestone {
 	out := map[string][]gearMilestone{}
 	for id, p := range builds {
@@ -159,72 +168,203 @@ func milestoneTable() map[string][]gearMilestone {
 	return out
 }
 
-// gearMeets (b.mu held): the worn weapon, body armor and cards reach the band's milestone.
-func gearMeets(b *Bot, f, lv int, m *gearMilestone) bool {
-	if m.Weapon > 0 {
-		e := b.equipped[0x2]
-		if e == nil || items[e.ItemID] == nil {
-			return false
-		}
-		x := items[e.ItemID]
-		v := x.Atk
-		if m.Magic {
-			v = x.Matk
-		} else {
-			v += refineAtk(max(1, x.WLv), e.Refine)
-		}
-		if v*100 < m.Weapon*milestoneTolPct {
-			return false
-		}
-	}
-	if m.Armor > 0 {
-		e := b.equipped[0x10]
-		if e == nil || items[e.ItemID] == nil {
-			return false
-		}
-		if (items[e.ItemID].Def+e.Refine)*100 < m.Armor*milestoneTolPct {
-			return false
-		}
-	}
-	if m.Cards > 0 && rateGear(f, lv, b.equipped).Cards < m.Cards {
-		return false
-	}
-	return true
+// registerBuildMilestones: GET /api/buildmilestones - the milestone table (build id -> bands) - and the file writer.
+func registerBuildMilestones(mux *http.ServeMux) {
+	mux.HandleFunc("/api/buildmilestones", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(milestoneTable())
+	})
+	go milestoneFileLoop()
 }
 
-// gearGateOf (b.mu held): the effective-level ceiling the bot's gear allows at its base level lv, and the first unmet
-// milestone (nil = none unmet). 0 = no gate (flag off, no build, or band 1-20).
-func gearGateOf(b *Bot, p *Build, lv int) (int, *gearMilestone) {
+// milestoneFileLoop: writes data/buildmilestones_gear.json now and every 5 min (the Builds tab's format:
+// {"builds": {id: {"ranges": [{"min", "max", "slots": {slot: [item ids]}, "weapon_atk", "armor_def", "cards", "magic"}]}}}).
+// Runs only from the server (registerBuildMilestones), never from tests.
+func milestoneFileLoop() {
+	for {
+		if err := writeMilestoneFile(filepath.Join(*dataDir, "buildmilestones_gear.json")); err != nil {
+			log.Printf("buildmilestones_gear.json: %v", err)
+		}
+		time.Sleep(5 * time.Minute)
+	}
+}
+
+type milestoneRangeJSON struct {
+	Min       int              `json:"min"`
+	Max       int              `json:"max"`
+	Slots     map[string][]int `json:"slots"`
+	WeaponATK int              `json:"weapon_atk"`
+	ArmorDEF  int              `json:"armor_def"`
+	Cards     int              `json:"cards"`
+	Magic     bool             `json:"magic"`
+}
+
+// milestoneFileJSON: the milestone table in the dashboard's format.
+func milestoneFileJSON() map[string]interface{} {
+	builds := map[string]interface{}{}
+	for id, ms := range milestoneTable() {
+		var ranges []milestoneRangeJSON
+		for _, m := range ms {
+			r := milestoneRangeJSON{Min: m.Min, Max: m.Max, WeaponATK: m.Weapon, ArmorDEF: m.Armor, Cards: m.Cards, Magic: m.Magic,
+				Slots: map[string][]int{"weapon": {}, "armor": {}}}
+			if m.WeaponItem > 0 {
+				r.Slots["weapon"] = []int{m.WeaponItem}
+			}
+			if m.ArmorItem > 0 {
+				r.Slots["armor"] = []int{m.ArmorItem}
+			}
+			ranges = append(ranges, r)
+		}
+		builds[id] = map[string]interface{}{"ranges": ranges}
+	}
+	return map[string]interface{}{"builds": builds}
+}
+
+// writeMilestoneFile: atomic write (temp file, then rename).
+func writeMilestoneFile(path string) error {
+	raw, err := json.MarshalIndent(milestoneFileJSON(), "", " ")
+	if err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
+// gearLevelOf: the highest level a worn value is adequate for. pts = milestone points (level, required value), level
+// ascending. The value counts at milestoneTolPct of a requirement; between two points the level is interpolated.
+// Below the first point the level is the first point's level; past the last point it is 99.
+func gearLevelOf(pts [][2]float64, have float64) float64 {
+	if len(pts) == 0 {
+		return 99
+	}
+	v := have * 100 / milestoneTolPct
+	if v < pts[0][1] {
+		return pts[0][0]
+	}
+	for j := 0; j+1 < len(pts); j++ {
+		if v < pts[j+1][1] {
+			f := (v - pts[j][1]) / (pts[j+1][1] - pts[j][1])
+			return pts[j][0] + f*(pts[j+1][0]-pts[j][0])
+		}
+	}
+	return 99
+}
+
+// wornWeapon / wornBody: the worn weapon's value (ATK plus refine, or MATK for casters) and the body armor's DEF.
+func wornWeapon(b *Bot, magic bool) float64 {
+	e := b.equipped[0x2]
+	if e == nil || items[e.ItemID] == nil {
+		return 0
+	}
+	x := items[e.ItemID]
+	if magic {
+		return float64(x.Matk)
+	}
+	return float64(x.Atk + refineAtk(max(1, x.WLv), e.Refine))
+}
+
+func wornBody(b *Bot) float64 {
+	e := b.equipped[0x10]
+	if e == nil || items[e.ItemID] == nil {
+		return 0
+	}
+	return float64(items[e.ItemID].Def + e.Refine)
+}
+
+// gearGateOf (b.mu held): the level the bot's gear allows as a gate on its effective level, and the piece that fails
+// (nil when nothing fails). 0 = no gate (flag off, no build, band 1-20, or the gear is adequate for the level).
+func gearGateOf(b *Bot, p *Build, lv int) (int, *gearGoal) {
 	if p == nil || lv < 21 || !gearGateOn() {
 		return 0, nil
 	}
-	f := family(b.Class)
 	ms := milestonesOf(p)
-	gate := 20
+	magic := len(ms) > 0 && ms[0].Magic
+	var wp, ap [][2]float64
 	for i := range ms {
 		m := &ms[i]
-		if m.Min <= 20 || lv < m.Min {
-			continue
+		if m.Weapon > 0 && m.WeaponItem > 0 {
+			wp = append(wp, [2]float64{float64(m.Min), float64(m.Weapon)})
 		}
-		if !gearMeets(b, f, lv, m) {
-			return gate, m
+		if m.Armor > 0 && m.ArmorItem > 0 {
+			ap = append(ap, [2]float64{float64(m.Min), float64(m.Armor)})
 		}
-		gate = m.Max
+	}
+	lw := gearLevelOf(wp, wornWeapon(b, magic))
+	la := gearLevelOf(ap, wornBody(b))
+	gl := min(lw, la)
+	gate := max(lv-gateMaxDrop, int(gl)+gateTolerance)
+	if gate >= lv {
+		return 0, nil
+	}
+	gate = max(gate, 1)
+	// the failing piece: the lower slot's first unmet milestone item
+	weapon := lw <= la
+	for i := range ms {
+		m := &ms[i]
+		if weapon && m.Weapon > 0 && m.WeaponItem > 0 && wornWeapon(b, magic)*100 < float64(m.Weapon)*milestoneTolPct {
+			return gate, &gearGoal{Item: m.WeaponItem, Slot: "weapon"}
+		}
+		if !weapon && m.Armor > 0 && m.ArmorItem > 0 && wornBody(b)*100 < float64(m.Armor)*milestoneTolPct {
+			return gate, &gearGoal{Item: m.ArmorItem, Slot: "armor"}
+		}
 	}
 	return gate, nil
 }
 
-// gearGatedLv (b.mu held): the raw effective level, capped at the gear ceiling of build p (EC39).
-func gearGatedLv(b *Bot, p *Build, lv, raw int) int {
-	if g, _ := gearGateOf(b, p, lv); g > 0 && raw > g {
+// gearSig: a signature of the worn gear (items, refines, cards), so the gate memo refreshes on an equip change.
+func (b *Bot) gearSig() uint64 {
+	var s uint64
+	for slot, e := range b.equipped {
+		if e == nil {
+			continue
+		}
+		h := uint64(slot)*2654435761 + uint64(e.ItemID)*40503 + uint64(e.Refine)*9973
+		for i, c := range e.Cards {
+			h += uint64(c) * uint64(131+i*17)
+		}
+		s += h
+	}
+	return s
+}
+
+// gateMemo: the last gate of this bot, valid while the gear, the base level and the build are the same.
+type gateMemo struct {
+	ok    bool
+	sig   uint64
+	lv    int
+	build string
+	gate  int
+	goal  *gearGoal
+}
+
+// gearGateFor (b.mu held): the memoized gate and goal of build p at base level lv.
+func (b *Bot) gearGateFor(p *Build, lv int) (int, *gearGoal) {
+	if p == nil {
+		return 0, nil
+	}
+	sig := b.gearSig()
+	m := &b.gateMemo
+	if !m.ok || m.sig != sig || m.lv != lv || m.build != p.ID {
+		g, goal := gearGateOf(b, p, lv)
+		*m = gateMemo{ok: true, sig: sig, lv: lv, build: p.ID, gate: g, goal: goal}
+	}
+	return m.gate, m.goal
+}
+
+// gearGatedLv (b.mu held): the raw effective level, capped at the gear gate of build p (EC39).
+func (b *Bot) gearGatedLv(p *Build, lv, raw int) int {
+	if g, _ := b.gearGateFor(p, lv); g > 0 && raw > g {
 		return g
 	}
 	return raw
 }
 
-// gearGate (b.mu held): the ceiling and the unmet milestone of this bot's own build.
-func (b *Bot) gearGate(lv int) (int, *gearMilestone) {
-	return gearGateOf(b, b.gearPlan(), lv)
+// gearGate (b.mu held): the gate and the failing piece of this bot's own build.
+func (b *Bot) gearGate(lv int) (int, *gearGoal) {
+	return b.gearGateFor(b.gearPlan(), lv)
 }
 
 // gearPlan (b.mu held): the bot's build, nil when it has no character spec yet (tests, a bot not set up).
@@ -235,8 +375,27 @@ func (b *Bot) gearPlan() *Build {
 	return b.plan()
 }
 
-// partyGearGate: the lowest gear ceiling of the online, known members (0 = none). A party's map follows its
-// weakest-geared member (EC39); the ceilings come from the published Gate (party.go publish).
+// gearGoalPiece (b.mu held): the failing piece as a build piece for the picker: a shop piece (zeny goal, the NPC
+// price), else a drop piece with its farm maps, else a trade piece.
+func gearGoalPiece(g gearGoal, lv int) *buildPiece {
+	it := items[g.Item]
+	if it == nil {
+		return nil
+	}
+	bp := &buildPiece{ItemID: g.Item, Name: it.Name, Slot: g.Slot, Price: priceOf(g.Item)}
+	switch {
+	case len(gearShops(g.Item)) > 0:
+		bp.NPC, bp.Source = it.Buy, "shop"
+	case len(pieceFarms(g.Item, lv, 3)) > 0:
+		bp.Farm, bp.Source = pieceFarms(g.Item, lv, 3), "drop"
+	default:
+		bp.Source = "trade"
+	}
+	return bp
+}
+
+// partyGearGate: the lowest gear gate of the online, known members (0 = none). A party's map follows its
+// weakest-geared member (EC39); the gates come from the published Gate (party.go publish).
 func partyGearGate(ms []*Bot) int {
 	g := 0
 	for _, b := range ms {

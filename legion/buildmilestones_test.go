@@ -1,11 +1,17 @@
 package main
 
 import (
+	"encoding/json"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 )
 
-// EC39 test kit: a Swordman build with three weapon and three armor steps, one per band (MinLv 1, 21, 41).
+// EC39 test kit: a Swordman build with three weapon and three armor steps (MinLv 1, 21, 41). Bands 61+ reuse the last
+// step, so the gear level is interpolated between the band starts 1, 21, 41 and up to 99.
 var msItems = map[int]*Item{
 	9101: {ID: 9101, Name: "Sword I", Type: "Weapon", Loc: 0x2, Atk: 43, WLv: 1, MinLv: 1},
 	9102: {ID: 9102, Name: "Sword II", Type: "Weapon", Loc: 0x2, Atk: 80, WLv: 1, MinLv: 21},
@@ -13,6 +19,7 @@ var msItems = map[int]*Item{
 	9201: {ID: 9201, Name: "Armor I", Type: "Armor", Loc: 0x10, Def: 20, MinLv: 1},
 	9202: {ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21},
 	9203: {ID: 9203, Name: "Armor III", Type: "Armor", Loc: 0x10, Def: 55, MinLv: 41},
+	9301: {ID: 9301, Name: "Chain Mail", Type: "Armor", Loc: 0x10, Def: 55, MinLv: 70},
 }
 
 func msBuild() *Build {
@@ -36,9 +43,10 @@ func withMsItems(t *testing.T) {
 	})
 }
 
-// msBot: a lv60 Swordman wearing the given weapon and body armor.
-func msBot(weapon, armor int, cards ...int) *Bot {
-	return &Bot{P: &Persona{Name: "ec39bot", Risk: 0.5, BaseLevel: 60, Chars: []CharSpec{{Name: "ec39bot"}}}, BaseLv: 60, Class: 1, invSeen: true,
+// msBot: a Swordman at base level lv wearing the given weapon, body armor and card, with a character spec on the test build.
+func msBot(name string, lv, weapon, armor int, cards ...int) *Bot {
+	return &Bot{P: &Persona{Name: name, Risk: 0.5, BaseLevel: lv, Chars: []CharSpec{{Name: name, Plan: "test_ec39_sword"}}},
+		BaseLv: lv, Class: 1, invSeen: true,
 		equipped: gsEquip(gsPiece{weapon, 0x2, 0, cards}, gsPiece{armor, 0x10, 0, nil})}
 }
 
@@ -59,76 +67,118 @@ func TestMilestonesReadTheRoutes(t *testing.T) {
 	}
 }
 
-// a lv60 bot with lv20-level gear (Sword I, Armor I) gets a ceiling of 20 and its next gear step as the goal
+// regression (band 1-20 row error, knight Chain Mail DEF 55 at MinLv 70): nothing reachable means no milestone
+func TestBandOneNeverListsEndGameArmor(t *testing.T) {
+	withMsItems(t)
+	p := &Build{ID: "test_ec39_knight", Class: 7, First: 1, Weapons: []int{9101}, Armors: []int{9301}}
+	ms := milestonesFor(p, nil)
+	if ms[0].ArmorItem != 0 || ms[0].Armor != 0 {
+		t.Fatalf("band 1-20 armor = %d (%d DEF), want none: Chain Mail is MinLv 70", ms[0].ArmorItem, ms[0].Armor)
+	}
+}
+
+// the gate is a continuous function of the weapon: a stronger weapon never lowers the gate (no cliff)
+func TestGearGateIsMonotone(t *testing.T) {
+	withMsItems(t)
+	p := msBuild()
+	prev := 0
+	for atk := 43; atk <= 130; atk++ {
+		b := msBot("ec39mono", 60, 9101, 9201)
+		b.equipped[0x2].ItemID = 9101
+		items[9101] = &Item{ID: 9101, Type: "Weapon", Loc: 0x2, Atk: atk, WLv: 1, MinLv: 1}
+		g, _ := gearGateOf(b, p, 60)
+		if g == 0 {
+			g = 60
+		}
+		if g < prev {
+			t.Fatalf("atk %d: gate %d below the gate %d of a weaker weapon", atk, g, prev)
+		}
+		prev = g
+	}
+}
+
+// a lv60 bot with lv20-level gear (Sword I, Armor I) is gated 15 below base (the most) and its goal is Sword II
 func TestLowGearLv60GetsSafeMapAndGearGoal(t *testing.T) {
 	withMsItems(t)
-	b := msBot(9101, 9201)
+	b := msBot("ec39low", 60, 9101, 9201)
 	p := msBuild()
+	gate, goal := gearGateOf(b, p, 60)
+	if gate != 45 {
+		t.Fatalf("gate = %d, want 45 (base-15, the most a bot is dropped)", gate)
+	}
+	if goal == nil || goal.Item != 9102 || goal.Slot != "weapon" {
+		t.Fatalf("goal = %+v, want the weapon Sword II (9102)", goal)
+	}
 	raw := gearEffectiveLv(famSword, 60, rateGear(famSword, 60, b.equipped))
-	gate, unmet := gearGateOf(b, p, 60)
-	if gate != 20 {
-		t.Fatalf("gate = %d, want 20 (band 21-40 unmet)", gate)
+	if got := b.gearGatedLv(p, 60, 60); got != 45 {
+		t.Fatalf("gated effective level %d (raw %d), want 45", got, raw)
 	}
-	if unmet == nil || unmet.Min != 21 || unmet.WeaponItem != 9102 {
-		t.Fatalf("unmet milestone = %+v, want band 21-40 with the goal Sword II (9102)", unmet)
-	}
-	if got := gearGatedLv(b, p, 60, raw); got > 20 {
-		t.Fatalf("gated effective level %d (raw %d), want <= 20", got, raw)
-	}
-	t.Logf("lv60 with Sword I + Armor I: raw rating %d, gated %d, goal %d", raw, gearGatedLv(b, p, 60, raw), unmet.WeaponItem)
 }
 
-// the bot never idles: a gated level still has hunting spots (the solo fallback takes one)
-func TestGearGatedBotNeverIdles(t *testing.T) {
-	swapFairTables(t)
-	fairWorld()
-	huntSpots = append(huntSpots, HuntSpot{Map: "pay_fild07", MinLv: 10, MaxLv: 30, Mobs: 41}) // reaches a lv20 ceiling
-	mobs[1004] = &Mob{ID: 1004, Level: 12}
-	spawnsByMap["pay_fild07"] = append(spawnsByMap["pay_fild07"], Spawn{"pay_fild07", 1004, 40})
+// the gate is the gear level plus one band: Sword II + Armor II (gear level ~28) at lv60 is gated at 48
+func TestGateIsGearLevelPlusBand(t *testing.T) {
 	withMsItems(t)
-	b := msBot(9101, 9201)
-	spots := b.spotsFor(20)
-	if len(spots) == 0 {
-		t.Fatal("a gated lv60 bot got no hunting spot at its ceiling")
+	b := msBot("ec39mid", 60, 9102, 9202)
+	gate, goal := gearGateOf(b, msBuild(), 60)
+	if gate != 48 {
+		t.Fatalf("gate = %d, want 48 (gear level ~28 + one band)", gate)
+	}
+	if goal == nil || goal.Item != 9103 {
+		t.Fatalf("goal = %+v, want Sword III (9103)", goal)
 	}
 }
 
-// once the gear meets a band's milestone the ceiling moves up, and at the full set the rating is not capped
-func TestGearMilestoneLiftsTheCeiling(t *testing.T) {
+// a bot less than one band behind its gear is not gated: lv45 with Sword II (gate 48) keeps its level
+func TestOneBandBehindIsNotGated(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39band", 45, 9102, 9202)
+	if gate, goal := gearGateOf(b, msBuild(), 45); gate != 0 || goal != nil {
+		t.Fatalf("lv45 with Sword II: gate %d goal %+v, want no gate", gate, goal)
+	}
+}
+
+// the milestone gear for the band (Sword III + Armor III, carded) lifts the gate: no gate at lv60
+func TestMilestoneGearLiftsTheGate(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39full", 60, 9103, 9203, 4006)
+	if gate, goal := gearGateOf(b, msBuild(), 60); gate != 0 || goal != nil {
+		t.Fatalf("full milestone gear: gate %d goal %+v, want none", gate, goal)
+	}
+}
+
+// the memo follows the worn gear: an equip change refreshes the gate
+func TestGateMemoRefreshesOnEquipChange(t *testing.T) {
 	withMsItems(t)
 	p := msBuild()
-	step := func(name string, weapon, armor, wantGate int, wantUnmet bool) {
-		b := msBot(weapon, armor)
-		raw := gearEffectiveLv(famSword, 60, rateGear(famSword, 60, b.equipped))
-		gate, unmet := gearGateOf(b, p, 60)
-		if gate != wantGate || (unmet != nil) != wantUnmet {
-			t.Fatalf("%s: gate %d unmet %v, want gate %d unmet %v", name, gate, unmet, wantGate, wantUnmet)
-		}
-		got := gearGatedLv(b, p, 60, raw)
-		if got > gate {
-			t.Fatalf("%s: effective %d over the gate %d", name, got, gate)
-		}
-		t.Logf("%s: raw %d gate %d effective %d", name, raw, gate, got)
+	b := msBot("ec39memo", 60, 9101, 9201)
+	if g, _ := b.gearGateFor(p, 60); g != 45 {
+		t.Fatalf("before: gate %d, want 45", g)
 	}
-	step("Sword I + Armor I", 9101, 9201, 20, true)
-	step("Sword II + Armor II", 9102, 9202, 40, true)
-	// the 41-60 band also asks for one card in the worn gear
-	b := msBot(9103, 9203, 4006)
-	raw3 := gearEffectiveLv(famSword, 60, rateGear(famSword, 60, b.equipped))
-	if g, u := gearGateOf(b, p, 60); g != 60 || u != nil {
-		t.Fatalf("Sword III + Armor III + card: gate %d unmet %v, want 60 and none", g, u)
-	}
-	if got := gearGatedLv(b, p, 60, raw3); got <= 40 {
-		t.Fatalf("carded full milestone gear rated %d (raw %d): should move up past lv40", got, raw3)
-	}
-	full := msBot(9103, 9203, 4006)
-	raw := gearEffectiveLv(famSword, 60, rateGear(famSword, 60, full.equipped))
-	if got := gearGatedLv(full, p, 60, raw); got <= 40 {
-		t.Fatalf("full milestone gear rated %d (raw %d): should move up past lv40", got, raw)
+	b.equipped = gsEquip(gsPiece{9102, 0x2, 0, nil}, gsPiece{9202, 0x10, 0, nil})
+	if g, _ := b.gearGateFor(p, 60); g != 48 {
+		t.Fatalf("after equipping Sword II: gate %d, want 48 (memo must refresh)", g)
 	}
 }
 
-// a party's map follows its weakest-geared member: a gated member caps the party's minimum level
+// powerLv: the effective level through the real path (invReady, the build from the character spec) never exceeds the gate
+func TestPowerLvIsCappedByGate(t *testing.T) {
+	withMsItems(t)
+	saved, had := builds[msBuild().ID]
+	builds[msBuild().ID] = msBuild()
+	t.Cleanup(func() {
+		if had {
+			builds[msBuild().ID] = saved
+		} else {
+			delete(builds, msBuild().ID)
+		}
+	})
+	b := msBot("ec39power", 60, 9101, 9201)
+	if got := b.powerLv(); got > 45 {
+		t.Fatalf("powerLv %d for lv60 Sword I + Armor I, want <= 45", got)
+	}
+}
+
+// a party's map follows its weakest-geared member: a gated member's gate caps the party's minimum level
 func TestPartyFollowsWeakestGear(t *testing.T) {
 	withMsItems(t)
 	strong := &Bot{P: &Persona{Name: "ec39strong", Risk: 0.5}, BaseLv: 75}
@@ -138,7 +188,7 @@ func TestPartyFollowsWeakestGear(t *testing.T) {
 		s pubState
 	}{
 		{strong, pubState{Name: "ec39strong", Online: true, Known: true, Lv: 75, Power: 75}},
-		{weak, pubState{Name: "ec39weak", Online: true, Known: true, Lv: 60, Power: 20, Gate: 20}},
+		{weak, pubState{Name: "ec39weak", Online: true, Known: true, Lv: 60, Power: 45, Gate: 45}},
 	} {
 		v := &atomic.Value{}
 		v.Store(c.s)
@@ -149,20 +199,108 @@ func TestPartyFollowsWeakestGear(t *testing.T) {
 	if known != 2 {
 		t.Fatalf("known %d, want 2", known)
 	}
-	if minLv > 20 {
-		t.Fatalf("party minimum level %d, want <= the weak member's gear ceiling 20", minLv)
+	if minLv > 45 {
+		t.Fatalf("party minimum level %d, want <= the weak member's gate 45", minLv)
 	}
 }
 
-// tuning gear_gate_on = false: no ceiling at all (the old rating)
+// the picker: gated bots with the same gear spread over the spots and never go to a spot far above their gate
+func TestGatedBotsSpreadAndNeverIdle(t *testing.T) {
+	swapFairTables(t)
+	fairWorld()
+	withMsItems(t)
+	// two lv26-28 fields: fair for a base-40 bot (line 25) and fitting its gated level 25
+	mobs[3001] = &Mob{ID: 3001, Level: 26}
+	mobs[3002] = &Mob{ID: 3002, Level: 28}
+	for _, m := range []string{"gef_fild01", "gef_fild02"} {
+		maps[m] = &GameMap{}
+		spawnsByMap[m] = []Spawn{{m, 3001, 20}, {m, 3002, 20}}
+		huntSpots = append(huntSpots, HuntSpot{Map: m, MinLv: 20, MaxLv: 35, Mobs: 40})
+	}
+	saved, had := builds[msBuild().ID]
+	builds[msBuild().ID] = msBuild()
+	t.Cleanup(func() {
+		if had {
+			builds[msBuild().ID] = saved
+		} else {
+			delete(builds, msBuild().ID)
+		}
+	})
+	starts := []string{"gef_fild01", "gef_fild02"}
+	distinct := map[string]bool{}
+	for i := 0; i < 9; i++ {
+		b := msBot("ec39pick"+string(rune('a'+i)), 40, 9101, 9201)
+		b.MapName = starts[i%len(starts)]
+		b.rng = rand.New(rand.NewSource(int64(i + 1)))
+		b.chooseHuntingGround()
+		if b.Goal.Map == "" {
+			t.Fatalf("bot %d idles: goal %+v", i, b.Goal)
+		}
+		if b.Goal.Map == "moc_fild02" {
+			t.Fatalf("bot %d gated sent to moc_fild02 (lv55-60 monsters)", i)
+		}
+		distinct[b.Goal.Map] = true
+	}
+	if len(distinct) < 2 {
+		b := msBot("ec39dbg", 40, 9101, 9201)
+		t.Fatalf("9 gated bots all went to %v: they must spread over the spots (power %d, spots %v, set %q)", distinct, b.powerLv(), b.spotsFor(b.powerLv()), b.Goal.Set)
+	}
+}
+
+// tuning gear_gate_on = false: no gate at all
 func TestGearGateTuningOff(t *testing.T) {
 	withMsItems(t)
 	swapFairTables(t)
 	off := *tune()
 	off.GearGateOn = false
 	curTuning.Store(&off)
-	b := msBot(9101, 9201)
+	b := msBot("ec39off", 60, 9101, 9201)
 	if g, _ := gearGateOf(b, msBuild(), 60); g != 0 {
 		t.Fatalf("flag off: gate %d, want 0", g)
+	}
+}
+
+// the Builds tab's file format: {"builds": {id: {"ranges": [{"min", "max", "slots": {slot: [ids]}}]}}} (written to a temp dir)
+func TestMilestoneFileFormat(t *testing.T) {
+	withMsItems(t)
+	saved, had := builds[msBuild().ID]
+	builds[msBuild().ID] = msBuild()
+	t.Cleanup(func() {
+		if had {
+			builds[msBuild().ID] = saved
+		} else {
+			delete(builds, msBuild().ID)
+		}
+	})
+	path := filepath.Join(t.TempDir(), "buildmilestones_gear.json")
+	if err := writeMilestoneFile(path); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		Builds map[string]struct {
+			Ranges []struct {
+				Min   int              `json:"min"`
+				Max   int              `json:"max"`
+				Slots map[string][]int `json:"slots"`
+			} `json:"ranges"`
+		} `json:"builds"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	b, ok := doc.Builds[msBuild().ID]
+	if !ok || len(b.Ranges) != len(bandEdges) {
+		t.Fatalf("build %s: %d ranges, want %d", msBuild().ID, len(b.Ranges), len(bandEdges))
+	}
+	r := b.Ranges[1]
+	if r.Min != 21 || r.Max != 40 || len(r.Slots["weapon"]) != 1 || r.Slots["weapon"][0] != 9102 || r.Slots["armor"][0] != 9202 {
+		t.Fatalf("band 21-40 = %+v, want weapon 9102 and armor 9202", r)
+	}
+	if !strings.Contains(string(raw), `"weapon_atk"`) || !strings.Contains(string(raw), `"cards"`) {
+		t.Fatal("ranges lack the weapon_atk / cards fields")
 	}
 }

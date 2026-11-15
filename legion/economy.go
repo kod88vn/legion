@@ -1888,7 +1888,8 @@ func registerEconomy(mux *http.ServeMux) {
 		writeJSON(w, economyReport())
 	})
 	registerAlchemy(mux)       // alchemy.go: /api/alchemists (guild alchemists, potion market)
-	registerBuildGear(mux)     // buildgear.go: /api/buildgear (per-build item table), /api/buildgear/fit
+	registerBuildGear(mux)
+	registerBuildMilestones(mux) // buildmilestones.go: /api/buildmilestones (gear milestones per band)     // buildgear.go: /api/buildgear (per-build item table), /api/buildgear/fit
 	registerPricing(mux)       // pricing.go: /api/economy/pricing (money supply, wealth x rarity price table)
 	registerGuildStock(mux)    // guildstock.go: /api/guild-stock
 	registerOpportunities(mux) // opportunity.go: market opportunities and money goals

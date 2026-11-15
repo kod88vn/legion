@@ -149,7 +149,7 @@ func (b *Bot) gearPowerLv(lv int) int {
 		p += soloPerf.offset(b.P.Name, b.MapName, isTown(b.MapName), 1, int(c.Kills), int(c.Fair), int(c.Deaths), time.Now())
 	}
 	p = max(1, min(p, lv+10))
-	return gearGatedLv(b, b.gearPlan(), lv, p) // buildmilestones.go (EC39): the gear ceiling caps every picker
+	return b.gearGatedLv(b.gearPlan(), lv, p) // buildmilestones.go (EC39): the gear ceiling caps every picker
 }
 
 // ------------------------------------------------------------------ performance steps
