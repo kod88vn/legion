@@ -53,6 +53,9 @@ type humanDetail struct {
 	TownRun  bool   `json:"town_run"`
 	StatusTS int64  `json:"status_ts"` // status.json write time (stale = OpenKore down)
 	Fresh    bool   `json:"fresh"`     // status.json younger than 30 s
+	// where partydash.go took her position for the members' dist_lead: status (fresh status.json), status_old (< 2 min),
+	// party (server party data + the friends' sight), none (unknown: dist_lead -1)
+	LeadPosSrc string `json:"lead_pos_src,omitempty"`
 }
 
 // humanDetailOf: her detail from the last status.json read, fresh or not (a stale one still says what she did last).
@@ -81,6 +84,60 @@ const partyChatKeep = 30
 var partyChat struct {
 	sync.Mutex
 	byHuman map[string][]partyChatLine // lower(human) -> oldest first
+	loaded  bool                       // partychat.json read (lazily, on first use)
+	saving  bool                       // a save is scheduled
+}
+
+// bug b1794719308gny: the party chat survives an engine restart (every deploy) in <data>/partychat.json, the last 30
+// lines per human-led party. Only the instance that hears the lines (legion-core, Ayla's friends) ever writes it.
+func partyChatFile() string { return filepath.Join(*dataDir, "partychat.json") }
+
+// partyChatLoad (partyChat held): read the file once.
+func partyChatLoad() {
+	if partyChat.loaded {
+		return
+	}
+	partyChat.loaded = true
+	if partyChat.byHuman == nil {
+		partyChat.byHuman = map[string][]partyChatLine{}
+	}
+	raw, err := os.ReadFile(partyChatFile())
+	if err != nil {
+		return
+	}
+	var got map[string][]partyChatLine
+	if json.Unmarshal(raw, &got) != nil {
+		return
+	}
+	for k, l := range got {
+		if len(l) > partyChatKeep {
+			l = l[len(l)-partyChatKeep:]
+		}
+		partyChat.byHuman[strings.ToLower(k)] = l
+	}
+}
+
+// partyChatSaveSoon (partyChat held): one write 2 s after the first new line (never from the packet handler itself).
+func partyChatSaveSoon() {
+	if partyChat.saving {
+		return
+	}
+	partyChat.saving = true
+	file := partyChatFile()
+	go func() {
+		time.Sleep(2 * time.Second)
+		partyChat.Lock()
+		raw, err := json.Marshal(partyChat.byHuman)
+		partyChat.saving = false
+		partyChat.Unlock()
+		if err != nil {
+			return
+		}
+		tmp := file + ".tmp"
+		if os.WriteFile(tmp, raw, 0o644) == nil {
+			os.Rename(tmp, file)
+		}
+	}()
 }
 
 // partyChatHeard (packet handler, b.mu held): a party line one of the human's friends received. Leaf lock only.
@@ -96,9 +153,7 @@ func partyChatHeard(human, raw string, now time.Time) {
 	k := strings.ToLower(human)
 	partyChat.Lock()
 	defer partyChat.Unlock()
-	if partyChat.byHuman == nil {
-		partyChat.byHuman = map[string][]partyChatLine{}
-	}
+	partyChatLoad()
 	l := partyChat.byHuman[k]
 	for i := len(l) - 1; i >= 0 && i >= len(l)-8; i-- {
 		if l[i].From == from && l[i].Text == text && now.Unix()-l[i].TS <= 5 {
@@ -110,12 +165,14 @@ func partyChatHeard(human, raw string, now time.Time) {
 		l = append([]partyChatLine(nil), l[len(l)-partyChatKeep:]...)
 	}
 	partyChat.byHuman[k] = l
+	partyChatSaveSoon()
 }
 
 // partyChatOf: the human's party chat, newest first.
 func partyChatOf(human string) []partyChatLine {
 	partyChat.Lock()
 	defer partyChat.Unlock()
+	partyChatLoad()
 	l := partyChat.byHuman[strings.ToLower(human)]
 	out := make([]partyChatLine, len(l))
 	for i := range l {
@@ -257,4 +314,27 @@ func helperLastRun(role string) *helperRun {
 		}
 	}
 	return helperCache.run
+}
+
+// sameMap: map names as the engine and OpenKore write them ("pay_dun00", "pay_dun00.gat", any case).
+func sameMap(a, b string) bool {
+	return strings.EqualFold(strings.TrimSuffix(a, ".gat"), strings.TrimSuffix(b, ".gat"))
+}
+
+// leadPosSource completes the human leader's position for dist_lead (live 2026-11-15: dist_lead -1 for every friend
+// while she stood 9 cells from the priest). The party packets carry her map but no cell (a map change zeroes it) and
+// status.json can be a few seconds past 30 s around a plugin reload: a status.json up to 2 min old on the same map
+// still gives the cell. Returns the source used.
+func leadPosSource(d *humanDetail, m *string, x, y *int, now time.Time) string {
+	if d != nil && d.Fresh && d.Map != "" && sameMap(d.Map, *m) {
+		return "status"
+	}
+	if *x+*y > 0 && *m != "" {
+		return "party"
+	}
+	if d != nil && d.Map != "" && d.X+d.Y > 0 && now.Sub(time.Unix(d.StatusTS, 0)) < 2*time.Minute && (*m == "" || sameMap(d.Map, *m)) {
+		*m, *x, *y = d.Map, d.X, d.Y
+		return "status_old"
+	}
+	return "none"
 }
