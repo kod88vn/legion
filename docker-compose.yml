@@ -135,12 +135,11 @@ services:
       - ./openkore-qa/logs:/openkore/logs
       - ./openkore-qa/plugins/qa:/openkore/plugins/qa
       - ./openkore-qa/tables:/qa-tables:ro
-      - ./openkore/fields-re:/qa-fields:ro
       # PR16: the QA table copies first, then the same overlay as Ayla (openkore/overlay.sh: fields-re + self-check,
       # fix_re_portals.sh, portals-srv.txt server warps, Kafra lines) so QA tests the map truth every bot uses
       - ./openkore:/ok-src:ro
       - ./rathena/npc-custom/functions_kafras.txt:/ok-kafras.txt:ro
-    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "cp /qa-tables/*.txt /openkore/tables/ 2>/dev/null; if [ -f /ok-src/overlay.sh ]; then exec sh /ok-src/overlay.sh; fi; cp /qa-fields/*.fld2.gz /openkore/fields/ 2>/dev/null; for f in /qa-fields/*.fld2.gz; do b=$$(basename $$f .fld2.gz); rm -f /openkore/fields/$$b.dist /openkore/fields/$$b.weight; done; cp /qa-tables/*.txt /openkore/tables/ 2>/dev/null; exec /entrypoint.sh"]
+    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "cp /qa-tables/*.txt /openkore/tables/ 2>/dev/null; if [ -f /ok-src/overlay.sh ]; then exec sh /ok-src/overlay.sh; fi; exec /entrypoint.sh"]
     stdin_open: true
     tty: true
     restart: "no"

@@ -52,7 +52,7 @@ def main():
                 continue
         if not all_maps and old is None:
             continue  # OpenKore has no such map: leave it alone
-        with gzip.open(os.path.join(out, name + '.fld2.gz'), 'wb') as f:
+        with gzip.GzipFile(os.path.join(out, name + '.fld2.gz'), 'wb', mtime=0) as f:  # mtime 0: reproducible bytes
             f.write(struct.pack('<HH', xs, ys) + fld)
         n += 1
         print(name, xs, ys)

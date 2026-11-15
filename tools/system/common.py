@@ -121,6 +121,13 @@ def heartbeat_age(path):
 WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO") or "Ubuntu-24.04"   # the one WSL setting (dashboard, watchdog)
 
 
+def docker_prefix():
+    """the one docker command line for every script (watchdog, fieldcheck): wsl.exe -d <distro> -- docker on Windows"""
+    if os.name == "nt":
+        return ["wsl.exe", "-d", WSL_DISTRO, "--", "docker"]
+    return ["docker"]
+
+
 def lock_owner(name):
     """pid written in legion/data/<name> by the lock holder, or None"""
     try:
