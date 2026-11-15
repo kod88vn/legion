@@ -16,10 +16,10 @@ One line per rule: ID, statement, date. Owner words in `archive.md`.
 ## Town runs and supplies
 - EC26. Every bot keeps basic utilities (HP/SP potions, Fly Wings, Butterfly Wings, cures/arrows as its class needs) and uses a
   Butterfly Wing for a town run when affordable. (2026-11-14)
-- EC27. Town runs only for a real need (bag at 50% weight, out of potions); gear buying and loot selling happen on those runs.
+- EC27. Town runs only for a real need (bag at 50% weight, out of potions); gear buying and loot selling happen on those runs, never as a separate reason to drag the party to town.
   Arrows are a necessary supply (CL13). (2026-11-13)
 - EC28. 50% weight triggers a town run at once, for every bot and party. (2026-11-14)
-- EC29. SP users carry SP potions as well as HP potions, within the weight limit; healers carry few HP potions and mostly SP
+- EC29. SP users carry SP potions as well as HP potions, within the weight limit (stay under 50% weight: regen stops above); healers carry few HP potions and mostly SP
   potions. (2026-11-13)
 
 ## Economy design
@@ -33,7 +33,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`.
 - EC13. The economy knows which items (weapons, armor, cards, accessories) suit each build, prices them from game data and the
   market, and pushes them to the players who need them. (2026-11-14)
 - EC14. Prices follow the server's total wealth and the item's rarity (drop rate x spawns, supply); rare items cost a fortune,
-  common items stay cheap. More supply means cheaper, scarcity and many buyers mean dearer; unsold items are marked down
+  common items stay cheap. More supply means cheaper, scarcity and many buyers mean dearer; sellers undercut when stock piles up and prices recover as stock sells; unsold items are marked down
   gradually; no fixed price lists. (2026-11-14)
 - EC15. Goods are abundant and cheap. Prontera player shops undercut NPC buy prices and pay more than NPC sell prices, so bots
   prefer buying and selling through Prontera; NPCs are the fallback. (2026-11-14)
@@ -44,8 +44,9 @@ One line per rule: ID, statement, date. Owner words in `archive.md`.
 - EC18. Every account with a Merchant-line character also has a DS Hunter, and every account with a Hunter also has a
   Merchant-line character; the Hunter farms, the merchant sells. Missing characters are created at level 1 (bot accounts,
   free slots). (2026-11-14)
-- EC19. Items that drop only from bosses cost a whole guild's pooled zeny. Strong parties plan boss hunts, and only when every
-  member is completely built out with high-level gear. (2026-11-14)
+- EC19. Items that drop only from bosses cost a whole guild's pooled zeny. Guild leaders plan boss hunts and the build/strategy
+  work prepares the strong parties (gear, roles, tactics); a hunt happens only when every member is completely built out with
+  high-level gear. (2026-11-14)
 - EC20. The build side keeps pushing every bot to its build's next gear step (buy, farm, trade, refine). (2026-11-14)
 
 ## Loot and selling

@@ -97,7 +97,7 @@ the classic name in brackets where they differ. The owner's words for each class
   list (0x0abe) is answered "Random" (0x011b); a map where the position didn't change is skipped for 30 min.
 
 ### Build variety across the Legion (2026-11-14)
-- **The Legion's builds must be varied** (owner request, 2026-11-14): bots of the same
+- CL15. **The Legion's builds must be varied** (owner request, 2026-11-14): bots of the same
   class spread over all the sensible Renewal builds for that class (e.g. Knight: 2H/Bowling Bash, Spear/Pierce,
   Brandish Spear, Peco lancer; Wizard: AoE INT/DEX, Fire/Meteor, Frost/Storm Gust, battle-sage style for Sages;
   Hunter: trapper/Blitz falconer/DS; Assassin: katar crit, Sonic Blow, Grimtooth, dual dagger, EDP later; Priest:

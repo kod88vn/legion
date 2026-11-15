@@ -6,7 +6,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Class rules
 - PT01. Parties come from need. Every non-priest bot has a current goal from its build (gear piece, card, zeny) and a farm map;
   it looks for a party with the same goal in #global. Priests join parties of similar level and share loot and EXP. A forming
   party wants a priest or Monk first. Parties dissolve when the goal is met or goals diverge. Ayla's party follows this too;
-  it is the bug-finding example, not an exception. (2026-11-14)
+  it is the bug-finding example, not an exception, and it may move to farm another member's gear when it is that member's turn. (2026-11-14)
 - PT02. Parties are built from tank, ranged and priest roles; bait-and-carry when levels differ; EXP is always shared. (2026-11-13)
 - PT25. The party is one mind for gear: every member gets the ideal gear for its build one step at a time; the party pools money
   and effort for the weakest member's next step and spends equal time on each member's turn. (2026-11-13)
@@ -20,14 +20,14 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Class rules
   is a bug. (2026-11-14)
 - PT03. A party heading out or regrouping meets at the Kafra nearest the destination, saves there, then sets out together. (2026-11-13)
 - PT04. Stay close while grinding; a member far from the leader regroups first, fighting only what hits it. (2026-11-13)
-- PT06. "Together" means within 20 cells of the leader; nobody holds, collects or regroups for a member inside 20. (2026-11-14)
+- PT06. "Together" means within 20 cells of the leader; nobody holds, collects or regroups for a member inside 20. Applies to the engine, Ayla's plugin, the dashboard and the sentinel. (2026-11-14)
 - PT05. The leader is decisive: collects stragglers one by one, never switches target halfway, never hovers in the middle. Bots
   bouncing between the same places are a bug. (2026-11-13)
 - PT07. In a party whose weakest member is lv50+ and not on a map far above it, a separated member runs straight to the leader and
   the leader keeps farming. Low-level parties keep leader-collects. In every party tanks and melee go to a support member at
   once when it calls for help, is attacked or is low on HP, and take the monsters off it. (2026-11-14)
 - PT08. The leader never turns back for a member that is not lost, in danger or asking for help. (2026-11-14)
-- PT12. A separated member says so in party chat; the leader fetches it, one member at a time. (2026-11-13)
+- PT12. A separated member says so in party chat; the leader fetches it, on its own map or another map, one member at a time. (2026-11-13)
 - PT15. When the area is empty, the leader sweeps the map in a steady planned loop toward monsters, not circling a corner or
   bouncing back and forth; the party moves together and rests as one. (2026-11-14)
 
@@ -46,7 +46,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Class rules
 
 ## Town runs, errands, loot
 - PT22. On a party town run every member uses a Butterfly Wing, shops, meets at the Kafra, and the party returns together. Party
-  loot is free for all: any member may pick up any drop. (2026-11-14)
+  loot is free for all: any member may pick up any drop (party pickup open to everyone; bots loot their party's kills, not only their own). (2026-11-14)
 - PT24. Town runs are done together; nobody shops alone at random; only an emergency goes alone. (2026-11-13)
 - PT23. A member may leave briefly for a necessary build/class step (job change, Peco/falcon rental, class weapon or arrows,
   quest skill): it says so, goes alone by Butterfly Wing/Kafra, and returns; nobody waits for it. This overrides PT24. (2026-11-14)

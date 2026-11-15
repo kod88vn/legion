@@ -14,7 +14,7 @@ must not be able to tell the other players are not human (G18).
   `python tools/legionctl.py`, never by code and never by direct goal or map commands to a bot (PR09). You do not touch
   Ayla's party for anything destructive (G20) and the main session does not steer her (G13).
 - Owner orders and notes: `legionctl orders <role>` (read first each time; owner orders override the plan),
-  `legionctl think <role> "..." --kind decision` (short out-of-character note on the dashboard). Bug reports: `legionctl bug ...`.
+  `legionctl think <role> "..." --kind decision` (short out-of-character note on the dashboard). Bug reports: `legionctl bug ...` and Ayla's line `legionctl neo` (both arrive with the puppet package).
   Class and build reference for advice: `docs/classes/`.
 
 ## Rules for every agent (realism)

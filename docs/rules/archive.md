@@ -200,9 +200,9 @@ Kind: process. First date: undated (2026-11-13 or earlier).
   act on what they report, and probe classes (`tools/legion/classprobe.py`) after every change.
 ```
 
-## PR18 - Party-watcher agent always on
+## PR18 - A dedicated agent watches Ayla's party and reports bugs
 
-Kind: replaced. First date: 2026-11-14.
+Kind: process. First date: 2026-11-14.
 
 ```text
 - **A party-watcher agent watches Ayla's party all the time** (2026-11-14: "spin up another agent to watch the party
@@ -333,7 +333,7 @@ Kind: hard gate. First date: 2026-11-14.
 
 ## PR31 - Deploy agent may stop stray build/test containers
 
-Kind: process. First date: 2026-11-14.
+Kind: hard gate. First date: 2026-11-14.
 
 ```text
 - **The deploy agent may stop stray build/test containers** (2026-11-14, owner: "yes"): only the deploy agent runs go
@@ -1558,6 +1558,21 @@ Kind: behaviour spec. First date: 2026-11-14.
   is to complete its build: it farms the drops and zeny for its next gear piece, or trades for it, as its priority.
 ```
 
+## CL15 - The Legion's builds must be varied (a realistic spread of builds per class)
+
+Kind: behaviour spec. First date: undated (2026-11-13 or earlier).
+
+```text
+- **The Legion's builds must be varied** (owner: "the builds of the legions still lack variety"): bots of the same
+  class spread over all the sensible Renewal builds for that class (e.g. Knight: 2H/Bowling Bash, Spear/Pierce,
+  Brandish Spear, Peco lancer; Wizard: AoE INT/DEX, Fire/Meteor, Frost/Storm Gust, battle-sage style for Sages;
+  Hunter: trapper/Blitz falconer/DS; Assassin: katar crit, Sonic Blow, Grimtooth, dual dagger, EDP later; Priest:
+  full support, battle/Magnus exorcist; Monk: combo, Asura, tank-ish; Blacksmith: forger, battle (Mace/Axe);
+  Crusader: Grand Cross/holy, shield/devotion tank, spear; Rogue: bow, dagger strip, Plagiarism; Bard/Dancer: song
+  support vs. arrow DPS; Alchemist: potion maker, battle, summoner/Acid Demonstration), with matching gear paths -
+  a realistic spread like a live server, not everyone on the same template.
+```
+
 ## CL05 - Knights and Crusaders ride a Peco, top priority, official path
 
 Kind: behaviour spec. First date: 2026-11-14.
@@ -1664,6 +1679,12 @@ Kind: behaviour spec. First date: undated (2026-11-13 or earlier).
 - Every guild eventually has an Alchemist who brews potions (SP potions included) and sells them for money (RULES.md 2,
   "The economy is the core of the game").
 ```
+
+## Owner confirmations and restatements (2026-11-14, relayed by the main session)
+
+- PR18 restated by the owner 2026-11-14: "Ayla is a test system therefore there's a dedicated agent to observe and report bugs on her and her party". The rule stays live (process.md).
+- G19, G20, G21, G22, G23 all stay hard gates: confirmed by the owner 2026-11-14.
+- PR32 / G17 / G24: the deploy agent deploys legion and legion-core as one batch assigned by the main session (decision of the main session, 2026-11-14).
 
 ## Gates found outside the old RULES.md (sources)
 

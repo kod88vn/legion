@@ -4,20 +4,23 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 `gates.md`; they are repeated here only by ID.
 
 ## Roles
-- PR10. Two classes of agents. Puppet masters act inside the world through data and direction: guild leaders (guild01-10,
+- PR10. (the dispatcher and one-shot agents below are from the approved redesign brief, not an owner quote) Two classes of agents. Puppet masters act inside the world through data and direction: guild leaders (guild01-10,
   Ayla for Starveil), economy/market, build/class, chat. System agents sit outside the world and never steer the game:
   sentinel and other scripts, party watcher, class QA, fixers, deploy agent, analyst. (2026-11-14)
-- PR12. Puppet masters run as their own one-shot agents outside the main session, woken by a dispatcher script. (2026-11-14)
+- PR12. Puppet masters run as their own agents outside the main session. One-shot runs woken by a dispatcher script are from the approved redesign brief, not an owner quote. (2026-11-14)
 - PR11 / G14. The main session listens to the owner and to bug reports and assigns fixers. It does no coding. All coding,
   fixes and deploys are done by subagents. (2026-11-14)
 - PR23 / G13. The main session never sends orders to Ayla. Owner-reported problems go to a fixer as root-cause bugs. (2026-11-14)
-- PR31. Only the deploy agent runs go vet/test and image builds; fixers hand over "code ready". The deploy agent may stop
+- PR31 / G24. Only the deploy agent runs go vet/test and image builds; fixers hand over "code ready". The deploy agent may stop
   stray golang build/test containers that block a deploy, never rathena, Ayla, legion or the db. (2026-11-14)
-- PR36. Scripts do the watching (sentinel, partycheck, league analyst, dispatcher and sentinel heartbeats). An AI agent is
+- PR36. (from the approved redesign brief, not an owner quote) Scripts do the watching (sentinel, partycheck, league analyst, dispatcher and sentinel heartbeats). An AI agent is
   woken only by a violation, an outage, a Neo request, or a scheduled review. A script reports problems into the bug queue.
   (2026-11-14, replaces the always-running watcher, QA and watchdog agents)
-- PR24. Every agent that sees a bot misbehave (stuck, looping, wrong map, unpaid deal, ignored help call, broken API) files a
-  short bug report with names, map, time and evidence through the bug queue, then carries on. (2026-11-14)
+- PR24. Every agent that sees a bot misbehave (stuck, looping, wrong map, unpaid deal, ignored help call, broken API) sends a
+  short bug report with names, map, time and evidence at once (through the bug queue, `legionctl bug`, which arrives with the
+  puppet package), then carries on; main hands it to a fixer. (2026-11-14)
+- PR18. Ayla is the test system, so a dedicated agent observes her party and reports bugs. Scripted checks (`partycheck`) run every
+  minute; an AI watcher is woken by violations and for a periodic review. Restart it whenever it stops. (2026-11-14, restated)
 - PR22. The main session keeps an up-to-date list of open questions only the owner can answer and raises it under its own
   heading in every update until answered. (2026-11-14)
 
@@ -56,9 +59,11 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
   replaces an old one edits the old line. (2026-11-14)
 - PR01. Rules are short plain lines with an ID and a date. They never repeat the owner's prompt. (2026-11-14)
 - G15 / G16 / G17. Deploy rules: legion/legion-core only with `--no-deps`; rathena restart at most once an hour; deploys every
-  3 hours by the deploy agent only (critical fixes excepted). Details in `gates.md`; the deploy scripts are described in `docs/handover/startup-old.md` (0.4 and 0.5) and `tools/deploy/`.
+  3 hours as one batch assigned by the main session, run by the deploy agent only, for both legion and legion-core (critical fixes
+  excepted); working subagents report "built" and never deploy (PR32). Details in `gates.md`; the deploy scripts are described in `docs/handover/startup-old.md` (0.4 and 0.5) and `tools/deploy/`.
 - Engineering notes that behave like rules (Windows git, engine flags default off, lessons about locks): `docs/design/REDESIGN.md` section 2.
 
 ## Dashboard
-- DB01. The dashboard shows world data, the agents' notes, guilds, and parties with each member's HP, SP and zeny. (2026-11-14)
-- DB02. The owner can close and reopen the chat panes. (2026-11-14)
+- DB01. The dashboard shows world data, the minds (the owner can talk to them there), guilds, and parties with each member's HP, SP
+  and zeny. (2026-11-14)
+- DB02. The owner can close and reopen the mind chats. (2026-11-14)

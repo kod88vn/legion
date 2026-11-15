@@ -4,7 +4,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 
 Transcendent classes (the server cap; 2026-11-14)
 - CL12 (see ST01, G10, settings.md). The transcendent 2nd job is the last class on the server, for everyone. The 3rd-job, Expanded Super Novice
-  and 4th-job quest NPCs are unloaded (`rathena/npc-custom/scripts_custom.conf`, HANDOVER 6f4). Never plan or advise 3rd jobs. (2026-11-14)
+  and 4th-job quest NPCs are unloaded (`rathena/npc-custom/scripts_custom.conf`, `docs/handover/builds.md` (6f4)). Never plan or advise 3rd jobs. (2026-11-14)
 - **Path:** 2nd job at base 99 / job 50 with 1,285,000z -> rebirth (High Novice, base 1, 100 status points; legion.txt
   stands in for the Sage Castle / Valkyrie quest at the stock price) -> High 1st job at job 10 -> trans 2nd job at
   job 40 (same branch). Trans caps: base 99, job 70 (69 skill points: ~20 more than the 2nd job, for trans skills).

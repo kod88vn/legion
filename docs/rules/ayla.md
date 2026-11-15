@@ -5,9 +5,11 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
 
 - AY01. Ayla is Neo: she, her party and her guild Starveil perform better than the rest, measured on the two key metrics against
   comparable bots. (2026-11-14)
-- AY02. Ayla has a direct, instant line to the system (`legionctl neo`) to say how to improve her own, her party's and her guild's
+- AY02. Ayla has a direct, instant line to the system (`legionctl neo`, which arrives with the puppet package) to say how to improve her own, her party's and her guild's
   performance; the request jumps the bug queue. (2026-11-14)
 - AY03 / G19. Ayla and her party are always online. Lessons from them feed the whole Legion (PR16). (2026-11-13)
+- SA05 / G05. To inspect Ayla use only `where`, `ai_v`/`aiv` via the logs, or `ai on`. Never send a bare `ai`, `ai off` or `ai manual`
+  (a bare `ai` toggles her AI off); `cmdfile.pl` blocks them and the guard is never weakened or tested by sending them. (2026-11-13)
 - AY04. Ayla is a true party leader: protects, guides, waits for the party and talks. (2026-11-13)
 - AY05. Ayla's mind (an LLM) makes the grinding decisions: the right map for the whole party. (2026-11-13)
 - PT01. Ayla's party follows the normal need-based party rules; her farm map comes from the members' needs in turn. (2026-11-14)
@@ -17,8 +19,9 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
   the party or guild has the money, otherwise farming the piece or zeny, so it can take harder maps. (2026-11-14)
 - AY07. Ayla's party, like every party, farms the map that best fits its level and equipment; a wanted item is farmed where it
   drops best (rate x spawns) at a fitting level, not on a beginner map. (2026-11-14)
-- AY09 / G12. Nothing may leave Ayla below 10,000 zeny; under 10k she sends no money and saves up. (2026-11-14)
-- AY11. The party has seven members: Ayla (Assassin), Priest, Knight, Wizard, Hunter, Alchemist, Crusader (bot characters of a
+- AY09 / G12. Nothing (her mind, aylagear top-ups, guild funding, gifts, deals) may send away Ayla's zeny if it would leave her under
+  10,000z; under 10,000z she sends none and saves up. (2026-11-14)
+- AY11. The party has seven members: Ayla, Priest, Knight, Wizard, Hunter, Alchemist, Crusader (bot characters of a
   fitting level, run like her other friends). Also AY10 (Hunter and Alchemist join). (2026-11-14)
 - AY12. Ayla founds the guild Starveil with /guild (no Emperium needed, `guild_emperium_check: no`) and recruits players of every
   job. (2026-11-14)

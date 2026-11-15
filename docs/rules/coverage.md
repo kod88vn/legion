@@ -5,7 +5,7 @@ each ID is kept, merged, moved, or archived as replaced (with the replacing rule
 words for every ID are in `archive.md`. `tools/system/gatecheck.py --coverage` checks that every kept ID appears in
 its new file.
 
-Counts by kind: behaviour spec 108, hard gate 19, process 19, replaced 6, server setting 8, total 160.
+Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server setting 8, total 161.
 
 | ID | Name | Kind | Old location | New location | Status |
 |---|---|---|---|---|---|
@@ -18,17 +18,17 @@ Counts by kind: behaviour spec 108, hard gate 19, process 19, replaced 6, server
 | PR07 | Two key metrics per bot: kills/minute, zeny/hour | process | RULES 0 (l.37) | docs/rules/process.md | kept |
 | PR08 | The system runs without AI agents | behaviour spec | RULES 0 (l.40) | docs/rules/process.md | kept |
 | PR09 | Every bot has one goal and works toward it without AI | behaviour spec | RULES 0 (l.43) | docs/rules/process.md | kept |
-| PR10 | Two classes of agents: puppet masters, system agents | process | RULES 0 (l.47) | docs/rules/process.md | kept |
+| PR10 | Two classes of agents: puppet masters, system agents | process | RULES 0 (l.47) | docs/rules/process.md | kept (the added specifics, e.g. the dispatcher and one-shot agents, are from the approved redesign brief, not an owner quote) |
 | PR11 | Main session listens and assigns; no coding; all work by subagents | hard gate | RULES 0 (l.51, l.111) | RULES.md as G14 | kept as hard gate |
-| PR12 | Puppet masters run as own agents outside main session | process | RULES 0 (l.54) | docs/rules/process.md | kept |
+| PR12 | Puppet masters run as own agents outside main session | process | RULES 0 (l.54) | docs/rules/process.md | kept (the added specifics, e.g. the dispatcher and one-shot agents, are from the approved redesign brief, not an owner quote) |
 | PR13 | Harness lives in git folder legion | process | RULES 0 (l.56) | docs/rules/process.md | kept |
 | PR14 | Standing setup checklist (loops, 15 minds, standing agents) | replaced | RULES 0 (l.60) | docs/rules/archive.md | archived as replaced by PR08, PR10, PR12 and the STATUS.md hold (G21) |
-| PR15 | Agent system maintained at all times (heartbeats, watchdog) | replaced | RULES 0 (l.70) | docs/rules/archive.md | archived as replaced by PR08 and PR36 (dispatcher and sentinel heartbeats) |
+| PR15 | Agent system maintained at all times (heartbeats, watchdog) | replaced | RULES 0 (l.70) | docs/rules/archive.md | archived as replaced by the plan the owner approved on 2026-11-14 (watchdog replaced by the sentinel script and dispatcher/sentinel heartbeats; see PR08, PR36) |
 | PR16 | Lessons from Ayla's party apply to the whole Legion | behaviour spec | RULES 0 (l.76) | docs/rules/process.md | kept |
 | PR17 | Observe, find problems, fix them; classprobe after changes | process | RULES 0 (l.80) | docs/rules/process.md | kept (watchdog-mind part replaced by PR36) |
-| PR18 | Party-watcher agent always on | replaced | RULES 0 (l.83) | docs/rules/archive.md | archived as replaced by PR36 (partycheck script, watcher woken by violations) |
-| PR19 | Class-QA agent always on | replaced | RULES 0 (l.87) | docs/rules/archive.md | archived as replaced by PR36 (QA agent on schedule or on demand) |
-| PR20 | Build-and-strategy agent always on | replaced | RULES 0 (l.90) | docs/rules/archive.md | archived as replaced by PR10 (build/class master is a puppet master woken on demand); its aim is kept in CL04 |
+| PR18 | A dedicated agent watches Ayla's party and reports bugs | process | RULES 0 (l.83) | docs/rules/process.md | kept, reworded: scripted checks every minute plus an AI watcher woken by violations and for a periodic review (owner restated it 2026-11-14) |
+| PR19 | Class-QA agent always on | replaced | RULES 0 (l.87) | docs/rules/archive.md | archived as replaced by the plan the owner approved on 2026-11-14 (class QA runs after each deploy and on schedule instead of all the time; see PR36) |
+| PR20 | Build-and-strategy agent always on | replaced | RULES 0 (l.90) | docs/rules/archive.md | archived as replaced by the plan the owner approved on 2026-11-14 (the build/class agent is a puppet master woken on demand, PR10); its aim is kept in CL04 |
 | PR21 | CLASSES.md is the build reference | process | RULES 0 (l.94) | docs/rules/process.md | kept, now docs/classes/ |
 | PR22 | Keep highlighting owner decisions | process | RULES 0 (l.97) | docs/rules/process.md | kept |
 | PR23 | Main thread never controls Ayla | hard gate | RULES 0 (l.101) | RULES.md as G13 | kept as hard gate |
@@ -39,12 +39,12 @@ Counts by kind: behaviour spec 108, hard gate 19, process 19, replaced 6, server
 | PR28 | Measure before claiming | process | RULES 0 (l.116) | docs/rules/process.md | kept |
 | PR29 | Deploys never recreate rathena by accident; Ayla follows rathena | hard gate | RULES 0 (l.117) | RULES.md as G15 | kept as hard gate |
 | PR30 | Rathena restart at most once an hour | hard gate | RULES 0 (l.121) | RULES.md as G16 | kept as hard gate |
-| PR31 | Deploy agent may stop stray build/test containers | process | RULES 0 (l.123) | docs/rules/process.md | kept |
-| PR32 | Deploys every 3 hours (critical excepted); core deploys too | hard gate | RULES 0 (l.126) | RULES.md as G17 | kept as hard gate (30-minute cadence already replaced in place) |
+| PR31 | Deploy agent may stop stray build/test containers | hard gate | RULES 0 (l.123) | RULES.md as G24 and docs/rules/process.md | kept as hard gate (the limit on what may be stopped) |
+| PR32 | Deploys every 3 hours (critical excepted); core deploys too | hard gate | RULES 0 (l.126) | RULES.md as G17 | kept as hard gate; reworded: the old 'only the main thread batches core deploys' became 'the deploy agent deploys legion and legion-core as one batch assigned by the main session', because the main session no longer does the work itself (owner rule: the main session listens and assigns). The 30-minute cadence was already replaced in place. |
 | PR33 | Do not waste money on travel | behaviour spec | RULES 0 (l.131) | docs/rules/economy.md | moved |
 | PR34 | LLM minds are the core, always alive (mindgate) | replaced | RULES 0 (l.132) | docs/rules/archive.md | archived as replaced by PR08 and PR10 |
 | PR35 | Write everything down in HANDOVER.md | process | RULES 0 (l.135) | docs/rules/process.md | kept |
-| PR36 | System agents: scripts watch, agents woken by violations | process | REDESIGN 1 and 3S (new) | docs/rules/process.md | new line, the replacement for PR15, PR18, PR19 |
+| PR36 | System agents: scripts watch, agents woken by violations | process | REDESIGN 1 and 3S (new) | docs/rules/process.md | new line from the approved redesign brief, not an owner quote; replaces the always-on parts of PR15 and PR19 |
 | SA01 | Never drive a client with the real mouse or keyboard | hard gate | RULES 1 (l.138) | RULES.md as G01 | kept as hard gate |
 | SA02 | No fullscreen for the owner's client | hard gate | RULES 1 (l.140) | RULES.md as G02 | kept as hard gate |
 | SA03 | No GM account for watching | hard gate | RULES 1 (l.141) | RULES.md as G03 | kept as hard gate |
@@ -159,6 +159,7 @@ Counts by kind: behaviour spec 108, hard gate 19, process 19, replaced 6, server
 | CL02 | Tanks are active: pull, take aggro, deal damage | behaviour spec | CLASSES All (l.28) | docs/classes/all.md | kept |
 | CL03 | Tanks fight a crowd with AoE instead of escaping | behaviour spec | CLASSES All (l.33) | docs/classes/all.md | kept |
 | CL04 | All build varieties, each with matching gear; bots perfect their build | behaviour spec | CLASSES All (l.37) | docs/classes/all.md | kept |
+| CL15 | The Legion's builds must be varied (a realistic spread of builds per class) | behaviour spec | CLASSES All (l.114) | docs/classes/all.md | kept |
 | CL05 | Knights and Crusaders ride a Peco, top priority, official path | behaviour spec | CLASSES Swordman (l.269) | docs/classes/swordman.md | kept |
 | CL06 | Mages/Wizards are AoE builds (3+ mobs); bolt Mages grow into AoE | behaviour spec | CLASSES Mage (l.360) | docs/classes/mage.md | kept |
 | CL07 | Wizard AoE at every chance, at the crowd centre | behaviour spec | CLASSES Mage (l.364) | docs/classes/mage.md | kept |
