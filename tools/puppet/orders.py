@@ -8,6 +8,12 @@ The orders file (legion/data/ayla_orders.jsonl, append-only, one JSON object per
 An order is open while no result row carries its id. Every result is also written to her log
 (openkore-ayla/logs/owner_orders.log) as "[owner] <order> -> <action>".
 
+AY24/AY25, after the switch (tools/puppet/aylaswitch.py: engine_parties names ayla): nothing is steered any more. An
+owner order is then a pending request in legion/data/ayla_override_requests.jsonl, and only the owner confirms it on
+the dashboard, which holds the owner token and posts the real override (POST /api/ayla/overrides). This module never
+sends the owner token and never calls the engine. The dashboard answers a request with a status row:
+  {"kind": "status", "id": "o1114153012a3", "status": "confirmed" | "declined", "by": "owner", "t": ..., "iso": "..."}
+
   python3 tools/puppet/orders.py add "do a town run with the party"     # (ayla.sh tell)
   python3 tools/puppet/orders.py done <id> "rally prontera, party told"  # (ayla.sh done; the helper reports)
   python3 tools/puppet/orders.py list [N]                                # open orders + last N results (ayla.sh orders)
@@ -23,13 +29,21 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 MAX_TEXT = 400
 sys.path.insert(0, os.path.join(HERE, "..", "system"))
+sys.path.insert(0, HERE)
 import common as C  # noqa: E402  the one resolver for live locations (rule G23)
+import aylaswitch  # noqa: E402  AY24: after the switch orders become pending requests
 
 
 def orders_path():
     if os.environ.get("AYLA_ORDERS"):
         return C.refuse_live(os.environ["AYLA_ORDERS"], "AYLA_ORDERS")
     return C.refuse_live(os.path.join(C.data_dir(), "ayla_orders.jsonl"), "the orders file")
+
+
+def requests_path():
+    if os.environ.get("AYLA_REQUESTS"):
+        return C.refuse_live(os.environ["AYLA_REQUESTS"], "AYLA_REQUESTS")
+    return C.refuse_live(os.path.join(C.data_dir(), "ayla_override_requests.jsonl"), "the override requests file")
 
 
 def log_path():
@@ -66,7 +80,9 @@ def _append(row, path):
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def add(text, who="owner", path=None, now=None):
+def add(text, who="owner", path=None, now=None, requests=None):
+    """an owner order. Before the switch: an open order for her OpenKore helper (as ever). After the switch (AY24):
+    a pending request for the dashboard to confirm (AY25); nothing is open for any helper, so nothing wakes one."""
     text = clean(text)
     if not text:
         raise ValueError("empty order")
@@ -74,8 +90,22 @@ def add(text, who="owner", path=None, now=None):
     oid = "o" + time.strftime("%m%d%H%M%S", time.localtime(now)) + "%02x" % random.randrange(256)
     row = {"kind": "order", "id": oid, "t": now, "iso": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
            "from": who, "text": text}
+    if aylaswitch.engine_on():
+        _append(dict(row, kind="request", status="pending"), requests or requests_path())
+        return dict(row, kind="request", status="pending")
     _append(row, path or orders_path())
     return row
+
+
+def pending_requests(path=None):
+    """engine era: requests the dashboard has not answered yet (no status row carries their id), oldest first"""
+    try:
+        with open(path or requests_path(), encoding="utf-8") as f:
+            rows = [json.loads(line) for line in f if line.strip()]
+    except (OSError, ValueError):
+        return []
+    answered = {r.get("id") for r in rows if isinstance(r, dict) and r.get("kind") == "status"}
+    return [r for r in rows if isinstance(r, dict) and r.get("kind") == "request" and r.get("id") not in answered]
 
 
 def open_orders(path=None):
@@ -145,6 +175,10 @@ def main(argv):
         except ValueError:
             print("usage: ayla.sh tell \"<plain text>\"")
             return 1
+        if r["kind"] == "request":
+            print(f"request {r['id']} for Ayla pending: {r['text']}")
+            print("Ayla is on the engine: the owner confirms it on the dashboard; nothing is steered from here")
+            return 0
         print(f"order {r['id']} for Ayla queued at {r['iso']}: {r['text']}")
         print("her helper wakes within about 30 s; see the result with: ayla.sh orders")
         return 0

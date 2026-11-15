@@ -678,3 +678,137 @@ class OwnerOrderTests(unittest.TestCase):
         sh = open(os.path.join(TOOLS, "rogui", "ayla.sh"), encoding="utf-8").read()
         self.assertIn("tell)", sh)
         self.assertNotIn("\n  tell) send", sh)  # tell only queues, never writes to her console
+
+
+class AylaWatcherTests(unittest.TestCase):
+    """AY24/AY25: after the switch Ayla's watcher only watches and files; owner overrides are never reachable from
+    puppet masters, and the orders path never sends the owner token. Each test gets its own data folder (G23)."""
+
+    def setUp(self):
+        self.d = tempfile.mkdtemp(prefix="ayla-watch-")
+        self.saved = {k: os.environ.get(k) for k in ("LEGION_DATA", "AYLA_ORDERS", "AYLA_ORDERS_LOG", "AYLA_REQUESTS")}
+        os.environ["LEGION_DATA"] = self.d
+        os.environ["AYLA_ORDERS"] = os.path.join(self.d, "ayla_orders.jsonl")
+        os.environ["AYLA_ORDERS_LOG"] = os.path.join(self.d, "owner_orders.log")
+        os.environ["AYLA_REQUESTS"] = os.path.join(self.d, "ayla_override_requests.jsonl")
+        self.req = os.environ["AYLA_REQUESTS"]
+
+    def tearDown(self):
+        for k, v in self.saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    def set_mode(self, engine):
+        p = os.path.join(self.d, "tuning.json")
+        if engine:
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump({"engine_parties": "human-guild, ayla"}, f)
+        elif os.path.exists(p):
+            os.remove(p)
+
+    def test_switch_reads_engine_parties(self):
+        import aylaswitch
+        self.set_mode(False)
+        self.assertFalse(aylaswitch.engine_on())
+        self.assertEqual(aylaswitch.mode(), "openkore")
+        self.set_mode(True)
+        self.assertTrue(aylaswitch.engine_on())
+        self.assertEqual(aylaswitch.mode(), "engine")
+        p = os.path.join(self.d, "tuning.json")
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump({"engine_parties": "guild01,Aylaa"}, f)
+        self.assertFalse(aylaswitch.engine_on())  # another name is not Ayla
+
+    def test_briefing_shows_overrides(self):
+        self.set_mode(False)
+        ov = {"precedence": "owner > puppet > default",
+              "owner": {"farm_map": {"id": "ov1", "kind": "farm_map", "value": "pay_fild08", "active": True,
+                                     "set_by": "owner", "expires_at": "2026-11-16T00:00:00Z", "note": "gear test"},
+                        "guild_dir": None},
+              "puppet": {"starveil_guild": {"active": [{"kind": "rally", "item": "x"}]},
+                         "orders": {"owner": [], "helper": []}}}
+        with tempfile.TemporaryDirectory() as nd:
+            text, _ = briefing.assemble("ayla", briefing.Api(fetch=MockApi(dict(FULL, **{"/api/ayla/overrides": ov}))), nd)
+        self.assertIn("Mode: openkore", text)
+        self.assertIn("farm_map = pay_fild08", text)
+        self.assertIn("gear test", text)
+        self.assertIn("Replaces the puppet directive", text)
+        self.assertIn("never a bug", text)
+        self.assertIn("never undo it", text)
+        self.assertIn("Owner overrides", text)
+        # no override active: said so, nothing invented
+        with tempfile.TemporaryDirectory() as nd:
+            text, _ = briefing.assemble("ayla", briefing.Api(fetch=MockApi(dict(FULL, **{"/api/ayla/overrides": {"owner": {"farm_map": None}}}))), nd)
+        self.assertIn("(no owner overrides active)", text)
+
+    def test_engine_briefing_has_no_steering(self):
+        self.set_mode(True)
+        neo = {"ayla": {"map": "prt_fild08", "windows": {"10m": {"shares": {"town": 0.9}}}}}
+        with tempfile.TemporaryDirectory() as nd:
+            text, _ = briefing.assemble("ayla", briefing.Api(fetch=MockApi(dict(FULL, **{"/api/meter/neo": neo}))), nd)
+        self.assertIn("Mode: engine", text)
+        self.assertIn("IDLE ALERT", text)
+        self.assertNotIn("ayla.sh", text)
+        self.assertNotIn("OWNER ORDER", text)
+
+    def test_orders_never_send_token(self):
+        """the orders path writes files only: no engine call, no owner token, in either mode"""
+        import urllib.request
+        import inspect
+        calls = []
+        real = urllib.request.urlopen
+        urllib.request.urlopen = lambda *a, **k: calls.append(a) or (_ for _ in ()).throw(AssertionError("network"))
+        try:
+            self.set_mode(True)
+            r = orders.add("town run with the party")
+            self.assertEqual(r["kind"], "request")
+            self.assertEqual(r["status"], "pending")
+            self.assertEqual(len(orders.pending_requests()), 1)
+            self.assertFalse(os.path.exists(os.environ["AYLA_ORDERS"]))  # no open order for a helper
+            # the dashboard answers with a status row: no longer pending
+            with open(self.req, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"kind": "status", "id": r["id"], "status": "confirmed", "by": "owner"}) + "\n")
+            self.assertEqual(orders.pending_requests(), [])
+            self.set_mode(False)
+            o = orders.add("go farm gl_church")
+            self.assertEqual(o["kind"], "order")  # OpenKore era: the old open order, as before
+            self.assertEqual(len(orders.open_orders()), 1)
+        finally:
+            urllib.request.urlopen = real
+        self.assertEqual(calls, [])
+        for name in ("orders.py", "aylaswitch.py", "briefing.py", "dispatch.py"):
+            src = open(os.path.join(PUP, name), encoding="utf-8").read()
+            self.assertNotIn("X-Owner-Token", src, name)
+            self.assertNotIn("owner.token", src, name)
+            self.assertNotIn("owner_token", src, name)
+        osrc = inspect.getsource(orders)
+        self.assertNotIn("urlopen", osrc)  # no engine call at all: the dashboard posts, never the orders path
+
+    def test_engine_mode_tools_no_ayla_sh(self):
+        self.set_mode(True)
+        tools = " ".join(dispatch.allowed_tools("ayla"))
+        self.assertNotIn("ayla.sh", tools)
+        self.assertIn("bugq.py add:*", tools)
+        self.set_mode(False)
+        self.assertIn("ayla.sh", " ".join(dispatch.allowed_tools("ayla")))
+
+    def test_puppet_roles_cannot_reach_override_routes(self):
+        self.set_mode(False)
+        for mode in (False, True):
+            self.set_mode(mode)
+            for role in dispatch.ROLES:
+                allowed = " ".join(dispatch.allowed_tools(role))
+                self.assertNotIn("overrides", allowed, role)
+                denied = " ".join(dispatch.denied_tools(role=role))
+                for c in ("ayla-override:*", "ayla-overrides:*", "overrides:*"):
+                    self.assertIn(c, denied, role)
+        for cmd in legionctl.PUPPET_CMDS:
+            self.assertNotIn("override", cmd)
+        with self.assertRaises(SystemExit):
+            legionctl.call("/api/ayla/overrides")
+        with self.assertRaises(SystemExit):
+            legionctl.call("/api/ayla/overrides?x=1", {"kind": "farm_map", "value": "pay_fild08"})
+        with self.assertRaises(SystemExit):
+            legionctl.call("/api/ayla/overrides/ov1", None)
