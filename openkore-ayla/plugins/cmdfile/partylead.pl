@@ -2004,7 +2004,7 @@ sub town_back_guard {
 	if ($tbgHold && (time > $tbgHold->[1] || $regroupTo ne '' || $rally)) { $config{lockMap} = $tbgHold->[0] if ($config{lockMap} || '') eq ''; $tbgHold = undef }
 	$leftTown{$prevMap} = time if defined $prevMap && $prevMap ne $here && is_townmap($prevMap) && !is_townmap($here) && $prevMap !~ /_in\d*$/;
 	$prevMap = $here;
-	return if $rally || $regroupTo ne '' || is_townmap($here) || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'teleport');
+	return if $rally || $regroupTo ne '' || pk_retreating() || is_townmap($here) || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'teleport');
 	my ($dm, $nm) = route_maps();
 	foreach my $t ($nm, $dm) {
 		next unless $t ne '' && $leftTown{$t} && time - $leftTown{$t} < 300;
@@ -2103,7 +2103,7 @@ sub portal_back_guard {
 	return unless $char && $field;
 	my $here = $field->baseName;
 	if ($here ne $pgPrev) { ($pgFrom, $pgAt, $pgPrev) = ($pgPrev, time, $here) }
-	return if $pgFrom eq '' || time - $pgAt >= 30 || AI::inQueue('teleport');
+	return if $pgFrom eq '' || time - $pgAt >= 30 || AI::inQueue('teleport') || pk_retreating();
 	return if $char->{hp_max} && $char->{hp} / $char->{hp_max} < 0.2;
 	my ($dm, $nm) = route_maps();
 	return unless $nm eq $pgFrom || ($dm eq $pgFrom && $nm eq '');
@@ -2461,6 +2461,7 @@ sub wait_fields_for { return 0 } # owner 2026-11-14: rally / departure waits hol
 my %pk = (waitAt => 0, sayAt => 0, logAt => 0, goName => '', routeAt => 0, crossSaid => '', wf => undef);
 my @crossWings; # [time, map]
 sub pk_waiting { return $pk{waitAt} ? 1 : 0 }
+sub pk_retreating { return ($pk{retreatSaid} || '') ne '' ? 1 : 0 } # back to the town's Kafra while the priest is away
 sub pk_lmhold { return $pk{lmHold} || '' }
 sub cross_danger { my $m = shift || ''; return $CROSS_DANGER{$m} && transit_fit_lv() < $CROSS_DANGER{$m} + 10 ? 1 : 0 }
 # her current map route: (destination map, the next map on the way)
@@ -2616,6 +2617,26 @@ sub pack_tick {
 		return 0;
 	}
 	return 0 if AI::inQueue('attack') && scalar(AI::ai_getAggressives()); # she answers what is on her
+	# the priest away (another map, or 20+ cells) while she stands in a dungeon / on a map with aggressive packs: she
+	# doesn't wait there (live 06:11: "help! 9 on me" in pay_dun01, winged out nearly dead) - back to the town's Kafra,
+	# wait there, and go in only with the priest within 6
+	if (($act eq 'wait' || $act eq 'goto') && (is_dungeon($here) || cross_danger($here))) {
+		my $prAway = !defined $prD || $prD > 20;
+		my $t = town_of_map($here);
+		if ($prAway && $KAFRA{$t}) {
+			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
+			if (($pk{retreatSaid} || '') ne $t) { $pk{retreatSaid} = $t; pk_say("too dangerous to wait here, waiting at the $t kafra, come there") }
+			my ($rdm) = route_maps();
+			if (!AI::inQueue('route', 'move') || ($rdm ne '' && $rdm ne $t)) {
+				my $k = $KAFRA{$t}[0];
+				AI::clear('route', 'move');
+				safe_route($t, $k->[0], $k->[1], distFromGoal => 3, attackOnRoute => 1);
+				message "[partylead] AY22: the priest is away - back to the $t Kafra to wait (not in $here)\n", 'system';
+			}
+			return 1;
+		}
+	}
+	$pk{retreatSaid} = '' if !is_dungeon($here) && !cross_danger($here) && !is_townmap($here);
 	$pk{waitAt} ||= time;
 	@pk{qw(act an seenAt)} = ($act, $an, time); # status_intent (dashboard): what this wait is about
 	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
