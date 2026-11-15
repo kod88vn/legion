@@ -849,7 +849,9 @@ func (b *Bot) chooseHuntingGround() {
 			// buildgear.go nextBuildPiece (economy run 7, owner: each bot farms or trades to perfect its build): a
 			// drop-only next piece is farmed where it drops, when that map is one of the fitting, safe candidates
 			buildPick := false
-			if pc := b.nextBuildPiece(); pc != nil && pc.Source == "drop" && b.rng.Float64() < 0.8 {
+			// EC39: gear-gated, the next piece's drop map is the goal every time (not 80% of the time)
+			_, unmet := b.gearGate(b.BaseLvOr())
+			if pc := b.nextBuildPiece(); pc != nil && pc.Source == "drop" && (unmet != nil || b.rng.Float64() < 0.8) {
 			farm:
 				for _, f := range pc.Farm {
 					for _, c := range cs {
@@ -2032,6 +2034,10 @@ func partyFitLv(ms []*Bot) (minLv, fitLv, known, unknown int) {
 			fitLv += b
 		}
 		minLv, fitLv = partyPerfAdjust(ms, minLv, fitLv, false) // gearscore.go: easy farming steps the party up
+		if g := partyGearGate(ms); g > 0 && minLv > g { // buildmilestones.go (EC39): a step never lifts past the gear
+			fitLv -= minLv - g
+			minLv = g
+		}
 	}
 	return
 }
