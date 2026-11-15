@@ -1,8 +1,8 @@
 #!/bin/bash
 # kafratest.sh: warp next to every teleporting Kafra and use the destination named by portals.txt (first and last
 # index); print expected vs. actual landing map.
-Q=/g/RO/server/openkore-qa/qa.sh
-P=/g/RO/server/openkore-qa/tables/portals.txt
+Q=/g/RO/legion/openkore-qa/qa.sh
+P=/g/RO/legion/openkore-qa/tables/portals.txt
 sed -n '/^# Kafra teleports/,/^# end Kafra/p' $P | grep -v '^#' | awk '{k=$1" "$2" "$3; n[k]++; if(n[k]==1) first[k]=$0; last[k]=$0} END{for(k in first){print first[k]; if(last[k]!=first[k]) print last[k]}}' | sort |
 while read src x y dst dx dy cost t seq; do
   $Q -w 2 "c @warp $src $x $((y-2))" > /dev/null

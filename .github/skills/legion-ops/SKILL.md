@@ -7,11 +7,11 @@ description: Operate and troubleshoot the AI-Lab Ragnarok stack (Docker in WSL) 
 
 All containers run in WSL (Ubuntu-24.04) Docker; compose project in this folder.
 ```
-wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/server && docker compose ps"
-wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/server && docker compose up -d"          # start everything
+wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose ps"
+wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d"          # start everything
 wsl -d Ubuntu-24.04 -- docker logs --tail 50 ro-legion                                # engine log (online/kills every 30s)
 wsl -d Ubuntu-24.04 -- docker logs --tail 50 ro-rathena                               # game server
-wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/server && docker compose build legion && docker compose up -d legion"
+wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose build legion && docker compose up -d legion"
 ```
 - Legion settings: `.env` (LEGION_BOTS profiles, LEGION_MAX_ONLINE concurrent). Profiles log in on their own
   schedules, so "online" ramps up over a few minutes and follows the time of day.

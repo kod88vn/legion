@@ -12,7 +12,7 @@
 #   ro.ps1 wait SECONDS
 param([string]$Action, [string]$A, [string]$B, [string]$C, [string]$D)
 $ErrorActionPreference = 'Stop'
-$Scratch = if ($env:RO_SHOTS) { $env:RO_SHOTS } else { 'G:\RO\tools\rogui\shots' }
+$Scratch = if ($env:RO_SHOTS) { $env:RO_SHOTS } else { 'G:\RO\legion\tools\rogui\shots' }
 New-Item -ItemType Directory -Force $Scratch | Out-Null
 Add-Type -AssemblyName System.Drawing
 if (-not ('RoP' -as [type])) {

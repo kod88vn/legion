@@ -4,8 +4,8 @@
 # Never touches rathena/db/agency/openkore*: `up --no-deps legion` pinned to that tag, after guard_core confirmed
 # db/rathena would not change. DRY_RUN=1 = checks only, nothing built or deployed.
 set -eo pipefail
-cd /mnt/g/RO/server
-G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/server/tools/deploy/guard.sh
+cd /mnt/g/RO/legion
+G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/legion/tools/deploy/guard.sh
 # shellcheck source=guard.sh
 . "$G"
 LOG=/tmp/legion-build.log
@@ -20,4 +20,4 @@ RUNIMG=$(docker inspect -f '{{.Image}}' ro-legion)
 WANT=$(docker image inspect -f '{{.Id}}' "$DEPLOY_TAG")
 [ "$RUNIMG" = "$WANT" ] || { echo "ERROR: ro-legion runs ${RUNIMG:7:12}, deploy image $DEPLOY_TAG is ${WANT:7:12}"; exit 1; }
 echo "legion redeployed on $DEPLOY_TAG (${WANT:7:12}; --no-deps; rathena/db/openkore untouched)"
-echo "core: bash /mnt/g/RO/server/tools/deploy/depcore_nobuild.sh   (uses $DEPLOY_TAG)"
+echo "core: bash /mnt/g/RO/legion/tools/deploy/depcore_nobuild.sh   (uses $DEPLOY_TAG)"

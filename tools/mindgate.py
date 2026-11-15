@@ -7,7 +7,7 @@ never) is DOWN.
   mindgate.py prompt  -> UserPromptSubmit hook: injects a warning into the model's context listing down minds.
   mindgate.py stop    -> Stop hook: blocks the turn from ending while required minds are down (once per stop chain,
                          stop_hook_active prevents loops).
-Wired in G:\\RO\\.claude\\settings.json and G:\\RO\\server\\.claude\\settings.json.
+Wired in G:\\RO\\.claude\\settings.json and G:\\RO\\legion\\.claude\\settings.json.
 """
 import json, os, sys, urllib.request
 
@@ -45,8 +45,8 @@ def main():
     elif down:
         msg = ("MIND GATE: the LLM minds are the core of this server and these required minds are DOWN: " + ", ".join(down) +
                ". Before anything else, restart each one as a background Haiku agent following its skill in "
-               "G:\\RO\\server\\.claude\\skills (legion-chat, legion-life, legion-market, legion-guild; Ayla's mind brief "
-               "and the watchdog brief are in G:\\RO\\server\\HANDOVER.md), and keep a watchdog agent running that reports "
+               "G:\\RO\\legion\\.claude\\skills (legion-chat, legion-life, legion-market, legion-guild; Ayla's mind brief "
+               "and the watchdog brief are in G:\\RO\\legion\\HANDOVER.md), and keep a watchdog agent running that reports "
                "minds going silent.")
     else:
         sys.exit(0)

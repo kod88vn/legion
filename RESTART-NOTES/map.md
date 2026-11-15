@@ -1,7 +1,7 @@
 # Map agent: restart notes (2026-11-14 ~16:20 local)
 
 Scope: party/solo hunting-map choice, crowding, danger rules, escorts, Butterfly Wing restock. Engine code is in
-`G:\RO\server\legion`. Lessons are in `legion/data/lessons.md` (every change has an entry).
+`G:\RO\legion\legion`. Lessons are in `legion/data/lessons.md` (every change has an entry).
 
 Process rules:
 - Never run `docker compose build`.

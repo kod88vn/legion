@@ -57,7 +57,8 @@ specific instructions"); general party, economy and safety rules stay here.
   (legion), move all AI harness there, check in first commit before we start"): before the redesign work starts, the
   AI harness is moved into a new folder named `legion`, put under git, and a first commit is made.
 
-- **Standing setup checklist** (2026-11-14: "write it down in a way that next time we start, everything is back up the
+- **Standing setup checklist - ON HOLD since 2026-11-14 (redesign): start nothing without the owner's word; see
+  `STATUS.md`.** Old text, kept until the rules are trimmed: (2026-11-14: "write it down in a way that next time we start, everything is back up the
   same way it is right now"). At every session start (and whenever one stops) the main thread brings back, exactly one
   of each, as described in `HANDOVER.md` section 0 (`/legion-session` does it):
   - background loops: `tools/sentinel.py`, `tools/unwall.py --loop`, `tools/rogui/ai-display.sh` (VIEW_SCALE 1.39,

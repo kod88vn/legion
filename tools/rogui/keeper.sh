@@ -3,8 +3,8 @@
 # so the watch client (ai-client.sh) is only a camera and is never killed from here.
 # Offline (char.online=0 in the DB) for ~5 min -> restart the container once; if that does not help, only log
 # (investigate instead of looping restarts).
-LOG=/mnt/g/RO/server/legion/data/watchdog.log
-cd /mnt/g/RO/server
+LOG=/mnt/g/RO/legion/legion/data/watchdog.log
+cd /mnt/g/RO/legion
 strikes=0; restarts=0
 log() { echo "$(date '+%F %T') keeper: $*" | tee -a "$LOG"; }
 while true; do

@@ -6,12 +6,12 @@ Reports go to main. Never send `ai` / `ai off` / `ai manual`, never weaken the c
 an OpenKore restart needs main's OK. Ayla keeps at least 10k zeny (strict floor, FLOOR constant / can_spend).
 
 ## Files
-- Plugins: `server/openkore-ayla/plugins/cmdfile/` - partylead.pl (party leading), aylagear.pl (gear plan, give,
+- Plugins: `openkore-ayla/plugins/cmdfile/` - partylead.pl (party leading), aylagear.pl (gear plan, give,
   deals, mail, gifts, popup suppression), cmdfile.pl (command inbox, ai guard, 10k zeny guard), guildrecruit.pl,
   pkt2021fix.pl (RefineUI 0AA2/0AA3, NPC market 09D5/09D6, RODEX read 0B63).
-- Config: `server/openkore-ayla/control/` config.txt, sys.txt (loadPlugins_list ...,guildrecruit,aylagear,pkt2021fix),
+- Config: `openkore-ayla/control/` config.txt, sys.txt (loadPlugins_list ...,guildrecruit,aylagear,pkt2021fix),
   items_control.txt, routeweights.txt.
-- Logs/state: `server/openkore-ayla/logs/` deals.log, alerts.log, topups.json, itemcache.json, items_lut.tsv,
+- Logs/state: `openkore-ayla/logs/` deals.log, alerts.log, topups.json, itemcache.json, items_lut.tsv,
   safe_reload.log, status.json.
 - Tools: `tools/rogui/ayla.sh` (cmd, give, gear, deals, rally), `tools/rogui/ayla_safe_reload.sh [--anywhere] PLUGINS`.
 - HANDOVER.md has a bullet for each change; lessons in legion/data/lessons.md.
@@ -40,7 +40,7 @@ an OpenKore restart needs main's OK. Ayla keeps at least 10k zeny (strict floor,
 ## Safe reloader status
 STOPPED (owner's save request). It never fired: Ayla was in pay_dun01 with Archer Skeletons shooting her, so the
 "no monster attacking" condition never held. To resume:
-`wsl -d Ubuntu-24.04 -- bash -lc "bash /mnt/g/RO/tools/rogui/ayla_safe_reload.sh --anywhere partylead aylagear 2>&1 | tee /mnt/g/RO/server/openkore-ayla/logs/safe_reload.log"`
+`wsl -d Ubuntu-24.04 -- bash -lc "bash /mnt/g/RO/legion/tools/rogui/ayla_safe_reload.sh --anywhere partylead aylagear 2>&1 | tee /mnt/g/RO/legion/openkore-ayla/logs/safe_reload.log"`
 (run in background; it reloads one plugin at a time, 30 s apart, at a calm moment: no attacker, HP > 80%, no
 attack/teleport/NPC step, holding=0 rally=- depart=-). If her map keeps her permanently under fire, ask main whether
 to relax the "attacks you" check to "no attacker in the last ~10 lines".

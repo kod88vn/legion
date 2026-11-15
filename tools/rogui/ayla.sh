@@ -1,6 +1,6 @@
 #!/bin/bash
 # ayla.sh - Ayla's "mind" interface to the OpenKore instance that plays her (container ro-openkore-ayla).
-# Call from PowerShell:  wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ayla.sh <action> [args]
+# Call from PowerShell:  wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ayla.sh <action> [args]
 #   log [N]        last N lines of OpenKore's console (default 40): fights, loot, level, chat, errors
 #   chat [N]       only chat lines from the last N log lines (default 400): public, party, whispers
 #   status         ask OpenKore for status (s) + inventory summary, then show the answer
@@ -29,7 +29,7 @@
 #   gear           Ayla's gear plan (aylagear.pl): owned / next piece / where it sells
 #   guild-fund NAME AMOUNT [WHY]   guild mates mail zeny to a member (POST /api/human-guild/fund; 5k max each, hourly)
 # The plugin (partylead.pl) obeys these orders at once: the mind's explicit order wins over its own decisions.
-CMDS=/mnt/g/RO/server/openkore-ayla/control/commands.txt
+CMDS=/mnt/g/RO/legion/openkore-ayla/control/commands.txt
 HERE=$(dirname "$(readlink -f "$0")")
 clean() { sed -e 's/\x1b\][0-9];[^\x07]*\x07//g' -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' -e 's/\]2;[^]]*OpenKore//g' | grep -v '^\s*$'; }
 send() { printf '%s\n' "$*" >> "$CMDS"; }
@@ -56,7 +56,7 @@ case "$a" in
   trade) send "pm \"#trade\" $*"; echo "sent to #trade: $*";;
   guildchat) send "g $*"; echo ok;;
   give) [ -n "$2" ] || { echo 'usage: ayla.sh give NAME ZENY [WHY]  (quote names with spaces)'; exit 1; }; to=$1; z=$2; shift 2; send "give \"$to\" $z $*"; sleep 12; docker logs --tail 80 ro-openkore-ayla 2>&1 | clean | grep -aE "\[aylagear\]|rodex mail|Party\] Ayla : sent" | tail -4;;
-  deals) tail -n "${1:-15}" /mnt/g/RO/server/openkore-ayla/logs/deals.log 2>/dev/null || echo "(no deals yet)";;
+  deals) tail -n "${1:-15}" /mnt/g/RO/legion/openkore-ayla/logs/deals.log 2>/dev/null || echo "(no deals yet)";;
   gear) send "gear ${*}"; sleep 3; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | grep -a "\[aylagear\]" | tail -15;;
   lead) send "partylead status"; sleep 1.5; docker logs --tail 30 ro-openkore-ayla 2>&1 | clean | grep "\[partylead\]" | tail -3;;
   *) echo "usage: ayla.sh log|chat|status|cmd|say|party|whisper|map|rally|lead|guild|guild-create|guild-fund|recruit|recruits|global|trade|guildchat|guild-tax|guild-skill|guild-info|give|gear|deals ..."; exit 1;;

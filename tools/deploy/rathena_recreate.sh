@@ -2,8 +2,8 @@
 # every container that shares rathena's network namespace, then wait until Ayla is back in game.
 # Owner rule (RULES.md 0, 2026-11-14): "Deploys never recreate rathena by accident; Ayla follows rathena".
 #
-# Usage (WSL):  bash /mnt/g/RO/server/tools/deploy/rathena_recreate.sh            -> plan only (dry run), changes nothing
-#               bash /mnt/g/RO/server/tools/deploy/rathena_recreate.sh --yes      -> do it (kicks EVERYONE, Ayla too)
+# Usage (WSL):  bash /mnt/g/RO/legion/tools/deploy/rathena_recreate.sh            -> plan only (dry run), changes nothing
+#               bash /mnt/g/RO/legion/tools/deploy/rathena_recreate.sh --yes      -> do it (kicks EVERYONE, Ayla too)
 #               add --build to rebuild the ro-rathena image first (rathena/ source or build args changed)
 #               followers keep their RUNNING image (pinned); --use-compose-image if a running image is gone
 #
@@ -12,8 +12,8 @@
 # namespace of the old container (offline, no error), so they are force-recreated right after it, Ayla first.
 # Never sends anything to Ayla's OpenKore (in particular never ai / ai off / ai manual): only container recreates.
 set -eo pipefail
-cd /mnt/g/RO/server
-G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/server/tools/deploy/guard.sh
+cd /mnt/g/RO/legion
+G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/legion/tools/deploy/guard.sh
 # shellcheck source=guard.sh
 . "$G"
 
@@ -29,7 +29,7 @@ for a in "$@"; do
 done
 [ "$YES" = 1 ] || DRY_RUN=1
 
-AYLA_STATUS=/mnt/g/RO/server/openkore-ayla/logs/status.json
+AYLA_STATUS=/mnt/g/RO/legion/openkore-ayla/logs/status.json
 RATHENA_WAIT=${RATHENA_WAIT:-240}   # s for "Map-server 0 loading complete."
 AYLA_WAIT=${AYLA_WAIT:-300}         # s for Ayla back in game
 
@@ -156,7 +156,7 @@ PY
 done; echo
 if [ "$in" = 1 ]; then
   echo "Ayla is back in game: $(cat "$AYLA_STATUS" 2>/dev/null)"
-  echo "  (check: wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ayla.sh status)"
+  echo "  (check: wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ayla.sh status)"
 else
   echo "ERROR: Ayla not back in game after ${AYLA_WAIT}s. Last log lines:"
   docker logs --tail 15 ro-openkore-ayla 2>&1 | sed -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g'

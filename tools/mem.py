@@ -1,6 +1,6 @@
 import sys, json, subprocess
 for name in sys.argv[1:]:
-    out = subprocess.run([sys.executable, "tools/legionctl.py", "memory", name, "--diary", "6"], capture_output=True, text=True, cwd="G:/RO/server").stdout
+    out = subprocess.run([sys.executable, "tools/legionctl.py", "memory", name, "--diary", "6"], capture_output=True, text=True, cwd="G:/RO/legion").stdout
     try:
         m = json.loads(out)
     except Exception:

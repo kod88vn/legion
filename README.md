@@ -9,7 +9,7 @@ rAthena and OpenKore are pinned to fixed commits.
 
 ## Run the server (from PowerShell)
 ```
-wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/server && docker compose up -d --build"
+wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d --build"
 wsl -d Ubuntu-24.04 -- docker logs -f ro-openkore      # watch the bot
 wsl -d Ubuntu-24.04 -- docker attach ro-openkore       # type OpenKore commands (detach: Ctrl-P Ctrl-Q)
 wsl -d Ubuntu-24.04 -- docker logs -f ro-rathena       # server logs ([login]/[char]/[map] prefixes)
@@ -70,8 +70,8 @@ The previous Korean-UI exe is kept as `RO-AILab.korean-ui.exe`.
 Rebuild the exe from scratch:
 ```
 G:\RO\WARP\win32\WARP_console.exe -using Inputs\ailab-2021-en.yml -from <client>\RagexeRE.exe -to <client>\RO-AILab.exe   (run in G:\RO\WARP)
-python -I G:\RO\server\client-tools\patch_hosts_2021.py <client>\RO-AILab.exe
-python -I -X utf8 G:\RO\server\client-tools\patch_strings_2021.py <client>\RO-AILab.exe
+python -I G:\RO\legion\client-tools\patch_hosts_2021.py <client>\RO-AILab.exe
+python -I -X utf8 G:\RO\legion\client-tools\patch_strings_2021.py <client>\RO-AILab.exe
 ```
 
 ### Sound

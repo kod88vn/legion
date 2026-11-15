@@ -40,7 +40,7 @@ human player. Measured on this PC (i9-12900K, 64 GB) with 1,000 bots online:
 
 ## Run
 ```
-cd G:\RO\server
+cd G:\RO\legion
 docker compose up -d                      # db, rathena, agency, legion
 ```
 `.env`: `LEGION_BOTS` (profiles, now 4000) and `LEGION_MAX_ONLINE` (concurrent cap, 1000). With `-schedule`,

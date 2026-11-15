@@ -5,9 +5,9 @@
 #   --anywhere  : (safety-critical fixes) any map, when no monster attacks her, HP > 80%, not attacking / routing
 #                 through a portal / talking to an NPC, and no rally / departure / hold running
 # For partylead: never while a rally or departure runs. Waits up to 2 h per plugin.
-# Usage (WSL): bash /mnt/g/RO/tools/rogui/ayla_safe_reload.sh --anywhere partylead aylagear
-CMDS=/mnt/g/RO/server/openkore-ayla/control/commands.txt
-ST=/mnt/g/RO/server/openkore-ayla/logs/status.json
+# Usage (WSL): bash /mnt/g/RO/legion/tools/rogui/ayla_safe_reload.sh --anywhere partylead aylagear
+CMDS=/mnt/g/RO/legion/openkore-ayla/control/commands.txt
+ST=/mnt/g/RO/legion/openkore-ayla/logs/status.json
 TOWNS='"map":"(prontera|payon|geffen|morocc|alberta|aldebaran|izlude|yuno|comodo|umbala)"'
 ANY=0; [ "$1" = "--anywhere" ] && { ANY=1; shift; }
 calm() {

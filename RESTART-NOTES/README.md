@@ -1,5 +1,8 @@
 # Restart notes - 2026-11-14 ~16:40 local (21:40Z)
 
+> **SUPERSEDED 2026-11-14:** the restart order / agent roster described here belongs to the old setup. Read
+> `STATUS.md` at the repo root first and start nothing (containers, loops, minds, agents) without the owner's word.
+
 The AI does the whole restart (owner: "I do not do it myself, AI does"). Entry point: AGENTS.md (top block)
 points here. Do every step below yourself; only real owner decisions go to the owner.
 

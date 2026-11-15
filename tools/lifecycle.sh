@@ -1,4 +1,4 @@
-cd /g/RO/server
+cd /g/RO/legion
 P=tools/legionctl.py
 python $P wait ${1:-40} >/dev/null
 timeout 30 python $P orders life 2>&1 | tail -3

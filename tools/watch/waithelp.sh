@@ -1,5 +1,5 @@
 #!/bin/bash
-L=/mnt/g/RO/server/openkore-ayla/logs/console_player_2.txt
+L=/mnt/g/RO/legion/openkore-ayla/logs/console_player_2.txt
 start=$(stat -c %s $L); end=$((SECONDS+${1:-280}))
 while [ $SECONDS -lt $end ]; do
   sleep 5

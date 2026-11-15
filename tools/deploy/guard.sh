@@ -40,7 +40,7 @@ deploy_up_img() {
 # to a temp dir, gofmt/vet/test THAT copy, and build the image from the same copy: what is tested is what ships.
 # Sets DEPLOY_TAG=ro-legion:deploy-<time>, also tags ro-legion:latest, records it in $DEPLOY_TAG_FILE.
 DEPLOY_TAG_FILE=/tmp/legion-deploy.tag
-SRC=/mnt/g/RO/server/legion
+SRC=/mnt/g/RO/legion/legion
 snapshot_build() {
   local log=$1 ts snap try
   ts=$(date +%Y%m%d-%H%M%S)
@@ -123,7 +123,7 @@ guard_core() {
     echo "rathena config changed — needs an owner-approved rathena recreate; not deploying"
     printf "%b\n" "$why"
     echo "Run deliberately (kicks everyone, Ayla included, until she logs back in):"
-    echo "  wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/server/tools/deploy/rathena_recreate.sh --yes"
+    echo "  wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/deploy/rathena_recreate.sh --yes"
     echo "================================================================================"
     exit 2
   fi

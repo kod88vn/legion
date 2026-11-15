@@ -4,7 +4,7 @@ Run 12 finished its 60 cycles. Run 13 stopped at cycle 19 of 60 because the owne
 To resume, start a new life run (60 cycles). Read `memory` before every line and send bug reports to main.
 
 ## Tools
-- `python tools/mem.py "<name>" ...` (run from `G:\RO\server`): compact memory for each name - class, level, map,
+- `python tools/mem.py "<name>" ...` (run from `G:\RO\legion`): compact memory for each name - class, level, map,
   what it's doing, party, guild, zeny, typing style, people it knows (beyond strangers and partymates), last 6 diary
   lines. Run it before anyone speaks.
 - `bash tools/lifecycle.sh [wait_s]`: one cycle. It waits, then prints orders, the inbox, the /api/stats HTTP code

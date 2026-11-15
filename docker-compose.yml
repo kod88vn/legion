@@ -167,7 +167,7 @@ services:
 
   mastermind:
     # LLM strategy layer: 10 guild leaders + 2 independent-player minds (see mastermind/mastermind.py).
-    # Put ANTHROPIC_API_KEY=... in server/.env to use Claude; without it a rule-based stand-in runs.
+    # Put ANTHROPIC_API_KEY=... in .env to use Claude; without it a rule-based stand-in runs.
     # Optional fallback only (docker compose --profile fallback up -d mastermind). The intended setup is
     # agent-driven: Claude Code / Copilot sub-agents run the masterminds via tools/legionctl.py (see AGENTS.md).
     profiles: ["fallback"]

@@ -1,12 +1,12 @@
 #!/bin/bash
 # ro.sh - drive the AI play-tester's private Ragnarok client (Wine on Xvfb :98). Never touches the Windows desktop.
-# Call from PowerShell:  wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ro.sh <action> [args]
+# Call from PowerShell:  wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ro.sh <action> [args]
 #   shot NAME | click X Y | rclick X Y | dclick X Y | hold X Y SECONDS | drag X1 Y1 X2 Y2
 #   key ENTER|ESC|TAB|SPACE|BACK|UP|DOWN|LEFT|RIGHT|INSERT|F1..F12|ALT+x|CTRL+x | type TEXT | say TEXT | wait S
 #   hunt X Y [SECONDS] | walk DIR [SECONDS] | loot
 #   status   (is the client up?)   login (log in as Ayla from the agreement screen)
 export DISPLAY=:98
-SHOTS=/mnt/g/RO/tools/rogui/shots
+SHOTS=/mnt/g/RO/legion/tools/rogui/shots
 mkdir -p $SHOTS
 focus() {
   w=$(xdotool search --name "ROAI" 2>/dev/null | head -1)
@@ -33,7 +33,7 @@ case "$a" in
     xdotool mousemove 1040 530 sleep 0.1 mousedown 1 sleep 0.15 mouseup 1; sleep 10
     echo "login sequence sent";;
   status) pgrep -f "RO-AILab.exe" >/dev/null && echo "client running" || echo "client NOT running (it restarts itself within ~20 s)";;
-  shot) n=${1:-now}; import -window root "$SHOTS/$n.png" && echo "G:\\RO\\tools\\rogui\\shots\\$n.png (1280x720)";;
+  shot) n=${1:-now}; import -window root "$SHOTS/$n.png" && echo "G:\\RO\\legion\\tools\\rogui\\shots\\$n.png (1280x720)";;
   click) focus; xdotool mousemove "$1" "$2" sleep 0.12 mousedown 1 sleep 0.15 mouseup 1; echo ok;;
   rclick) focus; xdotool mousemove "$1" "$2" sleep 0.12 mousedown 3 sleep 0.15 mouseup 3; echo ok;;
   dclick) focus; xdotool mousemove "$1" "$2" sleep 0.12 mousedown 1 sleep 0.1 mouseup 1 sleep 0.08 mousedown 1 sleep 0.1 mouseup 1; echo ok;;

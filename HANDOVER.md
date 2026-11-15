@@ -26,11 +26,11 @@ build-and-strategy agent keeps it current, adding its notes as it reviews each c
 ### 0.2 Check the world first
 ```
 wsl -d Ubuntu-24.04 -- docker ps --format '{{.Names}} {{.Status}}'   # ro-db ro-rathena ro-agency ro-legion ro-legion-core ro-openkore-ayla
-python tools/legionctl.py status                                     # from G:\RO\server
+python tools/legionctl.py status                                     # from G:\RO\legion
 python tools/legionctl.py minds                                      # which minds are alive / idle
 curl -s http://127.0.0.1:8090/api/parties/detail                     # Ayla's party first
 ```
-Stack down: `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/server && docker compose up -d"`, wait ~2 min (skill
+Stack down: `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d"`, wait ~2 min (skill
 `legion-ops` if it still fails). Ayla's party (Ayla + the `LEGION_CORE` members) must be online.
 
 ### 0.3 Background loops (the main thread starts them as background shells; exactly ONE copy of each)
@@ -40,10 +40,10 @@ paths get mangled).
 
 | loop | command | notes |
 |---|---|---|
-| sentinel | `wsl -d Ubuntu-24.04 -- python3 /mnt/g/RO/tools/sentinel.py` | Exits on a problem (that wakes the main thread). Main hands the problem to a fixer, then restarts it with `--mute KEY[,KEY] --mute-until HH:MM` for keys already handed off (they stay logged in `legion/data/health.log`). |
-| unwall | `python tools/unwall.py --loop` (cwd G:\RO\server) | Moves OFFLINE lg* chars off blocked cells every 30 s. |
-| watch display | `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ai-display.sh` | Xvfb :98 + x11vnc + TigerVNC viewer. `VIEW_SCALE=1.39` (the default) = 1780x1000 window, the owner's preferred size. Normal window, **never fullscreen**. |
-| watch client | `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ai-client.sh` | Wine client on :98 through OpenKore's X-Kore 2 proxy; freeze detection, re-logs after drops, stops after 3 failed logins (`/tmp/roai-restarts.log`). Start it after ai-display.sh. |
+| sentinel | `wsl -d Ubuntu-24.04 -- python3 /mnt/g/RO/legion/tools/sentinel.py` | Exits on a problem (that wakes the main thread). Main hands the problem to a fixer, then restarts it with `--mute KEY[,KEY] --mute-until HH:MM` for keys already handed off (they stay logged in `legion/data/health.log`). |
+| unwall | `python tools/unwall.py --loop` (cwd G:\RO\legion) | Moves OFFLINE lg* chars off blocked cells every 30 s. |
+| watch display | `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ai-display.sh` | Xvfb :98 + x11vnc + TigerVNC viewer. `VIEW_SCALE=1.39` (the default) = 1780x1000 window, the owner's preferred size. Normal window, **never fullscreen**. |
+| watch client | `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ai-client.sh` | Wine client on :98 through OpenKore's X-Kore 2 proxy; freeze detection, re-logs after drops, stops after 3 failed logins (`/tmp/roai-restarts.log`). Start it after ai-display.sh. |
 
 Details of the watch view: section 4. Never drive any client with the real mouse/keyboard.
 
@@ -106,7 +106,7 @@ Details of the watch view: section 4. Never drive any client with the real mouse
    never runs a plain `docker compose up`). First run `DRY_RUN=1 bash .../dep3.sh` (checks only) to see the guard
    result. It also prints a NOTE if the rathena/db image tag was rebuilt (no block) and a WARNING if ro-openkore-ayla /
    ro-openkore sit on a dead namespace (= Ayla offline: tell main at once).
-   **Owner-approved rathena recreate:** `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/server/tools/deploy/rathena_recreate.sh`
+   **Owner-approved rathena recreate:** `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/deploy/rathena_recreate.sh`
    (plan only) then `... rathena_recreate.sh --yes` (`--build` to rebuild the image first). It recreates ro-db if its
    config changed, then `--force-recreate rathena`, waits for "Map-server 0 loading complete", force-recreates every
    `network_mode: service:rathena` service read from the compose file (openkore-ayla first, then legion-core, openkore,
@@ -119,7 +119,7 @@ Details of the watch view: section 4. Never drive any client with the real mouse
    main picks the moment and tells the owner.
 
 ### 0.5 Scripts kept in the repo (copied 2026-11-14 from the session scratchpad, which is per-session)
-Run the deploy scripts in WSL: `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/server/tools/deploy/dep3.sh`.
+Run the deploy scripts in WSL: `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/deploy/dep3.sh`.
 - `tools/deploy/dep3.sh`: frozen-snapshot build (gofmt/vet/go test + docker build from one copy of legion/, tag
   `ro-legion:deploy-<time>` + `:latest`), then `up --no-deps legion` pinned to that tag (main). `DRY_RUN=1` = checks only.
 - `tools/deploy/depcore.sh`: same snapshot build, then legion-core on it; fixes a stray `<hash>_ro-legion-core`
@@ -192,15 +192,15 @@ A new session gets a new scratchpad: use the repo copies above.
 
 | Path | What |
 |---|---|
-| `G:\RO\server\docker-compose.yml`, `.env` | the stack: `ro-db` (MariaDB), `ro-rathena` (login/char/map), `ro-agency` (login token stub), `ro-legion` (bot engine + dashboard/API on :8090), `ro-openkore` (spare), `ro-openkore-ayla` (plays Ayla) |
-| `G:\RO\server\rathena\` | rAthena (Renewal, packetver 20210107). `conf/import/*` local config, `npc-custom/legion.txt` job changes / autoskill / starter kit |
-| `G:\RO\server\legion\` | Legion (Go). `README.md` = engine internals + HTTP API. `data/` = personas, memory, minds, guild roster, human parties, bugs.md, lessons.md, backups |
-| `G:\RO\server\tools\legionctl.py` | CLI the minds use (status, inbox, say, party, goal, minds bus...) |
-| `G:\RO\server\.claude\skills\legion-*` | skills for the mind roles (session, chat, life, guild, market, ops) |
-| `G:\RO\server\openkore\` | OpenKore image build (Dockerfile, servers-local.txt, custom serverType) |
-| `G:\RO\server\openkore-ayla\` | Ayla's OpenKore: `control/config.txt`, `control/sys.txt`, `control/commands.txt` (command inbox), `plugins/cmdfile/` (cmdfile.pl, **xkore2fix.pl**) |
+| `G:\RO\legion\docker-compose.yml`, `.env` | the stack: `ro-db` (MariaDB), `ro-rathena` (login/char/map), `ro-agency` (login token stub), `ro-legion` (bot engine + dashboard/API on :8090), `ro-openkore` (spare), `ro-openkore-ayla` (plays Ayla) |
+| `G:\RO\legion\rathena\` | rAthena (Renewal, packetver 20210107). `conf/import/*` local config, `npc-custom/legion.txt` job changes / autoskill / starter kit |
+| `G:\RO\legion\legion\` | Legion (Go). `README.md` = engine internals + HTTP API. `data/` = personas, memory, minds, guild roster, human parties, bugs.md, lessons.md, backups |
+| `G:\RO\legion\tools\legionctl.py` | CLI the minds use (status, inbox, say, party, goal, minds bus...) |
+| `G:\RO\legion\.claude\skills\legion-*` | skills for the mind roles (session, chat, life, guild, market, ops) |
+| `G:\RO\legion\openkore\` | OpenKore image build (Dockerfile, servers-local.txt, custom serverType) |
+| `G:\RO\legion\openkore-ayla\` | Ayla's OpenKore: `control/config.txt`, `control/sys.txt`, `control/commands.txt` (command inbox), `plugins/cmdfile/` (cmdfile.pl, **xkore2fix.pl**) |
 | `G:\RO\kRO-210607\client\` | the owner's game client (`RO-AILab.exe`, WARP-patched 2021-01-07 client), launched via `Play-AILab.cmd` / desktop shortcut "RO-English"; login player/player |
-| `G:\RO\tools\rogui\` | watch-client and Ayla tooling (WSL scripts), screenshots in `shots\` |
+| `G:\RO\legion\tools\rogui\` | watch-client and Ayla tooling (WSL scripts), screenshots in `shots\` |
 | `G:\RO\tools\sprhd\`, `realesrgan\` | HD sprite pipeline (AI-upscaled sprites packed in `sprites_hd2.grf` for the owner's client) |
 | `G:\RO\WARP\` | client patcher (profile `Inputs\ailab-2021-en.yml`: NoHourly, CustomFontHeight 13) |
 | `C:\Users\kod\.claude\projects\G--RO\memory\` | Claude Code memory (rules above, core party) |
@@ -305,8 +305,8 @@ A new session gets a new scratchpad: use the repo copies above.
   `-max-online` free for guild leaders/pinned/core/humans, and a guild leader that can't get onto the map bumps one
   ordinary bot (legion/leaderroom.go). Going past ~1000 online needs a rathena rebuild with epoll and a bigger MAXCONN
   (owner decision: image rebuild + rathena restart).
-- Deploy main Legion: `cd /mnt/g/RO/server && docker compose build legion && docker compose up -d legion` (restarts
-  ~900 bots for ~1 min; **Ayla's party stays online**). Vet first: `docker run --rm -v /mnt/g/RO/server/legion:/src -w /src golang:1.22 sh -c 'gofmt -l -w . && go vet ./...'`.
+- Deploy main Legion: `cd /mnt/g/RO/legion && docker compose build legion && docker compose up -d legion` (restarts
+  ~900 bots for ~1 min; **Ayla's party stays online**). Vet first: `docker run --rm -v /mnt/g/RO/legion/legion:/src -w /src golang:1.22 sh -c 'gofmt -l -w . && go vet ./...'`.
 - Deploy core: `docker compose up -d legion-core` (after the build above; same image). **Only when party-relevant code
   changed** (party.go, partyroles.go, humanparty.go, ai.go fighting/healing, ...) and you want Ayla's friends on it -
   it logs the three out for ~1 min. Otherwise the core keeps running the older build, which is fine.
@@ -353,7 +353,7 @@ A new session gets a new scratchpad: use the repo copies above.
   starts, so those overrides are applied lazily in `mainLoop_pre`.
 - If the rathena container is recreated and its IP changes from 172.18.0.3, update `XKore_publicIp` in
   `openkore-ayla/control/config.txt` (and the `in_game` check in `ai-client.sh`), then restart `openkore-ayla`.
-- **Scripts** (`G:\RO\tools\rogui\`, run in WSL as long-running commands):
+- **Scripts** (`G:\RO\legion\tools\rogui\`, run in WSL as long-running commands):
   - `ai-display.sh`: Xvfb :98 1280x720 + x11vnc + TigerVNC viewer window. Restart all three if the view freezes.
     **View size** (owner 2026-11-14 "double the UI window", then "too big now, keep 3/4"): the game and Xvfb stay at
     1280x720; x11vnc serves the screen scaled by `VIEW_SCALE` (default 1.39 -> 1780x1000 viewer window; 1.85 =
@@ -361,7 +361,7 @@ A new session gets a new scratchpad: use the repo copies above.
     Restart trick: kill with bracketed patterns (`pkill -f "[x]11vnc -display :98"`) so pkill doesn't hit its own shell. Normal window, not fullscreen. Changing it needs only a
     restart of `ai-display.sh` (kill the script, x11vnc and xtigervncviewer, NOT Xvfb), never of the client.
     Revert: `VIEW_SCALE=1` (edit the default or start it as `VIEW_SCALE=1 bash ai-display.sh`). From Git Bash start it
-    with `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ai-display.sh` (else the path is mangled).
+    with `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ai-display.sh` (else the path is mangled).
   - `ai-client.sh`: waits until Ayla is online, starts the Wine client, logs in through the proxy (agree -> Enter ->
     player/player -> Enter -> Ayla slot (545,170) -> Game Start (1040,530) -> closes tip box), re-logs after drops,
     stops after 3 failed logins in a row (log `/tmp/roai-restarts.log`, client log `/tmp/roai.log`).
@@ -413,7 +413,7 @@ A new session gets a new scratchpad: use the repo copies above.
   - Switch: patch `tools/rogui/ai-client-wow64.patch` adds `ROAI_WOW64` (default 0 = unchanged). Apply it by writing
     a new file and `mv` over the old one (never edit a running bash script in place), stop the loop, end the old
     client with the SYSTEM `WINEPREFIX=~/.wine-ro wineserver -k` (the new wineserver only knows the wow64 prefix), then
-    start `ROAI_WOW64=1 bash /mnt/g/RO/tools/rogui/ai-client.sh`. Revert: restart without `ROAI_WOW64`. Check after
+    start `ROAI_WOW64=1 bash /mnt/g/RO/legion/tools/rogui/ai-client.sh`. Revert: restart without `ROAI_WOW64`. Check after
     the switch: `/tmp/roai-restarts.log` no longer shows drops every ~30 min, and the client's below-4 GB total stays
     flat (awk over `/proc/$(pgrep -f '^RO-AILab.exe')/maps`, addresses < 0x100000000).
   - Test hygiene for the future: never name a test exe RO-AILab.exe (ai-client.sh `pkill -f RO-AILab.exe` would kill
@@ -432,7 +432,7 @@ A new session gets a new scratchpad: use the repo copies above.
   (natural regen stops), red >= 90% (can't attack).
 
 ---------------------------------------------------------------------------------------------------------------------
-## 5. Legion: what exists (G:\RO\server\legion)
+## 5. Legion: what exists (G:\RO\legion\legion)
 
 Key files: `bot.go` (protocol/session), `ai.go` (think loop, fighting, potions), `nav.go`, `strategy.go` (117 reachable
 hunting spots), `builds.go` (13 build plans: stats/skills/gear to 99; research in `research/proposed_builds.md`),
@@ -789,15 +789,15 @@ one-time starter kit `legion_starter`).
 ## 6b. The minds are the core - hard gate
 The owner: "the llm minds are the core of the server, the watch dog is supposed to watch out for them and keep them
 alive". Required minds: ayla, chat, life, market, guild01-10, plus a watchdog agent that messages the main session
-when one goes silent. `G:\RO\tools\mindgate.py` runs as a UserPromptSubmit and a Stop hook (`G:\RO\.claude\settings.json`,
-`G:\RO\server\.claude\settings.json`). Any required mind silent for more than 5 minutes is injected as a warning and
+when one goes silent. `G:\RO\legion\tools\mindgate.py` runs as a UserPromptSubmit and a Stop hook (`G:\RO\.claude\settings.json`,
+`G:\RO\legion\.claude\settings.json`). Any required mind silent for more than 5 minutes is injected as a warning and
 blocks ending the turn until it's restarted. The minds are background Haiku agents that run ~90 min each and must be
 re-spawned (briefs: skills in `.claude/skills`, Ayla's mind and the watchdog as in this file). Chat volume also comes
 from Legion's chatter engine (`legion/chatter.go`: #global/#trade autojoin via the mounted `rathena/conf/channels.conf`,
 ~45 lines/min at 900 online).
 
 ## 6c. The self-improvement loop (owner: "I am trying to create a self learning/improving loop")
-1. **Observe**: `G:\RO\tools\sentinel.py` (WSL, long-running background command of the engineering session) checks the
+1. **Observe**: `G:\RO\legion\tools\sentinel.py` (WSL, long-running background command of the engineering session) checks the
    whole system every minute and logs to `legion/data/health.log`: population, kills per bot, share of frozen bots
    (it samples random bots), minds alive, Ayla online, her party together, the watch client and its launcher, chat
    volume, death rate. `tools/legion/classprobe.py [minutes] [per_class]` samples bots of every class on demand;
@@ -1643,14 +1643,14 @@ Thornlord (Archer) and Ashwing (Merchant) once the current trio's gear purchase 
 wsl -d Ubuntu-24.04 -- docker ps --format '{{.Names}} {{.Status}}'
 curl -s http://127.0.0.1:8090/api/overview        # world health
 curl -s http://127.0.0.1:8090/api/parties/detail  # parties (Ayla's first)
-wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ayla.sh log 30     # what Ayla is doing
+wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ayla.sh log 30     # what Ayla is doing
 # watch window frozen/black: restart ai-display.sh, then ai-client.sh (both long-running)
 # Ayla not attacking: ayla.sh cmd "conf attackAuto 2"; wrong map: ayla.sh map pay_fild01
 ```
 
 ### Background loops the main thread keeps running (2026-11-14)
-- `wsl -d Ubuntu-24.04 -- python3 /mnt/g/RO/tools/sentinel.py` (exits on a problem; restart after acting on it).
-- `python tools/unwall.py --loop` (from G:\RO\server): moves OFFLINE lg* bot chars off blocked cells every 30 s. Walled-in
+- `wsl -d Ubuntu-24.04 -- python3 /mnt/g/RO/legion/tools/sentinel.py` (exits on a problem; restart after acting on it).
+- `python tools/unwall.py --loop` (from G:\RO\legion): moves OFFLINE lg* bot chars off blocked cells every 30 s. Walled-in
   bots log out for 3 min so it can fix their row; without this loop they come back on the same cell.
 - Deploys: only the main thread runs dep3.sh/depcore.sh (scratchpad), batched; subagents report "built".
   The scripts now live in `tools/deploy/` (section 0.5); a per-batch deploy agent runs them (section 0.4 item 8).

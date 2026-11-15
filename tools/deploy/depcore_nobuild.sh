@@ -3,8 +3,8 @@
 # Never touches rathena/db/agency/openkore*: `up --no-deps legion-core`, after guard_core (tools/deploy/guard.sh)
 # confirmed db/rathena would not change. DRY_RUN=1 = checks only, nothing built or deployed.
 set -eo pipefail
-cd /mnt/g/RO/server
-G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/server/tools/deploy/guard.sh
+cd /mnt/g/RO/legion
+G="$(dirname "$0")/guard.sh"; [ -f "$G" ] || G=/mnt/g/RO/legion/tools/deploy/guard.sh
 # shellcheck source=guard.sh
 . "$G"
 LOG=/tmp/legion-core-build.log

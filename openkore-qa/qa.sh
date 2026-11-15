@@ -1,8 +1,8 @@
 #!/bin/bash
 # qa.sh [-w SECONDS] "cmd" ["cmd" ...]: send OpenKore commands to the QA char (Trailmark) and print the new log lines.
 W=6; if [ "$1" = "-w" ]; then W=$2; shift 2; fi
-D=/g/RO/server/openkore-qa
-[ -d $D ] || D=/mnt/g/RO/server/openkore-qa
+D=/g/RO/legion/openkore-qa
+[ -d $D ] || D=/mnt/g/RO/legion/openkore-qa
 L=$D/logs/console_qatest_0.txt
 n=$(wc -l < $L)
 for c in "$@"; do

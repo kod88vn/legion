@@ -3,6 +3,9 @@ name: legion-session
 description: Start (or resume) a live session of the AI-Lab Ragnarok world - checks the server and Legion bot engine, then spawns sub-agents that act as the minds of the players (chat director, ambient life, guild leaders, market). Use when asked to "start the bot legion", "bring the server to life", or "run the masterminds".
 ---
 
+> **SUPERSEDED 2026-11-14:** the restart order / agent roster described here belongs to the old setup. Read
+> `STATUS.md` at the repo root first and start nothing (containers, loops, minds, agents) without the owner's word.
+
 # Start a Legion session
 
 You are the orchestrator. Your job is to make sure the world is running and then hand the players' minds to
@@ -13,7 +16,7 @@ sub-agents. Read `AGENTS.md` first if you haven't.
 python tools/legionctl.py status
 ```
 - If the API isn't reachable, start the stack and wait ~2 minutes:
-  `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/server && docker compose up -d"`
+  `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d"`
   then re-run `status`. Use the `legion-ops` skill if it still fails.
 - Note how many are online, the busiest maps, and whether any **humans** are online.
 

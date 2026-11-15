@@ -1,6 +1,6 @@
 #!/bin/bash
 # health.sh - one-shot health report for the watchdog agent (run inside WSL).
-cd /mnt/g/RO/server
+cd /mnt/g/RO/legion
 clean() { sed -e 's/\x1b\][0-9];[^\x07]*\x07//g' -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | grep -v '^\s*$'; }
 echo "== containers"; docker ps --format '{{.Names}}: {{.Status}}' | sort
 echo "== Ayla (OpenKore) last lines"; docker logs --tail 6 ro-openkore-ayla 2>&1 | clean | tail -4

@@ -1,14 +1,9 @@
 # AI-Lab Ragnarok server: agent guide
 
-> **RESUMING AFTER THE 2026-11-14 RESTART - DO THIS FIRST (the owner does not restart anything; the AI does).**
-> The whole operation was shut down at ~16:45 local on 2026-11-14 so the owner could restart the machine.
-> The main AI session that reads this brings everything back by itself, without asking the owner:
-> 1. Read `RESTART-NOTES/README.md` (state at shutdown, deploy state, restart order, open problems), then `RULES.md`,
->    then the per-agent notes in `RESTART-NOTES/`, then `HANDOVER.md` section 0 (standing setup).
-> 2. Follow the restart order in `RESTART-NOTES/README.md` section 2: containers up (Ayla online), re-test and deploy
->    the frozen legion tree (main, then core), background loops, all standing agents and minds, then the staged code.
-> 3. Once everything runs and the legion API answers in < 2 s, replace this block with a one-line note
->    ("restart of 2026-11-14 completed <time>") and tell the owner.
+> **HOLD - REDESIGN IN PROGRESS (2026-11-14). Read `STATUS.md` first.**
+> Do not start containers, background loops, minds or agents automatically. The old "bring everything back" restart
+> order and the 15 always-on minds are superseded (RULES.md section 0). The owner directs testing after the machine
+> restart; until then nothing is started. `STATUS.md` says what was done, what state things are in and what is next.
 
 > **Read `RULES.md` first: the owner's standing rules, which every agent follows. When the owner states a new rule,
 > add it there in the same turn.** Class- and build-specific rules (each class's role, stats, skill plan, skill use,

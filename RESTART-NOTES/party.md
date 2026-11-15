@@ -1,7 +1,7 @@
 # Party-logic fixer: restart notes (2026-11-14, ~16:45 local)
 
 Role: engineering subagent for bot-party / Ayla's-friends behaviour in `legion/` (together.go is "mine"; also edits in
-party.go, ai.go, humanparty.go, kafra.go, heal.go, storage.go, town.go, danger.go, api.go). Owner rules: server/RULES.md
+party.go, ai.go, humanparty.go, kafra.go, heal.go, storage.go, town.go, danger.go, api.go). Owner rules: RULES.md
 section 3. Lessons written to `legion/data/lessons.md` (tags TOGETHER-RULE ... HEALER-ANCHOR).
 
 Current process rules (coordinator): never run `docker compose build`; never start golang test containers; only the
@@ -21,8 +21,8 @@ protectSupport, farmNear, humanSaveTown):
 Ask the deploy agent to include `TestHumanTrail`, `TestSupportNeed` in its run.
 
 ## 2. Prepared, NOT applied (code freeze at the time): never strand a member
-Script: `G:\RO\server\RESTART-NOTES\party_strand_edit.py` (copy of the scratchpad original).
-Apply AFTER the deploy agent reports main+core deployed / freeze lifted: `python G:\RO\server\RESTART-NOTES\party_strand_edit.py`
+Script: `G:\RO\legion\RESTART-NOTES\party_strand_edit.py` (copy of the scratchpad original).
+Apply AFTER the deploy agent reports main+core deployed / freeze lifted: `python G:\RO\legion\RESTART-NOTES\party_strand_edit.py`
 (targeted replacements with exact-match asserts; it aborts without writing if a target changed - then re-apply by hand).
 It does:
 1. danger.go (both Butterfly escape branches) -> `leaderFledCall`: a bot party leader that wings to town calls a party

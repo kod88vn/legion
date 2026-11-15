@@ -3,6 +3,9 @@ name: legion-session
 description: Start (or resume) a live session of the AI-Lab Ragnarok world - checks the server and Legion bot engine, then spawns sub-agents that act as the minds of the players (chat director, ambient life, guild leaders, market). Also restores the full main-session setup (background loops, standing agents; HANDOVER.md section 0) at the start of every new session. Use when asked to "start the bot legion", "bring the server to life", or "run the masterminds".
 ---
 
+> **SUPERSEDED 2026-11-14:** the restart order / agent roster described here belongs to the old setup. Read
+> `STATUS.md` at the repo root first and start nothing (containers, loops, minds, agents) without the owner's word.
+
 # Start a Legion session
 
 You are the orchestrator. Your job is to make sure the world is running and then hand the players' minds to
@@ -18,10 +21,10 @@ checklist is **`HANDOVER.md` section 0** (read it now); in short:
 2. **Check the world** (step 1 below, plus `docker ps` and `/api/parties/detail`: Ayla's party must be online).
 3. **Background loops**, started as background shells, exactly one copy each (check with
    `wsl -d Ubuntu-24.04 -- pgrep -af "sentinel.py|ai-display|ai-client"` first; Git Bash needs `MSYS_NO_PATHCONV=1`):
-   - `wsl -d Ubuntu-24.04 -- python3 /mnt/g/RO/tools/sentinel.py` (exits on a problem; after handing it to a fixer,
+   - `wsl -d Ubuntu-24.04 -- python3 /mnt/g/RO/legion/tools/sentinel.py` (exits on a problem; after handing it to a fixer,
      restart with `--mute KEY[,KEY] --mute-until HH:MM`)
-   - `python tools/unwall.py --loop` (cwd G:\RO\server)
-   - `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ai-display.sh` (VIEW_SCALE 1.39 =
+   - `python tools/unwall.py --loop` (cwd G:\RO\legion)
+   - `MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ai-display.sh` (VIEW_SCALE 1.39 =
      1780x1000, never fullscreen), then `.../ai-client.sh` the same way.
 4. **LLM minds** (step 2 below, with the cycle counts of HANDOVER 0.4): ayla (Sonnet, 60-cycle loops, "cycle N/60"
    status), chat (~300 cycles of 30 s), life (60), market (60, "don't stop until 60 cycles"), guild01-05 and
@@ -43,7 +46,7 @@ checklist is **`HANDOVER.md` section 0** (read it now); in short:
 python tools/legionctl.py status
 ```
 - If the API isn't reachable, start the stack and wait ~2 minutes:
-  `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/server && docker compose up -d"`
+  `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d"`
   then re-run `status`. Use the `legion-ops` skill if it still fails.
 - Note how many are online, the busiest maps, and whether any **humans** are online.
 

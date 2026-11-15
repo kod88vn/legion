@@ -2,14 +2,14 @@
 
 Role: read-only watcher of Ayla's party (RULES 0 "party-watcher agent"). Never sends anything to Ayla's OpenKore
 (no ai / ai off / ai manual, no map/rally/party orders). Reports every bug to main via SendMessage with times, names,
-log lines. Heartbeat every <=4 min: `cd G:\RO\server && python tools/legionctl.py think watcher "cycle N ok: ..."`.
+log lines. Heartbeat every <=4 min: `cd G:\RO\legion && python tools/legionctl.py think watcher "cycle N ok: ..."`.
 
-## Tools (copied to `tools/watch/`, run from WSL: `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/server/tools/watch/<x>`)
+## Tools (copied to `tools/watch/`, run from WSL: `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/watch/<x>`)
 - `mon.sh` - event stream for a Monitor: filtered console_player_2.txt lines (deaths, processDead, argh, DEAL/TOPUP,
   town run, come back to, crowded, Teleporting/escaping/queue, Fly Wing, Orange Potion, goto/rally/fetch, help calls,
   whispers, disconnects, equip/storage), deals.log, and every 180 s `KILLS last3min=N` + a party SNAP line.
-  Monitor command: `export MSYS_NO_PATHCONV=1; wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/server/tools/watch/mon.sh`
-  (max 30 min per Monitor; re-arm). After TaskStop, kill leftovers: `pkill -f tools/watch/mon.sh; pkill -f "tail -n0 -F /mnt/g/RO/server/openkore-ayla/logs"`.
+  Monitor command: `export MSYS_NO_PATHCONV=1; wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/watch/mon.sh`
+  (max 30 min per Monitor; re-arm). After TaskStop, kill leftovers: `pkill -f tools/watch/mon.sh; pkill -f "tail -n0 -F /mnt/g/RO/legion/openkore-ayla/logs"`.
 - `snap.py` / `party.py` - piped into `docker exec -i ro-openkore-ayla python3 -`: party positions/distances/HP/state
   from core API 127.0.0.1:8091/api/human-party?human=Ayla (party.py = full table, snap.py = one line).
 - `diary.py` - core friends' diaries (`docker exec -e SINCE=20:15 -e NAMES=xXRinfangXx -i ro-openkore-ayla python3 - < diary.py`).

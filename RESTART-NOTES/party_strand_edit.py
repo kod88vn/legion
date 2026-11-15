@@ -1,4 +1,4 @@
-D = 'G:/RO/server/legion/'
+D = 'G:/RO/legion/legion/'
 
 
 def ed(p, pairs):

@@ -6,8 +6,8 @@ broken or unnatural. Other players are real people; talk to them normally. Never
 ## Controls (PowerShell tool, one command per step)
 The game runs on its own private virtual screen (Wine on Linux), NOT on the Windows desktop: you never touch the
 owner's mouse or keyboard. Every command:
-    wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/tools/rogui/ro.sh <action> [args]
-- `shot NAME` -> prints `G:\RO\tools\rogui\shots\NAME.png`; Read it to SEE the screen (1280x720). Screenshot pixel =
+    wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ro.sh <action> [args]
+- `shot NAME` -> prints `G:\RO\legion\tools\rogui\shots\NAME.png`; Read it to SEE the screen (1280x720). Screenshot pixel =
   click coordinate. Your character stands in the middle (~640,360). Take a fresh shot right before clicking a monster.
 - Crashes: if you see a "Gravity Error Handler"/error dialog, a black screen, or the login screens, just `wait 60` and
   take a new shot: a watchdog kills the crashed client, restarts it and logs Ayla back in automatically.

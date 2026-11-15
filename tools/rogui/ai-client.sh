@@ -100,6 +100,6 @@ while true; do
   done
   [ -n "$why" ] && cp /tmp/roai.log /tmp/roai-crash-$(date +%H%M%S).log 2>/dev/null
   log "watch client dropped: ${why:-OpenKore restarted or client exited} $(grep -m2 -E 'OUT_OF_MEMORY|:err:d3d' /tmp/roai.log | tr '\n' ' ')"
-  echo "$(date '+%F %T') ai-client: watch client restarted: ${why:-connection dropped}" >> /mnt/g/RO/server/legion/data/watchdog.log
+  echo "$(date '+%F %T') ai-client: watch client restarted: ${why:-connection dropped}" >> /mnt/g/RO/legion/legion/data/watchdog.log
   pkill -f RO-AILab.exe; sleep 5
 done

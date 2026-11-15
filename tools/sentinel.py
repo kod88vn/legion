@@ -4,7 +4,7 @@ to create a self learning/improving loop").
 
 Runs in WSL as a long-running background command of the engineering session. Every minute it measures the whole
 system; every 10 minutes it also samples random bots for real progress. Each cycle appends one line to
-G:\\RO\\server\\legion\\data\\health.log. When a problem has lasted past its grace time, it prints a report with the
+G:\\RO\\legion\\legion\\data\\health.log. When a problem has lasted past its grace time, it prints a report with the
 evidence and EXITS - a background command that exits wakes the engineering session, which fixes the cause, writes
 the lesson to legion/data/lessons.md and starts the sentinel again. So: observe -> wake -> fix -> record -> observe.
 
@@ -12,7 +12,7 @@ Checks (grace): Legion API / population (4 min after a deploy), kills per bot, f
 required LLM minds alive, Ayla online, Ayla's party together, watch client + its launcher running, client restart
 loops, chat volume, death rate; farming time: farming share of bot states (>= 85%), town trips per bot (<= 1 per
 45 min) and unnecessary town trips (bag < 70% weight and slots with potions in stock) - main legion + legion-core.
-Usage: python3 /mnt/g/RO/tools/sentinel.py [--once] [--mute KEY[,KEY...]] [--mute-until HH:MM]
+Usage: python3 /mnt/g/RO/legion/tools/sentinel.py [--once] [--mute KEY[,KEY...]] [--mute-until HH:MM]
   --mute: problem keys (e.g. bad_trips,deaths,party) already handed to a fixer. They are still measured and logged
   (health.log lists them under "muted") but do not cause an exit until the mute expires.
   --mute-until: local time the mute ends (default: 60 min after start).
@@ -20,7 +20,7 @@ Usage: python3 /mnt/g/RO/tools/sentinel.py [--once] [--mute KEY[,KEY...]] [--mut
 import collections, json, os, random, re, subprocess, sys, time, urllib.request
 
 API = 'http://127.0.0.1:8090'
-LOG = '/mnt/g/RO/server/legion/data/health.log'
+LOG = '/mnt/g/RO/legion/legion/data/health.log'
 MINDS = ['ayla', 'chat', 'life', 'market', 'watchdog'] + ['guild%02d' % i for i in range(1, 11)]
 ONCE = '--once' in sys.argv
 
