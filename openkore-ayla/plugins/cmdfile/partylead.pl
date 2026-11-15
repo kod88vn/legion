@@ -1875,7 +1875,7 @@ eval {
 };
 sub gm_kill {
 	$gmKills++;
-	if ($field && $field->baseName eq (plan_map() || '-')) { $partylead::planKillAt = time; push @partylead::planKillTimes, time; partylead::farmed_save() }
+	if ($field && $field->baseName eq (plan_map() || $partylead::huntMap || '-')) { $partylead::planKillAt = time; push @partylead::planKillTimes, time; partylead::farmed_save() }
 }
 sub gm_died {
 	$gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths;
@@ -2231,6 +2231,24 @@ sub map_drained {
 	return '' unless $last < 1 || ($first > 0 && $last < 0.4 * $first);
 	return sprintf("map drained: %.1f kills/min in the last 15 min (%.1f in the first 20)", $last, $first);
 }
+# every 30 s on her hunting / plan map: the arrival time is recorded (also right after a reload - the window starts
+# then), and a drained map breaks the plan at once (live 06:48: no farmed file, no PLAN_CHANGE after 11 min, 0 kills)
+my $dtAt = 0;
+sub drained_tick {
+	return if time - $dtAt < 30 || !$field || !$char;
+	$dtAt = time;
+	my $here = $field->baseName;
+	my $hm = plan_map() || $huntMap || '';
+	return if $hm eq '' || $here ne $hm || is_townmap($here);
+	if (($planArr{map} || '') ne $here) { %planArr = (map => $here, at => time); farmed_save() }
+	my $d = map_drained($here);
+	return if $d eq '';
+	$farmedAt{$here} = time; farmed_save();
+	wd_report('PLAN_CHANGE', $here, "$here -> next fitting map: $d", 'map choice re-run');
+	$plan = undef; plan_save();
+	%planArr = ();
+	$forceRepick = 1; # force_repick: the nearest fitting map not farmed in the last 30 min, announced to the party
+}
 sub plan_track {
 	kill_sample() if $field && ($huntMap || '') eq $field->baseName;
 	return unless $char && $field;
@@ -2240,7 +2258,12 @@ sub plan_track {
 	$ptExp = $exp;
 	return if !$gain || is_townmap($here);
 	my $hunt = ($config{lockMap} || '') ne '' ? $config{lockMap} : $homeMap;
-	if ($plan && $plan->{map} eq $here) { $plan->{expAt} = time; plan_save() if time - ($plan->{savedAt} || 0) > 60 && ($plan->{savedAt} = time); return }
+	if ($plan && $plan->{map} eq $here) {
+		$plan->{expAt} = time;
+		$plan->{at} = time if time - $plan->{at} >= PLAN_SECS; # still farming it after 2 h: a new commitment (checks keep running)
+		plan_save() if time - ($plan->{savedAt} || 0) > 60 && ($plan->{savedAt} = time);
+		return;
+	}
 	return if $here ne $hunt || plan_map() ne '';
 	$plan = {map => $here, at => time, expAt => time};
 	plan_save();
@@ -2319,6 +2342,7 @@ sub tick_guarded {
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
+	drained_tick() if $net && $net->getState() == 5;
 	AI::clear('take', 'items_take', 'items_gather') if time < $lootBlockUntil && AI::inQueue('take', 'items_take', 'items_gather');
 	hp_sample() if $net && $net->getState() == 5;
 	portal_back_guard() if $net && $net->getState() == 5;
