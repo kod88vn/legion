@@ -16,7 +16,7 @@ package partylead;
 
 use strict;
 use Plugins;
-use Globals qw($char $field %config $net %timeout $playersList %portals_lut $portalsList $monstersList %ai_v);
+use Globals qw($char $field %config $net %timeout $playersList %portals_lut $portalsList $monstersList %ai_v %pickupitems);
 use AI;
 use Commands;
 use Log qw(message);
@@ -1754,6 +1754,8 @@ sub party_fit_lv {
 			$tank ||= $cls =~ /knight|crusader|paladin/i ? 1 : 0;
 		}
 		my $plv = gm_party_lv(\@m, $heal, $tank) + gm_step_offset();
+		my ($minBase) = sort { $a <=> $b } map { $_->[1] } @m;
+		$plv = $minBase if defined $minBase && $plv > $minBase; # the measured step never rates the party over its weakest level
 		return $plv < 1 ? 1 : $plv;
 	}
 	my $min;
@@ -1839,6 +1841,45 @@ sub gm_route_unsafe {
 	foreach my $v (@{$via->{$m} || []}) { return $v if $danger->{$v} && $danger->{$v} >= $plv - 5 }
 	return '';
 }
+# measured exp per map (owner 2026-11-15 "she barely gains exp": the gear rating kept a level 78-85 party on lv23-33
+# monsters at ~33k exp/h). A map record {e => base exp gained there, s => seconds spent there as the hunting map,
+# d => deaths there}; a death costs $dcost exp (pre-re: 1% of the level). undef = not measured yet (under 15 min).
+use constant GM_MEASURE_SECS => 900;
+sub gm_exp_rate {
+	my ($r, $dcost) = @_;
+	return undef unless $r && ref $r eq 'HASH' && ($r->{s} || 0) >= GM_MEASURE_SECS;
+	my $e = ($r->{e} || 0) - ($r->{d} || 0) * ($dcost || 0);
+	return ($e < 0 ? 0 : $e) * 3600 / $r->{s};
+}
+# the map choice on measured exp: $base = the gear / level pick (the starting point), $cands = [map, lowest band] of the
+# other maps the party may farm now, $rate = map -> exp/h (undef = unmeasured). A measured map beats another measured one
+# by its exp/h; an unmeasured base pick in a band at or above the best measured map is tried (the party stepped up with
+# no deaths); otherwise the best measured map wins. Returns the map.
+sub gm_pick_measured {
+	my ($base, $baseBand, $cands, $rate) = @_;
+	my ($best, $bestR, $bestBand);
+	foreach my $c ($base ne '' ? [$base, $baseBand] : (), @$cands) {
+		my $r = $rate->{$c->[0]};
+		next unless defined $r;
+		($best, $bestR, $bestBand) = ($c->[0], $r, $c->[1]) if !defined $bestR || $r > $bestR;
+	}
+	return $base if !defined $best;
+	return $base if $base ne '' && !defined $rate->{$base} && $baseBand >= $bestBand;
+	return $best;
+}
+# is $m worth leaving $c for: both measured and $m 30%+ better, or $m unmeasured in a higher band while $c is measured
+sub gm_better {
+	my ($m, $mBand, $c, $cBand, $rate) = @_;
+	return 0 if $m eq '' || $m eq $c;
+	my ($rm, $rc) = ($rate->{$m}, $rate->{$c});
+	return 0 unless defined $rc;
+	return $mBand > $cBand ? 1 : 0 unless defined $rm;
+	return $rm > 1.3 * $rc ? 1 : 0;
+}
+# step up with no deaths: every 20 min of hunting-map time without a death or a low-HP step (counted across town runs;
+# the old 20-min window restarted on every map change, so with a town run every ~30 min it rose twice in 8 h)
+use constant GM_SAFE_STEP_SECS => 1200;
+sub gm_safe_step { my $s = shift || 0; return $s >= GM_SAFE_STEP_SECS ? 3 : 0 }
 # ---- gearmaps end ----
 sub gm_self_lv {
 	my $lv = $char->{lv} || 1;
@@ -1887,11 +1928,46 @@ sub gm_kill {
 	# kills are counted from her exp gains (plan_track): every party kill shares exp with her, the target_died hook
 	# only saw some of hers (the step never rose with 40-60 party kills / 5 min)
 }
+# measured exp per map (gm_exp_rate): logs/ayla_mapexp.json {maps => {map => {e, s, d, at}}, died => {map => time},
+# safe => hunting-map seconds since the last death / low-HP step}; survives reloads
+our (%mapExp, %mapDiedAt);
+our $gmSafeSecs = 0;
+my ($meMap, $meT, $meExp, $meSaveAt) = ('', 0, -1, 0);
+sub mapexp_save {
+	eval { open(my $f, '>', 'logs/ayla_mapexp.json') or die; print $f JSON::PP->new->canonical->encode({maps => \%mapExp,
+		died => {map { $_ => int($mapDiedAt{$_}) } grep { time - $mapDiedAt{$_} < 7200 } keys %mapDiedAt}, safe => int($gmSafeSecs)}); close $f };
+}
+eval { if (open(my $f, '<', 'logs/ayla_mapexp.json')) { local $/; my $d = JSON::PP->new->decode(<$f>); close $f;
+	if (ref $d eq 'HASH') { %mapExp = %{$d->{maps} || {}} if ref $d->{maps} eq 'HASH'; %mapDiedAt = %{$d->{died} || {}} if ref $d->{died} eq 'HASH'; $gmSafeSecs = $d->{safe} || 0 } } };
+# what a death costs in exp (pre-re: 1% of the level's exp)
+sub death_cost { return $char && $char->{exp_max} ? 0.01 * $char->{exp_max} : 0 }
+sub map_rate { my $m = shift || ''; return gm_exp_rate($mapExp{$m}, death_cost()) }
+sub map_band { my $m = shift || ''; my $lo; foreach my $r (@FIT_MAPS) { $lo = $r->[0] if $r->[2] eq $m && (!defined $lo || $r->[0] < $lo) } return defined $lo ? $lo : 0 }
+sub map_rate_txt { my $m = shift; my $r = map_rate($m); return defined $r ? sprintf('%dk exp/h', int($r / 1000 + 0.5)) : 'not measured' }
+# every tick: time and base exp on her hunting map (only while it is the map she hunts: not crossing it, not in town)
+sub mapexp_tick {
+	return unless $char && $field;
+	my $here = $field->baseName;
+	my $exp = $char->{exp} || 0;
+	my $hunt = plan_map() || $huntMap || '';
+	if ($here ne $meMap || is_townmap($here) || $here ne $hunt || $char->{dead}) { ($meMap, $meT, $meExp) = ($here, time, $exp); return }
+	my $dt = time - $meT; $dt = 0 if $dt < 0 || $dt > 10;
+	my $de = $exp - $meExp; $de = 0 if $de < 0 || $meExp < 0; # a level-up resets the exp bar: that gain is skipped
+	my $r = ($mapExp{$here} ||= {e => 0, s => 0, d => 0});
+	$r->{s} += $dt; $r->{e} += $de; $r->{at} = int(time);
+	if ($r->{s} > 14400) { $r->{$_} /= 2 for qw(e s d) } # the last ~4 h count
+	$gmSafeSecs += $dt;
+	($meT, $meExp) = (time, $exp);
+	if (time - $meSaveAt > 60) { $meSaveAt = time; mapexp_save() }
+}
 sub gm_died {
 	$gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths;
 	# one death steps down at once (owner 2026-11-15); the hook fired twice for one death (-10 -> -15 -> -20): once per 30 s
 	return if time - ($gmDiedStepAt || 0) < 30;
 	$gmDiedStepAt = time;
+	my $dm = $field ? $field->baseName : '';
+	if ($dm ne '' && !is_townmap($dm)) { ($mapExp{$dm} ||= {e => 0, s => 0, d => 0})->{d}++; $mapDiedAt{$dm} = time } # the map is off for 2 h
+	$gmSafeSecs = 0; mapexp_save();
 	my $old = $gmOff; $gmOff -= 5; $gmOff = -20 if $gmOff < -20;
 	message "[partylead] gear maps: died on " . ($field ? $field->baseName : '?') . " -> step $old -> $gmOff (one map easier)\n", 'system';
 	step_save(); $gmRecheck = 1; %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
@@ -1908,34 +1984,18 @@ sub hp_sample {
 	return if $low / @hpSamples < 0.3;
 	my $old = $gmOff; $gmOff -= 3; $gmOff = -20 if $gmOff < -20;
 	message "[partylead] gear maps: HP under 50% in " . int(100 * $low / @hpSamples) . "% of the last 5 min -> step $old -> $gmOff\n", 'system';
-	@hpSamples = (); step_save(); $gmRecheck = 1;
+	@hpSamples = (); $gmSafeSecs = 0; step_save(); $gmRecheck = 1;
 }
+# the step rises +3 per 20 min of hunting-map time with no death and no low-HP step (gm_safe_step), counted across
+# town runs and map changes; a death steps down at once (gm_died), so the party climbs to the hardest map it survives
 sub gm_step_offset {
-	return $gmOff unless $char && $field;
-	my $here = $field->baseName;
-	return $gmOff if is_townmap($here);
-	my ($n, $k, $d) = (1, $gmKills, $gmDeaths);
-	foreach my $f (online_friends()) {
-		my $a = $apiPos{$f->[0]};
-		next unless $a && defined $a->{kills} && $f->[1] eq $here;
-		$n++; $d += $a->{deaths} || 0; # kills: her exp-gain count already holds the party's kills (shared exp)
-	}
-	$gmWin{n} = $n if $gmWin{map} eq $here && $n > ($gmWin{n} || 0); # a member arriving / leaving no longer restarts the 20-min window
-	if ($gmWin{map} ne $here || $k < $gmWin{k} || $d < $gmWin{d}) {
-		%gmWin = (map => $here, at => time, k => $k, d => $d, n => $n);
-		return $gmOff;
-	}
-	my $el = (time - $gmWin{at}) / 60;
-	return $gmOff if $el < 20; # step up only after 20+ min of measured success (deaths step down in gm_died)
-	my $v = gm_verdict($n, $el, $k - $gmWin{k}, $d - $gmWin{d});
-	if ($v) {
-		my $old = $gmOff;
-		$gmOff += $v; $gmOff = -20 if $gmOff < -20; $gmOff = 10 if $gmOff > 10;
-		step_save();
-		message "[partylead] gear maps: party on $here " . sprintf('%.1f', ($k - $gmWin{k}) / ($n * $el)) . " kills/min each, " . ($d - $gmWin{d}) . " deaths in " . int($el) . " min -> step $old -> $gmOff\n", 'system';
-		$gmRecheck = 1; # fit_tick re-checks the map choice now
-	}
-	%gmWin = (map => $here, at => time, k => $k, d => $d, n => $n);
+	my $v = gm_safe_step($gmSafeSecs);
+	return $gmOff unless $v && $gmOff < 10;
+	my $old = $gmOff;
+	$gmOff += $v; $gmOff = 10 if $gmOff > 10;
+	message "[partylead] gear maps: " . int($gmSafeSecs / 60) . " min of hunting with no deaths -> step $old -> $gmOff (" . ($field ? $field->baseName . ' ' . map_rate_txt($field->baseName) : '-') . ")\n", 'system';
+	$gmSafeSecs = 0; step_save(); mapexp_save();
+	$gmRecheck = 1; # fit_tick re-checks the map choice now
 	return $gmOff;
 }
 # a map order far above the party: every table row for it starts 4+ levels over the party's gear-rated level (with the
@@ -1961,13 +2021,25 @@ sub map_fits {
 sub level_map {
 	my $plv = shift;
 	my $heal = party_has_healer();
-	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) && !(time < ($routeFailAt{$r->[2]} || 0)) && !(time - ($farmedAt{$r->[2]} || 0) < 1800) && route_unsafe($r->[2], $plv) eq '' };
+	my $free = sub { my $m = shift; return !(time - ($crowdedAt{$m} || 0) < 3600) && !(time < ($routeFailAt{$m} || 0)) && !(time - ($farmedAt{$m} || 0) < 1800) && !(time - ($mapDiedAt{$m} || 0) < 7200) && route_unsafe($m, $plv) eq '' };
+	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && $free->($r->[2]) };
 	# (2) nearest first: a fitting map of the area she is in / heading to (the same Kafra town) before a far one
 	my $area = town_of_map(plan_map() || $homeMap || ($field ? $field->baseName : ''));
-	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && $r->[3] == $heal && town_of_map($r->[2]) eq $area }
-	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && $r->[3] == $heal }
-	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && !$r->[3] } # no healer row: a field
-	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) }
+	my $base;
+	foreach my $r (@FIT_MAPS) { if ($ok->($r) && $r->[3] == $heal && town_of_map($r->[2]) eq $area) { $base = $r->[2]; last } }
+	if (!defined $base) { foreach my $r (@FIT_MAPS) { if ($ok->($r) && $r->[3] == $heal) { $base = $r->[2]; last } } }
+	if (!defined $base) { foreach my $r (@FIT_MAPS) { if ($ok->($r) && !$r->[3]) { $base = $r->[2]; last } } } # no healer row: a field
+	if (!defined $base) { foreach my $r (@FIT_MAPS) { if ($ok->($r)) { $base = $r->[2]; last } } }
+	if (defined $base) {
+		# measured exp (owner 2026-11-15): the gear / level pick is only the starting point - among the maps the party may
+		# farm now (its band reached, healer state, not crowded / died on / just farmed) the best measured exp/h wins; an
+		# unmeasured pick in a higher band than the best measured map is tried first (the step rose with no deaths)
+		my %seen;
+		my @c = map { [$_->[2], map_band($_->[2])] } grep { !$seen{$_->[2]}++ && $_->[2] ne $base && $plv >= $_->[0] && ($_->[3] == $heal || !$_->[3]) && $free->($_->[2]) } @FIT_MAPS;
+		my %rate = map { $_->[0] => map_rate($_->[0]) } @c, [$base];
+		my $m = gm_pick_measured($base, map_band($base), \@c, \%rate);
+		return $m;
+	}
 	my ($best, $bd);
 	foreach my $r (@FIT_MAPS) { next if route_unsafe($r->[2], $plv) ne ''; my $d = abs(($r->[0] + $r->[1]) / 2 - $plv); ($best, $bd) = ($r->[2], $d) if !defined $bd || $d < $bd }
 	return $best;
@@ -2016,7 +2088,7 @@ sub fit_tick {
 	return if !defined $m || $m eq '' || $m eq $homeMap && ($config{lockMap} || '') eq $m;
 	my ($tm) = party_turn();
 	# her current map still fits the party and no gear turn calls elsewhere: stay (one map for ~2 hours, RULES 3)
-	return if $homeMap ne '' && $tm eq '' && map_fits($homeMap, party_fit_lv()) && !(time - ($crowdedAt{$homeMap} || 0) < 3600) && ($config{lockMap} || $homeMap) eq $homeMap;
+	return if $homeMap ne '' && $tm eq '' && map_fits($homeMap, party_fit_lv()) && !(time - ($crowdedAt{$homeMap} || 0) < 3600) && ($config{lockMap} || $homeMap) eq $homeMap && better_map($homeMap) eq '';
 	auto_goto($m, $why);
 }
 # crowd_check found her map too crowded: with no fresh order she moves on to the next fitting map herself
@@ -2071,7 +2143,31 @@ sub plan_reason {
 	return "the route to $c keeps failing" if time < ($routeFailAt{$c} || 0);
 	my $v = route_unsafe($c);
 	return "the way to $c crosses $v" if $v ne '';
+	if ((my $b = better_map($c)) ne '') { return $b }
 	return '';
+}
+# a better map than the plan's $c ('' = none): after 20+ min on the plan, the map choice (level_map) names another map
+# that measured 30% more exp/h, or an unmeasured one in a higher band (the party stepped up with no deaths), or $c no
+# longer fits the party. A map in another town only right after a town run (the party is in town anyway: no extra trip).
+my ($bmAt, $bmFor, $bmWhy) = (0, '', '');
+sub better_map {
+	my $c = shift || '';
+	return '' if $c eq '' || !$plan || time - ($plan->{at} || time) < 1200;
+	return $bmWhy if $bmFor eq $c && time - $bmAt < 30;
+	($bmAt, $bmFor, $bmWhy) = (time, $c, '');
+	my $plv = party_fit_lv();
+	my $m = level_map($plv);
+	return '' if !defined $m || $m eq '' || $m eq $c;
+	my %rate = ($m => map_rate($m), $c => map_rate($c));
+	my $why = gm_better($m, map_band($m), $c, map_band($c), \%rate) ? "$m looks better ($m " . map_rate_txt($m) . ", $c " . map_rate_txt($c) . ")"
+		: !map_fits($c, $plv) && (defined $rate{$m} ? $rate{$m} >= ($rate{$c} || 0) : 1) ? "the party outgrew $c (rated $plv; $c " . map_rate_txt($c) . ")" : '';
+	return '' if $why eq '';
+	if (town_of_map($m) ne town_of_map($c)) {
+		my $here = $field ? $field->baseName : '';
+		return '' unless is_townmap($here) && time - ($errandEnd || 0) < 600;
+	}
+	$bmWhy = $why;
+	return $why;
 }
 # leave the commitment for $new, logged ("[watchdog] PLAN_CHANGE old -> new: reason")
 sub plan_change {
@@ -2224,11 +2320,14 @@ sub map_drained {
 	# a kill rate: 10+ min on the plan map and under 15 kills by her in the last 10 min, while she sweeps there with the
 	# priest (not waiting / holding) -> drained (live: ~2 kills per 5 min on pay_dun02 kept resetting an 8-min timer)
 	if ($field && $field->baseName eq $c) {
-		if (($planArr{map} || '') ne $c) { %planArr = (map => $c, at => time); farmed_save() }
+		# back on the map after a town run / regroup: the arrival starts again (live 12:19: "0 kills in the last 10 min"
+		# 40 s after coming back from Payon - the window still held the arrival from before the town run)
+		if (($planArr{map} || '') ne $c || time - ($planArr{seen} || 0) > 180) { %planArr = (map => $c, at => time, seen => time); farmed_save() }
+		$planArr{seen} = time;
 		my $n = grep { time - $_ < 600 } @planKillTimes;
 		if (time - ($pk_drainLog || 0) >= 300) { $pk_drainLog = time; message "[partylead] drained check: $n kills in 10 min on $c\n", 'system' }
 		my $since = $planArr{at} > $killTrackSince ? $planArr{at} : $killTrackSince;
-		if (!$holding && !$rally && !pk_waiting() && priest_dist() <= 20 && time - $since >= 600) {
+		if ((!$holding || priest_dist() <= 15) && !$rally && !pk_waiting() && priest_dist() <= 20 && time - $since >= 600) { # holding while the sweep runs with the priest still counts (live 11:15-11:55: 40 min at ~1 kill/min, holding=1)
 			return sprintf("map drained: %d kills in the last 10 min (under 15)", $n) if $n < 15;
 		}
 	}
@@ -2349,6 +2448,29 @@ sub load_announce {
 	announce_plan($pc);
 	message "[partylead] load: plan $pc re-announced to the party\n", 'system';
 }
+# loot a lv80 party leaves on the floor (owner 2026-11-15: she barely gains exp; EC27/EC28 town runs at 50% weight):
+# Fly Wings past the 10 she keeps (EC26; live: Fly Wing x217 = half the bag at the 10:57 town run, 11 picked up in 47 s
+# on pay_dun01, so the 50% trigger came every ~25 min and twice before she even reached pay_dun02) and Jellopy (3z).
+# While partied only; pickupitems.txt's own values come back when solo and on unload. Herbs / Skel-Bones stay (EC31).
+my %pickSaved;
+sub loot_trim_tick {
+	return unless $char && $char->inventory;
+	my $party = online_friends() ? 1 : 0;
+	my $fw = $char->inventory->getByName('Fly Wing');
+	my %off = ('fly wing' => ($party && $fw && ($fw->{amount} || 0) >= 10) ? 1 : 0, 'jellopy' => $party);
+	foreach my $k (keys %off) {
+		if ($off{$k}) {
+			$pickSaved{$k} = exists $pickupitems{$k} ? $pickupitems{$k} : undef unless exists $pickSaved{$k};
+			$pickupitems{$k} = 0;
+		} elsif (exists $pickSaved{$k}) {
+			my $v = delete $pickSaved{$k};
+			if (defined $v) { $pickupitems{$k} = $v } else { delete $pickupitems{$k} }
+		}
+	}
+}
+sub loot_trim_restore {
+	foreach my $k (keys %pickSaved) { my $v = delete $pickSaved{$k}; if (defined $v) { $pickupitems{$k} = $v } else { delete $pickupitems{$k} } }
+}
 sub tick_guarded {
 	load_announce();
 	force_repick();
@@ -2359,6 +2481,8 @@ sub tick_guarded {
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
+	mapexp_tick() if $net && $net->getState() == 5;
+	loot_trim_tick() if $net && $net->getState() == 5;
 	drained_tick() if $net && $net->getState() == 5;
 	AI::clear('take', 'items_take', 'items_gather') if time < $lootBlockUntil && AI::inQueue('take', 'items_take', 'items_gather');
 	hp_sample() if $net && $net->getState() == 5;
@@ -4141,6 +4265,8 @@ sub unload {
 	Commands::register(['respawn', 'Respawn', \&Commands::cmdRespawn]); # the built-in handler back
 	$config{route_randomWalk} = $restRW if defined $restRW && !$holding; # don't leave a rest's random-walk switch-off behind
 	$config{itemsMaxWeight_sellOrStore} = $sellTrigSaved if $sellTrigUntil; # don't leave the raised trigger behind
+	loot_trim_restore(); # pickupitems.txt values back
+	mapexp_save();
 	if (%travelSaved) { $config{$_} = $travelSaved{$_} foreach keys %travelSaved; %travelSaved = () } # travel mode's switches back
 	Commands::unregister($cmds) if $cmds;
 	$rally = undef;

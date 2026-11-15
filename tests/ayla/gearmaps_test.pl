@@ -62,5 +62,25 @@ ok(gm_route_unsafe('gef_dun01', 58, \%via, \%dg) eq '', 'gef_dun01 safe');
 printf "conservative pick for 58-10=48 (healer): %s; step up 51: %s, 60: %s; step down 43: %s
 ", level_map(48, 1), level_map(51, 1), level_map(60, 1), level_map(43, 1);
 ok(level_map(48, 1) eq 'pay_dun02', 'party 58 starts on pay_dun02');
+# measured exp per map (owner 2026-11-15 "she barely gains exp"): live numbers from her 2026-11-15 log
+ok(!defined gm_exp_rate({e => 5000, s => 600, d => 0}, 0), 'under 15 min: not measured');
+my $r02 = gm_exp_rate({e => 40266, s => 3437, d => 0}, 0); # pay_dun02 11:08-12:05: 40k in 57 min
+ok(int($r02) == 42175, "pay_dun02 rate $r02");
+ok(gm_exp_rate({e => 40000, s => 3600, d => 1}, 25000) == 15000, 'a death costs its exp');
+ok(gm_exp_rate({e => 1000, s => 3600, d => 1}, 25000) == 0, 'never negative');
+my %rt = (pay_dun02 => 42000, pay_dun03 => 120000, gef_dun01 => undef, pay_dun01 => 5000);
+ok(gm_pick_measured('pay_dun02', 45, [['pay_dun03', 52], ['pay_dun01', 32]], \%rt) eq 'pay_dun03', 'measured better map wins');
+ok(gm_pick_measured('gef_dun01', 60, [['pay_dun02', 45], ['pay_dun03', 52]], \%rt) eq 'gef_dun01', 'unmeasured higher band is tried');
+ok(gm_pick_measured('pay_dun01', 32, [['pay_dun02', 45]], {pay_dun02 => 42000}) eq 'pay_dun02', 'unmeasured lower band loses to a measured map');
+ok(gm_pick_measured('pay_dun02', 45, [['gef_dun01', 60]], {pay_dun02 => 42000}) eq 'pay_dun02', 'measured base stays over an unmeasured non-base map');
+ok(gm_pick_measured('x', 1, [], {}) eq 'x', 'nothing measured: the gear pick');
+my %rt2 = (gef_dun01 => 30000, pay_dun02 => 42000);
+ok(gm_pick_measured('gef_dun01', 60, [['pay_dun02', 45]], \%rt2) eq 'pay_dun02', 'stepped up but measured worse: back to the better map');
+ok(gm_better('pay_dun03', 52, 'pay_dun02', 45, \%rt) == 1, 'better: 120k vs 42k');
+ok(gm_better('pay_dun02', 45, 'pay_dun03', 52, \%rt) == 0, 'not better');
+ok(gm_better('gef_dun01', 60, 'pay_dun02', 45, \%rt) == 1, 'unmeasured higher band vs measured: worth a try');
+ok(gm_better('gef_dun01', 60, 'pay_dun02', 45, {}) == 0, 'current not measured yet: stay');
+ok(gm_better('pay_dun03', 52, 'pay_dun02', 45, {pay_dun03 => 50000, pay_dun02 => 42000}) == 0, 'under 30% better: stay (PT16)');
+ok(gm_safe_step(1199) == 0 && gm_safe_step(1200) == 3, 'step up after 20 safe min');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);
