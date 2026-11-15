@@ -328,6 +328,7 @@ type Bot struct {
 	kafraVirtual               bool      // kafra.go kafraWouldTake: planning from a town we are not in (no fare requests)
 	kafraNoHard                bool      // farmshare.go kafraWaitUseful: a probe plan that ignores the hard limit
 	escortHold                 string    // humanparty.go escortGate: why we wait in the entrance town ("" = not waiting)
+	kafraMeet                  *kafraMeetState // kaframeet.go (PT22): after a bot party's town run, wait at the town's Kafra
 	leadMap                    string    // partyGoalSync: the leader's map as last seen, since when, and when our goal changed
 	leadMapSince               time.Time
 	goalSyncAt                 time.Time
@@ -1486,6 +1487,9 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		case <-stop:
 			return
 		default:
+		}
+		if b.handoffParked(stop) { // handoff.go: the account belongs to the other instance (or waits for it)
+			continue
 		}
 		pin := b.pinned()
 		if pin != nil && time.Now().Before(pin.Hold) {

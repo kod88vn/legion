@@ -269,7 +269,7 @@ sub friend_map {
 	my $u = shift;
 	return '' unless $u;
 	my $a = $apiPos{$u->{name}};
-	return $a->{map} if $a && $a->{map} && time - $a->{at} < 10;
+	return $a->{map} if $a && $a->{map} && time - $a->{at} < 30;
 	my $m = defined $u->{map} ? $u->{map} : ''; $m =~ s/\.gat$//;
 	return $m;
 }
@@ -283,11 +283,21 @@ sub on_errand {
 	if (time - $errandFrom{$n} > 900) { delete $errandFrom{$n}; return 0 }
 	return 1;
 }
+# a friend lying dead (Legion's API: 0 HP or a "dead" state, fresh) is not waited for - it respawns and comes back by
+# itself (queue b1794719424081: she held 5+ min in geffen "waiting for Zen.fox" after it died)
+sub friend_dead {
+	my $a = $apiPos{$_[0] || ''};
+	return 0 unless $a && time - ($a->{at} || 0) < 15;
+	return 1 if defined $a->{hpf} && $a->{hpf} <= 0;
+	return ($a->{state} || '') =~ /\bdead\b|respawn/i ? 1 : 0;
+}
+my %askedWhere;
+sub ask_where { my $n = shift; return if time - ($askedWhere{$n} || 0) < 120; $askedWhere{$n} = time; psay("$n where r u?", 1, 0) }
 sub online_friends {
 	my @f;
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		my $m = friend_map($u); $m =~ s/\.gat$//;
 		push @f, [$u->{name}, $m];
 	}
@@ -317,7 +327,8 @@ sub depart_tick {
 		my $a = $apiPos{$f->[0]};
 		my $onMap = $f->[1] eq $depart->{town} || ($a && time - $a->{at} < 10 && $a->{map} eq $depart->{town});
 		# a strong party (party_strong): on the town map is enough - they follow her out (QA 12:47: 10 min idle in Payon)
-		push @late, $f->[0] if !$onMap || !party_strong() && (!$pos || blockDistance($char->{pos_to}, $pos) > 15);
+		if ($onMap && !$pos) { ask_where($f->[0]); next } # no fresh position: ask, don't wait on a guess
+		push @late, $f->[0] if !$onMap || !party_strong() && blockDistance($char->{pos_to}, $pos) > 15;
 		# owner rule (enforced 2026-11-14): nobody goes in before saving at this Kafra - wait for the friend's save
 		# (Legion reports each friend's save town; the friend saves on its own and says "saved at <town>")
 		push @late, $f->[0] if $a && $a->{saved} ne '' && $a->{saved} ne $depart->{town} && $KAFRA{$depart->{town}} && !grep { $_ eq $f->[0] } @late;
@@ -371,7 +382,7 @@ sub gear_refresh {
 	$gearAt = time;
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		my $n = $u->{name}; $n =~ s/([^A-Za-z0-9._-])/sprintf("%%%02X", ord($1))/ge;
 		my $d = api_get("/api/bots/$n") or next;
 		$friendGear{$u->{name}} = $d->{gear_next} if ref $d->{gear_next};
@@ -444,8 +455,9 @@ sub friend_pos {
 	my $pl = $playersList ? $playersList->getByName($u->{name}) : undef;
 	return ($pl->{pos_to}, $pl) if $pl && $pl->{pos_to} && defined $pl->{pos_to}{x};
 	my $a = $apiPos{$u->{name}};
-	return ({x => $a->{x}, y => $a->{y}}, undef) if $a && time - $a->{at} < 10 && $a->{map} eq $here && $a->{x};
-	return ($u->{pos}, undef) if $u->{pos} && defined $u->{pos}{x};
+	# Legion's API up to 30 s old; OpenKore's party-list position goes stale for minutes (live: "waiting for Zen.fox
+	# (214 cells away)" with Zen.fox 2 cells from her) - never used: no fresh position = unknown
+	return ({x => $a->{x}, y => $a->{y}}, undef) if $a && time - $a->{at} < 30 && $a->{map} eq $here && $a->{x};
 	return (undef, undef);
 }
 
@@ -462,7 +474,7 @@ sub back_tick {
 	# detect: a friend that was out in the field/dungeon shows up in a town (respawn, or a solo trip) while we hunt
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		# only Legion's fresh map counts (QA 20:36: stale party-list maps flagged friends standing ON pay_fild10 as "back in
 		# payon" and she sent the priest + 2 more to town while 3 died)
 		my $a = $apiPos{$u->{name}};
@@ -924,7 +936,7 @@ sub party_resting {
 	my $here = $field->baseName;
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		my $a = $apiPos{$u->{name}};
 		my $st = ($a && time - $a->{at} < 10) ? ($a->{state} || '') : undef;
 		# a friend sitting BECAUSE she rests ("sitting with the party (Ayla resting)", "guarding Ayla") is not a rest of
@@ -1081,7 +1093,7 @@ sub pace_ok {
 	return 1 if healer_near($field->baseName);
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		next if friend_map($u) ne $field->baseName;
 		my ($pos) = friend_pos($u, $field->baseName);
 		return 0 if $pos && blockDistance($char->{pos_to}, $pos) > 12;
@@ -1304,6 +1316,7 @@ sub status_dest {
 	return '' unless $field;
 	my $here = $field->baseName;
 	my $d = $rally ? $rally->{town} : ($gotoMap ne '' ? $gotoMap : ($config{lockMap} || ($saved ? ($saved->{lockMap} || '') : '')));
+	$d = pk_lmhold() || $homeMap || plan_map() if ($d || '') eq ''; # queue b1794712675pfj: lockMap held / cleared for a moment
 	return $d eq $here ? '' : $d;
 }
 sub status_town_run {
@@ -1731,6 +1744,7 @@ my %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
 # logs/ayla_step.json across reloads; the first load of this version re-picks the map at once (PLAN_CHANGE)
 my $gmOff = -10;
 our $forceRepick = 0;
+my $gmDiedStepAt = 0;
 sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 3, repick => $forceRepick ? 1 : 0}); close $f } }
 # no step file yet: create it now (-10) with the owner's re-pick pending; a pending re-pick survives further reloads
 eval {
@@ -1743,7 +1757,9 @@ eval {
 sub gm_kill { $gmKills++ }
 sub gm_died {
 	$gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths;
-	# one death steps down at once (owner 2026-11-15)
+	# one death steps down at once (owner 2026-11-15); the hook fired twice for one death (-10 -> -15 -> -20): once per 30 s
+	return if time - ($gmDiedStepAt || 0) < 30;
+	$gmDiedStepAt = time;
 	my $old = $gmOff; $gmOff -= 5; $gmOff = -20 if $gmOff < -20;
 	message "[partylead] gear maps: died on " . ($field ? $field->baseName : '?') . " -> step $old -> $gmOff (one map easier)\n", 'system';
 	step_save(); $gmRecheck = 1; %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
@@ -1832,7 +1848,7 @@ sub choose_map {
 }
 sub auto_goto {
 	my ($m, $why) = @_;
-	message "[partylead] own map choice: $m - $why (was " . ($homeMap || '-') . ($homeBy eq 'mind' && $homeMap ne '' ? ", mind's order " . int((time - $homeAt) / 60) . " min old" : '') . ")\n", 'system';
+	message "[partylead] own map choice: $m - $why (was " . ($homeMap || '-') . ($homeBy eq 'mind' && $homeMap ne '' && $homeAt ? ", mind's order " . int((time - $homeAt) / 60) . " min old" : '') . ")\n", 'system';
 	my $c = plan_map();
 	if ($c ne '' && $m ne $c) { # PT16: her own choice leaves a committed map only for a real reason
 		my ($tm) = party_turn();
@@ -2164,7 +2180,7 @@ sub wd_report {
 	return if time - ($wdReported{$k} || 0) < 3600;
 	$wdReported{$k} = time;
 	my @l = localtime;
-	my $e = {id => sprintf("w%d-ayla", int(time * 1000)), t => sprintf("%04d-%02d-%02dT%02d:%02d:%02d", $l[5] + 1900, $l[4] + 1, @l[3, 2, 1, 0]),
+	my $e = {id => sprintf("w%d-ayla", int(time * 1000)), t => int(time), # epoch seconds (queue b17947116852uo: a zone-less local time read 5 h off)
 		from => 'ayla-watchdog', priority => ($cause eq 'STUCK' || $cause eq 'IDLE' ? 'high' : 'normal'), status => 'open',
 		key => lc("ayla-watchdog-$cause-$map"), metric => ($cause eq 'WRONG_MAP' ? 'zph' : 'idle'), bots => 1,
 		text => "Ayla watchdog $cause on $map: $text" . ($action ? " (action: $action)" : ''),
@@ -2388,10 +2404,12 @@ sub pack_wait_map {
 # $me / $t / $pr: {x, y} ($pr undef = no priest on the map); $others: positions of the other aggressive monsters;
 # $onMe: monsters on her now; $tOnMe: this target is one of them
 sub pt32_ok {
-	my ($me, $t, $pr, $others, $onMe, $tOnMe) = @_;
+	my ($me, $t, $pr, $others, $onMe, $tOnMe, $all) = @_;
 	return 1 if $tOnMe;
 	return 0 if $onMe >= 2;
 	my $d = sub { my ($a, $b) = @_; my ($dx, $dy) = (abs($a->{x} - $b->{x}), abs($a->{y} - $b->{y})); return $dx > $dy ? $dx : $dy };
+	# never into a group (live 00:26: 11 Zombies on her in pay_dun01): no other monster within 5 cells of the target
+	foreach my $o (@{$all || []}) { return 0 if $d->($o, $t) <= 5 && !($o->{x} == $t->{x} && $o->{y} == $t->{y}) }
 	return 0 unless $d->($me, $t) <= 8 || ($pr && $d->($pr, $t) <= 8);
 	my $len = $d->($me, $t);
 	foreach my $o (@{$others || []}) {
@@ -2408,6 +2426,7 @@ our %WAIT_FIELDS = (geffen => ['gef_fild13', 'gef_fild07'], prontera => ['prt_fi
 sub wait_fields_for { return 0 } # owner 2026-11-14: rally / departure waits hold at the meeting point (no field trips)
 my %pk = (waitAt => 0, sayAt => 0, logAt => 0, goName => '', routeAt => 0, crossSaid => '', wf => undef);
 my @crossWings; # [time, map]
+sub pk_lmhold { return $pk{lmHold} || '' }
 sub cross_danger { my $m = shift || ''; return $CROSS_DANGER{$m} && transit_fit_lv() < $CROSS_DANGER{$m} + 10 ? 1 : 0 }
 # her current map route: (destination map, the next map on the way)
 sub route_maps {
@@ -2452,7 +2471,7 @@ sub pack_tick {
 	my $here = $field->baseName;
 	my @fr;
 	foreach my $u (values %{$char->{party}{users} || {}}) {
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		my $m = friend_map($u); $m =~ s/\.gat$//;
 		my ($pos) = $m eq $here ? friend_pos($u, $here) : ();
 		my $a = $apiPos{$u->{name}};
@@ -2486,6 +2505,11 @@ sub pack_tick {
 	my ($act, $an) = pack_decide({here => $here, friends => \@fr, farm => $farm, leaving => ($leaving || $pk{wf} ? 1 : 0), cross => $cross,
 		waited => $pk{waitAt} ? time - $pk{waitAt} : 0, shrinking => $shrinking, collecting => ($pk{goName} ne '' ? 1 : 0),
 		nearFor => $pk{nearSince} ? time - $pk{nearSince} : 0});
+	# a dungeon map with a member more than 20 cells behind on it: she waits for it before advancing (live 00:26
+	# pay_dun01: she pushed on with the priest, the others 95-140 cells back)
+	if ($act eq 'ok' && is_dungeon($here) && grep({ $_->[2] eq $here && defined $_->[3] && $_->[3] > 20 } @fr)) {
+		$act = 'wait';
+	}
 	if ($act eq 'ok' && $pk{goName} ne '') {
 		message "[partylead] AY22: with $pk{goName} again (within 6 cells for 3 s) - going on together\n", 'system';
 		($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
@@ -2575,7 +2599,7 @@ sub pt32_target {
 	return 1 unless $m && $m->{pos_to} && $char && $char->{pos_to} && $field && !is_townmap($field->baseName);
 	my %ag = map { $_ => 1 } AI::ai_getAggressives();
 	my $tOnMe = ($ag{$m->{ID}} || $m->{dmgToYou} || $m->{missedYou}) ? 1 : 0;
-	my (@others, $onMe);
+	my (@others, @allMon, $onMe);
 	$onMe = 0;
 	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
 		next unless $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead};
@@ -2583,10 +2607,11 @@ sub pt32_target {
 		$onMe++ if $hits && blockDistance($char->{pos_to}, $mo->{pos_to}) <= 3;
 		next if $mo->{ID} eq $m->{ID};
 		push @others, $mo->{pos_to} if $ag{$mo->{ID}} || $hits;
+		push @allMon, $mo->{pos_to};
 	}
 	my $pr;
 	foreach my $f (stick_mates()) { if ($f->[2] =~ /priest|acolyte/i) { $pr = $f->[1]; last } }
-	return pt32_ok($char->{pos_to}, $m->{pos_to}, $pr, \@others, $onMe, $tOnMe);
+	return pt32_ok($char->{pos_to}, $m->{pos_to}, $pr, \@others, $onMe, $tOnMe, \@allMon);
 }
 # a rally / departure wait turns into fighting near the meeting point (owner 2026-11-14: "fighting is her main
 # priority"): true when a safe field next to the town exists and the wait-farm started
@@ -2651,7 +2676,7 @@ sub stick_mates {
 	my $here = $field->baseName;
 	my @m;
 	foreach my $u (values %{$char->{party}{users} || {}}) {
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		next if friend_map($u) ne $here;
 		my ($pos) = friend_pos($u, $here);
 		next unless $pos && defined $pos->{x};
@@ -2794,7 +2819,7 @@ sub stick_tick {
 			$stickHelpAt = time;
 			psay(pick("help, $aggr on me", "help! $aggr on me ($here $cx,$cy)", "$aggr mobs on me, need help"), 0, 0);
 		}
-		if ($an && $ad > 3 && time - $stickRunAt > 2 && !AI::inQueue('attack') && moved_recently_or_fight()) {
+		if ($an && $ad > 3 && time - $stickRunAt > 3) { # 3+ on her: back toward the priest / tank (attack kept, attackOnRoute 1)
 			$stickRunAt = time;
 			Commands::run('stand') if $char->{sitting};
 			AI::clear('route', 'move', 'items_take', 'take', 'items_gather'); # never the attack: she fights back what hits her
@@ -2832,6 +2857,7 @@ sub tick {
 	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
 	# dead: the plugin does nothing (QA 2026-11-14 20:14: it kept attacking / routing / fetching on her corpse, every
 	# action displaced OpenKore's 'dead' task, processDead re-queued it ~40 times and the respawn waited 70 s)
+	$diedAt = 0 if !$char->{dead} && $diedAt && time - $diedAt > 300; # queue b17947128005sb: next death is announced again
 	if ($char->{dead}) {
 		if (!$diedAt) { $diedAt = time; psay(pick("argh died, respawning in " . ($config{saveMap} || 'town') . ", regroup at the kafra", "dead, sorry guys - back at the " . ($config{saveMap} || 'town') . " kafra in a sec"), 1, 0) }
 		return;
@@ -3004,7 +3030,7 @@ sub tick {
 			my @behind;
 			foreach my $id (keys %{$char->{party}{users}}) {
 				my $u = $char->{party}{users}{$id};
-				next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+				next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 				my $m = friend_map($u); $m =~ s/\.gat$//;
 				my $a = $apiPos{$u->{name}};
 				$m = $a->{map} if $a && time - $a->{at} < 10 && $a->{map};
@@ -3116,7 +3142,7 @@ sub tick {
 			my $far = '';
 			foreach my $id (keys %{$char->{party}{users}}) {
 				my $u = $char->{party}{users}{$id};
-				next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+				next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 				my $m = friend_map($u); $m =~ s/\.gat$//;
 				if ($m ne $here) { $far = $u->{name}; last }
 				next if party_strong(); # a strong party: same town map is enough, they follow her out
@@ -3141,7 +3167,7 @@ sub tick {
 		my $all = 1;
 		foreach my $id (keys %{$char->{party}{users}}) {
 			my $u = $char->{party}{users}{$id};
-			next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+			next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 			my $m = friend_map($u); $m =~ s/\.gat$//;
 			my ($pos) = friend_pos($u, $here); # sight / core API (the party list's positions go stale)
 			$all = 0 if $m ne $here || !party_strong() && (!$pos || blockDistance($char->{pos_to}, $pos) > TOGETHER);
@@ -3188,7 +3214,7 @@ sub tick {
 	my $limit = $holding ? RESUME : TOGETHER;
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
-		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 		my $m = friend_map($u);
 		$m =~ s/\.gat$//;
 		# a friend already on her destination (the hunting map she is heading to) is ahead: no hold for it - she goes there
@@ -3336,7 +3362,7 @@ sub tick {
 			my ($farId, $farMap);
 			foreach my $id (keys %{$char->{party}{users}}) {
 				my $u = $char->{party}{users}{$id};
-				next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+				next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
 				my $m = friend_map($u); $m =~ s/\.gat$//;
 				next if $m eq '' || $m eq $here;
 				$awaySince{$id} ||= time;

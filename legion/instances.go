@@ -118,7 +118,7 @@ func coreForward(next http.Handler) http.Handler {
 				continue
 			}
 			name := strings.SplitN(strings.TrimPrefix(p, pre), "/", 2)[0]
-			if n, err := url.PathUnescape(name); err == nil && core[strings.ToLower(n)] {
+			if n, err := url.PathUnescape(name); err == nil && handoffCoreName(core, n) { // handoff.go: live moves
 				proxy.ServeHTTP(w, r)
 				return
 			}

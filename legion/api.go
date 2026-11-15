@@ -167,6 +167,9 @@ func serveAPI(addr string, bots []*Bot) {
 		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/bots/"), "/")
 		b := byName[strings.ToLower(parts[0])]
 		if b == nil {
+			b = adoptedBotByName(parts[0]) // handoff.go: moved to this instance after startup
+		}
+		if b == nil {
 			http.Error(w, "no such bot", 404)
 			return
 		}
@@ -690,6 +693,9 @@ func serveAPI(addr string, bots []*Bot) {
 	//   "person":"Name","relation":"friend","person_note":"..."}   (name = any character of the player)
 	mux.HandleFunc("/api/memory/", func(w http.ResponseWriter, r *http.Request) {
 		b := byName[strings.ToLower(strings.TrimPrefix(r.URL.Path, "/api/memory/"))]
+		if b == nil {
+			b = adoptedBotByName(strings.TrimPrefix(r.URL.Path, "/api/memory/")) // handoff.go
+		}
 		if b == nil {
 			http.Error(w, "no such player", 404)
 			return

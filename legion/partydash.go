@@ -110,6 +110,10 @@ func registerPartyDash(mux *http.ServeMux) {
 						humMap, humX, humY = hm.Detail.Map, hm.Detail.X, hm.Detail.Y
 					}
 				}
+				humSrc := leadPosSource(hm.Detail, &humMap, &humX, &humY, now) // partyintent.go: stale status / no sight fallbacks
+				if hm.Detail != nil {
+					hm.Detail.LeadPosSrc = humSrc
+				}
 				v.Helper = helperLastRun("ayla")
 				v.Chat = partyChatOf(p.Human)
 				hm.WithLead = true
@@ -137,7 +141,7 @@ func registerPartyDash(mux *http.ServeMux) {
 				if p.Human != "" {
 					mx = &PartyMemberExtras{DistLead: -1, LeadMap: humMap}
 					mx.ExpH, mx.ExpMin = expSample(mv.Name, m.BaseLv, m.BaseExp, now) // partyintent.go
-					if m.Online && humMap != "" && m.MapName == humMap && humX+humY > 0 {
+					if m.Online && humMap != "" && sameMap(m.MapName, humMap) && humX+humY > 0 {
 						mx.DistLead = dist(m.X, m.Y, humX, humY)
 					}
 				}

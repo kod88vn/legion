@@ -17,6 +17,14 @@
   an alumnus still in the human's in-game party says goodbye in party chat and leaves it (both instances), and never
   leaves the human's guild (friends.go). A new member still in an old bot party says bye there and leaves it (core),
   then Zen.fox invites it. Silent rogue now runs in the main instance (`legion`) like any bot, still in Starveil.
+- Automatic rotation AY15 (2026-11-15, `legion/aylarotate.go` + `legion/handoff.go`): every `ayla_rotation_hours`
+  (default 3; `ayla_rotation_off`) while the party is calm (no rally, town run or fight, Ayla online) one member (never
+  the healer or the in-game party leader; longest tenure first) is swapped for an online bot of the same role
+  (tank/melee/ranged/caster/support), level within 5 of the party average, a class/build not in her party for 7 days,
+  never back within 24 h; Starveil members first, else guildless (Ayla's recruiting invites party friends first). The
+  roster is edited in place (no disband), the old member becomes an alumnus, says bye and leaves, then its account
+  moves to `legion`; the new one's account moves from `legion` to `legion-core` (handoff files, see operate.md) and
+  says hi on joining. First swap 3 h after the first legion-core start with this code.
 - No Emperium (`guild_emperium_check: no`). Ayla founds it: `ayla.sh guild-create Starveil`. statusout.pl writes
   `guild` + `job_id` to status.json; Legion keeps the name in `data/human-guild.json`.
 - Invitations by account id: plugin `openkore-ayla/plugins/cmdfile/guildrecruit.pl`, console `ginvite <aid> [name]`

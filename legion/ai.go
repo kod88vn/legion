@@ -527,6 +527,9 @@ func (b *Bot) think() {
 	if b.tripThink(gm, moving, now) {
 		return
 	}
+	if b.kafraMeetThink(gm, moving, now) { // kaframeet.go (PT22): waiting at the Kafra for the party after a town run
+		return
+	}
 	// party rally: meet at the Kafra nearest the destination and save there (rally.go)
 	if b.rallyThink(gm, moving, now) {
 		return

@@ -311,6 +311,10 @@ type Tuning struct {
 	IdleErrandWeightPct   int  `json:"idle_errand_weight_pct"`
 	IdleErrandSlots       int  `json:"idle_errand_slots"`
 	IdleErrandCooldownMin int  `json:"idle_errand_cooldown_min"`
+	// aylarotate.go (AY15, 2026-11-15): Ayla's party swaps one non-priest member every ayla_rotation_hours (0 = 3)
+	// for an online bot of an untested class/build in the same role. ON by default (ayla_rotation_off true stops it).
+	AylaRotationOff   bool    `json:"ayla_rotation_off"`
+	AylaRotationHours float64 `json:"ayla_rotation_hours"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.

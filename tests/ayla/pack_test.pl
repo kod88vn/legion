@@ -65,5 +65,9 @@ ok(!pt32_ok($me, {x => 57, y => 50}, undef, [{x => 54, y => 51}], 0, 0), 'aggres
 ok(pt32_ok($me, {x => 57, y => 50}, undef, [{x => 54, y => 58}], 0, 0), 'aggressive off the way: ok');
 ok(!pt32_ok($me, {x => 52, y => 50}, undef, [], 2, 0), '2 on her: no new target');
 ok(pt32_ok($me, {x => 51, y => 50}, undef, [], 3, 1), 'one hitting her: always');
+# never into a group: no other monster within 5 cells of the target (live 00:26 pay_dun01)
+ok(!pt32_ok($me, {x => 54, y => 50}, undef, [], 0, 0, [{x => 57, y => 52}]), 'target with another monster 3 cells from it: no');
+ok(pt32_ok($me, {x => 54, y => 50}, undef, [], 0, 0, [{x => 54, y => 60}]), 'target alone: ok');
+ok(pt32_ok($me, {x => 54, y => 50}, undef, [], 1, 0, []), 'one on her: a new target is fine');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);

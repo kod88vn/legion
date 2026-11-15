@@ -175,6 +175,7 @@ func main() {
 			ps = ps[:*nBots]
 		}
 		ps = selectProfiles(all, ps) // instances.go: -only / -exclude (core instance for the owner's party)
+		ps = handoffSelect(all, ps)  // handoff.go: accounts moved between the instances (AY15 rotation)
 		if *onlyNames != "" || *excludeNames != "" {
 			log.Printf("profiles: %d (only %q, exclude %q)", len(ps), *onlyNames, *excludeNames)
 		}
@@ -200,6 +201,8 @@ func main() {
 		go partyManager(bots, stop)
 		go lfgManager(bots, stop) // lfg.go: farm goals, LFG/LFM on #global, need-driven parties (main instance)
 		go humanPartyManager(bots, stop)
+		// handoff.go + aylarotate.go: AY15 party rotation (accounts moved between the instances)
+		go handoffManager(all, bots, *loginAddr, stop)
 		go rallyManager(stop)         // rally.go: parties regroup at the Kafra nearest their destination
 		go leaderTalkManager(stop)    // leadertalk.go PT10: bot leaders say town runs, rally waits, late members
 		go econManager(bots, stop)    // economy.go: #trade wants/offers, bot-to-bot trades
