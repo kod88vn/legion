@@ -1248,11 +1248,7 @@ func (b *Bot) travel(gm *GameMap, moving bool) {
 		if t, wing := b.kafraVia(b.Goal.Map, now); t != "" {
 			b.viaTown, b.viaFor, b.route, b.path = t, b.Goal.Map, nil, nil
 			if wing && now.Sub(b.wingAt) > 30*time.Second {
-				if idx := b.invIndex(itemButterflyWing); idx >= 0 {
-					b.wingAt = now
-					b.wingEvent(itemButterflyWing, "kafra trip via "+t+" to "+b.Goal.Map, now)
-					go b.useItem(idx)
-				}
+				b.flySave("kafra trip via "+t+" to "+b.Goal.Map, now) // travelwing.go: Butterfly Wing, else Teleport lv2
 			}
 			b.event("info", "", fmt.Sprintf("heading to the Kafra in %s for the trip to %s", t, b.Goal.Map))
 		}
@@ -2443,6 +2439,7 @@ func (b *Bot) leaderPartyPick(p *Party) bool {
 	if m != cur {
 		b.event("party", "", fmt.Sprintf("re-planning the party map: %s -> %s (fits the weakest member)", cur, m))
 		go p.moveTo(m)
+		sayPartyDest(b, b.P.Typing, p, m, "better spot for all of us") // partydest.go PT30: say where to be
 	}
 	return true
 }

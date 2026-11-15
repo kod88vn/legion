@@ -286,6 +286,7 @@ type Bot struct {
 	skillFailUntil             map[int]time.Time    // attack skill the server refused (0x0110: wrong weapon, no ammo, zeny...): skipped until then
 	teleAt                     time.Time            // teleport.go: last skill Teleport cast, its cell and map (teleCheck)
 	teleFrom                   [2]int               //
+	teleSaveAt                 time.Time            // travelwing.go: a Teleport cast for the save point (warpReply)
 	teleMap                    string               //
 	castUntil                  time.Time            // our own cast bar ends (0x07fb): rAthena refuses a wing (item and cast) while casting
 	opt1                       uint16               // our bodyState (0x0229): stone/freeze/stun/sleep - no item can be used
@@ -778,7 +779,7 @@ func (b *Bot) handle(pk []byte) {
 			b.spiritCasts = int(le.Uint16(pk[6:]))
 		}
 	case 0x0abe: // ZC_WARPLIST: our Teleport skill's menu - teleport.go answers "Random"
-		if r := warpListReply(pk); r != nil {
+		if r := b.warpReply(pk); r != nil { // travelwing.go: "Random", or the save point after flySave
 			go b.send(r)
 		}
 	case 0x0afb: // ZC_AUTOSPELLLIST (Hindsight): len, int32 skill ids - answer with the spell to auto-cast
