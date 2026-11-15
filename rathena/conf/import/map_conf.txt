@@ -1,0 +1,8 @@
+// IP the char server hands to clients for the map server
+map_ip: 127.0.0.1
+char_ip: 127.0.0.1
+
+// Legion bot class progression (rathena/npc-custom, mounted at npc/custom-local)
+npc: npc/custom-local/legion.txt
+// all NPC-shop items at Prontera's south gate (the market place)
+npc: npc/custom-local/legion_shops.txt

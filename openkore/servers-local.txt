@@ -1,0 +1,14 @@
+# rAthena in docker (packetver 20210107 RagexeRE, Renewal)
+[rAthena Local]
+ip 127.0.0.1
+port 6900
+private 1
+master_version 1
+version 55
+serverType kRO_RagexeRE_2020_07_23
+serverEncoding Western
+charBlockSize 155
+addTableFolders kRO/RagexeRE_2020_09_02b;translated/kRO_english;kRO
+itemListType 1
+pinCode 0
+

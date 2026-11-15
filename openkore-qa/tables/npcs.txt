@@ -1,0 +1,155 @@
+pay_arche 44 121 Gift Supplies Clerk
+pay_arche 44 124 Marry Jae
+pay_arche 86 33 Guide#05payon
+pay_arche 79 31 Bulletin Board#07
+payon 233 324 Guide#04payon
+payon 200 134 Merchant#pay
+payon 177 111 Eden Teleport Officer#1
+payon 177 131 Pet Groomer#pay
+payon 180 130 Rare Diamond Merchant#7
+payon 209 127 Servant
+payon 236 199 Leablem#pay
+pay_arche 55 123 Kafra Employee
+payon 175 226 Kafra Employee
+payon 173 238 Jade#pay
+payon 167 229 Elder Jagyeom#illusion_
+prontera 121 72 Royal Messenger#e16_pr
+prontera 142 60 Weapons Merchant#lgWea1
+prontera 146 57 Armor Merchant#lgArm0
+prontera 148 49 Bulletin Board#09
+prontera 163 53 Promotional Staff#prt
+prontera 151 29 Kafra Employee
+prontera 160 29 Guide#04prontera
+payon 160 67 Guide#01payon
+payon_in01 12 47 Gemstone Bagger#21
+payon_in01 5 49 Tool Dealer#Extended_Pa
+payon_in01 12 53 Advanced Potion Merchan
+payon 157 54 An Old Woman#pa0829
+payon 161 50 Strong Looking Man#pa82
+payon 161 54 Exotic Merchant#pa0829
+payon 179 66 Dashia
+payon 173 82 Young Man#2payon
+payon 178 104 Zonda Teleportation#pay
+payon 176 104 Kafra Teleportation#pay
+payon 181 104 Kafra Employee
+payon 186 104 Smile Assistance#pay
+payon 189 105 Maroll Battle Recruiter
+payon 180 106 Guild Warehouse Manager
+payon 178 108 Bulletin Board#06
+payon 174 113 Phantasmagorika Spokesp
+payon 166 102 Riding Creature Master#
+payon 166 106 Mado Gear Armorer#pay
+payon 206 119 Chef Assistant#pay
+payon 204 221 Bafhail#payon
+prontera 114 77 Dolangmal#1
+prontera 121 77 Phantasmagorika Spokesp
+prontera 143 87 Kafra Teleportation#pro
+prontera 145 87 Zonda Teleportation#pro
+geffen 117 37 Cool Event Staff#gef
+geffen 119 48 Fountain#s
+geffen 129 49 Point Merchant#Geffen
+geffen 118 62 Guide#02geffen
+geffen 120 62 Kafra Employee
+geffen 111 48 Stacey
+geffen 100 55 Riding Creature Master#
+geffen 90 67 Promotional Staff#gef
+geffen 67 87 Ipore#1
+geffen 36 123 Guide#03geffen
+geffen 122 37 Kafra Voting Staff#gef
+geffen 132 38 Bard#2
+payon 163 96 Gemstone Bagger#20
+payon 159 96 Tool Dealer#pay3
+payon 155 96 Cat Paw Shrimp Merchant
+payon 157 96 Advanced Potion Merchan
+payon 139 68 A dreary man#pa0829
+prontera 123 83 Maroll Battle Recruiter
+geffen 124 65 Bulletin Board#2
+geffen 117 66 Zonda Teleportation#gef
+geffen 103 55 Mado Gear Armorer#gef
+geffen 106 63 Rare Diamond Merchant#2
+geffen 109 61 Dolangmal#2
+geffen 109 66 Maroll Battle Recruiter
+geffen 103 42 Sponiac
+geffen 115 66 Kafra Teleportation#gef
+prontera 105 87 Gift Merchant#prt
+prontera 123 102 Merchant#pron
+prontera 137 125 Cash Sales Guide#pronte
+prontera 147 125 Cool Event Staff#prt
+prontera 160 133 YuPi#pront
+prontera 163 178 Mado Gear Armorer#prt
+prontera 138 183 Clan Helper
+prontera 155 190 Kriemhild#15
+prontera 156 212 Chef Assistant#prt
+prontera 137 223 Cat Paw Shrimp Merchant
+prontera 165 232 Nephia#1
+prontera 144 301 Mage#tu
+prontera 140 304 Old Soldier
+prontera 148 326 Chief Officer#edq
+prontera 150 326 Wanted Notice#edq
+prontera 159 326 Guide#05prontera
+prontera 152 326 Kafra Employee
+prontera 150 331 Royal Guard#ep16_ect01
+prontera 161 331 Royal Guard#ep16_ect02
+prontera 164 304 Continental Messenger#0
+prontera 174 328 Young Man#bard_q1
+prontera 228 279 Wanderer#rus24
+prontera 248 212 Busy Boy#prt
+prontera 282 200 Kafra Employee
+prontera 282 208 Guide#02prontera
+morocc 154 38 Guide#02morocc
+morocc 154 55 Jeweler#moc3
+morocc 156 76 Butcher#moc1
+morocc 165 82 Morocc Villager#rus25
+morocc 170 84 Advanced Potion Merchan
+morocc 145 82 Maroll Battle Recruiter
+morocc 152 97 Royal Messenger#e16_mo
+morocc 156 97 Kafra Employee
+morocc 161 97 Eden Teleport Officer#2
+morocc 146 100 Rare Diamond Merchant#3
+morocc 143 101 Gemstone Bagger#19
+morocc 146 103 Tool Dealer#Extended_Mo
+morocc 169 105 Cat Paw Shrimp Merchant
+morocc 159 107 Smile Assistance#moc2
+morocc 168 107 Guild Warehouse Manager
+prontera 149 202 YuNa#pront
+prontera 167 281 New Guild Master#tu
+morocc 140 90 Trader#moc6
+morocc 28 170 Guide#04morocc
+moc_fild19 107 101 Signposts#Sphinx
+morocc 116 39 Rogue Guild Agent#nd4
+morocc 53 87 Prison Ward#sch
+payon 200 106 Dolangmal#3
+payon 214 79 Talpiz#BLS
+payon 221 85 Guide#03payon
+pay_fild08 40 83 Acolyte#tu
+prontera 164 57 Tools Merchant#lgToo0
+prontera 165 60 Apprentice Craftsman
+prontera 168 60 Goods Merchant#lgGoo1
+prontera 168 57 Goods Merchant#lgGoo0
+payon 168 65 Royal Messenger#e16_pa
+prontera 142 57 Weapons Merchant#lgWea0
+payon 200 113 Continental Messenger#0
+alberta 113 53 Smile Assistance#alb
+alberta 120 53 Stylish Merchant#new30
+alberta 111 59 Bulletin Board#1
+alberta 119 59 Royal Messenger#e16_alb
+payon 173 141 Ripped Cabus#GymPass
+payon 164 157 Cash Sales Guide#payon
+payon 166 161 Bamboo Grove Hill#12
+payon 166 173 Scarlet Palace#12
+payon 151 182 Guide#02payon
+payon 164 229 Elder Sanyul#illusion_m
+alberta 105 52 Point Merchant#Alberta
+alberta 124 59 Assistant Dunea#alb
+alberta 214 77 Captain Janssen
+alberta 198 129 Valerie#min
+alberta 179 141 Pet Trader#2
+alberta 184 143 Guide#03alberta
+izlude 197 205 Sailor#izlude
+izlude 198 213 Captain Carocc#iz
+izlude 195 213 Con-Chliina Crewman#doi
+izlude 194 209 #fgtg02
+izlude 182 218 Odgnalam#iz
+payon 159 129 Wooden Floor#paypuzz5
+payon 182 132 Grout'he Tuccok#hellion
+payon 166 177 Bright Arbor#12

@@ -1,0 +1,5 @@
+// allow creating accounts with <name>_M / <name>_F at the login screen
+new_account: yes
+start_limited_time: -1
+// accept any client version/hash
+check_client_version: no

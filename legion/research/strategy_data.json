@@ -1,0 +1,7991 @@
+{
+ "meta": {
+  "source": "research/STRATEGY.md; reachable spots mirror strategy.go guideSpots, plus notable spots Legion cannot reach yet (reachable:false)",
+  "server": "rAthena Renewal, base/job exp 10x, drops 1x, mob_count_rate 200%, party_share_level 15, party_even_share_bonus 0",
+  "fields": "min,max,map,aggro,mobby,ranged,party,element,note as in strategy.go GuideSpot; monsters from npc/re/mobs + db/re/mob_db.yml (aggro from mob AI)"
+ },
+ "exp_level_modifier": {
+  "note": "monster level minus player level -> % base exp (Renewal, irowiki Experience)",
+  "table": {
+   "+16 or more": 40,
+   "+15": 115,
+   "+14": 120,
+   "+13": 125,
+   "+12": 130,
+   "+11": 135,
+   "+10": 140,
+   "+9": 135,
+   "+8": 130,
+   "+7": 125,
+   "+6": 120,
+   "+5": 115,
+   "+4": 110,
+   "+3": 105,
+   "+2..-5": 100,
+   "-6..-10": 95,
+   "-11..-15": 90,
+   "-16..-20": 85,
+   "-21..-25": 60,
+   "-26..-30": 35,
+   "-31 or less": 10
+  }
+ },
+ "party_rules": {
+  "even_share_max_level_gap": 15,
+  "official_bonus_per_extra_member_pct": 20,
+  "this_server_even_share_bonus_pct": 0,
+  "note": "rAthena even share only if every online member is within party_share_level (15) base levels; only members on the same map get a share. With 'each take' the killer (highest damage) gets the exp."
+ },
+ "spots": [
+  {
+   "min": 1,
+   "max": 12,
+   "map": "prt_fild08",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Poring/Lunatic/Fabre/Pupa south of Prontera, next to Izlude: the classic Novice field",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Poring",
+     "count": 197,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Fabre",
+     "count": 177,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Lunatic",
+     "count": 167,
+     "lv": 3,
+     "hp": 48,
+     "base_exp": 150,
+     "element": "Neut3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Little Poring",
+     "count": 50,
+     "lv": 1,
+     "hp": 40,
+     "base_exp": 18,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Pupa",
+     "count": 20,
+     "lv": 4,
+     "hp": 51,
+     "base_exp": 157,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 1,
+   "max": 12,
+   "map": "gef_fild07",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Pupa (never fight back) and Porings just west of Geffen: free exp",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Pupa",
+     "count": 134,
+     "lv": 4,
+     "hp": 51,
+     "base_exp": 157,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Poring",
+     "count": 20,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Fabre",
+     "count": 20,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Chonchon",
+     "count": 20,
+     "lv": 5,
+     "hp": 48,
+     "base_exp": 150,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Swift Poring",
+     "count": 2,
+     "lv": 1,
+     "hp": 275,
+     "base_exp": 750,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 1,
+   "max": 12,
+   "map": "gef_fild00",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Chonchon swarm north of Geffen; quick kills, they hit a little",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Chonchon",
+     "count": 160,
+     "lv": 5,
+     "hp": 48,
+     "base_exp": 150,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Poring",
+     "count": 34,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Fabre",
+     "count": 34,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Chonchon",
+     "count": 2,
+     "lv": 5,
+     "hp": 240,
+     "base_exp": 750,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 1,
+   "max": 12,
+   "map": "prt_fild06",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Fabre/Lunatic east of Prontera",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Fabre",
+     "count": 149,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Poring",
+     "count": 32,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Lunatic",
+     "count": 32,
+     "lv": 3,
+     "hp": 48,
+     "base_exp": 150,
+     "element": "Neut3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Solid Fabre",
+     "count": 2,
+     "lv": 6,
+     "hp": 590,
+     "base_exp": 790,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 1,
+   "max": 12,
+   "map": "pay_fild03",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Fabre/Willow/Pupa between Payon and Alberta",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Fabre",
+     "count": 130,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Poring",
+     "count": 25,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Willow",
+     "count": 25,
+     "lv": 8,
+     "hp": 78,
+     "base_exp": 160,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Pupa",
+     "count": 20,
+     "lv": 4,
+     "hp": 51,
+     "base_exp": 157,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Fabre Ringleader",
+     "count": 3,
+     "lv": 6,
+     "hp": 295,
+     "base_exp": 790,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 1,
+   "max": 14,
+   "map": "pay_fild01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Willow outside Payon: slow earth plants, fire bolts one-shot them",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Willow",
+     "count": 181,
+     "lv": 8,
+     "hp": 78,
+     "base_exp": 160,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Poring",
+     "count": 38,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Fabre",
+     "count": 38,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Willow Ringleader",
+     "count": 2,
+     "lv": 8,
+     "hp": 390,
+     "base_exp": 800,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 2,
+   "max": 12,
+   "map": "prt_fild01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Lunatic meadow north-west of Prontera, quiet",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Lunatic",
+     "count": 196,
+     "lv": 3,
+     "hp": 48,
+     "base_exp": 150,
+     "element": "Neut3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Poring",
+     "count": 42,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Fabre",
+     "count": 42,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Lunatic Ringleader",
+     "count": 2,
+     "lv": 3,
+     "hp": 240,
+     "base_exp": 750,
+     "element": "Neut3",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 8,
+   "max": 20,
+   "map": "prt_fild05",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Hornet/Thief Bug west of Prontera: fast insects, keep red potions",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Hornet",
+     "count": 199,
+     "lv": 11,
+     "hp": 85,
+     "base_exp": 158,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Thief Bug Egg",
+     "count": 42,
+     "lv": 20,
+     "hp": 290,
+     "base_exp": 181,
+     "element": "Dark1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Thief Bug",
+     "count": 42,
+     "lv": 21,
+     "hp": 238,
+     "base_exp": 188,
+     "element": "Neut3",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Hornet",
+     "count": 2,
+     "lv": 11,
+     "hp": 425,
+     "base_exp": 790,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 8,
+   "max": 18,
+   "map": "gef_fild04",
+   "aggro": false,
+   "mobby": false,
+   "ranged": true,
+   "party": false,
+   "element": "Fire",
+   "note": "Mandragora don't move: free kills for archers/mages, deadly for melee",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Mandragora",
+     "count": 125,
+     "lv": 13,
+     "hp": 140,
+     "base_exp": 170,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Lunatic",
+     "count": 25,
+     "lv": 3,
+     "hp": 48,
+     "base_exp": 150,
+     "element": "Neut3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Fabre",
+     "count": 25,
+     "lv": 6,
+     "hp": 59,
+     "base_exp": 158,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Chonchon",
+     "count": 25,
+     "lv": 5,
+     "hp": 48,
+     "base_exp": 150,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Solid Mandragora",
+     "count": 2,
+     "lv": 13,
+     "hp": 1400,
+     "base_exp": 850,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 9,
+   "max": 22,
+   "map": "mjolnir_09",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Savage Babe/Hornet/Willow at the foot of Mt. Mjolnir, all passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Savage Babe",
+     "count": 159,
+     "lv": 14,
+     "hp": 127,
+     "base_exp": 172,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Willow",
+     "count": 34,
+     "lv": 8,
+     "hp": 78,
+     "base_exp": 160,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Hornet",
+     "count": 34,
+     "lv": 11,
+     "hp": 85,
+     "base_exp": 158,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Swift Savage Babe",
+     "count": 2,
+     "lv": 14,
+     "hp": 635,
+     "base_exp": 860,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 10,
+   "max": 24,
+   "map": "prt_fild07",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Rocker/Savage Babe, passive; Vocal (mini boss) spawns rarely",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Rocker",
+     "count": 203,
+     "lv": 15,
+     "hp": 155,
+     "base_exp": 174,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Savage Babe",
+     "count": 67,
+     "lv": 14,
+     "hp": 127,
+     "base_exp": 172,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Rocker",
+     "count": 3,
+     "lv": 15,
+     "hp": 775,
+     "base_exp": 870,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Vocal",
+     "count": 1,
+     "lv": 18,
+     "hp": 3317,
+     "base_exp": 49,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 10,
+   "max": 24,
+   "map": "gef_fild01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Roda Frog/Ambernite, water monsters: lightning bolts; only the rare Toad aggroes",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Roda Frog",
+     "count": 112,
+     "lv": 13,
+     "hp": 140,
+     "base_exp": 162,
+     "element": "Wate1",
+     "race": "Fish",
+     "aggro": false
+    },
+    {
+     "name": "Ambernite",
+     "count": 28,
+     "lv": 19,
+     "hp": 265,
+     "base_exp": 178,
+     "element": "Wate1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Furious Roda Frog",
+     "count": 2,
+     "lv": 13,
+     "hp": 700,
+     "base_exp": 810,
+     "element": "Wate1",
+     "race": "Fish",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 10,
+   "max": 24,
+   "map": "prt_fild00",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Roda Frog/Ambernite north of Prontera",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Roda Frog",
+     "count": 169,
+     "lv": 13,
+     "hp": 140,
+     "base_exp": 162,
+     "element": "Wate1",
+     "race": "Fish",
+     "aggro": false
+    },
+    {
+     "name": "Ambernite",
+     "count": 65,
+     "lv": 19,
+     "hp": 265,
+     "base_exp": 178,
+     "element": "Wate1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Savage Babe",
+     "count": 26,
+     "lv": 14,
+     "hp": 127,
+     "base_exp": 172,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Roda Frog Ringleader",
+     "count": 2,
+     "lv": 13,
+     "hp": 700,
+     "base_exp": 810,
+     "element": "Wate1",
+     "race": "Fish",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 12,
+   "max": 26,
+   "map": "pay_fild06",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Wormtail/Boa/Spore near Payon, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Wormtail",
+     "count": 140,
+     "lv": 17,
+     "hp": 186,
+     "base_exp": 180,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Boa",
+     "count": 30,
+     "lv": 18,
+     "hp": 203,
+     "base_exp": 183,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Spore",
+     "count": 30,
+     "lv": 18,
+     "hp": 223,
+     "base_exp": 175,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Wormtail Ringleader",
+     "count": 3,
+     "lv": 17,
+     "hp": 930,
+     "base_exp": 900,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 13,
+   "max": 27,
+   "map": "pay_fild08",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Spore (water plant) field next to Payon, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Spore",
+     "count": 148,
+     "lv": 18,
+     "hp": 223,
+     "base_exp": 175,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Wormtail",
+     "count": 31,
+     "lv": 17,
+     "hp": 186,
+     "base_exp": 180,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Boa",
+     "count": 31,
+     "lv": 18,
+     "hp": 203,
+     "base_exp": 183,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 1
+  },
+  {
+   "min": 13,
+   "max": 27,
+   "map": "pay_fild02",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Boa (earth snake) field near Payon, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Boa",
+     "count": 142,
+     "lv": 18,
+     "hp": 203,
+     "base_exp": 183,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Wormtail",
+     "count": 30,
+     "lv": 17,
+     "hp": 186,
+     "base_exp": 180,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Spore",
+     "count": 30,
+     "lv": 18,
+     "hp": 223,
+     "base_exp": 175,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Boa Ringleader",
+     "count": 3,
+     "lv": 18,
+     "hp": 1015,
+     "base_exp": 915,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 14,
+   "max": 28,
+   "map": "prt_fild04",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Ambernite snails: high DEF, water; better for magic/archers",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Ambernite",
+     "count": 111,
+     "lv": 19,
+     "hp": 265,
+     "base_exp": 178,
+     "element": "Wate1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Roda Frog",
+     "count": 27,
+     "lv": 13,
+     "hp": 140,
+     "base_exp": 162,
+     "element": "Wate1",
+     "race": "Fish",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Ambernite",
+     "count": 2,
+     "lv": 19,
+     "hp": 1325,
+     "base_exp": 890,
+     "element": "Wate1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Vocal",
+     "count": 1,
+     "lv": 18,
+     "hp": 3317,
+     "base_exp": 49,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 18,
+   "max": 32,
+   "map": "pay_dun00",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Holy",
+   "note": "Payon Cave 1: slow aggro Zombies, Skeletons, Familiars; Holy Light / fire works, acolytes love it",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Zombie",
+     "count": 40,
+     "lv": 17,
+     "hp": 204,
+     "base_exp": 189,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Skeleton",
+     "count": 35,
+     "lv": 27,
+     "hp": 445,
+     "base_exp": 235,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": false
+    },
+    {
+     "name": "Familiar",
+     "count": 15,
+     "lv": 24,
+     "hp": 330,
+     "base_exp": 200,
+     "element": "Dark1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Poporing",
+     "count": 15,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Furious Zombie",
+     "count": 2,
+     "lv": 17,
+     "hp": 1020,
+     "base_exp": 945,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 18,
+   "max": 32,
+   "map": "prt_fild02",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Stainer/Creamy/Poporing east of Prontera, wind insects",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Stainer",
+     "count": 188,
+     "lv": 21,
+     "hp": 212,
+     "base_exp": 188,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Creamy",
+     "count": 40,
+     "lv": 23,
+     "hp": 247,
+     "base_exp": 196,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Poporing",
+     "count": 40,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Stainer",
+     "count": 3,
+     "lv": 21,
+     "hp": 1060,
+     "base_exp": 940,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 18,
+   "max": 32,
+   "map": "gef_fild05",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Creamy/Stainer/Smokie south of Geffen, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Creamy",
+     "count": 143,
+     "lv": 23,
+     "hp": 247,
+     "base_exp": 196,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Stainer",
+     "count": 20,
+     "lv": 21,
+     "hp": 212,
+     "base_exp": 188,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Smokie",
+     "count": 20,
+     "lv": 29,
+     "hp": 414,
+     "base_exp": 235,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Thief Bug Egg",
+     "count": 10,
+     "lv": 20,
+     "hp": 290,
+     "base_exp": 181,
+     "element": "Dark1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Thief Bug",
+     "count": 10,
+     "lv": 21,
+     "hp": 238,
+     "base_exp": 188,
+     "element": "Neut3",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 18,
+   "max": 34,
+   "map": "moc_fild01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Muka cactus + Peco Peco (fire, assist each other) south of Prontera",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Muka",
+     "count": 202,
+     "lv": 23,
+     "hp": 337,
+     "base_exp": 205,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Peco Peco",
+     "count": 93,
+     "lv": 25,
+     "hp": 354,
+     "base_exp": 204,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Peco Peco Egg",
+     "count": 31,
+     "lv": 7,
+     "hp": 70,
+     "base_exp": 152,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Muka Ringleader",
+     "count": 3,
+     "lv": 23,
+     "hp": 1685,
+     "base_exp": 1025,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 19,
+   "max": 34,
+   "map": "moc_fild02",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Peco Peco field: they assist, cold bolts / water against them",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Peco Peco",
+     "count": 153,
+     "lv": 25,
+     "hp": 354,
+     "base_exp": 204,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Muka",
+     "count": 58,
+     "lv": 23,
+     "hp": 337,
+     "base_exp": 205,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Peco Peco Egg",
+     "count": 11,
+     "lv": 7,
+     "hp": 70,
+     "base_exp": 152,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Peco Peco",
+     "count": 2,
+     "lv": 25,
+     "hp": 1770,
+     "base_exp": 1020,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 20,
+   "max": 35,
+   "map": "mjolnir_01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Caramel/Bigfoot earth brutes, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Caramel",
+     "count": 167,
+     "lv": 25,
+     "hp": 319,
+     "base_exp": 214,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Stainer",
+     "count": 23,
+     "lv": 21,
+     "hp": 212,
+     "base_exp": 188,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Creamy",
+     "count": 23,
+     "lv": 23,
+     "hp": 247,
+     "base_exp": 196,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Bigfoot",
+     "count": 23,
+     "lv": 29,
+     "hp": 506,
+     "base_exp": 235,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Swift Caramel",
+     "count": 2,
+     "lv": 25,
+     "hp": 1595,
+     "base_exp": 1070,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 20,
+   "max": 35,
+   "map": "pay_fild07",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Bigfoot/Caramel west of Payon, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Bigfoot",
+     "count": 174,
+     "lv": 29,
+     "hp": 506,
+     "base_exp": 235,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Caramel",
+     "count": 40,
+     "lv": 25,
+     "hp": 319,
+     "base_exp": 214,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Stainer",
+     "count": 26,
+     "lv": 21,
+     "hp": 212,
+     "base_exp": 188,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Creamy",
+     "count": 26,
+     "lv": 23,
+     "hp": 247,
+     "base_exp": 196,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Bigfoot Ringleader",
+     "count": 2,
+     "lv": 29,
+     "hp": 2530,
+     "base_exp": 1175,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 20,
+   "max": 36,
+   "map": "mjo_dun01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Holy",
+   "note": "Mjolnir Coal Mine 1: Tarou/Familiar (dark) and Martin",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Tarou",
+     "count": 63,
+     "lv": 22,
+     "hp": 285,
+     "base_exp": 192,
+     "element": "Dark1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Familiar",
+     "count": 31,
+     "lv": 24,
+     "hp": 330,
+     "base_exp": 200,
+     "element": "Dark1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Martin",
+     "count": 21,
+     "lv": 39,
+     "hp": 769,
+     "base_exp": 307,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Tarou Ringleader",
+     "count": 2,
+     "lv": 22,
+     "hp": 1425,
+     "base_exp": 960,
+     "element": "Dark1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 22,
+   "max": 36,
+   "map": "pay_fild04",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Poporing/Marin: poison/water jellies, any element works",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Poporing",
+     "count": 141,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Marin",
+     "count": 32,
+     "lv": 37,
+     "hp": 844,
+     "base_exp": 279,
+     "element": "Wate2",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Drops",
+     "count": 21,
+     "lv": 2,
+     "hp": 46,
+     "base_exp": 150,
+     "element": "Fire1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Poring",
+     "count": 16,
+     "lv": 1,
+     "hp": 55,
+     "base_exp": 150,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Poporing",
+     "count": 2,
+     "lv": 30,
+     "hp": 2445,
+     "base_exp": 1145,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 22,
+   "max": 36,
+   "map": "mjolnir_06",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Poison Spore (aggro, poison) / Smokie; AoE recommended",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Poison Spore",
+     "count": 100,
+     "lv": 26,
+     "hp": 379,
+     "base_exp": 209,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Smokie",
+     "count": 70,
+     "lv": 29,
+     "hp": 414,
+     "base_exp": 235,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Creamy",
+     "count": 30,
+     "lv": 23,
+     "hp": 247,
+     "base_exp": 196,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Solid Poison Spore",
+     "count": 3,
+     "lv": 26,
+     "hp": 3790,
+     "base_exp": 1045,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 28,
+   "max": 42,
+   "map": "pay_fild09",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Horn/Coco near Payon; the few Elder Willows aggro (cold bolts)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Horn",
+     "count": 181,
+     "lv": 32,
+     "hp": 564,
+     "base_exp": 259,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Coco",
+     "count": 38,
+     "lv": 38,
+     "hp": 694,
+     "base_exp": 300,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Elder Willow",
+     "count": 25,
+     "lv": 34,
+     "hp": 535,
+     "base_exp": 259,
+     "element": "Fire2",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Solid Horn",
+     "count": 2,
+     "lv": 32,
+     "hp": 5640,
+     "base_exp": 1295,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 28,
+   "max": 44,
+   "map": "gef_fild09",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Coco squirrels, passive, south of Geffen",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Coco",
+     "count": 98,
+     "lv": 38,
+     "hp": 694,
+     "base_exp": 300,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Roda Frog",
+     "count": 24,
+     "lv": 13,
+     "hp": 140,
+     "base_exp": 162,
+     "element": "Wate1",
+     "race": "Fish",
+     "aggro": false
+    },
+    {
+     "name": "Swift Coco",
+     "count": 2,
+     "lv": 38,
+     "hp": 3470,
+     "base_exp": 1500,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 28,
+   "max": 44,
+   "map": "gef_fild02",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Coco/Horn/Poporing east of Geffen",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Coco",
+     "count": 172,
+     "lv": 38,
+     "hp": 694,
+     "base_exp": 300,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Poporing",
+     "count": 24,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Horn",
+     "count": 24,
+     "lv": 32,
+     "hp": 564,
+     "base_exp": 259,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Elder Willow",
+     "count": 24,
+     "lv": 34,
+     "hp": 535,
+     "base_exp": 259,
+     "element": "Fire2",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Solid Coco",
+     "count": 3,
+     "lv": 38,
+     "hp": 6940,
+     "base_exp": 1500,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 28,
+   "max": 42,
+   "map": "prt_fild10",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Elder Willow grove (aggro fire plants): cold bolts / water",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Elder Willow",
+     "count": 157,
+     "lv": 34,
+     "hp": 535,
+     "base_exp": 259,
+     "element": "Fire2",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Poporing",
+     "count": 22,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Horn",
+     "count": 22,
+     "lv": 32,
+     "hp": 564,
+     "base_exp": 259,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Coco",
+     "count": 22,
+     "lv": 38,
+     "hp": 694,
+     "base_exp": 300,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Swift Elder Willow",
+     "count": 3,
+     "lv": 34,
+     "hp": 2675,
+     "base_exp": 1295,
+     "element": "Fire2",
+     "race": "Plant",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 28,
+   "max": 42,
+   "map": "mjolnir_02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Elder Willow/Yoyo on Mt. Mjolnir, mostly aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Elder Willow",
+     "count": 154,
+     "lv": 34,
+     "hp": 535,
+     "base_exp": 259,
+     "element": "Fire2",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Horn",
+     "count": 33,
+     "lv": 32,
+     "hp": 564,
+     "base_exp": 259,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Poporing",
+     "count": 22,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Yoyo",
+     "count": 22,
+     "lv": 38,
+     "hp": 694,
+     "base_exp": 300,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Solid Elder Willow",
+     "count": 3,
+     "lv": 34,
+     "hp": 5350,
+     "base_exp": 1295,
+     "element": "Fire2",
+     "race": "Plant",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 30,
+   "max": 44,
+   "map": "prt_fild03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Yoyo monkeys (aggro, steal loot) and Horns",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Yoyo",
+     "count": 127,
+     "lv": 38,
+     "hp": 694,
+     "base_exp": 300,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Poporing",
+     "count": 38,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Horn",
+     "count": 38,
+     "lv": 32,
+     "hp": 564,
+     "base_exp": 259,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Swift Yoyo",
+     "count": 2,
+     "lv": 38,
+     "hp": 3470,
+     "base_exp": 1500,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Choco",
+     "count": 1,
+     "lv": 48,
+     "hp": 985,
+     "base_exp": 379,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 32,
+   "max": 48,
+   "map": "pay_dun01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Payon Cave 2: Soldier/Archer Skeletons (aggro undead); party with a priest",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Soldier Skeleton",
+     "count": 53,
+     "lv": 34,
+     "hp": 691,
+     "base_exp": 284,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Archer Skeleton",
+     "count": 32,
+     "lv": 50,
+     "hp": 1458,
+     "base_exp": 436,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Eggyra",
+     "count": 16,
+     "lv": 53,
+     "hp": 1236,
+     "base_exp": 402,
+     "element": "Ghos2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Drainliar",
+     "count": 5,
+     "lv": 47,
+     "hp": 1182,
+     "base_exp": 370,
+     "element": "Dark2",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Furious Soldier Skeleton",
+     "count": 2,
+     "lv": 34,
+     "hp": 3455,
+     "base_exp": 1420,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 34,
+   "max": 50,
+   "map": "mjo_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Coal Mine 2: Martin/Giearth/Skeleton Worker",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Martin",
+     "count": 71,
+     "lv": 39,
+     "hp": 769,
+     "base_exp": 307,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Giearth",
+     "count": 41,
+     "lv": 42,
+     "hp": 866,
+     "base_exp": 344,
+     "element": "Eart1",
+     "race": "Demon",
+     "aggro": false
+    },
+    {
+     "name": "Drainliar",
+     "count": 23,
+     "lv": 47,
+     "hp": 1182,
+     "base_exp": 370,
+     "element": "Dark2",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Skeleton Worker",
+     "count": 23,
+     "lv": 44,
+     "hp": 1151,
+     "base_exp": 378,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Solid Martin",
+     "count": 2,
+     "lv": 39,
+     "hp": 7690,
+     "base_exp": 1535,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 40,
+   "max": 56,
+   "map": "gef_fild10",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Orc Village: Orc Warriors/Ladies all aggro and assist; AoE or a party; beware Orc Lord",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Orc Warrior",
+     "count": 179,
+     "lv": 44,
+     "hp": 1047,
+     "base_exp": 361,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Orc Lady",
+     "count": 55,
+     "lv": 45,
+     "hp": 1145,
+     "base_exp": 369,
+     "element": "Eart2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Orc Baby",
+     "count": 27,
+     "lv": 43,
+     "hp": 904,
+     "base_exp": 352,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Furious Orc Warrior",
+     "count": 2,
+     "lv": 44,
+     "hp": 5235,
+     "base_exp": 1805,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 40,
+   "max": 56,
+   "map": "gef_fild03",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Orc Lady field next to the village, all aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Orc Lady",
+     "count": 160,
+     "lv": 45,
+     "hp": 1145,
+     "base_exp": 369,
+     "element": "Eart2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Orc Warrior",
+     "count": 73,
+     "lv": 44,
+     "hp": 1047,
+     "base_exp": 361,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Orc Baby",
+     "count": 24,
+     "lv": 43,
+     "hp": 904,
+     "base_exp": 352,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Solid Orc Lady",
+     "count": 3,
+     "lv": 45,
+     "hp": 11450,
+     "base_exp": 1845,
+     "element": "Eart2",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 40,
+   "max": 55,
+   "map": "moc_fild03",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Wolf packs (assist), a few aggro Argos/Steel Chonchons",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Wolf",
+     "count": 164,
+     "lv": 45,
+     "hp": 1091,
+     "base_exp": 369,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Argos",
+     "count": 23,
+     "lv": 47,
+     "hp": 1300,
+     "base_exp": 370,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Steel Chonchon",
+     "count": 23,
+     "lv": 48,
+     "hp": 985,
+     "base_exp": 379,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Swift Wolf",
+     "count": 2,
+     "lv": 45,
+     "hp": 5455,
+     "base_exp": 1845,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 40,
+   "max": 55,
+   "map": "gef_fild11",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Goblin camp: five Goblin types, each a different element, all aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Goblin",
+     "count": 58,
+     "lv": 48,
+     "hp": 1107,
+     "base_exp": 379,
+     "element": "Wind1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Goblin",
+     "count": 58,
+     "lv": 44,
+     "hp": 943,
+     "base_exp": 344,
+     "element": "Fire1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Goblin",
+     "count": 58,
+     "lv": 44,
+     "hp": 1047,
+     "base_exp": 344,
+     "element": "Pois1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Goblin",
+     "count": 58,
+     "lv": 49,
+     "hp": 1277,
+     "base_exp": 407,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Swift Goblin",
+     "count": 3,
+     "lv": 48,
+     "hp": 5535,
+     "base_exp": 1895,
+     "element": "Wind1",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 40,
+   "max": 56,
+   "map": "gef_dun00",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Geffen Dungeon 1: Hunter Flies (fast, aggro, drain HP) - bring a party",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Hunter Fly",
+     "count": 30,
+     "lv": 63,
+     "hp": 1902,
+     "base_exp": 588,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Poison Spore",
+     "count": 25,
+     "lv": 26,
+     "hp": 379,
+     "base_exp": 209,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Poporing",
+     "count": 15,
+     "lv": 30,
+     "hp": 489,
+     "base_exp": 229,
+     "element": "Pois1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Furious Hunter Fly",
+     "count": 1,
+     "lv": 63,
+     "hp": 9510,
+     "base_exp": 2940,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 42,
+   "max": 56,
+   "map": "mjo_dun03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Coal Mine 3: aggro Skeleton Workers and Mysts",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Skeleton Worker",
+     "count": 78,
+     "lv": 44,
+     "hp": 1151,
+     "base_exp": 378,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Myst",
+     "count": 39,
+     "lv": 49,
+     "hp": 1404,
+     "base_exp": 388,
+     "element": "Pois1",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Giearth",
+     "count": 5,
+     "lv": 42,
+     "hp": 866,
+     "base_exp": 344,
+     "element": "Eart1",
+     "race": "Demon",
+     "aggro": false
+    },
+    {
+     "name": "Martin",
+     "count": 5,
+     "lv": 39,
+     "hp": 769,
+     "base_exp": 307,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Cramp",
+     "count": 3,
+     "lv": 82,
+     "hp": 3935,
+     "base_exp": 970,
+     "element": "Pois2",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 42,
+   "max": 58,
+   "map": "mjolnir_10",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Argos (aggro poison spiders) / Beetle King / Flora",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Argos",
+     "count": 194,
+     "lv": 47,
+     "hp": 1300,
+     "base_exp": 370,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Beetle King",
+     "count": 41,
+     "lv": 55,
+     "hp": 1487,
+     "base_exp": 489,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Flora",
+     "count": 41,
+     "lv": 59,
+     "hp": 2065,
+     "base_exp": 535,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Furious Argos",
+     "count": 2,
+     "lv": 47,
+     "hp": 6500,
+     "base_exp": 1850,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 44,
+   "max": 60,
+   "map": "orcsdun01",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Orc Dungeon 1: mobs of Orc Zombies - priests Magnus/Turn Undead, wizards fire AoE",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Orc Zombie",
+     "count": 80,
+     "lv": 51,
+     "hp": 1586,
+     "base_exp": 468,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Familiar",
+     "count": 15,
+     "lv": 24,
+     "hp": 330,
+     "base_exp": 200,
+     "element": "Dark1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Steel Chonchon",
+     "count": 10,
+     "lv": 48,
+     "hp": 985,
+     "base_exp": 379,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Orc Skeleton",
+     "count": 10,
+     "lv": 53,
+     "hp": 1699,
+     "base_exp": 490,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Drainliar",
+     "count": 5,
+     "lv": 47,
+     "hp": 1182,
+     "base_exp": 370,
+     "element": "Dark2",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 44,
+   "max": 60,
+   "map": "pay_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Payon Cave 3: Munak/Bongun/Soldier Skeletons, all undead",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Soldier Skeleton",
+     "count": 45,
+     "lv": 34,
+     "hp": 691,
+     "base_exp": 284,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Munak",
+     "count": 40,
+     "lv": 58,
+     "hp": 2002,
+     "base_exp": 548,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Hydra",
+     "count": 31,
+     "lv": 34,
+     "hp": 661,
+     "base_exp": 259,
+     "element": "Wate2",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Bongun",
+     "count": 30,
+     "lv": 59,
+     "hp": 2065,
+     "base_exp": 561,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Archer Skeleton",
+     "count": 20,
+     "lv": 50,
+     "hp": 1458,
+     "base_exp": 436,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 44,
+   "max": 60,
+   "map": "moc_fild13",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Steel Chonchon swarm (aggro wind insects)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Steel Chonchon",
+     "count": 140,
+     "lv": 48,
+     "hp": 985,
+     "base_exp": 379,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Wolf",
+     "count": 15,
+     "lv": 45,
+     "hp": 1091,
+     "base_exp": 369,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Argos",
+     "count": 15,
+     "lv": 47,
+     "hp": 1300,
+     "base_exp": 370,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Metaller",
+     "count": 15,
+     "lv": 55,
+     "hp": 1487,
+     "base_exp": 466,
+     "element": "Fire1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Magnolia",
+     "count": 15,
+     "lv": 53,
+     "hp": 1545,
+     "base_exp": 446,
+     "element": "Wate1",
+     "race": "Demon",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 50,
+   "max": 66,
+   "map": "prt_fild09",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Magnolia (passive water demons) + some aggro Metallers",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Magnolia",
+     "count": 212,
+     "lv": 53,
+     "hp": 1545,
+     "base_exp": 446,
+     "element": "Wate1",
+     "race": "Demon",
+     "aggro": false
+    },
+    {
+     "name": "Metaller",
+     "count": 91,
+     "lv": 55,
+     "hp": 1487,
+     "base_exp": 466,
+     "element": "Fire1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Elusive Magnolia",
+     "count": 2,
+     "lv": 53,
+     "hp": 7725,
+     "base_exp": 2230,
+     "element": "Wate1",
+     "race": "Demon",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 50,
+   "max": 66,
+   "map": "pay_fild10",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Greatest General/Beetle King/Savage: everything passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Greatest General",
+     "count": 129,
+     "lv": 55,
+     "hp": 1405,
+     "base_exp": 466,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Beetle King",
+     "count": 64,
+     "lv": 55,
+     "hp": 1487,
+     "base_exp": 489,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Savage",
+     "count": 64,
+     "lv": 59,
+     "hp": 2158,
+     "base_exp": 535,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Swift Greatest General",
+     "count": 2,
+     "lv": 55,
+     "hp": 7025,
+     "base_exp": 2330,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 50,
+   "max": 66,
+   "map": "mjolnir_08",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Beetle King/Savage/Flora, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Beetle King",
+     "count": 169,
+     "lv": 55,
+     "hp": 1487,
+     "base_exp": 489,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Savage",
+     "count": 36,
+     "lv": 59,
+     "hp": 2158,
+     "base_exp": 535,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Flora",
+     "count": 36,
+     "lv": 59,
+     "hp": 2065,
+     "base_exp": 535,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Furious Beetle King",
+     "count": 2,
+     "lv": 55,
+     "hp": 7435,
+     "base_exp": 2445,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 52,
+   "max": 68,
+   "map": "mjolnir_07",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Savage boars (earth), passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Savage",
+     "count": 161,
+     "lv": 59,
+     "hp": 2158,
+     "base_exp": 535,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Beetle King",
+     "count": 34,
+     "lv": 55,
+     "hp": 1487,
+     "base_exp": 489,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Flora",
+     "count": 34,
+     "lv": 59,
+     "hp": 2065,
+     "base_exp": 535,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Savage Ringleader",
+     "count": 3,
+     "lv": 59,
+     "hp": 10790,
+     "base_exp": 2675,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 50,
+   "max": 66,
+   "map": "orcsdun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Orc Dungeon 2: Zenorc/Orc Skeleton/Drainliar",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Orc Skeleton",
+     "count": 50,
+     "lv": 53,
+     "hp": 1699,
+     "base_exp": 490,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Zenorc",
+     "count": 50,
+     "lv": 54,
+     "hp": 1757,
+     "base_exp": 456,
+     "element": "Dark1",
+     "race": "Demih",
+     "aggro": false
+    },
+    {
+     "name": "Drainliar",
+     "count": 20,
+     "lv": 47,
+     "hp": 1182,
+     "base_exp": 370,
+     "element": "Dark2",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Steel Chonchon",
+     "count": 20,
+     "lv": 48,
+     "hp": 985,
+     "base_exp": 379,
+     "element": "Wind1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Orc Archer",
+     "count": 5,
+     "lv": 78,
+     "hp": 3474,
+     "base_exp": 880,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 52,
+   "max": 70,
+   "map": "pay_dun03",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Payon Cave 4: Sohee (passive water demons), a few Whispers",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Sohee",
+     "count": 70,
+     "lv": 64,
+     "hp": 2528,
+     "base_exp": 600,
+     "element": "Wate1",
+     "race": "Demon",
+     "aggro": false
+    },
+    {
+     "name": "Hydra",
+     "count": 17,
+     "lv": 34,
+     "hp": 661,
+     "base_exp": 259,
+     "element": "Wate2",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Mandragora",
+     "count": 10,
+     "lv": 13,
+     "hp": 140,
+     "base_exp": 170,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Whisper",
+     "count": 4,
+     "lv": 34,
+     "hp": 1796,
+     "base_exp": 241,
+     "element": "Ghos1",
+     "race": "Undea",
+     "aggro": false
+    },
+    {
+     "name": "Greatest General",
+     "count": 3,
+     "lv": 55,
+     "hp": 1405,
+     "base_exp": 466,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 52,
+   "max": 68,
+   "map": "prt_fild11",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Goblin Archers/Steamriders and Rotar Zairo, aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Goblin",
+     "count": 60,
+     "lv": 56,
+     "hp": 1877,
+     "base_exp": 477,
+     "element": "Wate1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Rotar Zairo",
+     "count": 50,
+     "lv": 48,
+     "hp": 1290,
+     "base_exp": 379,
+     "element": "Wind2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Goblin Archer",
+     "count": 50,
+     "lv": 55,
+     "hp": 1487,
+     "base_exp": 466,
+     "element": "Pois1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Goblin Steamrider",
+     "count": 30,
+     "lv": 66,
+     "hp": 2307,
+     "base_exp": 625,
+     "element": "Wind2",
+     "race": "Demih",
+     "aggro": false
+    },
+    {
+     "name": "Goblin",
+     "count": 10,
+     "lv": 44,
+     "hp": 1047,
+     "base_exp": 344,
+     "element": "Pois1",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 54,
+   "max": 72,
+   "map": "gef_dun01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Geffen Dungeon 2: Ghoul/Jakk/Nightmare, all aggro - party",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Ghoul",
+     "count": 40,
+     "lv": 61,
+     "hp": 2429,
+     "base_exp": 620,
+     "element": "Unde2",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Jakk",
+     "count": 40,
+     "lv": 63,
+     "hp": 1901,
+     "base_exp": 588,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Nightmare",
+     "count": 30,
+     "lv": 69,
+     "hp": 2366,
+     "base_exp": 598,
+     "element": "Ghos3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Zombie",
+     "count": 25,
+     "lv": 17,
+     "hp": 204,
+     "base_exp": 189,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Drainliar",
+     "count": 20,
+     "lv": 47,
+     "hp": 1182,
+     "base_exp": 370,
+     "element": "Dark2",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 58,
+   "max": 74,
+   "map": "mjolnir_12",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Dustiness (passive wind insects) + aggro Hunter Fly/Mantis; on the way to Al De Baran",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Dustiness",
+     "count": 162,
+     "lv": 62,
+     "hp": 1849,
+     "base_exp": 576,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Hunter Fly",
+     "count": 43,
+     "lv": 63,
+     "hp": 1902,
+     "base_exp": 588,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Mantis",
+     "count": 43,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Furious Dustiness",
+     "count": 2,
+     "lv": 62,
+     "hp": 9245,
+     "base_exp": 2880,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 60,
+   "max": 76,
+   "map": "mjolnir_04",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Driller/Mantis/Side Winder, all aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Driller",
+     "count": 162,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Mantis",
+     "count": 43,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Side Winder",
+     "count": 43,
+     "lv": 70,
+     "hp": 2698,
+     "base_exp": 677,
+     "element": "Pois1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Furious Driller",
+     "count": 3,
+     "lv": 65,
+     "hp": 11815,
+     "base_exp": 3210,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 62,
+   "max": 78,
+   "map": "yuno_fild01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Geographer (passive earth plants) / Dustiness near Juno",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Geographer",
+     "count": 75,
+     "lv": 73,
+     "hp": 3408,
+     "base_exp": 804,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Dustiness",
+     "count": 52,
+     "lv": 62,
+     "hp": 1849,
+     "base_exp": 576,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Mantis",
+     "count": 52,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Solid Geographer",
+     "count": 2,
+     "lv": 73,
+     "hp": 34080,
+     "base_exp": 4020,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 8
+  },
+  {
+   "min": 62,
+   "max": 78,
+   "map": "yuno_fild12",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Geographers near Juno",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Geographer",
+     "count": 68,
+     "lv": 73,
+     "hp": 3408,
+     "base_exp": 804,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Mantis",
+     "count": 34,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Swift Geographer",
+     "count": 1,
+     "lv": 73,
+     "hp": 17040,
+     "base_exp": 4020,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 9
+  },
+  {
+   "min": 64,
+   "max": 80,
+   "map": "mjolnir_11",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Argiope (aggro, poison) - iRO guide favourite 60-95",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Argiope",
+     "count": 170,
+     "lv": 75,
+     "hp": 3570,
+     "base_exp": 794,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Argos",
+     "count": 45,
+     "lv": 47,
+     "hp": 1300,
+     "base_exp": 370,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Flora",
+     "count": 45,
+     "lv": 59,
+     "hp": 2065,
+     "base_exp": 535,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Argiope",
+     "count": 2,
+     "lv": 75,
+     "hp": 17850,
+     "base_exp": 3970,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 64,
+   "max": 80,
+   "map": "mjolnir_03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Side Winder/Mantis/Driller, all aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Side Winder",
+     "count": 140,
+     "lv": 70,
+     "hp": 2698,
+     "base_exp": 677,
+     "element": "Pois1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Driller",
+     "count": 37,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Mantis",
+     "count": 37,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Side Winder Ringleader",
+     "count": 2,
+     "lv": 70,
+     "hp": 13490,
+     "base_exp": 3385,
+     "element": "Pois1",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 4
+  },
+  {
+   "min": 64,
+   "max": 82,
+   "map": "gef_fild08",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Petite (Sky, wind dragons) bunch in the corners: AoE",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Petite",
+     "count": 163,
+     "lv": 79,
+     "hp": 3197,
+     "base_exp": 854,
+     "element": "Wind1",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Mantis",
+     "count": 37,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Flora",
+     "count": 37,
+     "lv": 59,
+     "hp": 2065,
+     "base_exp": 535,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Swift Petite",
+     "count": 2,
+     "lv": 86,
+     "hp": 27455,
+     "base_exp": 5430,
+     "element": "Eart1",
+     "race": "Drago",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 2
+  },
+  {
+   "min": 66,
+   "max": 82,
+   "map": "mjolnir_05",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Argiope/Mantis/Driller, all aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Argiope",
+     "count": 166,
+     "lv": 75,
+     "hp": 3570,
+     "base_exp": 794,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Mantis",
+     "count": 44,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Driller",
+     "count": 44,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Swift Argiope",
+     "count": 2,
+     "lv": 75,
+     "hp": 17850,
+     "base_exp": 3970,
+     "element": "Pois1",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 70,
+   "max": 86,
+   "map": "yuno_fild08",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Grand Peco/Goat (fire, passive) near Juno",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Grand Peco",
+     "count": 157,
+     "lv": 75,
+     "hp": 3084,
+     "base_exp": 794,
+     "element": "Fire2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Goat",
+     "count": 36,
+     "lv": 80,
+     "hp": 2905,
+     "base_exp": 869,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Geographer",
+     "count": 36,
+     "lv": 73,
+     "hp": 3408,
+     "base_exp": 804,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Grand Peco Ringleader",
+     "count": 2,
+     "lv": 75,
+     "hp": 15420,
+     "base_exp": 3970,
+     "element": "Fire2",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 10
+  },
+  {
+   "min": 70,
+   "max": 86,
+   "map": "yuno_fild09",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Grand Peco + some aggro Sleepers",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Grand Peco",
+     "count": 182,
+     "lv": 75,
+     "hp": 3084,
+     "base_exp": 794,
+     "element": "Fire2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Sleeper",
+     "count": 42,
+     "lv": 81,
+     "hp": 4505,
+     "base_exp": 1001,
+     "element": "Eart2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Geographer",
+     "count": 42,
+     "lv": 73,
+     "hp": 3408,
+     "base_exp": 804,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Solid Grand Peco",
+     "count": 2,
+     "lv": 75,
+     "hp": 30840,
+     "base_exp": 3970,
+     "element": "Fire2",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 9
+  },
+  {
+   "min": 72,
+   "max": 88,
+   "map": "yuno_fild11",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Goat field (fire), passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Goat",
+     "count": 139,
+     "lv": 80,
+     "hp": 2905,
+     "base_exp": 869,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Geographer",
+     "count": 55,
+     "lv": 73,
+     "hp": 3408,
+     "base_exp": 804,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Solid Goat",
+     "count": 2,
+     "lv": 80,
+     "hp": 29050,
+     "base_exp": 4345,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 10
+  },
+  {
+   "min": 72,
+   "max": 88,
+   "map": "c_tower1",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Clock Tower 1F (Al De Baran): Rideword/Punk aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Rideword",
+     "count": 107,
+     "lv": 74,
+     "hp": 2855,
+     "base_exp": 780,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Punk",
+     "count": 107,
+     "lv": 82,
+     "hp": 3498,
+     "base_exp": 970,
+     "element": "Wind1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Solid Rideword",
+     "count": 2,
+     "lv": 74,
+     "hp": 28550,
+     "base_exp": 3900,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Bathory",
+     "count": 1,
+     "lv": 86,
+     "hp": 6040,
+     "base_exp": 1035,
+     "element": "Dark1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Clock Tower Manager",
+     "count": 1,
+     "lv": 90,
+     "hp": 6425,
+     "base_exp": 1103,
+     "element": "Neut4",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 8
+  },
+  {
+   "min": 74,
+   "max": 90,
+   "map": "c_tower2",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Wind",
+   "note": "Clock Tower 2F: Clock/Punk",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Clock",
+     "count": 55,
+     "lv": 81,
+     "hp": 4505,
+     "base_exp": 1001,
+     "element": "Eart2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Punk",
+     "count": 55,
+     "lv": 82,
+     "hp": 3498,
+     "base_exp": 970,
+     "element": "Wind1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Rideword",
+     "count": 16,
+     "lv": 74,
+     "hp": 2855,
+     "base_exp": 780,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Mimic",
+     "count": 4,
+     "lv": 56,
+     "hp": 1707,
+     "base_exp": 477,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Elder",
+     "count": 2,
+     "lv": 92,
+     "hp": 7780,
+     "base_exp": 1238,
+     "element": "Neut4",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 9
+  },
+  {
+   "min": 72,
+   "max": 90,
+   "map": "gl_church",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Glast Heim Chivalry/Church: Evil Druid/Wraith undead - priest party",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Evil Druid",
+     "count": 85,
+     "lv": 80,
+     "hp": 4720,
+     "base_exp": 955,
+     "element": "Unde4",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Wraith",
+     "count": 78,
+     "lv": 77,
+     "hp": 4415,
+     "base_exp": 906,
+     "element": "Unde4",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Mimic",
+     "count": 12,
+     "lv": 56,
+     "hp": 1707,
+     "base_exp": 477,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Elusive Evil Druid",
+     "count": 2,
+     "lv": 80,
+     "hp": 23600,
+     "base_exp": 4775,
+     "element": "Unde4",
+     "race": "Undea",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 72,
+   "max": 90,
+   "map": "gl_step",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Glast Heim Steps: Wind Ghosts",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Wind Ghost",
+     "count": 138,
+     "lv": 80,
+     "hp": 3631,
+     "base_exp": 869,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Raydric Archer",
+     "count": 13,
+     "lv": 82,
+     "hp": 4809,
+     "base_exp": 970,
+     "element": "Dark2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Mimic",
+     "count": 6,
+     "lv": 56,
+     "hp": 1707,
+     "base_exp": 477,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Solid Wind Ghost",
+     "count": 2,
+     "lv": 80,
+     "hp": 36310,
+     "base_exp": 4345,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 74,
+   "max": 92,
+   "map": "gef_fild06",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Petite (Ground, earth dragons), aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Petite",
+     "count": 158,
+     "lv": 86,
+     "hp": 5491,
+     "base_exp": 1086,
+     "element": "Eart1",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Mantis",
+     "count": 36,
+     "lv": 65,
+     "hp": 2363,
+     "base_exp": 642,
+     "element": "Eart1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Side Winder",
+     "count": 36,
+     "lv": 70,
+     "hp": 2698,
+     "base_exp": 677,
+     "element": "Pois1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Solid Petite",
+     "count": 2,
+     "lv": 86,
+     "hp": 54910,
+     "base_exp": 5430,
+     "element": "Eart1",
+     "race": "Drago",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 3
+  },
+  {
+   "min": 74,
+   "max": 92,
+   "map": "yuno_fild04",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Harpy (silence!) / Goat; green potions if INT is low",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Harpy",
+     "count": 133,
+     "lv": 83,
+     "hp": 4454,
+     "base_exp": 986,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Goat",
+     "count": 36,
+     "lv": 80,
+     "hp": 2905,
+     "base_exp": 869,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Geographer",
+     "count": 36,
+     "lv": 73,
+     "hp": 3408,
+     "base_exp": 804,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Harpy Ringleader",
+     "count": 3,
+     "lv": 83,
+     "hp": 22270,
+     "base_exp": 4930,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 13
+  },
+  {
+   "min": 74,
+   "max": 92,
+   "map": "yuno_fild07",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Goat/Grand Peco + some Harpies",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Goat",
+     "count": 90,
+     "lv": 80,
+     "hp": 2905,
+     "base_exp": 869,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Harpy",
+     "count": 50,
+     "lv": 83,
+     "hp": 4454,
+     "base_exp": 986,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Grand Peco",
+     "count": 30,
+     "lv": 75,
+     "hp": 3084,
+     "base_exp": 794,
+     "element": "Fire2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Goat Ringleader",
+     "count": 2,
+     "lv": 80,
+     "hp": 14525,
+     "base_exp": 4345,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 11
+  },
+  {
+   "min": 75,
+   "max": 92,
+   "map": "ein_fild08",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Metaling (passive) / Porcellio near Einbroch",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Metaling",
+     "count": 139,
+     "lv": 81,
+     "hp": 3862,
+     "base_exp": 954,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Porcellio",
+     "count": 41,
+     "lv": 85,
+     "hp": 4621,
+     "base_exp": 1068,
+     "element": "Eart3",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Solid Metaling",
+     "count": 2,
+     "lv": 81,
+     "hp": 38620,
+     "base_exp": 4770,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 14
+  },
+  {
+   "min": 75,
+   "max": 92,
+   "map": "ein_fild07",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Metaling/Porcellio/Holden, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Metaling",
+     "count": 109,
+     "lv": 81,
+     "hp": 3862,
+     "base_exp": 954,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Porcellio",
+     "count": 36,
+     "lv": 85,
+     "hp": 4621,
+     "base_exp": 1068,
+     "element": "Eart3",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Holden",
+     "count": 12,
+     "lv": 85,
+     "hp": 4390,
+     "base_exp": 1068,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Metaling Ringleader",
+     "count": 2,
+     "lv": 81,
+     "hp": 19310,
+     "base_exp": 4770,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Ungoliant",
+     "count": 1,
+     "lv": 94,
+     "hp": 27070,
+     "base_exp": 4100,
+     "element": "Pois2",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 11
+  },
+  {
+   "min": 76,
+   "max": 94,
+   "map": "ein_fild06",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Holden moles (earth), passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Holden",
+     "count": 100,
+     "lv": 85,
+     "hp": 4390,
+     "base_exp": 1068,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Metaling",
+     "count": 30,
+     "lv": 81,
+     "hp": 3862,
+     "base_exp": 954,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Solid Holden",
+     "count": 2,
+     "lv": 85,
+     "hp": 43900,
+     "base_exp": 5340,
+     "element": "Eart2",
+     "race": "Brute",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 12
+  },
+  {
+   "min": 76,
+   "max": 94,
+   "map": "lhz_fild01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Rafflesia/Stem Worm (aggro plants) near Lighthalzen",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Rafflesia",
+     "count": 170,
+     "lv": 86,
+     "hp": 4942,
+     "base_exp": 1086,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Stem Worm",
+     "count": 45,
+     "lv": 84,
+     "hp": 4084,
+     "base_exp": 1002,
+     "element": "Wind1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Metaling",
+     "count": 45,
+     "lv": 81,
+     "hp": 3862,
+     "base_exp": 954,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Swift Rafflesia",
+     "count": 3,
+     "lv": 86,
+     "hp": 24710,
+     "base_exp": 5430,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Poring Ringleader",
+     "count": 2,
+     "lv": 1,
+     "hp": 275,
+     "base_exp": 750,
+     "element": "Wate1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 17
+  },
+  {
+   "min": 80,
+   "max": 100,
+   "map": "gl_chyard",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Glast Heim Churchyard: Dark Priest/Wraith - Holy/Fire, priest party",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Dark Priest",
+     "count": 95,
+     "lv": 98,
+     "hp": 10843,
+     "base_exp": 1483,
+     "element": "Unde4",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Wraith",
+     "count": 55,
+     "lv": 77,
+     "hp": 4415,
+     "base_exp": 906,
+     "element": "Unde4",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Evil Druid",
+     "count": 15,
+     "lv": 80,
+     "hp": 4720,
+     "base_exp": 955,
+     "element": "Unde4",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Mimic",
+     "count": 4,
+     "lv": 56,
+     "hp": 1707,
+     "base_exp": 477,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Hunter Fly",
+     "count": 4,
+     "lv": 63,
+     "hp": 1902,
+     "base_exp": 588,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 80,
+   "max": 100,
+   "map": "ra_fild12",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Roween (wind wolves) near Rachel: earth weapons",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Roween",
+     "count": 216,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Anopheles",
+     "count": 49,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind3",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Baby Desert Wolf",
+     "count": 24,
+     "lv": 14,
+     "hp": 113,
+     "base_exp": 164,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Solid Roween",
+     "count": 2,
+     "lv": 95,
+     "hp": 66170,
+     "base_exp": 6460,
+     "element": "Wind1",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 22
+  },
+  {
+   "min": 80,
+   "max": 100,
+   "map": "c_tower3",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Clock Tower 3F: Alarm (aggro)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Alarm",
+     "count": 109,
+     "lv": 88,
+     "hp": 5664,
+     "base_exp": 1069,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Mimic",
+     "count": 9,
+     "lv": 56,
+     "hp": 1707,
+     "base_exp": 477,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Rideword",
+     "count": 8,
+     "lv": 74,
+     "hp": 2855,
+     "base_exp": 780,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Clock Tower Manager",
+     "count": 4,
+     "lv": 90,
+     "hp": 6425,
+     "base_exp": 1103,
+     "element": "Neut4",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Alarm",
+     "count": 1,
+     "lv": 88,
+     "hp": 28320,
+     "base_exp": 5345,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 10
+  },
+  {
+   "min": 80,
+   "max": 98,
+   "map": "lhz_fild02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Stem Worm/Breeze (wind), aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Stem Worm",
+     "count": 100,
+     "lv": 84,
+     "hp": 4084,
+     "base_exp": 1002,
+     "element": "Wind1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Breeze",
+     "count": 40,
+     "lv": 92,
+     "hp": 7073,
+     "base_exp": 1238,
+     "element": "Wind3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Rafflesia",
+     "count": 20,
+     "lv": 86,
+     "hp": 4942,
+     "base_exp": 1086,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Metaling",
+     "count": 20,
+     "lv": 81,
+     "hp": 3862,
+     "base_exp": 954,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Demon Pungus",
+     "count": 15,
+     "lv": 91,
+     "hp": 6284,
+     "base_exp": 1220,
+     "element": "Pois3",
+     "race": "Demon",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 16
+  },
+  {
+   "min": 80,
+   "max": 98,
+   "map": "alde_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Water",
+   "note": "Clock Tower B2: High Orc/Orc Archer, aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "High Orc",
+     "count": 50,
+     "lv": 81,
+     "hp": 4077,
+     "base_exp": 954,
+     "element": "Fire2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Brilight",
+     "count": 20,
+     "lv": 71,
+     "hp": 2366,
+     "base_exp": 738,
+     "element": "Fire1",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Arclouze",
+     "count": 20,
+     "lv": 107,
+     "hp": 14944,
+     "base_exp": 1937,
+     "element": "Eart2",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Orc Archer",
+     "count": 20,
+     "lv": 78,
+     "hp": 3474,
+     "base_exp": 880,
+     "element": "Eart1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Solid High Orc",
+     "count": 2,
+     "lv": 81,
+     "hp": 40770,
+     "base_exp": 4770,
+     "element": "Fire2",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 11
+  },
+  {
+   "min": 82,
+   "max": 100,
+   "map": "gl_prison",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Glast Heim Prison: Zombie Prisoner/Injustice",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Zombie Prisoner",
+     "count": 38,
+     "lv": 89,
+     "hp": 6902,
+     "base_exp": 1194,
+     "element": "Unde3",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Injustice",
+     "count": 25,
+     "lv": 95,
+     "hp": 8087,
+     "base_exp": 1292,
+     "element": "Dark2",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Rybio",
+     "count": 19,
+     "lv": 98,
+     "hp": 9939,
+     "base_exp": 1349,
+     "element": "Neut2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Hunter Fly",
+     "count": 12,
+     "lv": 63,
+     "hp": 1902,
+     "base_exp": 588,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Solid Zombie Prisoner",
+     "count": 1,
+     "lv": 89,
+     "hp": 69020,
+     "base_exp": 5970,
+     "element": "Unde3",
+     "race": "Undea",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 82,
+   "max": 100,
+   "map": "hu_fild01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Novus (small aggro dragons) near Hugel",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Novus",
+     "count": 105,
+     "lv": 90,
+     "hp": 5257,
+     "base_exp": 1103,
+     "element": "Neut1",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Novus",
+     "count": 36,
+     "lv": 84,
+     "hp": 4084,
+     "base_exp": 1002,
+     "element": "Neut1",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Geographer",
+     "count": 10,
+     "lv": 73,
+     "hp": 3408,
+     "base_exp": 804,
+     "element": "Eart3",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Dragon Egg",
+     "count": 10,
+     "lv": 119,
+     "hp": 27826,
+     "base_exp": 2629,
+     "element": "Neut2",
+     "race": "Drago",
+     "aggro": false
+    },
+    {
+     "name": "Novus Ringleader",
+     "count": 2,
+     "lv": 90,
+     "hp": 26285,
+     "base_exp": 5515,
+     "element": "Neut1",
+     "race": "Drago",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 14
+  },
+  {
+   "min": 82,
+   "max": 100,
+   "map": "hu_fild05",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Novus field near Hugel",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Novus",
+     "count": 130,
+     "lv": 84,
+     "hp": 4084,
+     "base_exp": 1002,
+     "element": "Neut1",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Novus",
+     "count": 35,
+     "lv": 90,
+     "hp": 5257,
+     "base_exp": 1103,
+     "element": "Neut1",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Dragon Egg",
+     "count": 20,
+     "lv": 119,
+     "hp": 27826,
+     "base_exp": 2629,
+     "element": "Neut2",
+     "race": "Drago",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Novus",
+     "count": 2,
+     "lv": 90,
+     "hp": 26285,
+     "base_exp": 5515,
+     "element": "Neut1",
+     "race": "Drago",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 13
+  },
+  {
+   "min": 82,
+   "max": 100,
+   "map": "ein_fild03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Teddy Bear/Venomous/Noxious, aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Teddy Bear",
+     "count": 100,
+     "lv": 91,
+     "hp": 6284,
+     "base_exp": 1220,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Venomous",
+     "count": 20,
+     "lv": 87,
+     "hp": 5577,
+     "base_exp": 1052,
+     "element": "Pois1",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Noxious",
+     "count": 20,
+     "lv": 87,
+     "hp": 4462,
+     "base_exp": 947,
+     "element": "Ghos3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Pitman",
+     "count": 20,
+     "lv": 90,
+     "hp": 6717,
+     "base_exp": 1158,
+     "element": "Eart2",
+     "race": "Undea",
+     "aggro": false
+    },
+    {
+     "name": "Swift Teddy Bear",
+     "count": 2,
+     "lv": 91,
+     "hp": 31420,
+     "base_exp": 6100,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 15
+  },
+  {
+   "min": 82,
+   "max": 100,
+   "map": "ein_dun01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Einbroch Mine 1: Pitman (passive), Noxious",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Pitman",
+     "count": 70,
+     "lv": 90,
+     "hp": 6717,
+     "base_exp": 1158,
+     "element": "Eart2",
+     "race": "Undea",
+     "aggro": false
+    },
+    {
+     "name": "Noxious",
+     "count": 30,
+     "lv": 87,
+     "hp": 4462,
+     "base_exp": 947,
+     "element": "Ghos3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Porcellio",
+     "count": 30,
+     "lv": 85,
+     "hp": 4621,
+     "base_exp": 1068,
+     "element": "Eart3",
+     "race": "Insec",
+     "aggro": false
+    },
+    {
+     "name": "Venomous",
+     "count": 10,
+     "lv": 87,
+     "hp": 5577,
+     "base_exp": 1052,
+     "element": "Pois1",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Elusive Pitman",
+     "count": 2,
+     "lv": 90,
+     "hp": 33585,
+     "base_exp": 5790,
+     "element": "Eart2",
+     "race": "Undea",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 15
+  },
+  {
+   "min": 84,
+   "max": 104,
+   "map": "gl_prison1",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Glast Heim Underprison: Skel Prisoner/Injustice - iRO guide 80-111",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Injustice",
+     "count": 40,
+     "lv": 95,
+     "hp": 8087,
+     "base_exp": 1292,
+     "element": "Dark2",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Skeleton Prisoner",
+     "count": 30,
+     "lv": 91,
+     "hp": 8378,
+     "base_exp": 1342,
+     "element": "Unde3",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Rybio",
+     "count": 10,
+     "lv": 98,
+     "hp": 9939,
+     "base_exp": 1349,
+     "element": "Neut2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Phendark",
+     "count": 10,
+     "lv": 102,
+     "hp": 12408,
+     "base_exp": 1565,
+     "element": "Neut2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Hunter Fly",
+     "count": 10,
+     "lv": 63,
+     "hp": 1902,
+     "base_exp": 588,
+     "element": "Wind2",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 7
+  },
+  {
+   "min": 84,
+   "max": 102,
+   "map": "lhz_fild03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Breeze (wind), aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Breeze",
+     "count": 130,
+     "lv": 92,
+     "hp": 7073,
+     "base_exp": 1238,
+     "element": "Wind3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Stem Worm",
+     "count": 20,
+     "lv": 84,
+     "hp": 4084,
+     "base_exp": 1002,
+     "element": "Wind1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Rafflesia",
+     "count": 20,
+     "lv": 86,
+     "hp": 4942,
+     "base_exp": 1086,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Metaling",
+     "count": 20,
+     "lv": 81,
+     "hp": 3862,
+     "base_exp": 954,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Demon Pungus",
+     "count": 15,
+     "lv": 91,
+     "hp": 6284,
+     "base_exp": 1220,
+     "element": "Pois3",
+     "race": "Demon",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 15
+  },
+  {
+   "min": 86,
+   "max": 104,
+   "map": "ra_fild08",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Anacondaq (passive) + Roween/Hill Wind",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Anacondaq",
+     "count": 159,
+     "lv": 100,
+     "hp": 9233,
+     "base_exp": 1387,
+     "element": "Pois1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Roween",
+     "count": 79,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Hill Wind",
+     "count": 31,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1545,
+     "element": "Wind3",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Baby Desert Wolf",
+     "count": 15,
+     "lv": 14,
+     "hp": 113,
+     "base_exp": 164,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Anopheles",
+     "count": 15,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind3",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 21
+  },
+  {
+   "min": 88,
+   "max": 106,
+   "map": "ein_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Einbroch Mine 2: Mineral/Obsidian/Old Stove",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Mineral",
+     "count": 50,
+     "lv": 96,
+     "hp": 7959,
+     "base_exp": 1311,
+     "element": "Neut2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Obsidian",
+     "count": 40,
+     "lv": 97,
+     "hp": 8492,
+     "base_exp": 1396,
+     "element": "Eart2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Old Stove",
+     "count": 30,
+     "lv": 92,
+     "hp": 7780,
+     "base_exp": 1238,
+     "element": "Neut1",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Teddy Bear",
+     "count": 30,
+     "lv": 91,
+     "hp": 6284,
+     "base_exp": 1220,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Solid Mineral",
+     "count": 2,
+     "lv": 96,
+     "hp": 79590,
+     "base_exp": 6555,
+     "element": "Neut2",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 16
+  },
+  {
+   "min": 88,
+   "max": 108,
+   "map": "ra_fild01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Desert Wolf (fire, aggro): water weapons",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Desert Wolf",
+     "count": 145,
+     "lv": 103,
+     "hp": 10244,
+     "base_exp": 1585,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Roween",
+     "count": 33,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Baby Desert Wolf",
+     "count": 22,
+     "lv": 14,
+     "hp": 113,
+     "base_exp": 164,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Anopheles",
+     "count": 11,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind3",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Baby Desert Wolf Ringlea",
+     "count": 2,
+     "lv": 14,
+     "hp": 565,
+     "base_exp": 820,
+     "element": "Fire1",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 21
+  },
+  {
+   "min": 92,
+   "max": 110,
+   "map": "ve_fild07",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Stapo/Drosera/Muscipular near Veins, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Stapo",
+     "count": 128,
+     "lv": 95,
+     "hp": 6984,
+     "base_exp": 1356,
+     "element": "Eart2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Drosera",
+     "count": 64,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1622,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Muscipular",
+     "count": 38,
+     "lv": 105,
+     "hp": 11589,
+     "base_exp": 1706,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Stapo Ringleader",
+     "count": 2,
+     "lv": 95,
+     "hp": 34920,
+     "base_exp": 6780,
+     "element": "Eart2",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 29
+  },
+  {
+   "min": 92,
+   "max": 110,
+   "map": "ice_dun01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Ice Cave 1: Siroma (passive water)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Siroma",
+     "count": 76,
+     "lv": 98,
+     "hp": 9940,
+     "base_exp": 1349,
+     "element": "Wate3",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Roween",
+     "count": 5,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Muscipular",
+     "count": 5,
+     "lv": 105,
+     "hp": 11589,
+     "base_exp": 1706,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Gazeti",
+     "count": 2,
+     "lv": 106,
+     "hp": 15539,
+     "base_exp": 1824,
+     "element": "Wate1",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Swift Siroma",
+     "count": 1,
+     "lv": 98,
+     "hp": 49700,
+     "base_exp": 6745,
+     "element": "Wate3",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 22
+  },
+  {
+   "min": 94,
+   "max": 112,
+   "map": "ve_fild02",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Drosera (passive earth plants)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Drosera",
+     "count": 177,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1622,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Muscipular",
+     "count": 27,
+     "lv": 105,
+     "hp": 11589,
+     "base_exp": 1706,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Solid Drosera",
+     "count": 2,
+     "lv": 101,
+     "hp": 111790,
+     "base_exp": 8110,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 24
+  },
+  {
+   "min": 94,
+   "max": 112,
+   "map": "ve_fild01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Stapo/Drosera/Muscipular, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Stapo",
+     "count": 34,
+     "lv": 95,
+     "hp": 6984,
+     "base_exp": 1356,
+     "element": "Eart2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Drosera",
+     "count": 34,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1622,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Muscipular",
+     "count": 34,
+     "lv": 105,
+     "hp": 11589,
+     "base_exp": 1706,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Galion",
+     "count": 1,
+     "lv": 100,
+     "hp": 43860,
+     "base_exp": 6935,
+     "element": "Wind2",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 25
+  },
+  {
+   "min": 94,
+   "max": 112,
+   "map": "mag_dun01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Water",
+   "note": "Nogg Road 1: Explosion/Lava Golem/Kaho (fire), aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Explosion",
+     "count": 30,
+     "lv": 100,
+     "hp": 6464,
+     "base_exp": 1387,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Lava Golem",
+     "count": 20,
+     "lv": 103,
+     "hp": 10244,
+     "base_exp": 1585,
+     "element": "Fire4",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Blazer",
+     "count": 20,
+     "lv": 101,
+     "hp": 9503,
+     "base_exp": 1545,
+     "element": "Fire2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Kaho",
+     "count": 20,
+     "lv": 98,
+     "hp": 7229,
+     "base_exp": 1349,
+     "element": "Fire4",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Grizzly",
+     "count": 10,
+     "lv": 66,
+     "hp": 2185,
+     "base_exp": 625,
+     "element": "Fire3",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 13
+  },
+  {
+   "min": 95,
+   "max": 112,
+   "map": "gl_sew02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Earth",
+   "note": "Glast Heim Culvert 2: Gargoyles (ranged, wind)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Gargoyle",
+     "count": 89,
+     "lv": 100,
+     "hp": 9233,
+     "base_exp": 1387,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Cramp",
+     "count": 24,
+     "lv": 82,
+     "hp": 3935,
+     "base_exp": 970,
+     "element": "Pois2",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Furious Gargoyle",
+     "count": 1,
+     "lv": 100,
+     "hp": 46165,
+     "base_exp": 6935,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 95,
+   "max": 112,
+   "map": "ra_fild03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Earth",
+   "note": "Hill Wind (wind), aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Hill Wind",
+     "count": 154,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1545,
+     "element": "Wind3",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Roween",
+     "count": 35,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Anacondaq",
+     "count": 23,
+     "lv": 100,
+     "hp": 9233,
+     "base_exp": 1387,
+     "element": "Pois1",
+     "race": "Brute",
+     "aggro": false
+    },
+    {
+     "name": "Anopheles",
+     "count": 23,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind3",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Swift Hill Wind",
+     "count": 3,
+     "lv": 101,
+     "hp": 55895,
+     "base_exp": 7725,
+     "element": "Wind3",
+     "race": "Brute",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 21
+  },
+  {
+   "min": 96,
+   "max": 114,
+   "map": "ve_fild04",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Muscipular field, passive",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Muscipular",
+     "count": 110,
+     "lv": 105,
+     "hp": 11589,
+     "base_exp": 1706,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Drosera",
+     "count": 55,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1622,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Muscipular",
+     "count": 2,
+     "lv": 105,
+     "hp": 57945,
+     "base_exp": 8530,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 26
+  },
+  {
+   "min": 98,
+   "max": 116,
+   "map": "ra_fild05",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Kobolds (3 elements), aggro; reduction cards help",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Kobold",
+     "count": 81,
+     "lv": 107,
+     "hp": 13522,
+     "base_exp": 1845,
+     "element": "Wind2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Kobold",
+     "count": 81,
+     "lv": 102,
+     "hp": 11280,
+     "base_exp": 1565,
+     "element": "Pois2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Kobold",
+     "count": 81,
+     "lv": 101,
+     "hp": 9503,
+     "base_exp": 1545,
+     "element": "Fire2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Anopheles",
+     "count": 11,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind3",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Solid Kobold",
+     "count": 3,
+     "lv": 107,
+     "hp": 135220,
+     "base_exp": 9225,
+     "element": "Wind2",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 19
+  },
+  {
+   "min": 98,
+   "max": 116,
+   "map": "ra_fild06",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Kobold Archers + Kobolds, aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Kobold Archer",
+     "count": 87,
+     "lv": 108,
+     "hp": 11472,
+     "base_exp": 1866,
+     "element": "Fire1",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Kobold",
+     "count": 49,
+     "lv": 107,
+     "hp": 13522,
+     "base_exp": 1845,
+     "element": "Wind2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Kobold",
+     "count": 49,
+     "lv": 102,
+     "hp": 11280,
+     "base_exp": 1565,
+     "element": "Pois2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Kobold",
+     "count": 49,
+     "lv": 101,
+     "hp": 9503,
+     "base_exp": 1545,
+     "element": "Fire2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Anopheles",
+     "count": 12,
+     "lv": 95,
+     "hp": 6617,
+     "base_exp": 1292,
+     "element": "Wind3",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 18
+  },
+  {
+   "min": 98,
+   "max": 118,
+   "map": "mag_dun02",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Nogg Road 2: extremely mobby (Nightmare Terror/Deleter) - AoE party, fire armor",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Nightmare Terror",
+     "count": 46,
+     "lv": 107,
+     "hp": 17079,
+     "base_exp": 1845,
+     "element": "Dark3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Deleter",
+     "count": 40,
+     "lv": 105,
+     "hp": 9851,
+     "base_exp": 1625,
+     "element": "Fire2",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Deleter",
+     "count": 38,
+     "lv": 105,
+     "hp": 9851,
+     "base_exp": 1625,
+     "element": "Fire2",
+     "race": "Drago",
+     "aggro": true
+    },
+    {
+     "name": "Blazer",
+     "count": 20,
+     "lv": 101,
+     "hp": 9503,
+     "base_exp": 1545,
+     "element": "Fire2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Diabolic",
+     "count": 15,
+     "lv": 104,
+     "hp": 11485,
+     "base_exp": 1605,
+     "element": "Dark2",
+     "race": "Demon",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 14
+  },
+  {
+   "min": 100,
+   "max": 118,
+   "map": "gl_sew03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Glast Heim Culvert 3: Sting/Gargoyle",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Sting",
+     "count": 99,
+     "lv": 104,
+     "hp": 12633,
+     "base_exp": 1685,
+     "element": "Eart3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Gargoyle",
+     "count": 56,
+     "lv": 100,
+     "hp": 9233,
+     "base_exp": 1387,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Elusive Sting",
+     "count": 2,
+     "lv": 104,
+     "hp": 63165,
+     "base_exp": 8425,
+     "element": "Eart3",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 7
+  },
+  {
+   "min": 100,
+   "max": 120,
+   "map": "ve_fild03",
+   "aggro": false,
+   "mobby": true,
+   "ranged": false,
+   "party": false,
+   "element": "Water",
+   "note": "Magmaring (passive looters bunch on drops) - AoE them",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Magmaring",
+     "count": 141,
+     "lv": 110,
+     "hp": 10919,
+     "base_exp": 1908,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Muscipular",
+     "count": 38,
+     "lv": 105,
+     "hp": 11589,
+     "base_exp": 1706,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Drosera",
+     "count": 38,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1622,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Swift Magmaring",
+     "count": 2,
+     "lv": 110,
+     "hp": 54595,
+     "base_exp": 9540,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 27
+  },
+  {
+   "min": 100,
+   "max": 120,
+   "map": "ice_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Ice Cave 2: Snowier/Siroma/Gazeti",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Snowier",
+     "count": 70,
+     "lv": 103,
+     "hp": 14227,
+     "base_exp": 1585,
+     "element": "Wate2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Siroma",
+     "count": 30,
+     "lv": 98,
+     "hp": 9940,
+     "base_exp": 1349,
+     "element": "Wate3",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Iceicle",
+     "count": 19,
+     "lv": 100,
+     "hp": 1012,
+     "base_exp": 98,
+     "element": "Wate2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Gazeti",
+     "count": 15,
+     "lv": 106,
+     "hp": 15539,
+     "base_exp": 1824,
+     "element": "Wate1",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Ice Titan",
+     "count": 7,
+     "lv": 110,
+     "hp": 18923,
+     "base_exp": 1908,
+     "element": "Wate3",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 23
+  },
+  {
+   "min": 102,
+   "max": 122,
+   "map": "gl_dun01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Glast Heim Cave 1: Arclouze/Sting",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Arclouze",
+     "count": 53,
+     "lv": 107,
+     "hp": 14944,
+     "base_exp": 1937,
+     "element": "Eart2",
+     "race": "Insec",
+     "aggro": true
+    },
+    {
+     "name": "Sting",
+     "count": 43,
+     "lv": 104,
+     "hp": 12633,
+     "base_exp": 1685,
+     "element": "Eart3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Solid Arclouze",
+     "count": 1,
+     "lv": 107,
+     "hp": 149440,
+     "base_exp": 9685,
+     "element": "Eart2",
+     "race": "Insec",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 9
+  },
+  {
+   "min": 104,
+   "max": 125,
+   "map": "gl_knt01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Glast Heim Knight Hall 1: Raydric (dark) - party",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Raydric",
+     "count": 126,
+     "lv": 115,
+     "hp": 21981,
+     "base_exp": 2246,
+     "element": "Dark2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Rideword",
+     "count": 29,
+     "lv": 74,
+     "hp": 2855,
+     "base_exp": 780,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Raydric Archer",
+     "count": 14,
+     "lv": 82,
+     "hp": 4809,
+     "base_exp": 970,
+     "element": "Dark2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Abysmal Knight",
+     "count": 14,
+     "lv": 122,
+     "hp": 34686,
+     "base_exp": 3071,
+     "element": "Dark4",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Khalitzburg",
+     "count": 14,
+     "lv": 118,
+     "hp": 27456,
+     "base_exp": 2866,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 104,
+   "max": 126,
+   "map": "gl_sew04",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Wind",
+   "note": "Glast Heim Culvert 4: Anolian",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Anolian",
+     "count": 126,
+     "lv": 109,
+     "hp": 16615,
+     "base_exp": 1887,
+     "element": "Wate2",
+     "race": "Fish",
+     "aggro": true
+    },
+    {
+     "name": "Gargoyle",
+     "count": 25,
+     "lv": 100,
+     "hp": 9233,
+     "base_exp": 1387,
+     "element": "Wind3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Drainliar",
+     "count": 12,
+     "lv": 47,
+     "hp": 1182,
+     "base_exp": 370,
+     "element": "Dark2",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Furious Anolian",
+     "count": 2,
+     "lv": 109,
+     "hp": 83075,
+     "base_exp": 9435,
+     "element": "Wate2",
+     "race": "Fish",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 8
+  },
+  {
+   "min": 106,
+   "max": 128,
+   "map": "gl_knt02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Glast Heim Knight Hall 2: Raydric/Khalitzburg",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Raydric",
+     "count": 101,
+     "lv": 115,
+     "hp": 21981,
+     "base_exp": 2246,
+     "element": "Dark2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Khalitzburg",
+     "count": 50,
+     "lv": 118,
+     "hp": 27456,
+     "base_exp": 2866,
+     "element": "Unde1",
+     "race": "Undea",
+     "aggro": true
+    },
+    {
+     "name": "Raydric Archer",
+     "count": 38,
+     "lv": 82,
+     "hp": 4809,
+     "base_exp": 970,
+     "element": "Dark2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Abysmal Knight",
+     "count": 7,
+     "lv": 122,
+     "hp": 34686,
+     "base_exp": 3071,
+     "element": "Dark4",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Swift Raydric",
+     "count": 2,
+     "lv": 115,
+     "hp": 109905,
+     "base_exp": 11230,
+     "element": "Dark2",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 6
+  },
+  {
+   "min": 106,
+   "max": 128,
+   "map": "ice_dun03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Ice Cave 3: Ice Titan/Gazeti",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Ice Titan",
+     "count": 70,
+     "lv": 110,
+     "hp": 18923,
+     "base_exp": 1908,
+     "element": "Wate3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Gazeti",
+     "count": 42,
+     "lv": 106,
+     "hp": 15539,
+     "base_exp": 1824,
+     "element": "Wate1",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Iceicle",
+     "count": 32,
+     "lv": 100,
+     "hp": 1012,
+     "base_exp": 98,
+     "element": "Wate2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Snowier",
+     "count": 15,
+     "lv": 103,
+     "hp": 14227,
+     "base_exp": 1585,
+     "element": "Wate2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Swift Ice Titan",
+     "count": 2,
+     "lv": 110,
+     "hp": 94615,
+     "base_exp": 9540,
+     "element": "Wate3",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 24
+  },
+  {
+   "min": 108,
+   "max": 130,
+   "map": "juperos_01",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Juperos 1: Venatu, extremely mobby, 2-cell attack range",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Venatu",
+     "count": 70,
+     "lv": 113,
+     "hp": 18092,
+     "base_exp": 2202,
+     "element": "Neut2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Venatu",
+     "count": 70,
+     "lv": 113,
+     "hp": 17188,
+     "base_exp": 2202,
+     "element": "Wind2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Venatu",
+     "count": 70,
+     "lv": 113,
+     "hp": 18996,
+     "base_exp": 2312,
+     "element": "Eart2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Venatu",
+     "count": 50,
+     "lv": 113,
+     "hp": 20805,
+     "base_exp": 2202,
+     "element": "Wate2",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Dimik",
+     "count": 10,
+     "lv": 116,
+     "hp": 21515,
+     "base_exp": 2560,
+     "element": "Wind2",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 13
+  },
+  {
+   "min": 110,
+   "max": 132,
+   "map": "gl_cas02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Glast Heim Castle 2: Wanderer/Raydric",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Wanderer",
+     "count": 41,
+     "lv": 120,
+     "hp": 20806,
+     "base_exp": 2652,
+     "element": "Wind1",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Raydric",
+     "count": 36,
+     "lv": 115,
+     "hp": 21981,
+     "base_exp": 2246,
+     "element": "Dark2",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Rideword",
+     "count": 29,
+     "lv": 74,
+     "hp": 2855,
+     "base_exp": 780,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Raydric Archer",
+     "count": 20,
+     "lv": 82,
+     "hp": 4809,
+     "base_exp": 970,
+     "element": "Dark2",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Evil Druid",
+     "count": 9,
+     "lv": 80,
+     "hp": 4720,
+     "base_exp": 955,
+     "element": "Unde4",
+     "race": "Undea",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 5
+  },
+  {
+   "min": 118,
+   "max": 145,
+   "map": "thor_v02",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Water",
+   "note": "Thor Volcano 2: Knocker (passive) / Imp / Kaho",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Knocker",
+     "count": 55,
+     "lv": 126,
+     "hp": 33047,
+     "base_exp": 3820,
+     "element": "Eart1",
+     "race": "Demon",
+     "aggro": false
+    },
+    {
+     "name": "Magmaring",
+     "count": 10,
+     "lv": 110,
+     "hp": 10919,
+     "base_exp": 1908,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Imp",
+     "count": 10,
+     "lv": 129,
+     "hp": 25971,
+     "base_exp": 3714,
+     "element": "Fire3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Kaho",
+     "count": 10,
+     "lv": 98,
+     "hp": 7229,
+     "base_exp": 1349,
+     "element": "Fire4",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Knocker Ringleader",
+     "count": 1,
+     "lv": 126,
+     "hp": 165235,
+     "base_exp": 19100,
+     "element": "Eart1",
+     "race": "Demon",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 29
+  },
+  {
+   "min": 120,
+   "max": 145,
+   "map": "thor_v01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Water",
+   "note": "Thor Volcano 1: Imps (fire)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Imp",
+     "count": 27,
+     "lv": 129,
+     "hp": 25971,
+     "base_exp": 3714,
+     "element": "Fire3",
+     "race": "Demon",
+     "aggro": true
+    },
+    {
+     "name": "Magmaring",
+     "count": 11,
+     "lv": 110,
+     "hp": 10919,
+     "base_exp": 1908,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Elusive Kasa",
+     "count": 2,
+     "lv": 135,
+     "hp": 350640,
+     "base_exp": 18195,
+     "element": "Fire3",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 28
+  },
+  {
+   "min": 150,
+   "max": 185,
+   "map": "ra_fild11",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Ashen Goat/Baby Gray Wolf, aggro (Rachel)",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Ashen Goat",
+     "count": 70,
+     "lv": 168,
+     "hp": 962975,
+     "base_exp": 64198,
+     "element": "Neut2",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Baby Gray Wolf",
+     "count": 50,
+     "lv": 165,
+     "hp": 944679,
+     "base_exp": 62979,
+     "element": "Neut1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Drosera",
+     "count": 10,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1622,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Rakehand",
+     "count": 5,
+     "lv": 177,
+     "hp": 1514469,
+     "base_exp": 108187,
+     "element": "Eart2",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 24
+  },
+  {
+   "min": 150,
+   "max": 185,
+   "map": "ra_fild10",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Ashen Goat/Baby Gray Wolf, aggro",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Ashen Goat",
+     "count": 60,
+     "lv": 168,
+     "hp": 962975,
+     "base_exp": 64198,
+     "element": "Neut2",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Baby Gray Wolf",
+     "count": 50,
+     "lv": 165,
+     "hp": 944679,
+     "base_exp": 62979,
+     "element": "Neut1",
+     "race": "Brute",
+     "aggro": true
+    },
+    {
+     "name": "Drosera",
+     "count": 5,
+     "lv": 101,
+     "hp": 11179,
+     "base_exp": 1622,
+     "element": "Eart1",
+     "race": "Plant",
+     "aggro": false
+    },
+    {
+     "name": "Magmaring",
+     "count": 5,
+     "lv": 110,
+     "hp": 10919,
+     "base_exp": 1908,
+     "element": "Fire2",
+     "race": "Forml",
+     "aggro": false
+    },
+    {
+     "name": "Rakehand",
+     "count": 5,
+     "lv": 177,
+     "hp": 1514469,
+     "base_exp": 108187,
+     "element": "Eart2",
+     "race": "Plant",
+     "aggro": false
+    }
+   ],
+   "warps_from_nearest_start_town": 25
+  },
+  {
+   "min": 155,
+   "max": 190,
+   "map": "verus03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Verus: Exploration Rover/Repair Robot",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Exploration Rover",
+     "count": 50,
+     "lv": 168,
+     "hp": 293640,
+     "base_exp": 18172,
+     "element": "Neut4",
+     "race": "Demih",
+     "aggro": true
+    },
+    {
+     "name": "Repair Robot",
+     "count": 50,
+     "lv": 155,
+     "hp": 154760,
+     "base_exp": 11748,
+     "element": "Wind1",
+     "race": "Plant",
+     "aggro": true
+    },
+    {
+     "name": "Ruin Grace Believer",
+     "count": 10,
+     "lv": 100,
+     "hp": 61350,
+     "base_exp": 4666,
+     "element": "Neut2",
+     "race": "Demih",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 17
+  },
+  {
+   "min": 158,
+   "max": 195,
+   "map": "ver_eju",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Verus Eju: Recon Robots",
+   "reachable": true,
+   "monsters": [
+    {
+     "name": "Recon Robot",
+     "count": 50,
+     "lv": 165,
+     "hp": 256000,
+     "base_exp": 15796,
+     "element": "Neut4",
+     "race": "Forml",
+     "aggro": true
+    },
+    {
+     "name": "Excavator Robot",
+     "count": 10,
+     "lv": 163,
+     "hp": 166860,
+     "base_exp": 15026,
+     "element": "Neut3",
+     "race": "Forml",
+     "aggro": true
+    }
+   ],
+   "warps_from_nearest_start_town": 14
+  },
+  {
+   "min": 30,
+   "max": 45,
+   "map": "iz_dun00",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Byalan 1 (iRO: 31-72 across floors); entry by Izlude boat NPC",
+   "reachable": false
+  },
+  {
+   "min": 31,
+   "max": 50,
+   "map": "iz_dun01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Wind",
+   "note": "Byalan 2: water monsters, single target",
+   "reachable": false
+  },
+  {
+   "min": 40,
+   "max": 60,
+   "map": "iz_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Wind",
+   "note": "Byalan 3",
+   "reachable": false
+  },
+  {
+   "min": 13,
+   "max": 40,
+   "map": "anthell01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Ant Hell 1: Ant Eggs never fight back, Familiars aggro",
+   "reachable": false
+  },
+  {
+   "min": 15,
+   "max": 30,
+   "map": "prt_sewb1",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Prontera Culvert 1: Thief Bugs (NPC entry)",
+   "reachable": false
+  },
+  {
+   "min": 33,
+   "max": 55,
+   "map": "treasure01",
+   "aggro": true,
+   "mobby": true,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Sunken Ship 1: Hydra/Pirate Skeleton, mobby (Alberta sailor NPC)",
+   "reachable": false
+  },
+  {
+   "min": 48,
+   "max": 70,
+   "map": "moc_fild17",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Hode/Sandman/Frilldora, Phreeoni MVP (Renewal desert, no road)",
+   "reachable": false
+  },
+  {
+   "min": 48,
+   "max": 70,
+   "map": "moc_fild16",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Sandman/Hode (desert)",
+   "reachable": false
+  },
+  {
+   "min": 56,
+   "max": 75,
+   "map": "in_sphinx2",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Holy",
+   "note": "Sphinx 2: Requiem/Zerom (desert)",
+   "reachable": false
+  },
+  {
+   "min": 65,
+   "max": 88,
+   "map": "bra_fild01",
+   "aggro": false,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Brasilis field (NPC transport)",
+   "reachable": false
+  },
+  {
+   "min": 60,
+   "max": 80,
+   "map": "tur_dun01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Turtle Island (Alberta ship NPC)",
+   "reachable": false
+  },
+  {
+   "min": 83,
+   "max": 110,
+   "map": "beach_dun",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Karu West Cave: Nereid/Medusa (Comodo)",
+   "reachable": false
+  },
+  {
+   "min": 109,
+   "max": 130,
+   "map": "ra_san01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Rachel Sanctuary 1: Vanberk/Isilla",
+   "reachable": false
+  },
+  {
+   "min": 111,
+   "max": 150,
+   "map": "abyss_01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Abyss Lake 1: dragons",
+   "reachable": false
+  },
+  {
+   "min": 105,
+   "max": 125,
+   "map": "spl_fild01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "Splendide field (quest access)",
+   "reachable": false
+  },
+  {
+   "min": 113,
+   "max": 143,
+   "map": "man_fild03",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "Fire",
+   "note": "Manuk field 3 (quest access)",
+   "reachable": false
+  },
+  {
+   "min": 117,
+   "max": 138,
+   "map": "dic_fild01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": false,
+   "element": "",
+   "note": "El Dicastes outskirts (quest access)",
+   "reachable": false
+  },
+  {
+   "min": 121,
+   "max": 150,
+   "map": "lhz_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Bio Lab 2 (quest access)",
+   "reachable": false
+  },
+  {
+   "min": 130,
+   "max": 160,
+   "map": "dic_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Scaraba Hole",
+   "reachable": false
+  },
+  {
+   "min": 140,
+   "max": 170,
+   "map": "lasa_dun02",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Fire",
+   "note": "Dragon Nest 2 (Doram region)",
+   "reachable": false
+  },
+  {
+   "min": 163,
+   "max": 190,
+   "map": "oz_dun01",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "",
+   "note": "Oz Labyrinth 1F",
+   "reachable": false
+  },
+  {
+   "min": 180,
+   "max": 220,
+   "map": "tha_t09",
+   "aggro": true,
+   "mobby": false,
+   "ranged": false,
+   "party": true,
+   "element": "Earth",
+   "note": "Thanatos Tower 9F",
+   "reachable": false
+  }
+ ],
+ "class_tips": {
+  "knight": {
+   "role": "tank",
+   "stats": "STR 80-90 / AGI 60-80 / VIT 30-50 / DEX 30-40 (AGI+STR first; VIT once you tank)",
+   "skills": "Bash 10 > Two-Hand Sword Mastery 5 > Magnum Break 3 > Provoke 1 > Endure 1 (Riding) > Two-Hand Quicken 10 > Counter Attack 5 > Bowling Bash 10 > Riding/Cavalry Mastery",
+   "tricks": [
+    "Bowling Bash knocks a target into others and hits every monster in its path: pull 3-5 mobs onto one cell, then BB",
+    "Two-Hand Quicken (+ASPD) before every pull",
+    "Magnum Break gives fire damage vs earth mobs and peels mobs off priests",
+    "Peco riding restores walk speed lost to weight"
+   ],
+   "gear": "Katana -> Slayer -> Bastard Sword -> Two-Handed Sword (all NPC); Padded/Chain Mail; Muffler, Boots",
+   "spots": [
+    "prt_fild07",
+    "pay_fild07",
+    "gef_fild10 (party)",
+    "orcsdun01 (party)",
+    "mjolnir_08",
+    "yuno_fild08"
+   ]
+  },
+  "crusader": {
+   "role": "tank",
+   "stats": "VIT 80 / STR 60-80 / DEX 40 / INT 20-40 (Holy Cross scales with INT a little)",
+   "skills": "Sword Mastery 10, Bash 10, Faith 7 > Holy Cross 10 > Faith 10 > Auto Guard 5-10 > Shield Charge 3 > Shield Boomerang 3-5 > Reflect Shield 5 > Grand Cross 4 > Devotion",
+   "tricks": [
+    "Holy Cross (holy) wrecks undead and dark dungeons (Payon Cave, Orc Dungeon, Glast Heim)",
+    "Auto Guard + shield: best party tank before Paladin",
+    "Shield Boomerang is a ranged pull",
+    "Faith (Trust) 10 unlocks Heal for undead spots"
+   ],
+   "gear": "Sword/Saber -> Tsurugi/Haedonggum; Buckler -> Shield; Chain Mail -> Full Plate",
+   "spots": [
+    "pay_dun00",
+    "pay_dun01 (party)",
+    "orcsdun01 (party)",
+    "gl_church (party)",
+    "gl_chyard"
+   ]
+  },
+  "wizard": {
+   "role": "ranged AoE",
+   "stats": "INT 90-99 / DEX 60-80 / VIT 30-60 (VIT before 60 keeps you alive); Renewal: variable cast hits 0 at DEX*2+INT = 530",
+   "skills": "Fire/Cold/Lightning Bolt 5-10 > Napalm Beat 1 > Frost Diver 1 > Stone Curse 1 > Fire Ball 5 > Sight 1 > Fire Wall 5 > Thunder Storm 1 > Jupitel 3-10 > Storm Gust 10 > Earth Spike 3 > Heaven's Drive > Sightrasher 2 > Meteor Storm / Lord of Vermilion",
+   "tricks": [
+    "Bolt matching element: cold vs fire, lightning vs water, fire vs earth/undead, Earth Spike vs wind",
+    "Storm Gust behind a tank: freeze and wipe a whole pull (Orc Dungeon, Glast Heim)",
+    "Fire Wall between you and melee mobs when solo",
+    "Safety Wall when a melee mob reaches you; Frost Diver to freeze dangerous ones",
+    "sit to regen SP after each pull (Increase SP Recovery)"
+   ],
+   "gear": "Rod -> Wand -> Staff (NPC); Silk Robe; Hat/Biretta; Muffler; Sandals",
+   "spots": [
+    "gef_fild04 (Mandragora)",
+    "pay_fild01",
+    "gef_fild01",
+    "mjolnir_06",
+    "orcsdun01",
+    "gef_fild10",
+    "gef_fild08",
+    "mag_dun02"
+   ]
+  },
+  "sage": {
+   "role": "ranged support/caster",
+   "stats": "INT 90 / DEX 60-80 / VIT 30-50 / AGI 20 (battle sage: STR/AGI melee + autospell)",
+   "skills": "Bolts 10 > Napalm 4 > Soul Strike > Advanced Book 5 > Cast Cancel 1 > Free Cast 4 > Auto Spell 10 > Stone Curse 1 > Endow skills > Earth Spike/Heaven's Drive > Dispell",
+   "tricks": [
+    "Endow party weapons (Flame Launcher vs earth, Frost Weapon vs fire)",
+    "Free Cast lets you walk while casting: kite melee",
+    "Earth Spike (needs Seismic Weapon 1 via Stone Curse) vs wind monsters",
+    "Land Protector against MVP AoE"
+   ],
+   "gear": "Book (Bible/Tablet) or Rod; Silk Robe; Muffler",
+   "spots": [
+    "same as wizard, single target: gef_fild01, prt_fild02, gef_fild05, mjolnir_12, yuno_fild04"
+   ]
+  },
+  "hunter": {
+   "role": "ranged",
+   "stats": "DEX 90-99 / AGI 50-80 / LUK 30-40 (Blitz) or INT 30-50 + VIT (trapper)",
+   "skills": "Owl's Eye 3 > Vulture's Eye 10 > Improve Concentration > Double Strafe 10 > Arrow Shower 5 > Beast Bane 1 > Falconry Mastery > Blitz Beat 5 > Steel Crow > Skid Trap 1 > Ankle Snare > Land Mine > Claymore",
+   "tricks": [
+    "Element arrows: fire arrows vs earth, crystal vs fire, wind vs water",
+    "auto Blitz Beat procs from LUK (~LUK/3 %) cost no SP - cheap levelling",
+    "Ankle Snare a melee mob then shoot",
+    "Claymore Trap (fire 5x5) on mob piles; Land Mine stuns",
+    "always keep 2+ cells distance, kite with the movement after each Double Strafe"
+   ],
+   "gear": "Bow -> Composite Bow -> Great Bow / Crossbow -> Arbalest (NPC); arrows by element; Adventurer Suit -> Coat",
+   "spots": [
+    "gef_fild04 (Mandragora)",
+    "prt_fild07",
+    "pay_fild08",
+    "moc_fild02",
+    "pay_fild10",
+    "yuno_fild08",
+    "ein_fild08"
+   ]
+  },
+  "bard": {
+   "role": "ranged support",
+   "stats": "DEX 80-99 / AGI 50 / INT 30-50 / VIT 30",
+   "skills": "Owl 3 > Vulture 10 > Double Strafe 10 > Arrow Shower 5 > Music Lessons 3-10 > Musical Strike 5 > Adaptation > Encore > Dissonance 3 > Poem of Bragi / Assassin Cross of Sunset",
+   "tricks": [
+    "levels like an archer (Double Strafe) until songs",
+    "Poem of Bragi (cast/delay cut) for party casters, A Whistle for flee",
+    "needs an instrument (Violin/Guitar) for songs; bows for DS"
+   ],
+   "gear": "Bow route, then Violin/Guitar; light armor",
+   "spots": [
+    "archer spots",
+    "party with casters in Orc Dungeon/Glast Heim"
+   ]
+  },
+  "dancer": {
+   "role": "ranged support",
+   "stats": "DEX 80-99 / AGI 50 / INT 30-50 / VIT 30",
+   "skills": "Owl 3 > Vulture 10 > Double Strafe 10 > Arrow Shower 5 > Dance Lessons 3-10 > Throw Arrow (Slinging Arrow) 5 > Adaptation > Encore > Hip Shaker 3 > Service For You / Fortune's Kiss",
+   "tricks": [
+    "levels like an archer until dances",
+    "Service For You (SP cost down, MaxSP up) for casters, Fortune's Kiss for crits"
+   ],
+   "gear": "Bow route, then Whip; light armor",
+   "spots": [
+    "archer spots",
+    "party support"
+   ]
+  },
+  "priest": {
+   "role": "support",
+   "stats": "full support: INT 90-99 / VIT 60-90 / DEX 20-40; exorcist: INT 90 / DEX 60-80 / VIT 60",
+   "skills": "Heal 3 > Increase AGI 1 > Divine Protection 5 > Blessing 5-10 > Increase AGI 10 > Heal 10 > Ruwach > Teleport 1-2 > Warp Portal 4 > Pneuma > Angelus 2 > Holy Water > Cure | Kyrie 10 > Magnificat 3-5 > Gloria > Impositio 3 > Aspersio > Suffragium 3 > Sanctuary 7 > Lex Divina 5 > Lex Aeterna > Resurrection 1 > Turn Undead 3 > Safety Wall 1 (Aspersio 4 + Sanctuary 3) > Magnus Exorcismus 10",
+   "tricks": [
+    "buff order: Blessing + Increase AGI on everyone, Kyrie on the tank, Magnificat when the party sits, Impositio on hitters",
+    "heal at ~65% for the tank, earlier for squishies; Sanctuary under the tank when several mobs hit",
+    "Heal damages undead (holy): Payon Cave / Orc Dungeon solo",
+    "Turn Undead + Magnus Exorcismus in Orc Dungeon, Glast Heim Churchyard (blue gemstones)",
+    "Pneuma vs archers (Archer Skeleton, Gargoyle, Orc Archer)",
+    "Warp Portal saves the party walks; memo dungeon entrances"
+   ],
+   "gear": "Rod/Mace; Silk Robe; Buckler; Muffler; Sandals",
+   "spots": [
+    "pay_dun00",
+    "pay_dun01 (party)",
+    "orcsdun01 (party)",
+    "gl_church/gl_chyard (party)"
+   ]
+  },
+  "monk": {
+   "role": "melee / off-tank",
+   "stats": "combo: STR 80-90 / AGI 80-90 / VIT 30 / DEX 40; Asura: STR/INT/DEX/VIT",
+   "skills": "Heal 3, Increase AGI, Divine Protection 10, Demon Bane 10 (Iron Fists prereq) > Iron Fists 10 > Summon Spirit Sphere 5 > Flee 5 > Triple Attack 10 > Chain Combo 5 > Combo Finish 5 > Absorb Spirits 1 > Fury 3 > Investigate 3 > Finger Offensive 3 > Asura Strike 5 > Steel Body",
+   "tricks": [
+    "Triple Attack procs ~30% of hits, Chain Combo -> Combo Finish follows with SP",
+    "Investigate ignores DEF: great vs high-DEF Ambernite/Holden/Pitman",
+    "Asura Strike (Fury + 5 spheres, all SP) one-shots tough targets: rest/Magnificat between casts",
+    "Demon Bane + Heal let monks solo undead caves"
+   ],
+   "gear": "Waghnak -> Knuckle Duster -> Claw/Finger (NPC); Wooden Mail; Muffler",
+   "spots": [
+    "pay_dun00",
+    "pay_fild07",
+    "orcsdun01",
+    "pay_fild10",
+    "ein_fild06"
+   ]
+  },
+  "blacksmith": {
+   "role": "melee",
+   "stats": "STR 80-90 / DEX 40-60 / AGI 50-70 / VIT 40 / LUK some",
+   "skills": "Enlarge Weight 5 > Pushcart 3-10 > Mammonite 10 > Discount > Vending 3 > Hammer Fall 2 > Adrenaline Rush 5 > Hilt Binding 1 > Weapon Research 2-10 > Weapon Perfection 3 > Power Thrust (Over Thrust) 5 > Maximize Power",
+   "tricks": [
+    "Adrenaline Rush (+ASPD for axes/maces, party too) and Power Thrust (+ATK) up at all times",
+    "Mammonite costs zeny per hit: fine at 10x, keep 5k reserve",
+    "Hammer Fall stuns a group around the target",
+    "Weapon Perfection ignores size penalty",
+    "vend loot from the cart; Discount/Overcharge pay off"
+   ],
+   "gear": "Axe -> Battle Axe -> Hammer -> Buster/Two-Handed Axe (NPC)",
+   "spots": [
+    "prt_fild07",
+    "pay_fild07",
+    "moc_fild03",
+    "gef_fild10",
+    "mjolnir_08",
+    "pay_fild10"
+   ]
+  },
+  "alchemist": {
+   "role": "melee / utility",
+   "stats": "STR 70-80 / DEX 50-70 / INT 30-50 / VIT 40-60",
+   "skills": "Enlarge Weight 5 > Pushcart > Mammonite 10 > Axe Mastery 10 > Potion Research 5 > Prepare Potion 5 > Acid Terror 5 / Bomb (Demonstration) 5 > Aid Potion (Potion Pitcher) > Bioethics > Call Homunculus",
+   "tricks": [
+    "Acid Terror (Acid Bottle) ignores DEF: tough single targets",
+    "Bomb (Demonstration, fire ground) on mob piles, breaks weapons",
+    "brew potions (Red/Yellow/White) to sell",
+    "Homunculus (Lif heals, Vanilmirth damage) once you can"
+   ],
+   "gear": "Axe/Mace route + Buckler; Chain Mail",
+   "spots": [
+    "blacksmith spots",
+    "Fire Bomb on earth mobs: pay_fild07, mjolnir_07"
+   ]
+  },
+  "assassin": {
+   "role": "melee (evasion tank)",
+   "stats": "crit katar: AGI 80-90 / STR 60-80 / LUK 30-40 / DEX 30-40 / VIT 30; Sonic Blow: STR 90 / AGI 70 / DEX 50",
+   "skills": "Double Attack 10 > Improve Dodge 10 > Steal 5 > Hiding 2 > Envenom 1 | Katar Mastery 4-10 > Sonic Blow 10 > Cloaking 2-3 > Grimtooth 5 > Righthand Mastery > Lefthand Mastery > Enchant Poison 3-5 > Poison React",
+   "tricks": [
+    "katars double your crit rate (LUK/3 * 2)",
+    "Sonic Blow 8 hits (2 s delay) burst; best with STR",
+    "Grimtooth from Cloaking hits mobs 3x3 at range: mobbing",
+    "Enchant Poison vs non-poison mobs; dodge tanks for parties at high AGI",
+    "Double Attack (thief) applies with daggers/dual daggers before katars"
+   ],
+   "gear": "Dagger/Main Gauche -> Jur -> Katar (Katar line NPC: Jur, Katar, Jamadhar)",
+   "spots": [
+    "prt_fild07",
+    "pay_fild07",
+    "moc_fild02",
+    "orcsdun01 (party bait)",
+    "pay_fild10",
+    "ein_fild07"
+   ]
+  },
+  "rogue": {
+   "role": "melee / utility",
+   "stats": "AGI 80 / STR 60-80 / DEX 40-60 (bow rogue: DEX 90, Double Strafe)",
+   "skills": "Double Attack 10 > Improve Dodge > Steal 10 > Hiding 1 > Envenom | Snatcher 4 > Steal Coin 4 > Back Stab 4-10 > Tunnel Drive 2 > Raid 5 > Intimidate 5 > Vulture's Eye 10 > Double Strafe 5-10 > Plagiarism",
+   "tricks": [
+    "Snatcher auto-steals while hitting: free loot",
+    "Raid from Hiding stuns/blinds everything around (Tunnel Drive 2 required)",
+    "bow rogues copy archers: Double Strafe with Vulture's Eye",
+    "Strip skills vs bosses later",
+    "Plagiarism copies a skill used on you (e.g. Bowling Bash, Storm Gust) - party with a Wizard"
+   ],
+   "gear": "Dagger -> Gladius -> Damascus; Bow route for DS rogues; Thief Clothes",
+   "spots": [
+    "pay_fild07",
+    "moc_fild02",
+    "prt_fild03",
+    "pay_fild10",
+    "mjolnir_08"
+   ]
+  }
+ },
+ "element_table": {
+  "note": "attack element (row) vs defender element (column), % damage, per defender element level, from rathena db/re/attr_fix.yml",
+  "elements": [
+   "Neutral",
+   "Water",
+   "Earth",
+   "Fire",
+   "Wind",
+   "Poison",
+   "Holy",
+   "Dark",
+   "Ghost",
+   "Undead"
+  ],
+  "levels": {
+   "1": {
+    "Neutral": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     90,
+     100
+    ],
+    "Water": [
+     100,
+     25,
+     100,
+     150,
+     90,
+     150,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Earth": [
+     100,
+     100,
+     25,
+     90,
+     150,
+     150,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Fire": [
+     100,
+     90,
+     150,
+     25,
+     100,
+     150,
+     100,
+     100,
+     100,
+     125
+    ],
+    "Wind": [
+     100,
+     150,
+     90,
+     100,
+     25,
+     150,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Poison": [
+     100,
+     150,
+     150,
+     150,
+     150,
+     0,
+     75,
+     75,
+     75,
+     75
+    ],
+    "Holy": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     75,
+     0,
+     125,
+     100,
+     125
+    ],
+    "Dark": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     75,
+     125,
+     0,
+     100,
+     0
+    ],
+    "Ghost": [
+     90,
+     100,
+     100,
+     100,
+     100,
+     75,
+     90,
+     90,
+     125,
+     100
+    ],
+    "Undead": [
+     100,
+     100,
+     100,
+     90,
+     100,
+     75,
+     125,
+     0,
+     100,
+     0
+    ]
+   },
+   "2": {
+    "Neutral": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     70,
+     100
+    ],
+    "Water": [
+     100,
+     0,
+     100,
+     175,
+     80,
+     150,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Earth": [
+     100,
+     100,
+     0,
+     80,
+     175,
+     150,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Fire": [
+     100,
+     80,
+     175,
+     0,
+     100,
+     150,
+     100,
+     100,
+     100,
+     150
+    ],
+    "Wind": [
+     100,
+     175,
+     80,
+     100,
+     0,
+     150,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Poison": [
+     100,
+     150,
+     150,
+     150,
+     150,
+     0,
+     75,
+     75,
+     75,
+     50
+    ],
+    "Holy": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     75,
+     0,
+     150,
+     100,
+     150
+    ],
+    "Dark": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     75,
+     150,
+     0,
+     100,
+     0
+    ],
+    "Ghost": [
+     70,
+     100,
+     100,
+     100,
+     100,
+     75,
+     80,
+     80,
+     150,
+     125
+    ],
+    "Undead": [
+     100,
+     100,
+     100,
+     80,
+     100,
+     50,
+     150,
+     0,
+     125,
+     0
+    ]
+   },
+   "3": {
+    "Neutral": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     50,
+     100
+    ],
+    "Water": [
+     100,
+     0,
+     100,
+     200,
+     70,
+     125,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Earth": [
+     100,
+     100,
+     0,
+     70,
+     200,
+     125,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Fire": [
+     100,
+     70,
+     200,
+     0,
+     100,
+     125,
+     100,
+     100,
+     100,
+     175
+    ],
+    "Wind": [
+     100,
+     200,
+     70,
+     100,
+     0,
+     125,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Poison": [
+     100,
+     125,
+     125,
+     125,
+     125,
+     0,
+     50,
+     50,
+     50,
+     25
+    ],
+    "Holy": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     50,
+     0,
+     175,
+     100,
+     175
+    ],
+    "Dark": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     50,
+     175,
+     0,
+     100,
+     0
+    ],
+    "Ghost": [
+     50,
+     100,
+     100,
+     100,
+     100,
+     50,
+     70,
+     70,
+     175,
+     150
+    ],
+    "Undead": [
+     100,
+     100,
+     100,
+     70,
+     100,
+     25,
+     175,
+     0,
+     150,
+     0
+    ]
+   },
+   "4": {
+    "Neutral": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     0,
+     100
+    ],
+    "Water": [
+     100,
+     0,
+     100,
+     200,
+     60,
+     125,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Earth": [
+     100,
+     100,
+     0,
+     60,
+     200,
+     125,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Fire": [
+     100,
+     60,
+     200,
+     0,
+     100,
+     125,
+     100,
+     100,
+     100,
+     200
+    ],
+    "Wind": [
+     100,
+     200,
+     60,
+     100,
+     0,
+     125,
+     100,
+     100,
+     100,
+     100
+    ],
+    "Poison": [
+     100,
+     125,
+     125,
+     125,
+     125,
+     0,
+     50,
+     50,
+     50,
+     0
+    ],
+    "Holy": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     50,
+     0,
+     200,
+     100,
+     200
+    ],
+    "Dark": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     50,
+     200,
+     0,
+     100,
+     0
+    ],
+    "Ghost": [
+     0,
+     100,
+     100,
+     100,
+     100,
+     50,
+     60,
+     60,
+     200,
+     175
+    ],
+    "Undead": [
+     100,
+     100,
+     100,
+     60,
+     100,
+     0,
+     200,
+     0,
+     175,
+     0
+    ]
+   }
+  }
+ },
+ "element_cheatsheet": {
+  "Water monsters (Roda Frog, Spore, Marina, Sohee, Magnolia, Siroma)": "Wind: Lightning Bolt, Jupitel Thunder, wind arrows",
+  "Fire monsters (Peco Peco, Elder Willow, Grand Peco, Goat, Desert Wolf, Magmaring, Kaho)": "Water: Cold Bolt, Frost Diver, Storm Gust, crystal arrows",
+  "Earth monsters (Willow, Rocker, Mandragora, Bigfoot, Savage, Holden, Geographer, Petite Ground)": "Fire: Fire Bolt, Fire Ball, Fire Wall, fire arrows, Magnum Break",
+  "Wind monsters (Chonchon, Hornet, Creamy, Stainer, Dustiness, Harpy, Petite Sky, Roween, Wind Ghost)": "Earth: Earth Spike, Heaven's Drive (Fire only 100%, Lightning 25%)",
+  "Undead element (Zombie, Skeletons, Orc Zombie, Munak, Bongun, Evil Druid, Wraith, Dark Priest)": "Holy best (125-200%), Fire 125-200%, Turn Undead, Magnus; Heal damages them",
+  "Ghost element (Whisper, Nightmare, Marionette, Noxious)": "Ghost (Soul Strike) or Holy; Neutral weapons do 90% down to 0%",
+  "Dark element (Familiar, Tarou, Drainliar, Zenorc, Raydric, Deviruchi)": "Holy 125-200%",
+  "Poison element (Poison Spore, Poporing, Argos, Argiope, Side Winder)": "Water/Earth/Fire/Wind all 125-150%; Holy only 75%",
+  "Neutral (Lunatic, Rideword, Metaling, Alarm, Teddy Bear)": "any element 100%; Ghost only 90%"
+ },
+ "low_level_dangers": [
+  {
+   "monster": "Mandragora",
+   "maps": [
+    "gef_fild04"
+   ],
+   "why": "stationary but hits from 3-4 cells; melee Novices trade badly - ranged only"
+  },
+  {
+   "monster": "Poison Spore",
+   "maps": [
+    "mjolnir_06",
+    "gef_dun00"
+   ],
+   "why": "aggressive and poisons; lowest-level aggro monster in the guide"
+  },
+  {
+   "monster": "Hornet / Chonchon / Thief Bug",
+   "maps": [
+    "prt_fild05",
+    "gef_fild00",
+    "mjolnir_09"
+   ],
+   "why": "fast, accurate, swarm a Novice - keep red potions"
+  },
+  {
+   "monster": "Vocal",
+   "maps": [
+    "prt_fild07",
+    "prt_fild04"
+   ],
+   "why": "rare Rocker mini boss (Lv18, 3300 HP, aggressive) kills Novices"
+  },
+  {
+   "monster": "Peco Peco",
+   "maps": [
+    "moc_fild01",
+    "moc_fild02"
+   ],
+   "why": "they assist each other: hitting one can pull three"
+  },
+  {
+   "monster": "Smokie / Yoyo",
+   "maps": [
+    "mjolnir_06",
+    "prt_fild03"
+   ],
+   "why": "pick up your drops; Yoyo is aggressive"
+  },
+  {
+   "monster": "Zombie",
+   "maps": [
+    "pay_dun00"
+   ],
+   "why": "aggressive on sight inside Payon Cave; slow - walk away"
+  },
+  {
+   "monster": "Elder Willow",
+   "maps": [
+    "prt_fild10",
+    "mjolnir_02",
+    "pay_fild09"
+   ],
+   "why": "aggressive Lv34 fire plants"
+  },
+  {
+   "monster": "Hunter Fly",
+   "maps": [
+    "gef_dun00",
+    "mjolnir_12",
+    "prt_maze03"
+   ],
+   "why": "Lv63 aggressive, very fast, drains HP; deadly under Lv55"
+  },
+  {
+   "monster": "Orc Warrior / Orc Lady",
+   "maps": [
+    "gef_fild10",
+    "gef_fild03"
+   ],
+   "why": "all aggressive and assist; with mob_count_rate 200% they form trains; Orc Lord MVP"
+  },
+  {
+   "monster": "Argiope / Side Winder / Mantis / Driller",
+   "maps": [
+    "mjolnir_03",
+    "mjolnir_04",
+    "mjolnir_05",
+    "mjolnir_11"
+   ],
+   "why": "aggressive Lv65-75; the road to Al De Baran crosses them"
+  },
+  {
+   "monster": "Harpy",
+   "maps": [
+    "yuno_fild03",
+    "yuno_fild04"
+   ],
+   "why": "silences casters; carry Green Potions"
+  },
+  {
+   "monster": "Ghoul / Nightmare / Jakk",
+   "maps": [
+    "gef_dun01"
+   ],
+   "why": "all aggressive; Nightmare is a Lv69 ghost - neutral weapons weak"
+  }
+ ]
+}

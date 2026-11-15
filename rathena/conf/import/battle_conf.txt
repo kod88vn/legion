@@ -1,0 +1,43 @@
+// friendlier test rates
+base_exp_rate: 500
+job_exp_rate: 500
+
+// Smooth hold-to-walk: the client (at 1920x1200 and up) happily requests walks to cells further than rAthena's
+// default 17. Those requests were silently rejected, and since the client starts walking immediately, the next
+// accepted reply snapped the character back (rubber-banding). 32 is rAthena's maximum (MAX_WALKPATH).
+max_walk_path: 32
+
+// 1000 bots hunt the same fields as a human: double the monster population so fields never look empty
+mob_count_rate: 400
+
+// guilds are founded by players with /guild without the rare Emperium item (Legion guild leaders found theirs at Base 15+)
+guild_emperium_check: no
+
+// faster respawns: ~900 bots level on a dozen beginner fields (fields were hunted out, bots roamed with 0 kills)
+mob_spawn_delay: 40
+plant_spawn_delay: 40
+
+// RODEX: cheap item attachments (owner 2026-11-14: "lower cost to mail item then"). Stock 2500z per attached item
+// made mailing spare gear between characters pointless. Zeny fee (mail_zeny_fee 2%) kept stock.
+// NOTE: the official client still shows 2500 in its UI (hardcoded); the server charges 100.
+mail_attachment_price: 100
+
+// Owner 2026-11-14: "make everything drop rate 5x" (all item drop rates 5x; EXP is 5x too)
+item_rate_common: 500
+item_rate_common_boss: 500
+item_rate_common_mvp: 500
+item_rate_heal: 500
+item_rate_heal_boss: 500
+item_rate_heal_mvp: 500
+item_rate_use: 500
+item_rate_use_boss: 500
+item_rate_use_mvp: 500
+item_rate_equip: 500
+item_rate_equip_boss: 500
+item_rate_equip_mvp: 500
+item_rate_card: 500
+item_rate_card_boss: 500
+item_rate_card_mvp: 500
+item_rate_mvp: 500
+item_rate_adddrop: 500
+item_rate_treasure: 500

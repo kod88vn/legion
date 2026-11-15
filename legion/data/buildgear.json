@@ -1,0 +1,10167 @@
+{
+ "version": 1,
+ "updated": "2026-11-14 | run 6: Clip[1] (unobtainable) -> Belt[1] 2627 as the Teleport-card accessory",
+ "format": "keys = builds.go plan ids; bands by base level (may overlap); lists weakest first; ids = rAthena re item ids; card prio 1-3",
+ "builds": {
+  "hunter": {
+   "source": [
+    "irowiki.org/wiki/Hunter",
+    "irowiki.org/wiki/Archer"
+   ],
+   "bands": [
+    {
+     "min": 1,
+     "max": 20,
+     "weapon": [
+      1702,
+      1705
+     ],
+     "armor": [
+      2306,
+      2322
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2227
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Archer: Double Strafe single, Arrow Shower on 3+; Silver Arrows vs undead, Fire Arrows vs earth/plants"
+    },
+    {
+     "min": 18,
+     "max": 40,
+     "weapon": [
+      1708,
+      1711
+     ],
+     "armor": [
+      2322,
+      2311
+     ],
+     "shield": [],
+     "headgear": [
+      2204,
+      2202
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Great Bow/Crossbow from lv18; elemental arrows matched to the map"
+    },
+    {
+     "min": 33,
+     "max": 99,
+     "weapon": [
+      1716,
+      1715,
+      1726
+     ],
+     "armor": [
+      2311,
+      2331
+     ],
+     "shield": [],
+     "headgear": [
+      2202,
+      2285
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754,
+      1757
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Gakkung/Arbalest, Hunter Bow; Tights from lv45; Apple of Archer (DEX+3)"
+    }
+   ],
+   "boss_role": "ranged DPS: Double Strafe on the boss with element arrows, Arrow Shower on the adds, falcon procs"
+  },
+  "bard": {
+   "source": [
+    "irowiki.org/wiki/Archer"
+   ],
+   "bands": [
+    {
+     "min": 1,
+     "max": 20,
+     "weapon": [
+      1702,
+      1705
+     ],
+     "armor": [
+      2306,
+      2322
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2227
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Archer: Double Strafe single, Arrow Shower on 3+; Silver Arrows vs undead, Fire Arrows vs earth/plants"
+    },
+    {
+     "min": 18,
+     "max": 40,
+     "weapon": [
+      1708,
+      1711
+     ],
+     "armor": [
+      2322,
+      2311
+     ],
+     "shield": [],
+     "headgear": [
+      2204,
+      2202
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Great Bow/Crossbow from lv18; elemental arrows matched to the map"
+    },
+    {
+     "min": 33,
+     "max": 99,
+     "weapon": [
+      1716,
+      1715,
+      1726
+     ],
+     "armor": [
+      2311,
+      2331
+     ],
+     "shield": [],
+     "headgear": [
+      2202,
+      2285
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754,
+      1757
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Gakkung/Arbalest, Hunter Bow; Tights from lv45; Apple of Archer (DEX+3)"
+    }
+   ],
+   "boss_role": "ranged DPS / support songs"
+  },
+  "dancer": {
+   "source": [
+    "irowiki.org/wiki/Archer"
+   ],
+   "bands": [
+    {
+     "min": 1,
+     "max": 20,
+     "weapon": [
+      1702,
+      1705
+     ],
+     "armor": [
+      2306,
+      2322
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2227
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Archer: Double Strafe single, Arrow Shower on 3+; Silver Arrows vs undead, Fire Arrows vs earth/plants"
+    },
+    {
+     "min": 18,
+     "max": 40,
+     "weapon": [
+      1708,
+      1711
+     ],
+     "armor": [
+      2322,
+      2311
+     ],
+     "shield": [],
+     "headgear": [
+      2204,
+      2202
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Great Bow/Crossbow from lv18; elemental arrows matched to the map"
+    },
+    {
+     "min": 33,
+     "max": 99,
+     "weapon": [
+      1716,
+      1715,
+      1726
+     ],
+     "armor": [
+      2311,
+      2331
+     ],
+     "shield": [],
+     "headgear": [
+      2202,
+      2285
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754,
+      1757
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Gakkung/Arbalest, Hunter Bow; Tights from lv45; Apple of Archer (DEX+3)"
+    }
+   ],
+   "boss_role": "ranged DPS / support dances"
+  },
+  "priest": {
+   "source": [
+    "irowiki.org/wiki/Acolyte",
+    "irowiki.org/wiki/Priest"
+   ],
+   "bands": [
+    {
+     "min": 1,
+     "max": 26,
+     "weapon": [
+      1602,
+      1505
+     ],
+     "armor": [
+      2322
+     ],
+     "shield": [
+      2102,
+      2104
+     ],
+     "headgear": [
+      2221,
+      2217
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "support Acolyte: Heal (also on undead), Blessing, Increase AGI; INT/VIT/DEX gear"
+    },
+    {
+     "min": 24,
+     "max": 60,
+     "weapon": [
+      1605,
+      1611
+     ],
+     "armor": [
+      2326
+     ],
+     "shield": [
+      2104
+     ],
+     "headgear": [
+      2217
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Saint's Robe, Arc Wand; undead dungeons with a party"
+    },
+    {
+     "min": 55,
+     "max": 99,
+     "weapon": [
+      1611,
+      1666
+     ],
+     "armor": [
+      2326
+     ],
+     "shield": [
+      2104
+     ],
+     "headgear": [
+      2217
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Healing Staff (lv55)"
+    }
+   ],
+   "boss_role": "healer: Heal the tank first, Kyrie on the tank, Blessing/Increase AGI on all; never fight; Lex Aeterna before big hits; party retreats if the priest dies"
+  },
+  "knight": {
+   "source": [
+    "irowiki.org/wiki/Knight"
+   ],
+   "stats": "str-agi",
+   "bands": [
+    {
+     "min": 1,
+     "max": 32,
+     "weapon": [
+      1117,
+      1152,
+      1155
+     ],
+     "armor": [
+      2306,
+      2313
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Swordman/Knight 2H sword: Katana -> Slayer/Bastard Sword; Two-Hand Quicken needs a two-handed SWORD (not a spear)"
+    },
+    {
+     "min": 33,
+     "max": 60,
+     "weapon": [
+      1155,
+      1158,
+      1172
+     ],
+     "armor": [
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Two-Handed Sword / Claymore; Peco Peco from Cavalier Mastery 5; refine the weapon"
+    },
+    {
+     "min": 48,
+     "max": 99,
+     "weapon": [
+      1158,
+      1172,
+      1171
+     ],
+     "armor": [
+      2315,
+      2317
+     ],
+     "shield": [],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Zweihander[2] at lv48; Full Plate at lv40+ for a tank"
+    }
+   ],
+   "boss_role": "main tank or melee DPS: holds the boss (Provoke), Two-Hand Quicken + Bowling Bash on adds; Endure vs knock-back"
+  },
+  "crusader": {
+   "source": [
+    "irowiki.org/wiki/Crusader"
+   ],
+   "stats": "vit-str",
+   "bands": [
+    {
+     "min": 1,
+     "max": 26,
+     "weapon": [
+      1102,
+      1105,
+      1108
+     ],
+     "armor": [
+      2306,
+      2313
+     ],
+     "shield": [
+      2102,
+      2104
+     ],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 3,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-30% Demi-Human damage"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 3,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor vs undead maps"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "VIT/STR shield crusader: one-handed sword + shield (Auto Guard, Holy Cross)"
+    },
+    {
+     "min": 14,
+     "max": 50,
+     "weapon": [
+      1111,
+      1114,
+      1125
+     ],
+     "armor": [
+      2313,
+      2315
+     ],
+     "shield": [
+      2104,
+      2106
+     ],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 3,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-30% Demi-Human damage"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 3,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor vs undead maps"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Rapier/Scimitar/Ring Pommel Saber; Grand Peco from Cavalier Mastery 5"
+    },
+    {
+     "min": 27,
+     "max": 99,
+     "weapon": [
+      1120,
+      1127,
+      1128
+     ],
+     "armor": [
+      2315,
+      2317
+     ],
+     "shield": [
+      2106,
+      2108
+     ],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 3,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-30% Demi-Human damage"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 3,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor vs undead maps"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Tsurugi/Saber/Haedonggum, Full Plate (lv40), Mirror Shield"
+    }
+   ],
+   "boss_role": "main tank: Auto Guard + Reflect Shield, Holy Cross / Grand Cross vs undead/demon bosses, Devotion on the priest"
+  },
+  "assassin": {
+   "source": [
+    "irowiki.org/wiki/Assassin"
+   ],
+   "boss_role": "melee DPS / evasion off-tank: Sonic Blow on the boss, dodge with high FLEE",
+   "bands": [
+    {
+     "min": 1,
+     "max": 32,
+     "weapon": [
+      1208,
+      1211,
+      1217
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4086,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "CRIT+9"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4001,
+       "slot": "armor",
+       "prio": 1,
+       "why": "LUK+2"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4159,
+       "slot": "garment",
+       "prio": 2,
+       "why": "AGI+2 FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Thief: dagger (Main Gauche/Dirk/Stiletto) until the katar"
+    },
+    {
+     "min": 18,
+     "max": 60,
+     "weapon": [
+      1251,
+      1253
+     ],
+     "armor": [
+      2313,
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4086,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "CRIT+9"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4001,
+       "slot": "armor",
+       "prio": 1,
+       "why": "LUK+2"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4159,
+       "slot": "garment",
+       "prio": 2,
+       "why": "AGI+2 FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Assassin: Jur[3] -> Katar[2]; Sonic Blow needs a katar"
+    },
+    {
+     "min": 33,
+     "max": 99,
+     "weapon": [
+      1253,
+      1255
+     ],
+     "armor": [
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4086,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "CRIT+9"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4001,
+       "slot": "armor",
+       "prio": 1,
+       "why": "LUK+2"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4159,
+       "slot": "garment",
+       "prio": 2,
+       "why": "AGI+2 FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Katar[2] / Jamadhar[1]; crit cards (Soldier Skeleton) in the katar"
+    }
+   ]
+  },
+  "rogue": {
+   "source": [
+    "irowiki.org/wiki/Rogue"
+   ],
+   "boss_role": "melee DPS / evasion off-tank: Back Stab, strip skills later",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1208,
+      1211,
+      1217
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4086,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "CRIT+9"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4001,
+       "slot": "armor",
+       "prio": 1,
+       "why": "LUK+2"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4159,
+       "slot": "garment",
+       "prio": 2,
+       "why": "AGI+2 FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "dagger + Double Attack"
+    },
+    {
+     "min": 24,
+     "max": 99,
+     "weapon": [
+      1220,
+      1226,
+      1217
+     ],
+     "armor": [
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4086,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "CRIT+9"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4001,
+       "slot": "armor",
+       "prio": 1,
+       "why": "LUK+2"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4159,
+       "slot": "garment",
+       "prio": 2,
+       "why": "AGI+2 FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Gladius[3] / Damascus[2]"
+    }
+   ]
+  },
+  "blacksmith": {
+   "source": [
+    "irowiki.org/wiki/Blacksmith"
+   ],
+   "boss_role": "melee DPS: Adrenaline Rush (party ASPD), Over Thrust, Hammer Fall stuns the adds",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1302,
+      1352
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Merchant: Axe[4] / Battle Axe[4]"
+    },
+    {
+     "min": 16,
+     "max": 60,
+     "weapon": [
+      1352,
+      1355,
+      1358
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Battle Axe -> Hammer -> Buster; Adrenaline Rush needs an axe or mace"
+    },
+    {
+     "min": 30,
+     "max": 99,
+     "weapon": [
+      1358,
+      1361
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Buster[2] / Two-Handed Axe[2]"
+    }
+   ]
+  },
+  "alchemist": {
+   "source": [
+    "irowiki.org/wiki/Alchemist"
+   ],
+   "boss_role": "support: potions for the party (Potion Pitcher), Acid Terror on the boss",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1302,
+      1352
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Merchant: axe"
+    },
+    {
+     "min": 16,
+     "max": 99,
+     "weapon": [
+      1352,
+      1302,
+      1505
+     ],
+     "armor": [
+      2306,
+      2326
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "axe/mace; brews potions (alchemy.go)"
+    }
+   ]
+  },
+  "monk": {
+   "source": [
+    "irowiki.org/wiki/Monk"
+   ],
+   "boss_role": "tank/DPS: Triple Attack -> Chain Combo -> Combo Finish; Asura Strike burst later",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1505,
+      1802
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Acolyte: Mace[4] / Waghnak[4]"
+    },
+    {
+     "min": 12,
+     "max": 99,
+     "weapon": [
+      1802,
+      1806,
+      1810
+     ],
+     "armor": [
+      2306,
+      2326
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Monk: knuckles (Waghnak -> Studded Knuckles -> Claw)"
+    }
+   ]
+  },
+  "wizard": {
+   "source": [
+    "irowiki.org/wiki/Mage",
+    "irowiki.org/wiki/Wizard"
+   ],
+   "boss_role": "AoE / burst caster: Storm Gust and Lord of Vermilion on the adds, Jupitel/bolts on the boss from max range; Safety Wall/Quagmire when the boss closes in",
+   "stats": "INT 99, DEX ~80 (cast time), VIT 50-60",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1602,
+      1601
+     ],
+     "armor": [
+      2322
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2221
+     ],
+     "garment": [
+      2502
+     ],
+     "shoes": [
+      2402
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Rod[4] with Drops cards; the starter Hood/Sandals/Silk Robe from NPCs"
+    },
+    {
+     "min": 25,
+     "max": 65,
+     "weapon": [
+      1605,
+      1608
+     ],
+     "armor": [
+      2322,
+      2334
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2217,
+      2232
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2608,
+      2627
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Wand[3]/Staff[3] with Drops cards; Mage Coat at 2nd job"
+    },
+    {
+     "min": 60,
+     "max": 99,
+     "weapon": [
+      1611,
+      1473,
+      1618
+     ],
+     "armor": [
+      2334,
+      2326
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2232
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2602
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Wizardry Staff / Survivor's Rod come from drops and player trade"
+    }
+   ]
+  },
+  "sage": {
+   "source": [
+    "irowiki.org/wiki/Mage",
+    "irowiki.org/wiki/Sage"
+   ],
+   "boss_role": "caster support: bolts with Free Cast on the move, Heaven's Drive on adds, Dispell on buffed bosses, endow (Flame Launcher / Frost Weapon) for the melee",
+   "stats": "INT 99, DEX ~80, VIT 50-60 (same plan as builds.go sage)",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1602,
+      1601
+     ],
+     "armor": [
+      2322
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2221
+     ],
+     "garment": [
+      2502
+     ],
+     "shoes": [
+      2402
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Rod[4] with Drops cards; the starter Hood/Sandals/Silk Robe from NPCs"
+    },
+    {
+     "min": 25,
+     "max": 65,
+     "weapon": [
+      1605,
+      1608
+     ],
+     "armor": [
+      2322,
+      2334
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2217,
+      2232
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2608,
+      2627
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Wand[3]/Staff[3] with Drops cards; books come later from drops/trade"
+    },
+    {
+     "min": 60,
+     "max": 99,
+     "weapon": [
+      1611,
+      1473,
+      1618
+     ],
+     "armor": [
+      2334,
+      2326
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2232
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2602
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Wizardry Staff / Survivor's Rod come from drops and player trade"
+    }
+   ]
+  },
+  "knight_spear": {
+   "source": [
+    "irowiki.org/wiki/Knight (Brandish Spear build)"
+   ],
+   "stats": "str-vit",
+   "bands": [
+    {
+     "min": 1,
+     "max": 32,
+     "weapon": [
+      1401,
+      1404,
+      1407
+     ],
+     "armor": [
+      2306,
+      2313
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Knight spear: Javelin -> Spear -> Pike -> Guisarme -> Glaive; Brandish Spear needs a spear and a Peco (Riding)"
+    },
+    {
+     "min": 33,
+     "max": 60,
+     "weapon": [
+      1407,
+      1451,
+      1454
+     ],
+     "armor": [
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Knight spear: Javelin -> Spear -> Pike -> Guisarme -> Glaive; Brandish Spear needs a spear and a Peco (Riding)"
+    },
+    {
+     "min": 48,
+     "max": 99,
+     "weapon": [
+      1451,
+      1454,
+      1457
+     ],
+     "armor": [
+      2315,
+      2317
+     ],
+     "shield": [],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Knight spear: Javelin -> Spear -> Pike -> Guisarme -> Glaive; Brandish Spear needs a spear and a Peco (Riding)"
+    }
+   ],
+   "boss_role": "main tank or melee DPS: holds the boss (Provoke), Two-Hand Quicken + Bowling Bash on adds; Endure vs knock-back"
+  },
+  "crusader_gc": {
+   "source": [
+    "irowiki.org/wiki/Crusader"
+   ],
+   "stats": "int-vit",
+   "bands": [
+    {
+     "min": 1,
+     "max": 26,
+     "weapon": [
+      1102,
+      1105,
+      1108
+     ],
+     "armor": [
+      2306,
+      2313
+     ],
+     "shield": [
+      2102,
+      2104
+     ],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 3,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-30% Demi-Human damage"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 3,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor vs undead maps"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Grand Cross Crusader: INT/VIT; Grand Cross (ATK+MATK holy) on undead/demon crowds; 1H sword + shield"
+    },
+    {
+     "min": 14,
+     "max": 50,
+     "weapon": [
+      1111,
+      1114,
+      1125
+     ],
+     "armor": [
+      2313,
+      2315
+     ],
+     "shield": [
+      2104,
+      2106
+     ],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 3,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-30% Demi-Human damage"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 3,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor vs undead maps"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Grand Cross Crusader: INT/VIT; Grand Cross (ATK+MATK holy) on undead/demon crowds; 1H sword + shield"
+    },
+    {
+     "min": 27,
+     "max": 99,
+     "weapon": [
+      1120,
+      1127,
+      1128
+     ],
+     "armor": [
+      2315,
+      2317
+     ],
+     "shield": [
+      2106,
+      2108
+     ],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 3,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-30% Demi-Human damage"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 3,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor vs undead maps"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+3"
+      }
+     ],
+     "note": "Grand Cross Crusader: INT/VIT; Grand Cross (ATK+MATK holy) on undead/demon crowds; 1H sword + shield"
+    }
+   ],
+   "boss_role": "main tank: Auto Guard + Reflect Shield, Holy Cross / Grand Cross vs undead/demon bosses, Devotion on the priest"
+  },
+  "hunter_blitz": {
+   "source": [
+    "irowiki.org/wiki/Hunter",
+    "irowiki.org/wiki/Archer"
+   ],
+   "bands": [
+    {
+     "min": 1,
+     "max": 20,
+     "weapon": [
+      1702,
+      1705
+     ],
+     "armor": [
+      2306,
+      2322
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2227
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Blitz Hunter: falcon Blitz Beat scales with INT/DEX; bow route as the DEX hunter"
+    },
+    {
+     "min": 18,
+     "max": 40,
+     "weapon": [
+      1708,
+      1711
+     ],
+     "armor": [
+      2322,
+      2311
+     ],
+     "shield": [],
+     "headgear": [
+      2204,
+      2202
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Blitz Hunter: falcon Blitz Beat scales with INT/DEX; bow route as the DEX hunter"
+    },
+    {
+     "min": 33,
+     "max": 99,
+     "weapon": [
+      1716,
+      1715,
+      1726
+     ],
+     "armor": [
+      2311,
+      2331
+     ],
+     "shield": [],
+     "headgear": [
+      2202,
+      2285
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2604
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754,
+      1757
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4009,
+       "slot": "shoes",
+       "prio": 1,
+       "why": "AGI+1 FLEE+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      }
+     ],
+     "note": "Blitz Hunter: falcon Blitz Beat scales with INT/DEX; bow route as the DEX hunter"
+    }
+   ],
+   "boss_role": "ranged DPS: Double Strafe on the boss with element arrows, Arrow Shower on the adds, falcon procs",
+   "stats": "dex-int"
+  },
+  "priest_me": {
+   "source": [
+    "irowiki.org/wiki/Acolyte",
+    "irowiki.org/wiki/Priest"
+   ],
+   "bands": [
+    {
+     "min": 1,
+     "max": 26,
+     "weapon": [
+      1602,
+      1505
+     ],
+     "armor": [
+      2322
+     ],
+     "shield": [
+      2102,
+      2104
+     ],
+     "headgear": [
+      2221,
+      2217
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Magnus Exorcismus Priest: INT/DEX; Blue Gemstones for ME; same gear as the support priest"
+    },
+    {
+     "min": 24,
+     "max": 60,
+     "weapon": [
+      1605,
+      1611
+     ],
+     "armor": [
+      2326
+     ],
+     "shield": [
+      2104
+     ],
+     "headgear": [
+      2217
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Magnus Exorcismus Priest: INT/DEX; Blue Gemstones for ME; same gear as the support priest"
+    },
+    {
+     "min": 55,
+     "max": 99,
+     "weapon": [
+      1611,
+      1666
+     ],
+     "armor": [
+      2326
+     ],
+     "shield": [
+      2104
+     ],
+     "headgear": [
+      2217
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Magnus Exorcismus Priest: INT/DEX; Blue Gemstones for ME; same gear as the support priest"
+    }
+   ],
+   "boss_role": "healer: Heal the tank first, Kyrie on the tank, Blessing/Increase AGI on all; never fight; Lex Aeterna before big hits; party retreats if the priest dies",
+   "stats": "int-dex"
+  },
+  "sage_support": {
+   "source": [
+    "irowiki.org/wiki/Sage (support build)"
+   ],
+   "stats": "int-vit-dex",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1602,
+      1601
+     ],
+     "armor": [
+      2322
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2221
+     ],
+     "garment": [
+      2502
+     ],
+     "shoes": [
+      2402
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "cast not interrupted"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      }
+     ],
+     "note": "Rod[4] with Drops cards; Blue Gemstones for Volcano / Deluge / Whirlwind, Yellow for Dispell"
+    },
+    {
+     "min": 25,
+     "max": 65,
+     "weapon": [
+      1605,
+      1608,
+      1550
+     ],
+     "armor": [
+      2322,
+      2334
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2217,
+      2232
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2608,
+      2627
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "cast not interrupted"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      }
+     ],
+     "note": "Wand[3]/Staff[3] or a Book[3] (Sage); elemental stones (Red Blood, Crystal Blue, Wind of Verdure, Green Live) for endows"
+    },
+    {
+     "min": 60,
+     "max": 99,
+     "weapon": [
+      1611,
+      1551,
+      1552
+     ],
+     "armor": [
+      2334,
+      2326
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2232
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2602
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "cast not interrupted"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      }
+     ],
+     "note": "Wizardry Staff / Bible / Tablet from drops and trade; Phen card keeps long casts going"
+    }
+   ]
+  },
+  "monk_asura": {
+   "source": [
+    "irowiki.org/wiki/Monk (Asura Strike build)"
+   ],
+   "stats": "str-int-dex",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1505,
+      1802
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "INT+2"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      }
+     ],
+     "note": "Acolyte: Mace[4] / Waghnak[4]"
+    },
+    {
+     "min": 12,
+     "max": 99,
+     "weapon": [
+      1802,
+      1806,
+      1810,
+      1514
+     ],
+     "armor": [
+      2306,
+      2326
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "INT+2"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      }
+     ],
+     "note": "Monk: knuckles or a Morning Star; SP gear (Sohee shoes, INT headgear) - Asura spends all SP"
+    }
+   ]
+  },
+  "alchemist_battle": {
+   "source": [
+    "irowiki.org/wiki/Alchemist (battle build)"
+   ],
+   "stats": "str-dex-vit",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1302,
+      1352
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      }
+     ],
+     "note": "Merchant: Axe[4] / Battle Axe[4]"
+    },
+    {
+     "min": 16,
+     "max": 99,
+     "weapon": [
+      1352,
+      1302,
+      1508
+     ],
+     "armor": [
+      2306,
+      2326
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      }
+     ],
+     "note": "Axe Mastery: Battle Axe / Axe; Acid Bottles for Acid Terror, Bottle Grenades for Bomb"
+    }
+   ]
+  },
+  "alchemist_potion": {
+   "source": [
+    "irowiki.org/wiki/Alchemist (Pharmacy build)",
+    "irowiki.org/wiki/Prepare_Potion"
+   ],
+   "stats": "int-dex-luk",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1302,
+      1352
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4001,
+       "slot": "armor",
+       "prio": 2,
+       "why": "LUK+2"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Merchant: Axe[4]; Vending sells its potions"
+    },
+    {
+     "min": 16,
+     "max": 99,
+     "weapon": [
+      1352,
+      1302,
+      1505
+     ],
+     "armor": [
+      2306,
+      2326
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4001,
+       "slot": "armor",
+       "prio": 2,
+       "why": "LUK+2"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Brewer: INT/DEX/LUK gear raises the brew rate; Potion Creation Guide, Medicine Bowls, herbs, Empty Bottles"
+    }
+   ]
+  },
+  "blacksmith_mace": {
+   "source": [
+    "irowiki.org/wiki/Blacksmith (battle build, mace)"
+   ],
+   "stats": "str-vit-dex",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1502,
+      1505
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      }
+     ],
+     "note": "Merchant: Club[4] / Mace[4]"
+    },
+    {
+     "min": 14,
+     "max": 60,
+     "weapon": [
+      1508,
+      1511,
+      1520
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      }
+     ],
+     "note": "Smasher[3] / Flail[3] / Chain[3]; Adrenaline Rush works with maces"
+    },
+    {
+     "min": 27,
+     "max": 99,
+     "weapon": [
+      1520,
+      1514,
+      1517
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4022,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "VIT+2"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      }
+     ],
+     "note": "Chain[3] / Morning Star[2] / Sword Mace[1]"
+    }
+   ]
+  },
+  "assassin_sonic": {
+   "source": [
+    "irowiki.org/wiki/Assassin (Sonic Blow build)"
+   ],
+   "stats": "str-agi-dex",
+   "bands": [
+    {
+     "min": 1,
+     "max": 32,
+     "weapon": [
+      1208,
+      1211,
+      1217
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Thief: dagger until the katar"
+    },
+    {
+     "min": 18,
+     "max": 60,
+     "weapon": [
+      1251,
+      1253
+     ],
+     "armor": [
+      2313,
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Jur[3] -> Katar[2]: Sonic Blow needs a katar; race/size cards (not crit)"
+    },
+    {
+     "min": 33,
+     "max": 99,
+     "weapon": [
+      1253,
+      1255
+     ],
+     "armor": [
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Katar[2] / Jamadhar[1] with Hydra / Minorous / Andre"
+    }
+   ]
+  },
+  "assassin_dagger": {
+   "source": [
+    "irowiki.org/wiki/Assassin (dagger build)"
+   ],
+   "stats": "agi-str-dex",
+   "bands": [
+    {
+     "min": 1,
+     "max": 32,
+     "weapon": [
+      1208,
+      1211,
+      1217
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Thief: Main Gauche[4] / Dirk[3] / Stiletto[3]"
+    },
+    {
+     "min": 24,
+     "max": 60,
+     "weapon": [
+      1217,
+      1220,
+      1226
+     ],
+     "armor": [
+      2313,
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Stiletto[3] / Gladius[3] / Damascus[2]: Double Attack needs a dagger"
+    },
+    {
+     "min": 48,
+     "max": 99,
+     "weapon": [
+      1220,
+      1226
+     ],
+     "armor": [
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Gladius[3] / Damascus[2] with race cards; dual daggers later (Lefthand Mastery)"
+    }
+   ]
+  },
+  "rogue_bow": {
+   "source": [
+    "irowiki.org/wiki/Rogue (archer build)"
+   ],
+   "stats": "dex-agi",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1702,
+      1705
+     ],
+     "armor": [
+      2306,
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Thief: Bow[4] / Composite Bow[4] + Arrows (Double Strafe needs Vulture's Eye 10)"
+    },
+    {
+     "min": 24,
+     "max": 60,
+     "weapon": [
+      1708,
+      1711
+     ],
+     "armor": [
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Great Bow[3] / Crossbow[3]; Silver Arrows vs undead, Fire Arrows vs earth"
+    },
+    {
+     "min": 45,
+     "max": 99,
+     "weapon": [
+      1711,
+      1715,
+      1716,
+      1719
+     ],
+     "armor": [
+      2336,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504,
+      2506
+     ],
+     "shoes": [
+      2402,
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [
+      1750,
+      1751,
+      1752,
+      1754,
+      1753
+     ],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4094,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "+10% ranged damage"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4064,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "DEX+3"
+      },
+      {
+       "id": 4034,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "DEX+2"
+      },
+      {
+       "id": 4027,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "AGI+2"
+      },
+      {
+       "id": 4021,
+       "slot": "armor",
+       "prio": 2,
+       "why": "DEX+1 ATK+5"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4102,
+       "slot": "garment",
+       "prio": 2,
+       "why": "FLEE+20"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Crossbow / Arbalest[2] / Kakkung[2] / Bow of Rogue Master; elemental arrows per map"
+    }
+   ]
+  },
+  "knight_pierce": {
+   "source": [
+    "irowiki.org/wiki/Knight (spear / Pierce build)"
+   ],
+   "stats": "str-vit",
+   "bands": [
+    {
+     "min": 1,
+     "max": 32,
+     "weapon": [
+      1401,
+      1404,
+      1407
+     ],
+     "armor": [
+      2306,
+      2313
+     ],
+     "shield": [
+      2101,
+      2103
+     ],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400 (Thief Bug Egg)"
+      }
+     ],
+     "note": "Pierce lancer: one-hand spear (Javelin / Spear / Pike) + shield, two-hand Guisarme / Glaive later; on a Peco"
+    },
+    {
+     "min": 33,
+     "max": 60,
+     "weapon": [
+      1407,
+      1451,
+      1454
+     ],
+     "armor": [
+      2313,
+      2315
+     ],
+     "shield": [
+      2103,
+      2105
+     ],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400 (Thief Bug Egg)"
+      }
+     ],
+     "note": "Pierce lancer: one-hand spear (Javelin / Spear / Pike) + shield, two-hand Guisarme / Glaive later; on a Peco"
+    },
+    {
+     "min": 48,
+     "max": 99,
+     "weapon": [
+      1451,
+      1454,
+      1457
+     ],
+     "armor": [
+      2315,
+      2317
+     ],
+     "shield": [
+      2105,
+      2107
+     ],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      },
+      {
+       "id": 4058,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400 (Thief Bug Egg)"
+      }
+     ],
+     "note": "Pierce lancer: one-hand spear (Javelin / Spear / Pike) + shield, two-hand Guisarme / Glaive later; on a Peco"
+    }
+   ],
+   "boss_role": "main tank or melee DPS: holds the boss (Provoke), Two-Hand Quicken + Bowling Bash on adds; Endure vs knock-back"
+  },
+  "crusader_spear": {
+   "source": [
+    "irowiki.org/wiki/Crusader (spear build)"
+   ],
+   "stats": "str-vit",
+   "bands": [
+    {
+     "min": 1,
+     "max": 32,
+     "weapon": [
+      1401,
+      1404,
+      1451
+     ],
+     "armor": [
+      2306,
+      2313
+     ],
+     "shield": [],
+     "headgear": [
+      2221,
+      2229
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Spear Crusader: a two-handed spear (Guisarme / Glaive / Trident) for Spear Quicken and a stronger Holy Cross; Grand Peco"
+    },
+    {
+     "min": 33,
+     "max": 60,
+     "weapon": [
+      1451,
+      1454
+     ],
+     "armor": [
+      2313,
+      2315
+     ],
+     "shield": [],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Spear Crusader: a two-handed spear (Guisarme / Glaive / Trident) for Spear Quicken and a stronger Holy Cross; Grand Peco"
+    },
+    {
+     "min": 48,
+     "max": 99,
+     "weapon": [
+      1454,
+      1460
+     ],
+     "armor": [
+      2315,
+      2317
+     ],
+     "shield": [],
+     "headgear": [
+      2229
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2601
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4085,
+       "slot": "weapon",
+       "prio": 1,
+       "why": "+20% vs Holy"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4008,
+       "slot": "armor",
+       "prio": 2,
+       "why": "STR+1 ATK+10"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 1,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxHP+10% AGI+1"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4079,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "STR+3"
+      },
+      {
+       "id": 4091,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "STR+1 CRIT+4"
+      }
+     ],
+     "note": "Spear Crusader: a two-handed spear (Guisarme / Glaive / Trident) for Spear Quicken and a stronger Holy Cross; Grand Peco"
+    }
+   ],
+   "boss_role": "main tank or melee DPS: holds the boss (Provoke), Two-Hand Quicken + Bowling Bash on adds; Endure vs knock-back"
+  },
+  "priest_battle": {
+   "source": [
+    "irowiki.org/wiki/Priest (battle priest)"
+   ],
+   "bands": [
+    {
+     "min": 1,
+     "max": 26,
+     "weapon": [
+      1501,
+      1502,
+      1505
+     ],
+     "armor": [
+      2322
+     ],
+     "shield": [
+      2102,
+      2104
+     ],
+     "headgear": [
+      2221,
+      2217
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Battle priest: Mace[4] -> Smasher / Chain -> Morning Star with race cards; Saint's Robe, shield"
+    },
+    {
+     "min": 24,
+     "max": 60,
+     "weapon": [
+      1505,
+      1508,
+      1520
+     ],
+     "armor": [
+      2326
+     ],
+     "shield": [
+      2104
+     ],
+     "headgear": [
+      2217
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Battle priest: Mace[4] -> Smasher / Chain -> Morning Star with race cards; Saint's Robe, shield"
+    },
+    {
+     "min": 55,
+     "max": 99,
+     "weapon": [
+      1520,
+      1514,
+      1517
+     ],
+     "armor": [
+      2326
+     ],
+     "shield": [
+      2104
+     ],
+     "headgear": [
+      2217
+     ],
+     "garment": [
+      2506
+     ],
+     "shoes": [
+      2406
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4043,
+       "slot": "weapon",
+       "prio": 3,
+       "why": "ATK+20"
+      },
+      {
+       "id": 4035,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Demi-Human"
+      },
+      {
+       "id": 4060,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Brute"
+      },
+      {
+       "id": 4063,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+20% vs Insect"
+      },
+      {
+       "id": 4126,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Large, ATK+5"
+      },
+      {
+       "id": 4092,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Medium, ATK+5"
+      },
+      {
+       "id": 4082,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "+15% vs Small, ATK+5"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4141,
+       "slot": "armor",
+       "prio": 2,
+       "why": "Undead armor: undead dungeons"
+      },
+      {
+       "id": 4012,
+       "slot": "shield",
+       "prio": 2,
+       "why": "MaxHP+400"
+      },
+      {
+       "id": 4045,
+       "slot": "shield",
+       "prio": 2,
+       "why": "-35% ranged damage"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4015,
+       "slot": "garment",
+       "prio": 1,
+       "why": "FLEE+10"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4107,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP/SP+8%"
+      },
+      {
+       "id": 4070,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "SP regen +15%"
+      },
+      {
+       "id": 4077,
+       "slot": "accessory",
+       "prio": 2,
+       "why": "cast not interrupted"
+      }
+     ],
+     "note": "Battle priest: Mace[4] -> Smasher / Chain -> Morning Star with race cards; Saint's Robe, shield"
+    }
+   ],
+   "boss_role": "healer: Heal the tank first, Kyrie on the tank, Blessing/Increase AGI on all; never fight; Lex Aeterna before big hits; party retreats if the priest dies"
+  },
+  "sage_hindsight": {
+   "source": [
+    "irowiki.org/wiki/Sage (Hindsight / battle sage)"
+   ],
+   "boss_role": "caster support: bolts with Free Cast on the move, Heaven's Drive on adds, Dispell on buffed bosses, endow (Flame Launcher / Frost Weapon) for the melee",
+   "stats": "INT 99, DEX ~80, VIT 50-60 (same plan as builds.go sage)",
+   "bands": [
+    {
+     "min": 1,
+     "max": 30,
+     "weapon": [
+      1201,
+      1550
+     ],
+     "armor": [
+      2322
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2221
+     ],
+     "garment": [
+      2502
+     ],
+     "shoes": [
+      2402
+     ],
+     "accessory": [
+      2627,
+      2608
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Hindsight Sage: Book[3] -> Bible[2] -> Tablet / Book of Billows; Study 10 makes books fast"
+    },
+    {
+     "min": 25,
+     "max": 65,
+     "weapon": [
+      1550,
+      1551
+     ],
+     "armor": [
+      2322,
+      2334
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2217,
+      2232
+     ],
+     "garment": [
+      2502,
+      2504
+     ],
+     "shoes": [
+      2402,
+      2404
+     ],
+     "accessory": [
+      2608,
+      2627
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Hindsight Sage: Book[3] -> Bible[2] -> Tablet / Book of Billows; Study 10 makes books fast"
+    },
+    {
+     "min": 60,
+     "max": 99,
+     "weapon": [
+      1551,
+      1552,
+      1553
+     ],
+     "armor": [
+      2334,
+      2326
+     ],
+     "shield": [
+      2102
+     ],
+     "headgear": [
+      2232
+     ],
+     "garment": [
+      2504,
+      2506
+     ],
+     "shoes": [
+      2404,
+      2406
+     ],
+     "accessory": [
+      2627,
+      2602
+     ],
+     "ammo": [],
+     "cards": [
+      {
+       "id": 4040,
+       "slot": "accessory",
+       "prio": 3,
+       "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
+      },
+      {
+       "id": 4004,
+       "slot": "weapon",
+       "prio": 2,
+       "why": "DEX+1 HIT+3: faster casts"
+      },
+      {
+       "id": 4052,
+       "slot": "headgear",
+       "prio": 3,
+       "why": "INT+2"
+      },
+      {
+       "id": 4010,
+       "slot": "headgear",
+       "prio": 2,
+       "why": "MaxSP+80"
+      },
+      {
+       "id": 4003,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+700"
+      },
+      {
+       "id": 4031,
+       "slot": "armor",
+       "prio": 2,
+       "why": "MaxHP+10%"
+      },
+      {
+       "id": 4133,
+       "slot": "garment",
+       "prio": 3,
+       "why": "-20% Neutral damage"
+      },
+      {
+       "id": 4100,
+       "slot": "shoes",
+       "prio": 3,
+       "why": "MaxSP+15%"
+      },
+      {
+       "id": 4097,
+       "slot": "shoes",
+       "prio": 2,
+       "why": "MaxHP+10% AGI+1"
+      }
+     ],
+     "note": "Hindsight Sage: Book[3] -> Bible[2] -> Tablet / Book of Billows; Study 10 makes books fast"
+    }
+   ]
+  }
+ }
+}

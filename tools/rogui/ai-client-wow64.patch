@@ -1,0 +1,32 @@
+--- a/tools/rogui/ai-client.sh
++++ b/tools/rogui/ai-client.sh
+@@ -19,7 +19,17 @@
+ #    exhausting the 32-bit address space; GL_OUT_OF_MEMORY / Wine lock timeout follow). softpipe (no JIT) was tried: black screen / login fails, so the default stays llvmpipe
+ #    (ROAI_GALLIUM=softpipe to retry). Open issue.
+ #  - 3 failed logins in a row stop the loop (investigate instead of retrying); see /tmp/roai-restarts.log.
+-export WINEPREFIX=$HOME/.wine-ro DISPLAY=:98 WINEDEBUG=fixme-all LP_NUM_THREADS=1 LP_NATIVE_VECTOR_WIDTH=128 \
++# ROAI_WOW64=1 (2026-11-14 fix for the ~30 min "LLVM ERROR: Unable to allocate section memory" crash): run the
++# client under WineHQ wine-stable 11.0 in new-WoW64 mode (~/wine11-wow64 = the official .debs extracted with dpkg -x,
++# lib/wine/i386-unix removed, so 32-bit apps run in a 64-bit host process and Mesa/llvmpipe's JIT lives above 4 GB),
++# with its own prefix copy ~/.wine-ro-wow64 (already upgraded). Default 0 = system Wine 9.0 + ~/.wine-ro as before.
++if [ "${ROAI_WOW64:-0}" = 1 ]; then
++  WINE=$HOME/wine11-wow64/opt/wine-stable/bin/wine; WINESERVER=$HOME/wine11-wow64/opt/wine-stable/bin/wineserver
++  export WINEPREFIX=$HOME/.wine-ro-wow64 WINEDLLOVERRIDES="mscoree=;mshtml="
++else
++  WINE=wine; WINESERVER=wineserver; export WINEPREFIX=$HOME/.wine-ro
++fi
++export DISPLAY=:98 WINEDEBUG=fixme-all LP_NUM_THREADS=1 LP_NATIVE_VECTOR_WIDTH=128 \
+        MESA_SHADER_CACHE_DISABLE=1 MESA_EXTENSION_OVERRIDE=-GL_ARB_buffer_storage GALLIUM_DRIVER=${ROAI_GALLIUM:-llvmpipe}
+ LOG=/tmp/roai-restarts.log
+ log() { echo "$(date '+%F %T') $*" >>$LOG; }
+@@ -62,8 +72,8 @@
+ fails=0
+ while true; do
+   until ayla_online; do sleep 10; done                         # the proxy only serves while OpenKore is in game
+-  wineserver -k 2>/dev/null; sleep 1
+-  wine explorer /desktop=ROAI,1280x720 RO-AILab.exe >/tmp/roai.log 2>&1 &
++  $WINESERVER -k 2>/dev/null; sleep 1
++  $WINE explorer /desktop=ROAI,1280x720 RO-AILab.exe >/tmp/roai.log 2>&1 &
+   login
+   if pgrep -f RO-AILab.exe >/dev/null && in_game; then
+     fails=0; log "watch client in game as Ayla (through OpenKore)"

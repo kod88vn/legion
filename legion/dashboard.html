@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legion World</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #111110;
+  --surface: #1a1a19;
+  --surface-2: #232321;
+  --border: #2e2e2b;
+  --grid: #2a2a27;
+  --text: #f0efec;
+  --text-2: #c3c2b7;
+  --muted: #8d8c84;
+  --s1: #3987e5;  /* blue */
+  --s2: #d95926;  /* orange */
+  --s3: #199e70;  /* aqua */
+  --s4: #c98500;  /* yellow */
+  --s5: #d55181;  /* magenta */
+  --s7: #9085e9;  /* violet */
+  --good: #0ca30c;
+  --warn: #fab219;
+  --crit: #d03b3b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1800px; margin: 0 auto; padding: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; margin-bottom: 14px; }
+header h1 { font-size: 20px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+header .meta { color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--good); margin-right: 6px; vertical-align: 1px; }
+.dot.stale { background: var(--crit); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.kpi .lbl { color: var(--text-2); font-size: 12.5px; }
+.kpi .val { font-size: 30px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.15; margin-top: 2px; }
+.kpi .sub { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px 14px; min-width: 0; }
+.card h2 { font-size: 13.5px; font-weight: 600; margin: 0 0 10px; color: var(--text); display: flex; justify-content: space-between; gap: 8px; }
+.card h2 small { color: var(--muted); font-weight: 400; font-size: 12px; }
+.c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; }
+.c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
+@media (max-width: 1300px) { .c3 { grid-column: span 6; } .c4, .c5 { grid-column: span 6; } .c7, .c8 { grid-column: span 12; } }
+@media (max-width: 760px) { .grid > .card { grid-column: span 12; } .kpi .val { font-size: 24px; } }
+.trends { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.trend .t { font-size: 12.5px; color: var(--text-2); display: flex; justify-content: space-between; }
+.trend .t b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
+.legend { display: flex; gap: 12px; font-size: 12px; color: var(--text-2); }
+.legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: 3px; }
+svg { display: block; width: 100%; overflow: visible; }
+svg text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.hb { display: grid; grid-template-columns: minmax(80px, max-content) 1fr 48px; gap: 4px 10px; align-items: center; font-size: 12.5px; }
+.hb .n { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.hb .bar { height: 10px; background: transparent; border-radius: 0 4px 4px 0; position: relative; }
+.hb .bar span { display: block; height: 100%; border-radius: 0 4px 4px 0; background: var(--s1); min-width: 2px; }
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 8px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 4px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+td.r, th.r { text-align: right; }
+tr:last-child td { border-bottom: 0; }
+.inbar { display: inline-block; height: 8px; border-radius: 0 3px 3px 0; background: var(--s1); vertical-align: 0; }
+.prog { position: relative; height: 8px; background: var(--surface-2); border-radius: 4px; min-width: 70px; overflow: hidden; }
+.prog span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--s3); border-radius: 4px; }
+.tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 9px; border: 1px solid var(--border); color: var(--text-2); }
+.tag.town { border-color: #3a5f8f; color: #9ec5f4; }
+.tag.field { border-color: #2d6b51; color: #7fd4ad; }
+.tag.dungeon { border-color: #8a4a2c; color: #f0a07c; }
+.stack { display: flex; height: 18px; border-radius: 4px; overflow: hidden; gap: 2px; margin: 4px 0 8px; }
+.stack span { display: block; height: 100%; }
+.keys { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-2); }
+.keys i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.keys b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.kvs { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13px; }
+.kvs span:nth-child(odd) { color: var(--text-2); }
+.kvs span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); font-size: 12.5px; padding: 6px 0; }
+#tip { position: fixed; pointer-events: none; background: #2b2b29; border: 1px solid #3c3c38; border-radius: 6px; padding: 6px 9px;
+  font-size: 12px; color: var(--text); box-shadow: 0 4px 14px rgba(0,0,0,.4); z-index: 10; white-space: nowrap; }
+#tip .m { color: var(--muted); }
+.err { color: var(--crit); }
+/* minds */
+#mindsCard { margin-bottom: 12px; }
+.mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .mgrid { grid-template-columns: 1fr; } }
+.mind { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mind.hl { border-color: var(--s5); }
+.mind .mh { display: flex; align-items: baseline; gap: 8px; }
+.mind .mh b { font-size: 14px; }
+.mind .mh .lab { color: var(--text-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.mind .mh .ago { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.mind .sl { color: var(--text-2); font-size: 12px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #55554f; flex: none; align-self: center; }
+.mdot.active { background: var(--good); box-shadow: 0 0 6px rgba(12,163,12,.7); }
+.mdot.idle { background: var(--warn); }
+.feed { font-size: 12.5px; line-height: 1.35; display: flex; flex-direction: column; gap: 3px; max-height: 210px; overflow-y: auto; padding-right: 4px; }
+.feed.big { max-height: 520px; }
+.feed .ln { display: grid; grid-template-columns: 54px 1fr; gap: 6px; }
+.feed .ln .tm { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11.5px; padding-top: 1px; }
+.feed .ln .tx { color: var(--text); word-wrap: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
+.feed .k { font-size: 10.5px; padding: 0 5px; border-radius: 7px; border: 1px solid var(--border); margin-right: 5px; vertical-align: 1px; }
+.feed .k.decision { color: #f3c45a; border-color: #6f5a1e; }
+.feed .k.action { color: #7fd4ad; border-color: #2d6b51; }
+.feed .k.summary { color: #b9b2f5; border-color: #4b4590; }
+.feed .k.ack { color: #9ec5f4; border-color: #3a5f8f; }
+.feed .ln.owner .tx { color: #f2a6c3; }
+.feed .ln.owner .rd { color: var(--muted); font-size: 11px; margin-left: 6px; }
+.feed .ln.owner .rd.unread { color: var(--warn); }
+.mind .more { background: none; border: 0; color: var(--s1); font-size: 12px; cursor: pointer; padding: 0; text-align: left; }
+.send { display: flex; gap: 6px; }
+.send input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 6px 8px; font: inherit; font-size: 13px; }
+.send input:focus { outline: none; border-color: var(--s5); }
+button.btn { background: #3a2230; border: 1px solid #6b3450; color: #f2a6c3; border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 12.5px; cursor: pointer; }
+button.btn:hover { background: #4a2a3d; }
+button.btn.sm { padding: 1px 8px; font-size: 11.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 9px; color: var(--text-2); cursor: pointer; font: inherit; font-size: 12px; }
+.chip:hover { border-color: var(--s5); }
+.badge { background: var(--s5); color: #fff; border-radius: 8px; font-size: 10.5px; padding: 0 6px; font-weight: 600; }
+/* guilds */
+.gx td { white-space: normal; color: var(--text-2); background: var(--surface-2); padding: 8px 12px 10px; }
+.gx .strat { color: var(--text); max-width: 900px; margin: 4px 0 8px; }
+.tact { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 4px 16px; font-size: 12px; }
+.tact div { display: grid; grid-template-columns: 70px 1fr 34px; gap: 6px; align-items: center; }
+.tact .prog span { background: var(--s7); }
+.on { color: var(--good); } .off { color: var(--muted); }
+a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Legion World</h1>
+    <div class="meta">
+      <span id="status"><span class="dot"></span>connecting...</span>
+      <span id="uptime"></span><span id="rt"></span>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="card" id="mindsCard">
+    <h2>Minds <small id="mindsNote">what the LLM minds are thinking · type an order to talk to one (refreshes every 5 s)</small></h2>
+    <div class="mgrid" id="minds"><div class="empty">loading minds...</div></div>
+    <div class="chips" id="mindChips"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card c12">
+      <h2>Trends <small id="trendNote">one point per minute, last 6 h</small></h2>
+      <div class="trends">
+        <div class="trend"><div class="t"><span>Online</span><b id="tOnline"></b></div><div id="chOnline"></div></div>
+        <div class="trend"><div class="t"><span class="legend"><span><i style="background:var(--s1)"></i>Kills / min</span><span><i style="background:var(--s2)"></i>Deaths / min</span></span></div><div id="chKD"></div></div>
+        <div class="trend"><div class="t"><span>Average base level (online)</span><b id="tLv"></b></div><div id="chLv"></div></div>
+        <div class="trend"><div class="t"><span class="legend"><span><i style="background:var(--s3)"></i>Level-ups / min</span><span><i style="background:var(--s7)"></i>Job changes / min</span></span></div><div id="chLU"></div></div>
+      </div>
+    </div>
+
+    <div class="card c12"><h2>Guilds <small id="guildNote"></small></h2><div class="tbl" id="guilds"><div class="empty">loading guilds...</div></div></div>
+    <div class="card c12"><h2>Leaderboard <small id="lbNote"></small></h2><div class="tbl" id="leaderboard"><div class="empty">loading leaderboard...</div></div></div>
+    <div class="card c12"><h2>Friendships <small id="frNote"></small></h2><div class="tbl" id="friends"><div class="empty">loading friendships...</div></div></div>
+
+    <div class="card c5"><h2>Base level, online <small id="lvNote"></small></h2><div id="chLevels"></div></div>
+    <div class="card c4"><h2>What they're doing <small>online</small></h2><div id="states"></div></div>
+    <div class="card c3"><h2>Population</h2><div id="pop"></div></div>
+
+    <div class="card c4"><h2>Classes, online <small id="clsNote"></small></h2><div id="classes"></div></div>
+    <div class="card c8"><h2>Busiest maps <small id="mapNote"></small></h2><div class="tbl" id="maps"></div></div>
+
+    <div class="card c7"><h2>Build plans <small>reached = on the plan's target class</small></h2><div class="tbl" id="plans"></div></div>
+    <div class="card c5"><h2>Activity <small>totals and per minute</small></h2><div class="tbl" id="activity"></div></div>
+
+    <div class="card c4"><h2>Deadliest maps <small>last 60 min</small></h2><div id="deaths"></div></div>
+    <div class="card c4"><h2>Economy</h2><div id="econ"></div></div>
+    <div class="card c4"><h2>Humans online <small>players the bots can see</small></h2><div id="humans"></div></div>
+
+    <div class="card c12"><h2>Parties <small id="partyNote"></small></h2><div class="tbl" id="parties"><div class="empty">loading parties...</div></div></div>
+  </div>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n == null ? '–' : Number(n).toLocaleString('en-US');
+const fmt1 = n => n == null ? '–' : (Math.round(n * 10) / 10).toLocaleString('en-US', {maximumFractionDigits: 1});
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tip = $('tip');
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(window.innerWidth - w - 8, x + 14) + 'px';
+  tip.style.top = Math.max(8, y - h - 10) + 'px';
+}
+function hideTip() { tip.hidden = true; }
+document.addEventListener('scroll', hideTip, {passive: true});
+
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+function dur(s) {
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  return (d ? d + 'd ' : '') + (d || h ? h + 'h ' : '') + m + 'm';
+}
+const hhmm = t => new Date(t * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: false});
+
+// ---- line chart: series [{key,color,label}], points [{t,...}], with crosshair tooltip
+function lineChart(el, points, series, opt = {}) {
+  const W = el.clientWidth || 300, H = opt.h || 120, L = 34, R = 6, T = 6, B = 18;
+  if (!points.length) { el.innerHTML = '<div class="empty" style="height:' + H + 'px">collecting (first point after one minute)...</div>'; return; }
+  let mx = 0, mn = Infinity;
+  for (const p of points) for (const s of series) { mx = Math.max(mx, p[s.key]); mn = Math.min(mn, p[s.key]); }
+  let lo = 0;
+  if (opt.zoom && mn > 0) { lo = Math.max(0, Math.floor(mn - (mx - mn) * 0.2 - 1)); }
+  const hi = lo + niceMax(Math.max(mx - lo, opt.minSpan || 1));
+  const t0 = points[0].t, t1 = points[points.length - 1].t, span = Math.max(60, t1 - t0);
+  const X = t => L + (W - L - R) * (points.length === 1 ? 1 : (t - t0) / span);
+  const Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  let g = '';
+  for (let i = 0; i <= 2; i++) {
+    const v = lo + (hi - lo) * i / 2, y = Y(v);
+    g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="${css('--grid')}" stroke-width="1"/>` +
+         `<text x="${L - 6}" y="${y + 3.5}" text-anchor="end">${fmt1(v)}</text>`;
+  }
+  const ticks = Math.min(5, points.length);
+  for (let i = 0; i < ticks; i++) {
+    const p = points[Math.round(i * (points.length - 1) / Math.max(1, ticks - 1))];
+    const x = X(p.t);
+    g += `<text x="${x}" y="${H - 4}" text-anchor="${i === 0 ? 'start' : i === ticks - 1 ? 'end' : 'middle'}">${hhmm(p.t)}</text>`;
+  }
+  let paths = '';
+  for (const s of series) {
+    const d = points.map((p, i) => (i ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p[s.key]).toFixed(1)).join('');
+    if (s.area) paths += `<path d="${d}L${X(t1)} ${Y(lo)}L${X(t0)} ${Y(lo)}Z" fill="${s.color}" opacity=".12"/>`;
+    paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}">${g}${paths}<g class="hov"></g>` +
+    `<rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent"/></svg>`;
+  const svg = el.firstChild, hov = svg.querySelector('.hov');
+  svg.addEventListener('mousemove', ev => {
+    const r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * W / r.width;
+    let best = points[0];
+    for (const p of points) if (Math.abs(X(p.t) - x) < Math.abs(X(best.t) - x)) best = p;
+    const bx = X(best.t);
+    hov.innerHTML = `<line x1="${bx}" x2="${bx}" y1="${T}" y2="${H - B}" stroke="${css('--muted')}" stroke-width="1" stroke-dasharray="3 3"/>` +
+      series.map(s => `<circle cx="${bx}" cy="${Y(best[s.key])}" r="4" fill="${s.color}" stroke="${css('--surface')}" stroke-width="2"/>`).join('');
+    showTip(`<div class="m">${hhmm(best.t)}</div>` + series.map(s => `<div><span style="color:${s.color}">&#9632;</span> ${s.label}: <b>${fmt1(best[s.key])}</b></div>`).join(''), ev.clientX, ev.clientY);
+  });
+  svg.addEventListener('mouseleave', () => { hov.innerHTML = ''; hideTip(); });
+}
+
+// ---- vertical bar chart (level histogram)
+function vbars(el, rows, opt = {}) {
+  const W = el.clientWidth || 300, H = opt.h || 200, L = 34, R = 4, T = 14, B = 20;
+  if (!rows.length) { el.innerHTML = '<div class="empty">no one online</div>'; return; }
+  const hi = niceMax(Math.max(...rows.map(r => r.v)));
+  const n = rows.length, bw = (W - L - R) / n, gap = Math.min(6, bw * 0.2);
+  const Y = v => T + (H - T - B) * (1 - v / hi);
+  let g = '';
+  for (let i = 0; i <= 2; i++) {
+    const v = hi * i / 2, y = Y(v);
+    g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="${css('--grid')}"/><text x="${L - 6}" y="${y + 3.5}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  rows.forEach((r, i) => {
+    const x = L + i * bw + gap / 2, w = bw - gap, y = Y(r.v), h = Math.max(0, Y(0) - y), rr = Math.min(4, w / 2, h);
+    if (h > 0) g += `<path d="M${x} ${Y(0)}V${y + rr}Q${x} ${y} ${x + rr} ${y}H${x + w - rr}Q${x + w} ${y} ${x + w} ${y + rr}V${Y(0)}Z" fill="${css('--s1')}"/>`;
+    if (n <= 16 || i % 2 === 0) g += `<text x="${x + w / 2}" y="${H - 5}" text-anchor="middle">${r.label}</text>`;
+    g += `<rect class="hit" data-i="${i}" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}" fill="transparent"/>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}">${g}</svg>`;
+  el.querySelectorAll('.hit').forEach(h => {
+    h.addEventListener('mousemove', ev => { const r = rows[+h.dataset.i]; showTip(`<div class="m">${r.tip}</div><b>${fmt(r.v)}</b> online`, ev.clientX, ev.clientY); });
+    h.addEventListener('mouseleave', hideTip);
+  });
+}
+
+// ---- horizontal bars as HTML
+function hbars(el, rows, opt = {}) {
+  if (!rows.length) { el.innerHTML = `<div class="empty">${opt.empty || 'none'}</div>`; return; }
+  const mx = Math.max(...rows.map(r => r.v), 1);
+  el.innerHTML = '<div class="hb">' + rows.map(r =>
+    `<span class="n" title="${esc(r.label)}">${esc(r.label)}</span><span class="bar"><span style="width:${(100 * r.v / mx).toFixed(1)}%;background:${r.color || 'var(--s1)'}"></span></span><span class="v">${opt.fmt ? opt.fmt(r.v) : fmt(r.v)}</span>`
+  ).join('') + '</div>';
+}
+
+function kpi(label, val, sub) { return `<div class="kpi"><div class="lbl">${label}</div><div class="val">${val}</div><div class="sub">${sub || '&nbsp;'}</div></div>`; }
+
+let lastOK = 0, history = [];
+
+function render(o) {
+  const p = o.population, a = o.activity, m5 = a.m5, m15 = a.m15, m60 = a.m60;
+  $('status').innerHTML = `<span class="dot"></span>live, updated ${new Date(o.time * 1000).toLocaleTimeString([], {hour12: false})}`;
+  $('uptime').textContent = 'Legion up ' + dur(o.runtime.uptime_s);
+  $('rt').textContent = `${fmt(o.runtime.goroutines)} goroutines · heap ${fmt(o.runtime.heap_mb)} MB · snapshot ${o.compute_ms} ms`;
+
+  const humans = o.humans.length;
+  $('kpis').innerHTML =
+    kpi('Online now', fmt(p.online), `of ${fmt(p.profiles)} profiles`) +
+    kpi('Avg base level', fmt1(p.avg_base_level), `job ${fmt1(p.avg_job_level)} avg`) +
+    kpi('Kills / min', fmt1(m5.per_min.kills), `${fmt1(m60.per_min.kills)} over ${Math.round(m60.minutes_covered)} min`) +
+    kpi('Deaths / min', fmt1(m5.per_min.deaths), `${fmt1(m60.per_min.deaths)} over ${Math.round(m60.minutes_covered)} min`) +
+    kpi('Level-ups / min', fmt1(m5.per_min.levelups), `${fmt(m60.levelups)} in last hour`) +
+    kpi('Job changes / hr', fmt1(m60.jobchanges * 60 / Math.max(1, m60.minutes_covered)), `${fmt(m60.jobchanges)} in ${Math.round(m60.minutes_covered)} min`) +
+    kpi('Open shops', fmt(o.economy.open_shops), `${fmt(o.economy.vendors_online)} vendors online`) +
+    kpi('Parties', fmt(o.parties.count), `avg size ${fmt1(o.parties.avg_size)}${o.parties.human_led ? ' · ' + o.parties.human_led + ' human-led' : ''}`) +
+    kpi('Humans online', fmt(humans), humans ? esc(o.humans.slice(0, 2).map(h => h.name + ' @ ' + h.map).join(', ')) : 'none seen');
+
+  // levels
+  vbars($('chLevels'), o.levels.map(b => ({v: b.count, label: b.from, tip: `level ${b.from}-${b.to}`})));
+  $('lvNote').textContent = `buckets of 10 · avg ${fmt1(p.avg_base_level)}`;
+
+  // states
+  const order = ['fighting', 'roaming', 'travel', 'with party', 'supporting', 'resting', 'town trip', 'vending', 'hanging out', 'idle', 'afk', 'dead', 'other'];
+  const st = p.states;
+  const onlineStates = order.filter(k => st[k]).map(k => ({label: k, v: st[k]}));
+  hbars($('states'), onlineStates, {empty: 'no one online'});
+
+  // population: roles, tiers, offline
+  const roleCol = {main: 'var(--s1)', vendor: 'var(--s4)', support: 'var(--s3)'};
+  const roles = Object.entries(p.by_role).sort((x, y) => y[1] - x[1]);
+  const tiers = ['novice', 'first', 'second', 'transcendent', 'third', 'expanded'].filter(k => o.class_tiers[k]);
+  const tierCol = {novice: '#8d8c84', first: 'var(--s1)', second: 'var(--s3)', transcendent: 'var(--s7)', third: 'var(--s5)', expanded: 'var(--s4)'};
+  const stack = (items, total, col) => '<div class="stack">' + items.map(([k, v]) => `<span title="${k}: ${v}" style="flex:${v};background:${col[k]}"></span>`).join('') + '</div>' +
+    '<div class="keys">' + items.map(([k, v]) => `<span><i style="background:${col[k]}"></i>${k} <b>${fmt(v)}</b></span>`).join('') + '</div>';
+  const offline = Object.entries(st).filter(([k]) => k.startsWith('offline') || k === 'login failed');
+  $('pop').innerHTML =
+    '<div style="color:var(--text-2);font-size:12.5px">Online by role</div>' + stack(roles, p.online, roleCol) +
+    '<div style="color:var(--text-2);font-size:12.5px;margin-top:14px">Online by job tier</div>' + stack(tiers.map(k => [k, o.class_tiers[k]]), p.online, tierCol) +
+    '<div class="kvs" style="margin-top:14px">' + offline.map(([k, v]) => `<span>${esc(k)}</span><span>${fmt(v)}</span>`).join('') +
+    (p.pinned ? `<span>pinned (human party)</span><span>${fmt(p.pinned)}</span>` : '') + '</div>';
+
+  // classes
+  const cls = o.classes.slice(0, 18);
+  const rest = o.classes.slice(18).reduce((s, c) => s + c.count, 0);
+  const crow = cls.map(c => ({label: c.name, v: c.count}));
+  if (rest) crow.push({label: `other (${o.classes.length - 18})`, v: rest, color: '#6b6a64'});
+  hbars($('classes'), crow, {empty: 'no one online'});
+  $('clsNote').textContent = `${o.classes.length} classes`;
+
+  // maps
+  const mk = o.map_kinds || {};
+  $('mapNote').textContent = `top ${o.maps.length} of ${o.maps_total} occupied · town ${fmt(mk.town || 0)} · field ${fmt(mk.field || 0)} · dungeon ${fmt(mk.dungeon || 0)}`;
+  const mmax = Math.max(1, ...o.maps.map(r => r.online));
+  $('maps').innerHTML = o.maps.length ? `<table><thead><tr><th>map</th><th>type</th><th class="r">online</th><th style="width:40%"></th><th class="r">avg lv</th><th class="r">fighting</th></tr></thead><tbody>` +
+    o.maps.map(r => `<tr><td>${esc(r.map)}</td><td><span class="tag ${r.kind}">${r.kind}</span></td><td class="r">${fmt(r.online)}</td>` +
+      `<td><span class="inbar" style="width:${(100 * r.online / mmax).toFixed(1)}%"></span></td><td class="r">${fmt1(r.avg_level)}</td><td class="r">${fmt(r.fighting)}</td></tr>`).join('') +
+    '</tbody></table>' : '<div class="empty">no one online</div>';
+
+  // plans
+  const plans = o.plans.filter(r => r.profiles);
+  $('plans').innerHTML = plans.length ? `<table><thead><tr><th>plan</th><th>target</th><th class="r">chars</th><th class="r">online</th><th class="r">avg lv</th><th class="r">seen</th><th class="r">seen lv</th><th>reached (seen)</th></tr></thead><tbody>` +
+    plans.map(r => {
+      const pct = r.known ? 100 * r.known_reached / r.known : 0;
+      return `<tr><td>${esc(r.name)}</td><td style="color:var(--text-2)">${esc(r.target)}</td><td class="r">${fmt(r.profiles)}</td><td class="r">${fmt(r.online)}</td>` +
+        `<td class="r">${r.online_avg_level != null ? fmt1(r.online_avg_level) : '–'}</td><td class="r">${fmt(r.known)}</td><td class="r">${r.known_avg_level != null ? fmt1(r.known_avg_level) : '–'}</td>` +
+        `<td><div style="display:flex;align-items:center;gap:8px"><div class="prog" style="flex:1"><span style="width:${pct.toFixed(1)}%"></span></div><span style="min-width:64px;text-align:right">${fmt(r.known_reached)} · ${Math.round(pct)}%</span></div></td></tr>`;
+    }).join('') + '</tbody></table>' : '<div class="empty">no build plans in personas</div>';
+
+  // activity table
+  const rowsA = [['kills', 'kills'], ['deaths', 'deaths'], ['loot picked up', 'loots'], ['level-ups', 'levelups'], ['job changes', 'jobchanges'],
+    ['gear bought', 'bought'], ['potion restocks', 'restocks'], ['shops opened', 'shops_opened'], ['trades between players', 'trades'], ['parties formed', 'parties_formed'], ['lines said', 'chat_lines']];
+  const pm = (w, k) => fmt1(w[k] / Math.max(0.5, w.minutes_covered));
+  $('activity').innerHTML = `<table><thead><tr><th></th><th class="r">5 min</th><th class="r">15 min</th><th class="r">60 min</th><th class="r">/min (60)</th></tr></thead><tbody>` +
+    rowsA.map(([l, k]) => `<tr><td style="color:var(--text-2)">${l}</td><td class="r">${fmt(m5[k])}</td><td class="r">${fmt(m15[k])}</td><td class="r">${fmt(m60[k])}</td><td class="r">${pm(m60, k)}</td></tr>`).join('') +
+    `</tbody></table><div style="color:var(--muted);font-size:11.5px;margin-top:6px">60-min window covers ${fmt1(m60.minutes_covered)} min so far · all-time kills ${fmt(o.totals.kills)}, deaths ${fmt(o.totals.deaths)}</div>`;
+
+  // deaths
+  hbars($('deaths'), (o.death_maps || []).map(d => ({label: d.name, v: d.count, color: 'var(--s2)'})), {empty: 'no deaths in the last hour'});
+
+  // economy
+  const e = o.economy;
+  $('econ').innerHTML = '<div class="kvs">' +
+    `<span>zeny median (online)</span><span>${fmt(e.zeny_median)}</span>` +
+    `<span>zeny p90</span><span>${fmt(e.zeny_p90)}</span>` +
+    `<span>zeny richest</span><span>${fmt(e.zeny_max)}</span>` +
+    `<span>zeny held by online chars</span><span>${fmt(e.zeny_total_online)}</span>` +
+    `<span>open vending shops</span><span>${fmt(e.open_shops)}</span>` +
+    `<span>vendors online</span><span>${fmt(e.vendors_online)}</span>` +
+    `<span>parties / members</span><span>${fmt(o.parties.count)} / ${fmt(o.parties.members)}</span>` +
+    `<span>gear bought (60 min)</span><span>${fmt(m60.bought)}</span>` +
+    `<span>potion restocks (60 min)</span><span>${fmt(m60.restocks)}</span>` +
+    `<span>player trades (60 min / all)</span><span>${fmt(m60.trades)} / ${fmt(e.trades_total)}</span>` +
+    `<span>#trade wants / deals in progress</span><span>${fmt(e.open_wants)} / ${fmt(e.deals_active)}</span>` + '</div>';
+
+  // humans
+  $('humans').innerHTML = humans ? `<table><thead><tr><th>name</th><th>map</th><th class="r">x,y</th><th class="r">bots nearby</th></tr></thead><tbody>` +
+    o.humans.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.map)}</td><td class="r">${h.x},${h.y}</td><td class="r">${fmt(h.seen_by)}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="empty">no human players in sight of any bot</div>';
+}
+
+function renderHistory() {
+  const pts = history;
+  const s1 = css('--s1'), s2 = css('--s2'), s3 = css('--s3'), s7 = css('--s7');
+  lineChart($('chOnline'), pts, [{key: 'online', color: s1, label: 'online', area: true}]);
+  lineChart($('chKD'), pts, [{key: 'kills', color: s1, label: 'kills/min'}, {key: 'deaths', color: s2, label: 'deaths/min'}]);
+  lineChart($('chLv'), pts, [{key: 'avg_level', color: s3, label: 'avg level'}], {zoom: true, minSpan: 2});
+  lineChart($('chLU'), pts, [{key: 'levelups', color: s3, label: 'level-ups/min'}, {key: 'jobchanges', color: s7, label: 'job changes/min'}]);
+  const last = pts[pts.length - 1];
+  $('tOnline').textContent = last ? fmt(last.online) : '';
+  $('tLv').textContent = last ? fmt1(last.avg_level) : '';
+  $('trendNote').textContent = pts.length ? `one point per minute · ${pts.length} min of history (max 6 h)` : 'one point per minute, last 6 h';
+}
+
+let lastO = null;
+async function refresh() {
+  try {
+    const [o, h] = await Promise.all([fetch('/api/overview').then(r => r.json()), fetch('/api/overview/history').then(r => r.json())]);
+    lastO = o; history = h.points || []; lastOK = Date.now();
+    render(o); renderHistory();
+  } catch (err) {
+    $('status').innerHTML = `<span class="dot stale"></span><span class="err">Legion API unreachable (${esc(err.message)}), retrying</span>`;
+  }
+}
+refresh();
+setInterval(refresh, 10000);
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (lastO) { render(lastO); renderHistory(); } }, 150); });
+
+// ======================= Minds: thoughts feed + owner messages (minds.go) =======================
+const okJSON = r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
+const hms = t => new Date(t).toLocaleTimeString([], {hour12: false});
+const ago = s => s == null ? 'never seen' : s < 60 ? s + 's ago' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : Math.floor(s / 86400) + 'd ago';
+const M = {thoughts: new Map(), messages: new Map(), next: 0, list: [], open: new Set(), big: new Set(), cards: new Map(), guildNames: {}, closed: new Set()};
+// mind chats the owner closed (remembered in this browser); reopen them from the chips under the grid
+try { for (const n of JSON.parse(localStorage.getItem('closedMinds') || '[]')) M.closed.add(n); } catch (e) {}
+function saveClosed() { try { localStorage.setItem('closedMinds', JSON.stringify([...M.closed])); } catch (e) {} }
+const mindLabels = {ayla: 'Ayla, the human-like player', chat: 'chat director', life: 'ambient life', market: 'market'};
+const mindLabel = n => M.guildNames[n] ? 'guild leader · ' + M.guildNames[n] : (mindLabels[n] || (/^guild\d+$/.test(n) ? 'guild leader' : ''));
+
+async function refreshMinds() {
+  try {
+    const [list, th] = await Promise.all([
+      fetch('/api/minds').then(okJSON),
+      fetch(`/api/minds/all/thoughts?since=${M.next}&limit=500`).then(okJSON)]);
+    M.list = list || [];
+    for (const t of th.thoughts || []) M.thoughts.set(t.id, t);
+    for (const m of th.messages || []) M.messages.set(m.id, m);
+    if (M.thoughts.size > 1500) { const ids = [...M.thoughts.keys()].sort((a, b) => a - b); for (const id of ids.slice(0, ids.length - 1200)) M.thoughts.delete(id); }
+    M.next = th.next || M.next;
+    renderMinds();
+  } catch (err) {
+    $('mindsNote').innerHTML = `<span class="err">minds API unreachable (${esc(err.message)}), retrying</span>`;
+  }
+}
+
+function mindCard(name) {
+  let c = M.cards.get(name);
+  if (c) return c;
+  const el = document.createElement('div');
+  el.className = 'mind'; el.dataset.name = name;
+  el.innerHTML = `<div class="mh"><span class="mdot"></span><b>${esc(name)}</b><span class="lab"></span><span class="ub"></span><span class="ago"></span><button class="mx" type="button" title="close this chat (reopen from the list below)" style="margin-left:6px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1">&times;</button></div>` +
+    `<div class="sl"></div><div class="feed"></div><button class="more" type="button"></button>` +
+    `<form class="send"><input type="text" maxlength="2000" placeholder="Order for ${esc(name)}... (Enter to send)"><button class="btn" type="submit">Send</button></form>`;
+  el.querySelector('.mx').addEventListener('click', () => { M.closed.add(name); M.open.delete(name); saveClosed(); renderMinds(); });
+  const form = el.querySelector('form'), input = form.querySelector('input'), btn = form.querySelector('button[type=submit]');
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    btn.disabled = true;
+    try {
+      await fetch(`/api/minds/${encodeURIComponent(name)}/message`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text})}).then(okJSON);
+      input.value = '';
+      M.open.add(name);
+      await refreshMinds();
+    } catch (err) {
+      input.placeholder = 'send failed: ' + err.message;
+    } finally { btn.disabled = false; input.focus(); }
+  });
+  el.querySelector('.more').addEventListener('click', () => { M.big.has(name) ? M.big.delete(name) : M.big.add(name); c.sig = ''; renderMinds(); });
+  c = {el, feed: el.querySelector('.feed'), sig: ''};
+  M.cards.set(name, c);
+  return c;
+}
+
+function renderMinds() {
+  const msgBy = {}, thBy = {};
+  for (const m of M.messages.values()) (msgBy[m.mind] = msgBy[m.mind] || []).push(m);
+  for (const t of M.thoughts.values()) (thBy[t.mind] = thBy[t.mind] || []).push(t);
+  const vis = [], hidden = [];
+  for (const m of M.list) {
+    const n = m.name;
+    (!M.closed.has(n) && (m.status !== 'never' || thBy[n] || msgBy[n] || M.open.has(n)) ? vis : hidden).push(m);
+  }
+  const active = M.list.filter(m => m.status === 'active').length;
+  $('mindsNote').textContent = `${active} active · ${vis.length - active} idle/quiet · ${M.list.reduce((s, m) => s + (m.unread || 0), 0)} unread orders · refreshes every 5 s`;
+  const grid = $('minds');
+  if (!vis.length) grid.innerHTML = '<div class="empty">no mind has checked in yet. Minds post here with <code>legionctl think &lt;mind&gt; "..."</code>; you can leave orders for one below before it starts.</div>';
+  else if (grid.querySelector('.empty')) grid.innerHTML = '';
+  for (const m of vis) {
+    const c = mindCard(m.name), el = c.el, n = m.name;
+    el.querySelector('.mdot').className = 'mdot ' + m.status;
+    el.querySelector('.mdot').title = m.status === 'active' ? 'active (seen in the last 3 min)' : m.status === 'idle' ? 'idle (not seen for 3+ min)' : 'never checked in';
+    el.querySelector('.lab').textContent = mindLabel(n);
+    el.querySelector('.ub').innerHTML = m.unread ? `<span class="badge" title="orders the mind hasn't read yet">${m.unread} unread</span>` : '';
+    el.querySelector('.ago').textContent = m.status === 'never' ? 'not started' : ago(m.seen_ago_s);
+    const sl = el.querySelector('.sl');
+    sl.textContent = m.status_line || ''; sl.title = m.status_line || ''; sl.hidden = !m.status_line;
+    const items = [...(thBy[n] || []).map(t => ({...t, owner: false})), ...(msgBy[n] || []).map(x => ({...x, owner: true}))].sort((a, b) => b.id - a.id);
+    const big = M.big.has(n), shown = big ? items : items.slice(0, 10);
+    const sig = shown.map(i => i.id + (i.read ? 'r' : '')).join(',') + big;
+    if (sig !== c.sig) {
+      c.sig = sig;
+      c.feed.className = 'feed' + (big ? ' big' : '');
+      c.feed.innerHTML = shown.length ? shown.map(i => i.owner
+        ? `<div class="ln owner"><span class="tm">${hms(i.t)}</span><span class="tx"><b>you:</b> ${esc(i.text)}<span class="rd${i.read ? '' : ' unread'}">${i.read ? '&#10003; read ' + hms(i.read_at) : 'unread'}</span></span></div>`
+        : `<div class="ln"><span class="tm">${hms(i.t)}</span><span class="tx">${i.kind && i.kind !== 'thought' ? `<span class="k ${i.kind}">${i.kind}</span>` : ''}${esc(i.text)}</span></div>`).join('')
+        : '<div class="empty">nothing yet</div>';
+    }
+    const more = el.querySelector('.more');
+    more.hidden = items.length <= 10;
+    more.textContent = big ? 'show less' : `show all (${items.length})`;
+  }
+  // order cards like the list (active first); don't move nodes while someone is typing in one
+  const typing = grid.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
+  const want = vis.map(m => M.cards.get(m.name).el);
+  const have = [...grid.children];
+  if (!typing && (want.length !== have.length || want.some((e, i) => e !== have[i]))) want.forEach(e => grid.appendChild(e));
+  else if (typing) want.forEach(e => { if (!e.parentNode) grid.appendChild(e); });
+  for (const e of have) if (!want.includes(e) && e.classList.contains('mind') && !typing) e.remove();
+  $('mindChips').innerHTML = (hidden.length ? 'closed or not started (click to open):' + hidden.map(m => `<button class="chip" type="button" data-mind="${esc(m.name)}" title="${esc(m.status)}${m.unread ? ', ' + m.unread + ' unread' : ''}">${m.status === 'active' ? '&#9679; ' : ''}${esc(m.name)}</button>`).join('') : '') +
+    (vis.length > 1 ? ' <button class="chip" type="button" data-closeall="1">close all</button>' : '') +
+    (M.closed.size ? ' <button class="chip" type="button" data-openall="1">open all</button>' : '');
+}
+$('mindChips').addEventListener('click', ev => {
+  if (ev.target.closest('[data-closeall]')) { for (const m of M.list) M.closed.add(m.name); M.open.clear(); saveClosed(); renderMinds(); return; }
+  if (ev.target.closest('[data-openall]')) { M.closed.clear(); saveClosed(); renderMinds(); return; }
+  const b = ev.target.closest('[data-mind]'); if (b) openMind(b.dataset.mind);
+});
+
+function openMind(name) {
+  M.closed.delete(name); saveClosed();
+  M.open.add(name);
+  if (!M.list.some(m => m.name === name)) M.list.push({name, status: 'never', unread: 0});
+  renderMinds();
+  const c = M.cards.get(name);
+  if (!c) return;
+  c.el.scrollIntoView({behavior: 'smooth', block: 'center'});
+  c.el.classList.add('hl'); setTimeout(() => c.el.classList.remove('hl'), 2500);
+  c.el.querySelector('input').focus({preventScroll: true});
+}
+
+refreshMinds();
+setInterval(refreshMinds, 5000);
+
+// ======================= Guilds (/api/guilds/detail, guilds.go) =======================
+const G = {data: null, open: new Set()};
+async function refreshGuilds() {
+  try {
+    const r = await fetch('/api/guilds/detail');
+    if (!r.ok) {
+      if (!G.data) $('guilds').innerHTML = `<div class="empty">guild detail not available yet (GET /api/guilds/detail &rarr; HTTP ${r.status}); checking again every 30 s</div>`;
+      $('guildNote').textContent = '';
+      return;
+    }
+    const d = await r.json();
+    G.data = Array.isArray(d) ? d : (d && (d.guilds || d.items)) || [];
+    for (const g of G.data) if (g && g.id) M.guildNames[g.id] = g.name || '';
+    renderGuilds();
+  } catch (err) {
+    if (!G.data) $('guilds').innerHTML = `<div class="empty">guild detail unavailable (${esc(err.message)}); retrying</div>`;
+  }
+}
+function renderGuilds() {
+  const gs = (G.data || []).filter(g => g && typeof g === 'object');
+  if (!gs.length) { $('guilds').innerHTML = '<div class="empty">no guilds reported</div>'; return; }
+  const tot = gs.reduce((s, g) => s + (+g.online || 0), 0), mem = gs.reduce((s, g) => s + (+g.members || 0), 0);
+  $('guildNote').textContent = `${gs.length} guilds · ${fmt(tot)} of ${fmt(mem)} members online · click a row for strategy`;
+  const omax = Math.max(1, ...gs.map(g => +g.online || 0));
+  const pair = m => Array.isArray(m) ? m : (m && typeof m === 'object' ? [m.map || m.name, m.count ?? m.online] : [m, null]);
+  let h = `<table><thead><tr><th>guild</th><th>leader</th><th class="r">online</th><th style="width:12%"></th><th class="r">members</th><th class="r">avg lv</th><th>top members</th><th class="r">parties</th><th>busiest maps</th><th class="r">${gs.some(g => g.kills_hour != null) ? 'kills / h' : 'kills (session)'}</th><th></th></tr></thead><tbody>`;
+  for (const g of gs) {
+    const id = g.id || g.name || '?', L = g.leader || {}, open = G.open.has(id);
+    const leader = L.name ? `${L.online != null ? `<span class="${L.online ? 'on' : 'off'}" title="${L.online ? 'online' : 'offline'}">&#9679;</span> ` : ''}${esc(L.name)}` +
+      `<span style="color:var(--muted)">${L.level != null ? ' lv' + esc(L.level) : ''}${L.class ? ' ' + esc(L.class) : ''}${L.map ? ' · ' + esc(L.map) : ''}</span>` +
+      (L.always_online ? ` <span style="color:var(--muted)" title="guild leaders stay logged in at all times${L.relogs ? '; relogged ' + L.relogs + 'x' : ''}${L.state ? '; ' + esc(L.state) : ''}">[always on${L.rank ? ' · #' + esc(L.rank) : ''}${L.party_size ? ' · pt ' + esc(L.party_size) + (L.party_map ? ' ' + esc(L.party_map) : '') : ''}]</span>` : '') : '–';
+    const top = Array.isArray(g.top) ? g.top.slice(0, 3).map(t => typeof t === 'object' ? `${esc(t.name || '?')}<span style="color:var(--muted)">${t.level != null ? ' ' + esc(t.level) : ''}${t.class ? ' ' + esc(t.class) : ''}</span>` : esc(t)).join(', ') : '–';
+    const maps = Array.isArray(g.maps) ? g.maps.slice(0, 3).map(m => { const [n, c] = pair(m); return esc(n) + (c != null ? ` <span style="color:var(--muted)">${esc(c)}</span>` : ''); }).join(', ') : '–';
+    h += `<tr data-g="${esc(id)}" style="cursor:pointer"><td><span style="color:var(--muted)">${open ? '&#9662;' : '&#9656;'}</span> <b>${esc(g.name || id)}</b> <span style="color:var(--muted)">${esc(g.id || '')}</span></td>` +
+      `<td>${leader}</td><td class="r">${fmt(g.online)}</td><td><span class="inbar" style="width:${(100 * (+g.online || 0) / omax).toFixed(1)}%"></span></td>` +
+      `<td class="r">${fmt(g.members)}</td><td class="r">${g.avg_level != null ? fmt1(g.avg_level) : '–'}</td><td>${top || '–'}</td><td class="r">${fmt(g.parties)}</td>` +
+      `<td>${maps || '–'}</td><td class="r">${fmt(g.kills_hour ?? g.kills_session)}</td><td>${g.id ? `<button class="btn sm" type="button" data-msg="${esc(g.id)}">message mind</button>` : ''}</td></tr>`;
+    if (open) {
+      const tac = g.tactics && typeof g.tactics === 'object' ? Object.entries(g.tactics) : [];
+      h += `<tr class="gx"><td colspan="11">${g.style ? `<div><span style="color:var(--muted)">style:</span> ${esc(g.style)}</div>` : ''}` +
+        `<div class="strat">${g.strategy ? esc(g.strategy) : '<span style="color:var(--muted)">no strategy written yet</span>'}</div>` +
+        (tac.length ? '<div class="keys" style="margin-bottom:6px"><span style="color:var(--muted)">tactics:</span>' + tac.map(([k, v]) =>
+          `<span>${esc(k)} <b>${esc(typeof v === 'number' ? fmt1(v) : typeof v === 'object' ? JSON.stringify(v) : v)}</b></span>`).join('') + '</div>' : '') +
+        (g.jobs && typeof g.jobs === 'object' && Object.keys(g.jobs).length ? '<div class="keys" style="margin-bottom:6px"><span style="color:var(--muted)">classes:</span>' +
+          Object.entries(g.jobs).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(k)} <b>${fmt(v)}</b></span>`).join('') + '</div>' : '') +
+        (g.deaths_session != null || g.founded != null ? `<div><span style="color:var(--muted)">${g.founded != null ? (g.founded ? 'founded in-game' : 'not yet founded in-game') : ''}${g.deaths_session != null ? ' · deaths this session ' + fmt(g.deaths_session) : ''}${g.kills_session != null ? ' · kills this session ' + fmt(g.kills_session) : ''}</span></div>` : '') +
+        (Array.isArray(g.top) && g.top.length > 3 ? `<div style="margin-top:6px"><span style="color:var(--muted)">all top members:</span> ${g.top.map(t => typeof t === 'object' ? esc(`${t.name || '?'} ${t.level ?? ''} ${t.class || ''}`.trim()) : esc(t)).join(', ')}</div>` : '') +
+        (Array.isArray(g.maps) && g.maps.length > 3 ? `<div><span style="color:var(--muted)">all maps:</span> ${g.maps.map(m => { const [n, c] = pair(m); return esc(n) + (c != null ? ' ' + esc(c) : ''); }).join(', ')}</div>` : '') +
+        `</td></tr>`;
+    }
+  }
+  $('guilds').innerHTML = h + '</tbody></table>';
+}
+$('guilds').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-msg]');
+  if (b) { ev.stopPropagation(); openMind(b.dataset.msg); return; }
+  const r = ev.target.closest('tr[data-g]');
+  if (r) { const id = r.dataset.g; G.open.has(id) ? G.open.delete(id) : G.open.add(id); renderGuilds(); }
+});
+refreshGuilds();
+setInterval(refreshGuilds, 30000);
+
+// ======================= Leaderboard (/api/leaderboard, guildlead.go) =======================
+// Top characters by base level (then exp); guild leaders are marked, and every leader's rank is listed below.
+async function refreshLeaderboard() {
+  try {
+    const r = await fetch('/api/leaderboard?limit=20');
+    if (!r.ok) { $('leaderboard').innerHTML = `<div class="empty">leaderboard not available (HTTP ${r.status})</div>`; return; }
+    const d = await r.json(), top = d.top || [], ls = d.leaders || [];
+    $('lbNote').textContent = `${fmt(d.ranked || 0)} characters ranked · by base level, then exp · ★ = guild leader`;
+    const gname = id => (M.guildNames && M.guildNames[id]) || id;
+    const row = t => `<tr><td class="r">${esc(t.rank)}</td><td><span class="${t.online ? 'on' : 'off'}">&#9679;</span> ${t.leader_of ? '&#9733; ' : ''}<b>${esc(t.name)}</b></td>` +
+      `<td>${esc(t.class || '')}</td><td class="r">${esc(t.level)}</td><td class="r">${esc(t.job_level ?? '')}</td><td>${esc(t.guild || '')}</td>` +
+      `<td>${t.leader_of ? 'leader of ' + esc(gname(t.leader_of)) : ''}</td></tr>`;
+    let h = '<table><thead><tr><th class="r">#</th><th>character</th><th>class</th><th class="r">lv</th><th class="r">job</th><th>guild</th><th></th></tr></thead><tbody>' + top.map(row).join('') + '</tbody></table>';
+    if (ls.length) h += '<div style="margin-top:6px"><span style="color:var(--muted)">guild leaders:</span> ' +
+      ls.map(t => `${esc(gname(t.leader_of))}: <b>${esc(t.name)}</b> #${esc(t.rank)} <span style="color:var(--muted)">lv${esc(t.level)} ${esc(t.class || '')}</span>`).join(' · ') + '</div>';
+    $('leaderboard').innerHTML = h;
+  } catch (err) {
+    $('leaderboard').innerHTML = `<div class="empty">leaderboard unavailable (${esc(err.message)}); retrying</div>`;
+  }
+}
+refreshLeaderboard();
+setInterval(refreshLeaderboard, 30000);
+
+// ======================= Friendships (/api/friends, friends.go) =======================
+// Tier counts, the closest pairs (score = time partied, fights, heals, chats, trades, guild life + the minds' notes)
+// and guild changes made to follow friends. Refreshes every 60 s.
+async function refreshFriends() {
+  try {
+    const r = await fetch('/api/friends?n=15');
+    if (!r.ok) { $('friends').innerHTML = `<div class="empty">friendships not available (HTTP ${r.status})</div>`; return; }
+    const d = await r.json(), t = d.tiers || {}, top = d.top || [], mv = d.guild_moves || [], c = d.counters || {};
+    $('frNote').textContent = `${fmt(d.pairs_total || 0)} pairs · ${fmt(t['close friend'] || 0)} close friends · ${fmt(t.friend || 0)} friends · ` +
+      `${fmt(t.acquaintance || 0)} acquaintances · ${fmt(d.guild_changes_due_to_friends || 0)} guild changes due to friends · ` +
+      `${fmt(c.greetings || 0)} greetings · ${fmt(c.banter || 0)} banter` +
+      (d.loyalty ? ` · guild help asked ${fmt(d.loyalty.help_asked)} / answered ${fmt(d.loyalty.help_answered)} / unanswered ${fmt(d.loyalty.help_unanswered)}` +
+        ` · ${fmt(d.loyalty.at_risk)} members at risk · ${fmt(d.loyalty.keep_gifts_sent)} keep gifts` : '');
+    const row = p => `<tr><td><b>${esc(p.a)}</b> <span style="color:var(--muted)">${esc(p.a_guild || '')}</span></td>` +
+      `<td><b>${esc(p.b)}</b> <span style="color:var(--muted)">${esc(p.b_guild || '')}</span></td><td class="r">${esc(p.score)}</td><td>${esc(p.tier || '')}</td>` +
+      `<td class="r">${esc(p.partied_min)}</td><td class="r">${esc(p.fight_min)}</td><td class="r">${esc(p.heals)}</td><td class="r">${esc(p.chats)}</td>` +
+      `<td class="r">${esc(p.trades)}</td><td class="r">${esc(p.guild_min)}</td><td>${esc(p.last_contact)}</td></tr>`;
+    let h = '<table><thead><tr><th>character</th><th>friend</th><th class="r">score</th><th>tier</th><th class="r">partied min</th>' +
+      '<th class="r">fight min</th><th class="r">heals</th><th class="r">chats</th><th class="r">trades</th><th class="r">guild min</th><th>last contact</th></tr></thead><tbody>' +
+      (top.length ? top.map(row).join('') : '<tr><td colspan="11" class="empty">no friendships yet</td></tr>') + '</tbody></table>';
+    if (mv.length) h += '<div style="margin-top:6px"><span style="color:var(--muted)">guild changes (friends):</span> ' +
+      mv.slice(0, 8).map(m => `<b>${esc(m.bot)}</b> ${esc(m.from)} &rarr; ${esc(m.to)} <span style="color:var(--muted)">${esc(m.stage)}${m.why ? ' (' + esc(m.why) + ')' : ''}</span>`).join(' · ') + '</div>';
+    $('friends').innerHTML = h;
+  } catch (err) {
+    $('friends').innerHTML = `<div class="empty">friendships unavailable (${esc(err.message)}); retrying</div>`;
+  }
+}
+refreshFriends();
+setInterval(refreshFriends, 60000);
+
+// ======================= Parties (/api/parties/detail, partydash.go) =======================
+// Human-led parties (Ayla's core test party) are always expanded with every member; bot parties are one row each,
+// click to expand. Refreshes every 10 s.
+const P = {data: null, open: new Set()};
+async function refreshParties() {
+  try {
+    const r = await fetch('/api/parties/detail');
+    if (!r.ok) { if (!P.data) $('parties').innerHTML = `<div class="empty">party detail not available (HTTP ${r.status})</div>`; return; }
+    P.data = await r.json();
+    renderParties();
+  } catch (err) {
+    if (!P.data) $('parties').innerHTML = `<div class="empty">party detail unavailable (${esc(err.message)}); retrying</div>`;
+  }
+}
+function hpBar(hp, isSP) {
+  if (hp == null || hp < 0) return '<span style="color:var(--muted)">–</span>';
+  const pct = Math.round(100 * hp), col = isSP ? 'var(--s1, #4a7fd8)' : pct < 30 ? 'var(--bad, #d9534f)' : pct < 60 ? 'var(--warn, #e0a800)' : 'var(--good, #3c9d5d)';
+  return `<span title="${pct}% ${isSP ? 'SP' : 'HP'}" style="display:inline-block;width:52px;height:7px;background:var(--grid, #8884);border-radius:4px;vertical-align:middle;overflow:hidden">` +
+    `<span style="display:block;height:100%;width:${pct}%;background:${col}"></span></span> <span style="color:var(--muted)">${pct}%</span>`;
+}
+// weight vs limit (raw server units are 1/10 of what the client shows): amber >= 50% (rAthena stops natural
+// HP/SP regen), red >= 90% (can't attack). '–' when unknown (offline/not loaded yet, or a human leader).
+function wtCell(w, max) {
+  if (!max || max <= 0) return '<span style="color:var(--muted)">–</span>';
+  const pct = Math.floor(100 * (w || 0) / max);
+  const col = pct >= 90 ? 'var(--bad, #d9534f)' : pct >= 50 ? 'var(--warn, #e0a800)' : 'var(--muted)';
+  const tip = pct >= 90 ? 'overweight 90%: cannot attack' : pct >= 50 ? 'overweight 50%: natural HP/SP regen stopped' : 'weight ok';
+  return `<span title="${tip}" style="color:${col};white-space:nowrap">w ${fmt(Math.floor((w || 0) / 10))}/${fmt(Math.floor(max / 10))} (${pct}%)</span>`;
+}
+// next gear step (gearpool.go): item and cost, star = the party's gear turn, "far" = bought on a planned trip
+function gearCell(g) {
+  if (!g) return '<span style="color:var(--muted)">–</span>';
+  const col = g.have >= g.cost ? 'var(--good, #3c9d5d)' : 'var(--muted)';
+  const tip = `${g.slot}: ${g.item} ${g.cost}z at ${g.shop || '?'}${g.far ? ' (far: planned trip)' : ''} · can spend ${g.have}z · ${g.status}` +
+    (g.funded_by && g.funded_by.length ? ' · funded by ' + g.funded_by.join(', ') : '');
+  return `<span title="${esc(tip)}" style="white-space:nowrap">${g.turn ? '&#9733; ' : ''}${esc(g.item)} <span style="color:${col}">${fmt(g.cost)}z</span>` +
+    `${g.funded_by && g.funded_by.length ? ' <span style="color:var(--good, #3c9d5d)">+' + esc(g.funded_by.join(',')) + '</span>' : ''}</span>`;
+}
+function memberRows(p) {
+  let h = '<table><thead><tr><th>member</th><th>class</th><th class="r">lv</th><th>role</th><th>map</th><th>HP</th><th>SP</th><th class="r">zeny</th><th class="r" title="current weight / weight limit, as the game shows it; amber at 50% (natural HP/SP regen stops), red at 90% (cannot attack)">weight</th><th>doing</th><th class="r">kills</th><th class="r">deaths</th><th title="next gear step for the build: item, cost, who funds it; the party gear turn is marked">next gear</th></tr></thead><tbody>';
+  for (const m of p.members || []) {
+    const dot = `<span class="${m.online ? 'on' : 'off'}" title="${m.online ? 'online' : 'offline'}">&#9679;</span>`;
+    const where = m.online ? `${esc(m.map || '?')} <span style="color:var(--muted)">${m.x},${m.y}</span>` +
+      (m.waiting ? ' <span title="waiting at the checkpoint town: the leader\'s map is too dangerous for this member" style="color:var(--warn, #e0a800)">waiting</span>' :
+       (!m.with_leader && !m.human ? ' <span title="not on the leader\'s map" style="color:var(--bad, #d9534f)">away</span>' : '')) : '<span style="color:var(--muted)">offline</span>';
+    h += `<tr><td>${dot} <b>${esc(m.name)}</b>${m.leader ? ' <span style="color:var(--muted)">(leader)</span>' : ''}</td>` +
+      `<td>${esc(m.class || '')}</td><td class="r">${m.level ? esc(m.level) + (m.job_level ? `<span style="color:var(--muted)">/${esc(m.job_level)}</span>` : '') : '–'}</td>` +
+      `<td>${esc(m.role || '')}</td><td>${where}</td><td>${m.human && !m.has_stats ? '<span style="color:var(--muted)">–</span>' : (m.online ? hpBar(m.hp) : '–')}</td>` +
+      `<td>${m.human && !m.has_stats ? '<span style="color:var(--muted)">–</span>' : (m.online ? hpBar(m.sp, true) : '–')}</td>` +
+      `<td class="r">${m.zeny != null && m.zeny >= 0 ? fmt(m.zeny) : '<span style="color:var(--muted)">–</span>'}</td>` +
+      `<td class="r">${wtCell(m.weight, m.max_weight)}</td>` +
+      `<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(m.state || '')}">${esc(m.state || '')}</td>` +
+      `<td class="r">${m.human ? '–' : fmt(m.kills)}</td><td class="r">${m.human ? '–' : fmt(m.deaths)}</td><td>${gearCell(m.gear_next)}</td></tr>`;
+  }
+  h += '</tbody></table>';
+  if (p.gear_turn || (p.gear_log && p.gear_log.length)) {
+    h += `<div style="color:var(--muted);margin:2px 0 4px">gear turn: <b>${esc(p.gear_turn || '–')}</b>` +
+      ((p.gear_log || []).length ? ' · ' + p.gear_log.map(esc).join(' · ') : '') + '</div>';
+  }
+  return h;
+}
+function renderParties() {
+  const ps = Array.isArray(P.data) ? P.data : [];
+  if (!ps.length) { $('parties').innerHTML = '<div class="empty">no parties right now</div>'; $('partyNote').textContent = ''; return; }
+  const humanLed = ps.filter(p => p.human), bots = ps.filter(p => !p.human);
+  const inParty = ps.reduce((s, p) => s + (+p.online || 0), 0);
+  $('partyNote').textContent = `${ps.length} parties · ${fmt(inParty)} members online · ${humanLed.length} led by a human · click a bot party to expand (refreshes every 10 s)`;
+  let h = '';
+  for (const p of humanLed) {
+    h += `<div style="margin:2px 0 10px"><div style="margin-bottom:4px"><b>${esc(p.name)}</b> <span style="color:var(--muted)">led by</span> <b>${esc(p.human)}</b>` +
+      `<span style="color:var(--muted)"> · on ${esc(p.map || '?')} · regroup town ${esc(p.checkpoint || '–')} · ${p.together}/${p.online} online together` +
+      `${p.even_share ? ' · even EXP share' : ''} · formed ${fmt(p.formed_min)} min ago</span>` +
+      (p.rally && p.rally.active ? ` <span style="color:var(--warn, #e0a800)" title="${esc(p.rally.why || '')}">rally at the Kafra in ${esc(p.rally.town)} (${p.rally.kafra ? p.rally.kafra.join(',') : ''}) for ${esc(p.rally.dest || '?')}, ${fmt(p.rally.for_s)} s</span>` :
+        (p.rally && p.rally.last ? ` <span style="color:var(--muted)">· last rally: ${esc(p.rally.last)} (${fmt(Math.round(p.rally.last_ago_s / 60))} min ago)</span>` : '')) +
+      `</div>${memberRows(p)}</div>`;
+  }
+  if (bots.length) {
+    h += `<table><thead><tr><th>bot party</th><th>leader</th><th class="r">online</th><th class="r">together</th><th class="r">avg lv</th><th>map</th><th>members</th></tr></thead><tbody>`;
+    for (const p of bots) {
+      const open = P.open.has(p.name);
+      const names = (p.members || []).map(m => `<span class="${m.online ? 'on' : 'off'}">&#9679;</span> ${esc(m.name)}<span style="color:var(--muted)"> ${esc(m.class || '')} ${m.level || ''}</span>`).join(', ');
+      h += `<tr data-p="${esc(p.name)}" style="cursor:pointer"><td><span style="color:var(--muted)">${open ? '&#9662;' : '&#9656;'}</span> <b>${esc(p.name)}</b></td>` +
+        `<td>${esc(p.leader || '')}</td><td class="r">${fmt(p.online)}/${fmt((p.members || []).length)}</td><td class="r">${fmt(p.together)}</td>` +
+        `<td class="r">${p.avg_level ? fmt1(p.avg_level) : '–'}</td><td>${esc(p.map || '')}${p.rally && p.rally.active ? ` <span style="color:var(--warn, #e0a800)">rally: ${esc(p.rally.town)} Kafra</span>` : ''}</td><td>${names}</td></tr>`;
+      if (open) h += `<tr class="gx"><td colspan="7">${memberRows(p)}</td></tr>`;
+    }
+    h += '</tbody></table>';
+  }
+  $('parties').innerHTML = h;
+}
+$('parties').addEventListener('click', ev => {
+  const r = ev.target.closest('tr[data-p]');
+  if (r) { const id = r.dataset.p; P.open.has(id) ? P.open.delete(id) : P.open.add(id); renderParties(); }
+});
+refreshParties();
+setInterval(refreshParties, 10000);
+</script>
+</body>
+</html>

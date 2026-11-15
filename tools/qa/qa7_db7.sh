@@ -1,0 +1,2 @@
+docker exec -i ro-db mariadb -uragnarok -pragnarok ragnarok -N -B -e "select char_id as mob, count(distinct time) kills_approx, min(time), max(time) from picklog where map='pay_fild03' and type='M' and time>now()-interval 6 hour group by char_id order by 2 desc limit 15;"
+docker exec -i ro-db mariadb -uragnarok -pragnarok ragnarok -N -B -e "select char_id as mob, count(distinct time) from picklog where map in ('pay_fild01','pay_fild02','prt_fild08') and type='M' and time>now()-interval 6 hour group by map,char_id order by 2 desc limit 25;" | awk '{print}' | head -30

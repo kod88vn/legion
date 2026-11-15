@@ -1,0 +1,421 @@
+package main
+
+// farmer.go (economy run 11). Owner rules 2026-11-14 (RULES.md 2):
+//   - "there should be a lot of farmer accounts in the server who specialized on soloing to farm for items. When they
+//     are not farming, they are selling. Most archer class fits this definition."
+//   - "every merchant account should have a DS hunter. Every hunter account should have a merchant" (tools/pairchars.py
+//     creates the missing character at level 1 on bot accounts).
+//   - "bots should minimally buy from NPC. Pron market should have a lot of gears."
+//
+// A farmer account has a Hunter (class Hunter/Sniper) and a Merchant-line character able to vend. Its play cycle,
+// at real-player pace:
+//   farm  - the Hunter solos (never LFG/party) for 60-120 min on its picked map, keeps what it uses, and when the
+//           time is up (or the bag reaches 45%) goes to the nearest Kafra town and puts its sellables in the
+//           account's Kafra storage (shared by the account's characters, 40z per opening);
+//   swap  - the account logs the Hunter out and its merchant in (one swap per account per phase, staggered by the
+//           random phase lengths);
+//   vend  - the merchant takes the goods out of storage at a Prontera Kafra straight into its cart, vends at the
+//           south gate for 20-40 min (market prices, vend.go), then the account swaps back to the Hunter. Unsold goods
+//           stay in the cart for the next shop.
+// Accounts whose merchant can't vend yet (a new level-1 merchant) keep farming and hand loot over through the loot flow
+// (guild trader). /api/economy "farmers": online / farming / vending / swaps / stored / fetched.
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+type farmerState struct {
+	Phase   string // "farm" | "vend"
+	Until   time.Time
+	Stored  bool // the Hunter put goods in storage for the merchant
+	Fetched bool // the merchant took them out this vend phase
+}
+
+var farmerStates = struct {
+	sync.Mutex
+	m map[string]*farmerState // account -> state
+}{m: map[string]*farmerState{}}
+
+var farmerCounts = map[string]*int64{"swaps": new(int64), "stored": new(int64), "fetched": new(int64)}
+
+func farmerCount(k string) {
+	if p := farmerCounts[k]; p != nil {
+		atomic.AddInt64(p, 1)
+	}
+	econCount("farmer: " + k)
+}
+
+func farmerStateOf(acc string) *farmerState {
+	farmerStates.Lock()
+	defer farmerStates.Unlock()
+	st := farmerStates.m[acc]
+	if st == nil {
+		st = &farmerState{Phase: "farm"}
+		farmerStates.m[acc] = st
+	}
+	return st
+}
+
+func isHunterClass(c int) bool   { return c == 11 || c == 4012 }
+func isVendorMerchant(c int) bool { return c == 5 || c == 10 || c == 18 || c == 4006 || c == 4011 || c == 4019 }
+
+// farmerPair: the account's Hunter-plan character and its Merchant-line character (nil when missing)
+func (b *Bot) farmerPair() (hunter, merchant *CharSpec) {
+	for i := range b.P.Chars {
+		c := &b.P.Chars[i]
+		p := builds[c.Plan]
+		if p == nil {
+			continue
+		}
+		switch base := p.base(); {
+		case base == "hunter" && hunter == nil:
+			hunter = c
+		case (base == "blacksmith" || base == "alchemist") && (merchant == nil || c.Role == "vendor"):
+			merchant = c
+		}
+	}
+	return
+}
+
+// farmerAccount: a farmer + vendor account in its cycle - the Hunter is a real Hunter, and the account is none of the
+// special ones (Ayla's party, guild leaders, the guild's alchemist / brewer, the core instance)
+func (b *Bot) farmerAccount() (hunter, merchant *CharSpec, ok bool) {
+	if b.pin != nil || coreInstance() || b.alwaysOnline() {
+		return nil, nil, false
+	}
+	hunter, merchant = b.farmerPair()
+	if hunter == nil || merchant == nil || guildAlchemistChar(merchant.Name) != "" || guildAlchemistChar(hunter.Name) != "" {
+		return nil, nil, false
+	}
+	if !isHunterClass(knownLevels(hunter).Class) {
+		return nil, nil, false // still levelling to Hunter: plays like everyone else
+	}
+	return hunter, merchant, true
+}
+
+// merchantCanVend: the merchant has (or is about to have) Vending - from the char levels (it may be offline)
+func merchantCanVend(c *CharSpec) bool {
+	l := knownLevels(c)
+	if !isVendorMerchant(l.Class) {
+		return false
+	}
+	return l.Class != 5 && l.Class != 4006 || l.Job >= 15
+}
+
+// farmerPick (persona.go pickChar, b.mu held): the character a farmer account plays this session; nil = not a farmer
+func (b *Bot) farmerPick() *CharSpec {
+	h, m, ok := b.farmerAccount()
+	if !ok {
+		return nil
+	}
+	st := farmerStateOf(b.P.Account)
+	if st.Phase == "vend" && merchantCanVend(m) {
+		return m
+	}
+	st.Phase = "farm"
+	return h
+}
+
+// farmerChar: this session's character is a farmer account's Hunter (lfg.go keeps it solo)
+func (b *Bot) farmerChar() bool {
+	h, _, ok := b.farmerAccount()
+	return ok && h.Name == b.charName()
+}
+
+// farmerSellables (b.mu held): inventory indexes the Hunter puts in storage for its merchant: cards, gear, valuable
+// materials and Etc with market demand that it doesn't use itself
+func (b *Bot) farmerSellables() []int {
+	var out []int
+	for idx, it := range b.inv {
+		if it == nil || it.Equipped || it.Count <= 0 || it.Unidentified || b.npcSellable(it) {
+			continue
+		}
+		x := items[it.ItemID]
+		if x == nil {
+			continue
+		}
+		switch {
+		case x.Type == "Card", x.Type == "Weapon", x.Type == "Armor":
+			if b.ownUse(x) && b.countItem(x.ID) <= 1 {
+				continue
+			}
+		case valuableEtc[x.ID] || x.Type == "Etc" && etcHasDemand(x.ID):
+			if b.refineKeep(x.ID) > 0 {
+				continue
+			}
+		case healItem(x.ID) && x.Type != "Healing":
+			// herbs / fruit beyond what it eats: food.go keeps its own share
+		default:
+			continue
+		}
+		out = append(out, idx)
+	}
+	return out
+}
+
+// requestSwap: end this session so the account logs in its other character (bot.go run loop). b.mu held.
+func (b *Bot) requestSwap(to string) {
+	b.swapChar = to
+	farmerCount("swaps")
+	select {
+	case b.bump <- struct{}{}:
+	default:
+	}
+}
+
+// farmerThink (ai.go think, b.mu held): the farmer cycle's own steps. True while it owns the bot.
+func (b *Bot) farmerThink(gm *GameMap, moving bool, now time.Time) bool {
+	h, m, ok := b.farmerAccount()
+	if !ok || b.Dead || b.Goal.Set == "api" || b.mkt != nil || b.tradeFrom != "" {
+		return false
+	}
+	st := farmerStateOf(b.P.Account)
+	me := b.charName()
+	switch me {
+	case h.Name:
+		if st.Phase != "farm" {
+			st.Phase, st.Until = "farm", time.Time{}
+		}
+		if st.Until.IsZero() {
+			st.Until = now.Add(time.Duration(60+b.rng.Intn(61)) * time.Minute)
+			b.farmerMoneyGoal(now) // what the market lacks that drops on a map safe for it (opportunity.go)
+		}
+		if !merchantCanVend(m) || b.trip != nil || b.underAttack(now) || b.target != 0 {
+			return b.kafra != nil && b.kafra.Store && b.farmStore && b.kafraThink(gm, moving, now)
+		}
+		due := now.After(st.Until) || b.MaxWeight > 0 && b.Weight*100 >= b.MaxWeight*45
+		if !due && !b.farmStore {
+			return false
+		}
+		if b.farmStore && b.kafra == nil && st.Stored {
+			// stored: hand over to the merchant
+			b.farmStore = false
+			st.Phase, st.Until, st.Fetched = "vend", now.Add(time.Duration(20+b.rng.Intn(21))*time.Minute), false
+			b.event("info", "", "farming session over, switching to "+m.Name+" to sell the loot")
+			typing := b.P.Typing
+			go b.guildSay(styled(typing, pick("off to sell my loot, bbl", "gonna vend for a bit", "selling stuff at pront, brb")))
+			b.requestSwap(m.Name)
+			return true
+		}
+		if len(b.farmerSellables()) == 0 {
+			// nothing to sell: another farming round
+			st.Until = now.Add(time.Duration(45+b.rng.Intn(46)) * time.Minute)
+			b.farmStore = false
+			return false
+		}
+		b.farmStore = true
+		if b.kafra != nil {
+			return b.kafraThink(gm, moving, now)
+		}
+		spots := kafraSpots[b.MapName]
+		if len(spots) == 0 {
+			town := nearestTown(b.MapName)
+			if len(kafraSpots[town]) == 0 {
+				town = "prontera"
+			}
+			if b.Goal.Map != town || b.Goal.Set != "farmer" {
+				b.Goal, b.route, b.path = Goal{Mode: "idle", Map: town, Set: "farmer"}, nil, nil
+			}
+			b.travel(gm, moving)
+			b.setState("farming done: going to the Kafra in " + town + " to store the loot")
+			return true
+		}
+		sp := spots[0]
+		for _, s := range spots[1:] {
+			if dist(b.X, b.Y, s.X, s.Y) < dist(b.X, b.Y, sp.X, sp.Y) {
+				sp = s
+			}
+		}
+		b.kafra = &kafraTrip{Store: true, Spot: sp, Town: b.MapName, Stage: "walk", Started: now, At: now}
+		return b.kafraThink(gm, moving, now)
+	case m.Name:
+		if st.Phase != "vend" {
+			return false
+		}
+		if now.After(st.Until) && b.kafra == nil {
+			if b.vend != nil && b.vend.Opened {
+				go b.send(newPkt(0x012e).b) // close the shop; the cart keeps what didn't sell
+				b.vend.Opened = false
+			}
+			st.Phase, st.Until = "farm", time.Time{}
+			b.event("info", "", "done vending, back to farming on "+h.Name)
+			b.requestSwap(h.Name)
+			return true
+		}
+		if !st.Stored || st.Fetched {
+			return false // vend.go runs the shop
+		}
+		if b.kafra != nil {
+			return b.kafraThink(gm, moving, now)
+		}
+		if b.MapName != "prontera" {
+			if b.Goal.Map != "prontera" || b.Goal.Set != "farmer" {
+				b.Goal, b.route, b.path = Goal{Mode: "idle", Map: "prontera", Set: "farmer"}, nil, nil
+			}
+			b.travel(gm, moving)
+			b.setState("going to Prontera to fetch the farmed goods from storage")
+			return true
+		}
+		if b.vend != nil && b.vend.Opened {
+			go b.send(newPkt(0x012e).b)
+			b.vend.Opened = false
+		}
+		spots := kafraSpots["prontera"]
+		if len(spots) == 0 || b.Zeny < 100 {
+			st.Fetched = true
+			return false
+		}
+		sp := spots[0]
+		for _, s := range spots[1:] {
+			if dist(b.X, b.Y, s.X, s.Y) < dist(b.X, b.Y, sp.X, sp.Y) {
+				sp = s
+			}
+		}
+		b.farmFetch = true
+		b.kafra = &kafraTrip{Store: true, Spot: sp, Town: "prontera", Stage: "walk", Started: now, At: now}
+		return b.kafraThink(gm, moving, now)
+	}
+	return false
+}
+
+// farmerStorage (storage.go onStorageOpen, b.mu held): the farmer's store / fetch at the opened storage. True when
+// it handled the opening.
+func (b *Bot) farmerStorage() bool {
+	k := b.kafra
+	if k == nil || !k.Store || k.Stored || !(b.farmStore || b.farmFetch) {
+		return false
+	}
+	k.Stored = true
+	st := farmerStateOf(b.P.Account)
+	n := 0
+	if b.farmStore {
+		for _, idx := range b.farmerSellables() {
+			it := b.inv[idx]
+			go b.send(newPkt(0x0364).u16(uint16(idx)).u32(uint32(it.Count)).b)
+			n++
+		}
+		st.Stored = st.Stored || n > 0
+		farmerCount("stored")
+		b.event("info", "", fmt.Sprintf("farmer: %d kinds of loot into the account storage for the merchant", n))
+	} else {
+		room := 1 << 30
+		for idx, it := range b.storageSeen {
+			if it == nil || it.Count <= 0 || room <= 0 {
+				continue
+			}
+			x := items[it.ItemID]
+			if x == nil || !b.vendable(it, x) {
+				continue
+			}
+			if b.hasCart {
+				go b.send(newPkt(0x0128).u16(uint16(idx)).u32(uint32(it.Count)).b) // storage -> cart
+			} else {
+				go b.send(newPkt(0x0365).u16(uint16(idx)).u32(uint32(it.Count)).b) // storage -> bag
+			}
+			room--
+			n++
+		}
+		st.Fetched, st.Stored = true, false
+		b.cartLoadAt = time.Time{}
+		farmerCount("fetched")
+		b.event("info", "", fmt.Sprintf("farmer: took %d kinds of farmed goods out of storage for the shop", n))
+	}
+	b.farmStore, b.farmFetch = false, false
+	b.kafra = nil
+	b.storageSeen = nil
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		b.send(newPkt(0x0193).b)
+	}()
+	return true
+}
+
+// noteStorageItem (bot.go storage lists, b.mu held): what the storage holds while it is open
+func (b *Bot) noteStorageItem(idx int, it *InvItem) {
+	if b.storageSeen == nil {
+		b.storageSeen = map[int]*InvItem{}
+	}
+	b.storageSeen[idx] = it
+}
+
+// farmersReport: /api/economy "farmers"
+func farmersReport(bots []*Bot) map[string]interface{} {
+	online, farming, vending, accounts := 0, 0, 0, 0
+	for _, b := range bots {
+		b.mu.Lock()
+		h, m, ok := b.farmerAccount()
+		if ok {
+			accounts++
+			if b.Online {
+				online++
+				switch b.charName() {
+				case h.Name:
+					farming++
+				case m.Name:
+					vending++
+				}
+			}
+		}
+		b.mu.Unlock()
+	}
+	out := map[string]interface{}{"accounts": accounts, "online": online, "farming": farming, "vending": vending,
+		"gear_listings_by_band": gearListingsByBand()}
+	for k, p := range farmerCounts {
+		out[k] = atomic.LoadInt64(p)
+	}
+	return out
+}
+
+// gearListingsByBand: weapons / armor listed in open shops by the level they need (the market's gear supply per band)
+func gearListingsByBand() map[string]int {
+	out := map[string]int{"lv1-29": 0, "lv30-49": 0, "lv50-69": 0, "lv70-99": 0}
+	for _, l := range allShopListings() {
+		x := items[l.ItemID]
+		if x == nil || x.Type != "Weapon" && x.Type != "Armor" || l.Count <= 0 {
+			continue
+		}
+		switch lv := x.MinLv; {
+		case lv < 30:
+			out["lv1-29"] += l.Count
+		case lv < 50:
+			out["lv30-49"] += l.Count
+		case lv < 70:
+			out["lv50-69"] += l.Count
+		default:
+			out["lv70-99"] += l.Count
+		}
+	}
+	return out
+}
+
+// farmerMoneyGoal (b.mu held): at the start of a farming session the Hunter takes the market's best farmable gap as its
+// money goal (opportunity.go pickOpportunity: demand - listings, healing first, gear pieces members need), wherever
+// it is - other bots only do this after a Prontera visit (checkMarket).
+func (b *Bot) farmerMoneyGoal(now time.Time) {
+	opps.Lock()
+	g := opps.goals[b]
+	opps.Unlock()
+	if g != nil && now.Before(g.Until) {
+		return
+	}
+	ng := b.pickOpportunity(now)
+	if ng == nil {
+		return
+	}
+	opps.Lock()
+	if g != nil {
+		delete(opps.chase[g.ItemID], b)
+	}
+	opps.goals[b] = ng
+	if opps.chase[ng.ItemID] == nil {
+		opps.chase[ng.ItemID] = map[*Bot]time.Time{}
+	}
+	opps.chase[ng.ItemID][b] = ng.Until
+	opps.at = time.Time{}
+	opps.n["farmer money goals"]++
+	opps.Unlock()
+	b.event("market", "", fmt.Sprintf("farmer: the market lacks %s - farming it on %s (%s)", ng.Item, ng.Maps[0], ng.Mob))
+}

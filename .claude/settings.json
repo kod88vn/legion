@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker stop:*)",
+      "Bash(docker kill:*)",
+      "Bash(wsl -d Ubuntu-24.04 -- docker stop:*)",
+      "Bash(wsl -d Ubuntu-24.04 -- docker kill:*)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/c/Users/kod/AppData/Local/Programs/Python/Python312/python G:/RO/tools/mindgate.py prompt",
+            "timeout": 15,
+            "statusMessage": "Checking the LLM minds"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/c/Users/kod/AppData/Local/Programs/Python/Python312/python G:/RO/tools/mindgate.py stop",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

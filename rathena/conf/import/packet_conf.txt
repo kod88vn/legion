@@ -1,0 +1,7 @@
+// Legion bots all connect from 127.0.0.1 (they share the rathena container's network namespace). The default
+// DDoS guard (5 connections per 3 s per IP) would block them, so localhost is explicitly allowed (allowed IPs
+// skip the connection-rate check) and the rate limit is raised for everything else.
+order: deny,allow
+allow: 127.0.0.1
+ddos_interval: 3000
+ddos_count: 50

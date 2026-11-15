@@ -1,0 +1,6 @@
+server_name: AI-Lab
+// IP the login server hands to clients for the char server
+char_ip: 127.0.0.1
+login_ip: 127.0.0.1
+// skip PIN code & allow quick char creation
+pincode_enabled: no

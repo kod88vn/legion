@@ -1,0 +1,2452 @@
+{
+ "generated": "2026-11-14T13:29:28",
+ "applied": true,
+ "before": {
+  "knight": {
+   "total": 351,
+   "online": 71,
+   "plans": {
+    "knight": {
+     "all": 251,
+     "online": 71,
+     "share": 72
+    },
+    "knight_pierce": {
+     "all": 56,
+     "online": 0,
+     "share": 16
+    },
+    "knight_spear": {
+     "all": 44,
+     "online": 0,
+     "share": 13
+    }
+   },
+   "lv40": 167,
+   "top_stat_spread": [
+    "S/A/V",
+    167
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 28
+  },
+  "crusader": {
+   "total": 341,
+   "online": 66,
+   "plans": {
+    "crusader": {
+     "all": 170,
+     "online": 61,
+     "share": 50
+    },
+    "crusader_gc": {
+     "all": 69,
+     "online": 1,
+     "share": 20
+    },
+    "crusader_spear": {
+     "all": 102,
+     "online": 4,
+     "share": 30
+    }
+   },
+   "lv40": 140,
+   "top_stat_spread": [
+    "V/S/D",
+    77
+   ],
+   "same_stat_spread_pct": 55,
+   "same_skill_tree_pct": 37
+  },
+  "wizard": {
+   "total": 342,
+   "online": 76,
+   "plans": {
+    "wizard": {
+     "all": 194,
+     "online": 66,
+     "share": 57
+    },
+    "wizard_fire": {
+     "all": 82,
+     "online": 7,
+     "share": 24
+    },
+    "wizard_frost": {
+     "all": 66,
+     "online": 3,
+     "share": 19
+    }
+   },
+   "lv40": 143,
+   "top_stat_spread": [
+    "I/D/V",
+    143
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 51
+  },
+  "sage": {
+   "total": 322,
+   "online": 67,
+   "plans": {
+    "sage": {
+     "all": 165,
+     "online": 64,
+     "share": 51
+    },
+    "sage_hindsight": {
+     "all": 60,
+     "online": 2,
+     "share": 19
+    },
+    "sage_support": {
+     "all": 97,
+     "online": 1,
+     "share": 30
+    }
+   },
+   "lv40": 147,
+   "top_stat_spread": [
+    "I/D/V",
+    147
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 41
+  },
+  "hunter": {
+   "total": 396,
+   "online": 87,
+   "plans": {
+    "hunter": {
+     "all": 206,
+     "online": 80,
+     "share": 52
+    },
+    "hunter_agi": {
+     "all": 119,
+     "online": 6,
+     "share": 30
+    },
+    "hunter_blitz": {
+     "all": 71,
+     "online": 1,
+     "share": 18
+    },
+    "hunter_trap": {
+     "all": 0,
+     "online": 0,
+     "share": 0
+    }
+   },
+   "lv40": 173,
+   "top_stat_spread": [
+    "D/A/V",
+    148
+   ],
+   "same_stat_spread_pct": 86,
+   "same_skill_tree_pct": 34
+  },
+  "bard": {
+   "total": 131,
+   "online": 30,
+   "plans": {
+    "bard": {
+     "all": 66,
+     "online": 28,
+     "share": 50
+    },
+    "bard_arrow": {
+     "all": 65,
+     "online": 2,
+     "share": 50
+    }
+   },
+   "lv40": 53,
+   "top_stat_spread": [
+    "D/A/V",
+    53
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 38
+  },
+  "dancer": {
+   "total": 66,
+   "online": 16,
+   "plans": {
+    "dancer": {
+     "all": 33,
+     "online": 13,
+     "share": 50
+    },
+    "dancer_arrow": {
+     "all": 33,
+     "online": 3,
+     "share": 50
+    }
+   },
+   "lv40": 24,
+   "top_stat_spread": [
+    "D/A/V",
+    24
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 50
+  },
+  "priest": {
+   "total": 1185,
+   "online": 131,
+   "plans": {
+    "priest": {
+     "all": 742,
+     "online": 127,
+     "share": 63
+    },
+    "priest_battle": {
+     "all": 87,
+     "online": 2,
+     "share": 7
+    },
+    "priest_me": {
+     "all": 356,
+     "online": 2,
+     "share": 30
+    }
+   },
+   "lv40": 243,
+   "top_stat_spread": [
+    "I/V/D",
+    192
+   ],
+   "same_stat_spread_pct": 79,
+   "same_skill_tree_pct": 47
+  },
+  "monk": {
+   "total": 337,
+   "online": 68,
+   "plans": {
+    "monk": {
+     "all": 227,
+     "online": 66,
+     "share": 67
+    },
+    "monk_asura": {
+     "all": 110,
+     "online": 2,
+     "share": 33
+    },
+    "monk_occult": {
+     "all": 0,
+     "online": 0,
+     "share": 0
+    }
+   },
+   "lv40": 147,
+   "top_stat_spread": [
+    "S/A/V",
+    147
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 35
+  },
+  "blacksmith": {
+   "total": 1117,
+   "online": 118,
+   "plans": {
+    "blacksmith": {
+     "all": 560,
+     "online": 111,
+     "share": 50
+    },
+    "blacksmith_mace": {
+     "all": 557,
+     "online": 7,
+     "share": 50
+    }
+   },
+   "lv40": 248,
+   "top_stat_spread": [
+    "S/D/A",
+    157
+   ],
+   "same_stat_spread_pct": 63,
+   "same_skill_tree_pct": 52
+  },
+  "alchemist": {
+   "total": 755,
+   "online": 124,
+   "plans": {
+    "alchemist": {
+     "all": 327,
+     "online": 122,
+     "share": 43
+    },
+    "alchemist_battle": {
+     "all": 224,
+     "online": 2,
+     "share": 30
+    },
+    "alchemist_potion": {
+     "all": 204,
+     "online": 0,
+     "share": 27
+    }
+   },
+   "lv40": 230,
+   "top_stat_spread": [
+    "S/V/D",
+    158
+   ],
+   "same_stat_spread_pct": 69,
+   "same_skill_tree_pct": 39
+  },
+  "assassin": {
+   "total": 310,
+   "online": 52,
+   "plans": {
+    "assassin": {
+     "all": 134,
+     "online": 46,
+     "share": 43
+    },
+    "assassin_dagger": {
+     "all": 88,
+     "online": 4,
+     "share": 28
+    },
+    "assassin_sonic": {
+     "all": 88,
+     "online": 2,
+     "share": 28
+    }
+   },
+   "lv40": 119,
+   "top_stat_spread": [
+    "A/S/V",
+    79
+   ],
+   "same_stat_spread_pct": 66,
+   "same_skill_tree_pct": 46
+  },
+  "rogue": {
+   "total": 333,
+   "online": 64,
+   "plans": {
+    "rogue": {
+     "all": 245,
+     "online": 62,
+     "share": 74
+    },
+    "rogue_bow": {
+     "all": 88,
+     "online": 2,
+     "share": 26
+    },
+    "rogue_strip": {
+     "all": 0,
+     "online": 0,
+     "share": 0
+    }
+   },
+   "lv40": 140,
+   "top_stat_spread": [
+    "A/S/D",
+    118
+   ],
+   "same_stat_spread_pct": 84,
+   "same_skill_tree_pct": 31
+  }
+ },
+ "after": {
+  "knight": {
+   "total": 351,
+   "online": 71,
+   "plans": {
+    "knight": {
+     "all": 251,
+     "online": 71,
+     "share": 72
+    },
+    "knight_pierce": {
+     "all": 56,
+     "online": 0,
+     "share": 16
+    },
+    "knight_spear": {
+     "all": 44,
+     "online": 0,
+     "share": 13
+    }
+   },
+   "lv40": 167,
+   "top_stat_spread": [
+    "S/A/V",
+    167
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 28
+  },
+  "crusader": {
+   "total": 341,
+   "online": 66,
+   "plans": {
+    "crusader": {
+     "all": 170,
+     "online": 61,
+     "share": 50
+    },
+    "crusader_gc": {
+     "all": 69,
+     "online": 1,
+     "share": 20
+    },
+    "crusader_spear": {
+     "all": 102,
+     "online": 4,
+     "share": 30
+    }
+   },
+   "lv40": 140,
+   "top_stat_spread": [
+    "V/S/D",
+    77
+   ],
+   "same_stat_spread_pct": 55,
+   "same_skill_tree_pct": 37
+  },
+  "wizard": {
+   "total": 342,
+   "online": 76,
+   "plans": {
+    "wizard": {
+     "all": 187,
+     "online": 59,
+     "share": 55
+    },
+    "wizard_fire": {
+     "all": 89,
+     "online": 14,
+     "share": 26
+    },
+    "wizard_frost": {
+     "all": 66,
+     "online": 3,
+     "share": 19
+    }
+   },
+   "lv40": 143,
+   "top_stat_spread": [
+    "I/D/V",
+    143
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 51
+  },
+  "sage": {
+   "total": 322,
+   "online": 67,
+   "plans": {
+    "sage": {
+     "all": 164,
+     "online": 64,
+     "share": 51
+    },
+    "sage_hindsight": {
+     "all": 61,
+     "online": 2,
+     "share": 19
+    },
+    "sage_support": {
+     "all": 97,
+     "online": 1,
+     "share": 30
+    }
+   },
+   "lv40": 147,
+   "top_stat_spread": [
+    "I/D/V",
+    147
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 41
+  },
+  "hunter": {
+   "total": 396,
+   "online": 87,
+   "plans": {
+    "hunter": {
+     "all": 204,
+     "online": 79,
+     "share": 52
+    },
+    "hunter_agi": {
+     "all": 79,
+     "online": 6,
+     "share": 20
+    },
+    "hunter_blitz": {
+     "all": 71,
+     "online": 1,
+     "share": 18
+    },
+    "hunter_trap": {
+     "all": 42,
+     "online": 1,
+     "share": 11
+    }
+   },
+   "lv40": 173,
+   "top_stat_spread": [
+    "D/A/V",
+    148
+   ],
+   "same_stat_spread_pct": 86,
+   "same_skill_tree_pct": 34
+  },
+  "bard": {
+   "total": 131,
+   "online": 30,
+   "plans": {
+    "bard": {
+     "all": 66,
+     "online": 28,
+     "share": 50
+    },
+    "bard_arrow": {
+     "all": 65,
+     "online": 2,
+     "share": 50
+    }
+   },
+   "lv40": 53,
+   "top_stat_spread": [
+    "D/A/V",
+    53
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 38
+  },
+  "dancer": {
+   "total": 66,
+   "online": 16,
+   "plans": {
+    "dancer": {
+     "all": 33,
+     "online": 13,
+     "share": 50
+    },
+    "dancer_arrow": {
+     "all": 33,
+     "online": 3,
+     "share": 50
+    }
+   },
+   "lv40": 24,
+   "top_stat_spread": [
+    "D/A/V",
+    24
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 50
+  },
+  "priest": {
+   "total": 1185,
+   "online": 131,
+   "plans": {
+    "priest": {
+     "all": 742,
+     "online": 127,
+     "share": 63
+    },
+    "priest_battle": {
+     "all": 87,
+     "online": 2,
+     "share": 7
+    },
+    "priest_me": {
+     "all": 356,
+     "online": 2,
+     "share": 30
+    }
+   },
+   "lv40": 243,
+   "top_stat_spread": [
+    "I/V/D",
+    192
+   ],
+   "same_stat_spread_pct": 79,
+   "same_skill_tree_pct": 47
+  },
+  "monk": {
+   "total": 337,
+   "online": 68,
+   "plans": {
+    "monk": {
+     "all": 227,
+     "online": 66,
+     "share": 67
+    },
+    "monk_asura": {
+     "all": 101,
+     "online": 2,
+     "share": 30
+    },
+    "monk_occult": {
+     "all": 9,
+     "online": 0,
+     "share": 3
+    }
+   },
+   "lv40": 147,
+   "top_stat_spread": [
+    "S/A/V",
+    147
+   ],
+   "same_stat_spread_pct": 100,
+   "same_skill_tree_pct": 35
+  },
+  "blacksmith": {
+   "total": 1117,
+   "online": 118,
+   "plans": {
+    "blacksmith": {
+     "all": 559,
+     "online": 111,
+     "share": 50
+    },
+    "blacksmith_mace": {
+     "all": 558,
+     "online": 7,
+     "share": 50
+    }
+   },
+   "lv40": 248,
+   "top_stat_spread": [
+    "S/D/A",
+    157
+   ],
+   "same_stat_spread_pct": 63,
+   "same_skill_tree_pct": 52
+  },
+  "alchemist": {
+   "total": 755,
+   "online": 124,
+   "plans": {
+    "alchemist": {
+     "all": 325,
+     "online": 122,
+     "share": 43
+    },
+    "alchemist_battle": {
+     "all": 226,
+     "online": 2,
+     "share": 30
+    },
+    "alchemist_potion": {
+     "all": 204,
+     "online": 0,
+     "share": 27
+    }
+   },
+   "lv40": 230,
+   "top_stat_spread": [
+    "S/V/D",
+    158
+   ],
+   "same_stat_spread_pct": 69,
+   "same_skill_tree_pct": 39
+  },
+  "assassin": {
+   "total": 310,
+   "online": 52,
+   "plans": {
+    "assassin": {
+     "all": 127,
+     "online": 39,
+     "share": 41
+    },
+    "assassin_dagger": {
+     "all": 92,
+     "online": 8,
+     "share": 30
+    },
+    "assassin_sonic": {
+     "all": 91,
+     "online": 5,
+     "share": 29
+    }
+   },
+   "lv40": 119,
+   "top_stat_spread": [
+    "A/S/V",
+    79
+   ],
+   "same_stat_spread_pct": 66,
+   "same_skill_tree_pct": 46
+  },
+  "rogue": {
+   "total": 333,
+   "online": 64,
+   "plans": {
+    "rogue": {
+     "all": 152,
+     "online": 52,
+     "share": 46
+    },
+    "rogue_bow": {
+     "all": 88,
+     "online": 2,
+     "share": 26
+    },
+    "rogue_strip": {
+     "all": 93,
+     "online": 10,
+     "share": 28
+    }
+   },
+   "lv40": 140,
+   "top_stat_spread": [
+    "A/S/D",
+    118
+   ],
+   "same_stat_spread_pct": 84,
+   "same_skill_tree_pct": 31
+  }
+ },
+ "moves": [
+  {
+   "name": "Pudding.bunny",
+   "account": "lg1854",
+   "char_id": 171854,
+   "role": "main",
+   "level": 10,
+   "cls": "Mage",
+   "online": true,
+   "old": "wizard",
+   "new": "wizard_fire"
+  },
+  {
+   "name": "Nekoheart",
+   "account": "lg1912",
+   "char_id": 171912,
+   "role": "main",
+   "level": 11,
+   "cls": "Mage",
+   "online": true,
+   "old": "wizard",
+   "new": "wizard_fire"
+  },
+  {
+   "name": "Darksmith9",
+   "account": "lg0030",
+   "char_id": 170030,
+   "role": "main",
+   "level": 19,
+   "cls": "Mage",
+   "online": true,
+   "old": "wizard",
+   "new": "wizard_fire"
+  },
+  {
+   "name": "xXNovaboyXx",
+   "account": "lg1434",
+   "char_id": 171434,
+   "role": "main",
+   "level": 29,
+   "cls": "Mage",
+   "online": true,
+   "old": "wizard",
+   "new": "wizard_fire"
+  },
+  {
+   "name": "Thorn queen27",
+   "account": "lg0990",
+   "char_id": 170990,
+   "role": "main",
+   "level": 33,
+   "cls": "Mage",
+   "online": true,
+   "old": "wizard",
+   "new": "wizard_fire"
+  },
+  {
+   "name": "Ghost z",
+   "account": "lg0915",
+   "char_id": 170915,
+   "role": "main",
+   "level": 35,
+   "cls": "Mage",
+   "online": true,
+   "old": "wizard",
+   "new": "wizard_fire"
+  },
+  {
+   "name": "Tacomonk",
+   "account": "lg2554",
+   "char_id": 172554,
+   "role": "main",
+   "level": 4,
+   "cls": "Novice",
+   "online": false,
+   "old": "sage",
+   "new": "sage_hindsight"
+  },
+  {
+   "name": "echo.queen",
+   "account": "lg0050",
+   "char_id": 170050,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "xXShadowroseXx54",
+   "account": "lg0144",
+   "char_id": 170144,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "TheSunlord",
+   "account": "lg0242",
+   "char_id": 170242,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Ryu.girl",
+   "account": "lg0487",
+   "char_id": 170487,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "TheFrostz",
+   "account": "lg0723",
+   "char_id": 170723,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Lilykun",
+   "account": "lg0754",
+   "char_id": 170754,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "thezenx",
+   "account": "lg0797",
+   "char_id": 170797,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "wolf_storm",
+   "account": "lg0840",
+   "char_id": 170840,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "ryu_kun",
+   "account": "lg0876",
+   "char_id": 170876,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "TheZensage9",
+   "account": "lg0930",
+   "char_id": 170930,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "crimsondancer",
+   "account": "lg1118",
+   "char_id": 171118,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Kimchi leaf",
+   "account": "lg1337",
+   "char_id": 171337,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Pixel_song93",
+   "account": "lg1395",
+   "char_id": 171395,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Wolfdancer49",
+   "account": "lg1538",
+   "char_id": 171538,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "xXSun99Xx",
+   "account": "lg1552",
+   "char_id": 171552,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Moon_blade",
+   "account": "lg1624",
+   "char_id": 171624,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Rinclaw",
+   "account": "lg1658",
+   "char_id": 171658,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "LilWolfdancer",
+   "account": "lg1846",
+   "char_id": 171846,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "LilOnifang",
+   "account": "lg1940",
+   "char_id": 171940,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Iron_boy86",
+   "account": "lg1967",
+   "char_id": 171967,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "TheHanalord11",
+   "account": "lg2040",
+   "char_id": 172040,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Sun_knight77",
+   "account": "lg2213",
+   "char_id": 172213,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Vex mage",
+   "account": "lg2269",
+   "char_id": 172269,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "xxmochixxx",
+   "account": "lg2300",
+   "char_id": 172300,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Zero_hunter",
+   "account": "lg2350",
+   "char_id": 172350,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "LilRavendragon",
+   "account": "lg2479",
+   "char_id": 172479,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Wolf2k",
+   "account": "lg2644",
+   "char_id": 172644,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "TheWolfsage",
+   "account": "lg2671",
+   "char_id": 172671,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "luna.song",
+   "account": "lg2750",
+   "char_id": 172750,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Blaze_2k",
+   "account": "lg2811",
+   "char_id": 172811,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "TheEchofox",
+   "account": "lg2984",
+   "char_id": 172984,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "LilMochiheart",
+   "account": "lg3032",
+   "char_id": 173032,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "neko fox",
+   "account": "lg3078",
+   "char_id": 173078,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "xxmoonsoulxx",
+   "account": "lg3106",
+   "char_id": 173106,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Oni_cat",
+   "account": "lg3118",
+   "char_id": 173118,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Echo song",
+   "account": "lg3130",
+   "char_id": 173130,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Sun.07",
+   "account": "lg3154",
+   "char_id": 173154,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Thorn_shot83",
+   "account": "lg3198",
+   "char_id": 173198,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "xXStormlordXx",
+   "account": "lg3228",
+   "char_id": 173228,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "hunter_agi",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Wolfsmith",
+   "account": "lg2541",
+   "char_id": 172541,
+   "role": "main",
+   "level": 11,
+   "cls": "Archer",
+   "online": false,
+   "old": "hunter",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "TheStormx",
+   "account": "lg0164",
+   "char_id": 170164,
+   "role": "main",
+   "level": 17,
+   "cls": "Archer",
+   "online": true,
+   "old": "hunter",
+   "new": "hunter_trap"
+  },
+  {
+   "name": "Ironsmith",
+   "account": "lg0003",
+   "char_id": 170003,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "LilZenstorm",
+   "account": "lg0028",
+   "char_id": 170028,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "LilYukichan",
+   "account": "lg0093",
+   "char_id": 170093,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "Holysenpai",
+   "account": "lg0482",
+   "char_id": 170482,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "Holyheart",
+   "account": "lg0542",
+   "char_id": 170542,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "Neko_wing",
+   "account": "lg0652",
+   "char_id": 170652,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "Kai2k",
+   "account": "lg0677",
+   "char_id": 170677,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "kaiheart",
+   "account": "lg0704",
+   "char_id": 170704,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "Sky_heart",
+   "account": "lg0717",
+   "char_id": 170717,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "monk_asura",
+   "new": "monk_occult"
+  },
+  {
+   "name": "AshVend",
+   "account": "lg3256",
+   "char_id": 183256,
+   "role": "vendor",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "blacksmith",
+   "new": "blacksmith_mace"
+  },
+  {
+   "name": "TheRavenboy",
+   "account": "lg1284",
+   "char_id": 171284,
+   "role": "main",
+   "level": 7,
+   "cls": "Merchant",
+   "online": false,
+   "old": "alchemist",
+   "new": "alchemist_battle"
+  },
+  {
+   "name": "Zero Trade",
+   "account": "lg1351",
+   "char_id": 181351,
+   "role": "vendor",
+   "level": 7,
+   "cls": "Merchant",
+   "online": false,
+   "old": "alchemist",
+   "new": "alchemist_battle"
+  },
+  {
+   "name": "Frost.x",
+   "account": "lg0669",
+   "char_id": 170669,
+   "role": "main",
+   "level": 17,
+   "cls": "Thief",
+   "online": true,
+   "old": "assassin",
+   "new": "assassin_dagger"
+  },
+  {
+   "name": "LilSkybunny24",
+   "account": "lg0087",
+   "char_id": 170087,
+   "role": "main",
+   "level": 19,
+   "cls": "Thief",
+   "online": true,
+   "old": "assassin",
+   "new": "assassin_sonic"
+  },
+  {
+   "name": "Blazecat",
+   "account": "lg1860",
+   "char_id": 171860,
+   "role": "main",
+   "level": 20,
+   "cls": "Thief",
+   "online": true,
+   "old": "assassin",
+   "new": "assassin_dagger"
+  },
+  {
+   "name": "Holy_dancer",
+   "account": "lg0274",
+   "char_id": 170274,
+   "role": "main",
+   "level": 28,
+   "cls": "Thief",
+   "online": true,
+   "old": "assassin",
+   "new": "assassin_sonic"
+  },
+  {
+   "name": "crimsonbunny",
+   "account": "lg0025",
+   "char_id": 170025,
+   "role": "main",
+   "level": 30,
+   "cls": "Thief",
+   "online": true,
+   "old": "assassin",
+   "new": "assassin_dagger"
+  },
+  {
+   "name": "Sky.dancer",
+   "account": "lg2392",
+   "char_id": 172392,
+   "role": "main",
+   "level": 33,
+   "cls": "Thief",
+   "online": true,
+   "old": "assassin",
+   "new": "assassin_sonic"
+  },
+  {
+   "name": "TheVexmonk56",
+   "account": "lg0010",
+   "char_id": 170010,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Ashhunter74",
+   "account": "lg0315",
+   "char_id": 170315,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheKaigirl",
+   "account": "lg0520",
+   "char_id": 170520,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Holy.sage",
+   "account": "lg0783",
+   "char_id": 170783,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "rin fox",
+   "account": "lg0871",
+   "char_id": 170871,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheSkysong",
+   "account": "lg0900",
+   "char_id": 170900,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Moon.dragon",
+   "account": "lg1051",
+   "char_id": 171051,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheStormcat",
+   "account": "lg1125",
+   "char_id": 171125,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xxsilentsagexx",
+   "account": "lg1152",
+   "char_id": 171152,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheYukismith44",
+   "account": "lg1320",
+   "char_id": 171320,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xXDarkqueenXx",
+   "account": "lg1332",
+   "char_id": 171332,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Nekoblade",
+   "account": "lg1522",
+   "char_id": 171522,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "LilNekofang",
+   "account": "lg1654",
+   "char_id": 171654,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "lilsilverx",
+   "account": "lg1756",
+   "char_id": 171756,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Blaze fox",
+   "account": "lg1925",
+   "char_id": 171925,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Kimchirogue",
+   "account": "lg1971",
+   "char_id": 171971,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "kimchi.fox",
+   "account": "lg2347",
+   "char_id": 172347,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xXRaven2kXx",
+   "account": "lg2384",
+   "char_id": 172384,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xXLuna99Xx",
+   "account": "lg2536",
+   "char_id": 172536,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "ryu bunny",
+   "account": "lg2538",
+   "char_id": 172538,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheFrostrogue",
+   "account": "lg2650",
+   "char_id": 172650,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "silver_knight",
+   "account": "lg2981",
+   "char_id": 172981,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xXOni07Xx",
+   "account": "lg3092",
+   "char_id": 173092,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xxvex07xx5",
+   "account": "lg3159",
+   "char_id": 173159,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheEchosage",
+   "account": "lg3433",
+   "char_id": 173433,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Silent_song",
+   "account": "lg3482",
+   "char_id": 173482,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "LilEcholeaf12",
+   "account": "lg3591",
+   "char_id": 173591,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "LilStormblade",
+   "account": "lg3682",
+   "char_id": 173682,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Novaleaf73",
+   "account": "lg3733",
+   "char_id": 173733,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "ironcat54",
+   "account": "lg3799",
+   "char_id": 173799,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "nova bunny",
+   "account": "lg3821",
+   "char_id": 173821,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheLunahunter",
+   "account": "lg3841",
+   "char_id": 173841,
+   "role": "main",
+   "level": 1,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Zensoul",
+   "account": "lg3263",
+   "char_id": 173263,
+   "role": "main",
+   "level": 2,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Kimchi z71",
+   "account": "lg3665",
+   "char_id": 173665,
+   "role": "main",
+   "level": 2,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "LilMintfang3",
+   "account": "lg3852",
+   "char_id": 173852,
+   "role": "main",
+   "level": 2,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Mochi 2k",
+   "account": "lg1710",
+   "char_id": 171710,
+   "role": "main",
+   "level": 3,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "storm soul",
+   "account": "lg1088",
+   "char_id": 171088,
+   "role": "main",
+   "level": 4,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheTacomonk",
+   "account": "lg2991",
+   "char_id": 172991,
+   "role": "main",
+   "level": 4,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheKaisong",
+   "account": "lg0615",
+   "char_id": 170615,
+   "role": "main",
+   "level": 6,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Vex_rogue",
+   "account": "lg3213",
+   "char_id": 173213,
+   "role": "main",
+   "level": 6,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Oni rogue",
+   "account": "lg3430",
+   "char_id": 173430,
+   "role": "main",
+   "level": 6,
+   "cls": "Novice",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "lilkaileaf61",
+   "account": "lg0766",
+   "char_id": 170766,
+   "role": "main",
+   "level": 7,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Yuki.hunter",
+   "account": "lg1158",
+   "char_id": 171158,
+   "role": "main",
+   "level": 7,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Tacowing72",
+   "account": "lg0070",
+   "char_id": 170070,
+   "role": "main",
+   "level": 8,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "lilryurose",
+   "account": "lg1702",
+   "char_id": 171702,
+   "role": "main",
+   "level": 8,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Neko rose74",
+   "account": "lg1874",
+   "char_id": 171874,
+   "role": "main",
+   "level": 8,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheSkykun",
+   "account": "lg2251",
+   "char_id": 172251,
+   "role": "main",
+   "level": 8,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "luna.2k",
+   "account": "lg0791",
+   "char_id": 170791,
+   "role": "main",
+   "level": 9,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Ravenblade",
+   "account": "lg0939",
+   "char_id": 170939,
+   "role": "main",
+   "level": 9,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Ironrose",
+   "account": "lg1325",
+   "char_id": 171325,
+   "role": "main",
+   "level": 9,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "lilfrostrose",
+   "account": "lg2198",
+   "char_id": 172198,
+   "role": "main",
+   "level": 9,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Crimson_claw4",
+   "account": "lg1240",
+   "char_id": 171240,
+   "role": "main",
+   "level": 10,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Ashchan",
+   "account": "lg1433",
+   "char_id": 171433,
+   "role": "main",
+   "level": 10,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Echo.shot",
+   "account": "lg1717",
+   "char_id": 171717,
+   "role": "main",
+   "level": 10,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Ash 99",
+   "account": "lg3031",
+   "char_id": 173031,
+   "role": "main",
+   "level": 10,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Frost_storm",
+   "account": "lg3847",
+   "char_id": 173847,
+   "role": "main",
+   "level": 10,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheMoonfang",
+   "account": "lg2968",
+   "char_id": 172968,
+   "role": "main",
+   "level": 11,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Nova kun",
+   "account": "lg0909",
+   "char_id": 170909,
+   "role": "main",
+   "level": 12,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Pixel_girl",
+   "account": "lg1565",
+   "char_id": 171565,
+   "role": "main",
+   "level": 12,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheMintx",
+   "account": "lg1714",
+   "char_id": 171714,
+   "role": "main",
+   "level": 12,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xXPixellordXx",
+   "account": "lg0940",
+   "char_id": 170940,
+   "role": "main",
+   "level": 17,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xxkaiqueenxx",
+   "account": "lg1379",
+   "char_id": 171379,
+   "role": "main",
+   "level": 19,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheYukihunter",
+   "account": "lg3610",
+   "char_id": 173610,
+   "role": "main",
+   "level": 21,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "LilDark99",
+   "account": "lg0862",
+   "char_id": 170862,
+   "role": "main",
+   "level": 23,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "ThePixelcat72",
+   "account": "lg1892",
+   "char_id": 171892,
+   "role": "main",
+   "level": 23,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "zeroboy1",
+   "account": "lg3328",
+   "char_id": 173328,
+   "role": "main",
+   "level": 24,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xXNekofangXx",
+   "account": "lg2756",
+   "char_id": 172756,
+   "role": "main",
+   "level": 25,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Wolfchan",
+   "account": "lg2939",
+   "char_id": 172939,
+   "role": "main",
+   "level": 40,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Oni.knight",
+   "account": "lg3492",
+   "char_id": 173492,
+   "role": "main",
+   "level": 40,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Irondragon",
+   "account": "lg0631",
+   "char_id": 170631,
+   "role": "main",
+   "level": 41,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Ashboy",
+   "account": "lg2652",
+   "char_id": 172652,
+   "role": "main",
+   "level": 41,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "LilIron99",
+   "account": "lg3382",
+   "char_id": 173382,
+   "role": "main",
+   "level": 41,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Kirarogue",
+   "account": "lg0938",
+   "char_id": 170938,
+   "role": "main",
+   "level": 42,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheRavenclaw",
+   "account": "lg1998",
+   "char_id": 171998,
+   "role": "main",
+   "level": 42,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Sun_rose",
+   "account": "lg3652",
+   "char_id": 173652,
+   "role": "main",
+   "level": 42,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "lilpuddingwing",
+   "account": "lg2489",
+   "char_id": 172489,
+   "role": "main",
+   "level": 43,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "sunboy",
+   "account": "lg2835",
+   "char_id": 172835,
+   "role": "main",
+   "level": 43,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Skygirl",
+   "account": "lg2945",
+   "char_id": 172945,
+   "role": "main",
+   "level": 43,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Ghost knight26",
+   "account": "lg0133",
+   "char_id": 170133,
+   "role": "main",
+   "level": 44,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Echo sage65",
+   "account": "lg0314",
+   "char_id": 170314,
+   "role": "main",
+   "level": 44,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xxsilverbunnyxx",
+   "account": "lg3887",
+   "char_id": 173887,
+   "role": "main",
+   "level": 44,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "LilKimchidancer",
+   "account": "lg1322",
+   "char_id": 171322,
+   "role": "main",
+   "level": 45,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheEchoheart53",
+   "account": "lg2073",
+   "char_id": 172073,
+   "role": "main",
+   "level": 45,
+   "cls": "Thief",
+   "online": false,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xxkimchisagexx",
+   "account": "lg0830",
+   "char_id": 170830,
+   "role": "main",
+   "level": 14,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Thornwing",
+   "account": "lg0223",
+   "char_id": 170223,
+   "role": "main",
+   "level": 15,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Crimsonheart",
+   "account": "lg0420",
+   "char_id": 170420,
+   "role": "main",
+   "level": 19,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "puddingqueen",
+   "account": "lg0538",
+   "char_id": 170538,
+   "role": "main",
+   "level": 19,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "Zerosong",
+   "account": "lg1657",
+   "char_id": 171657,
+   "role": "main",
+   "level": 21,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "raven dragon",
+   "account": "lg1519",
+   "char_id": 171519,
+   "role": "main",
+   "level": 22,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "TheLily07",
+   "account": "lg1699",
+   "char_id": 171699,
+   "role": "main",
+   "level": 40,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  },
+  {
+   "name": "xXLunagirlXx12",
+   "account": "lg0430",
+   "char_id": 170430,
+   "role": "main",
+   "level": 41,
+   "cls": "Thief",
+   "online": true,
+   "old": "rogue",
+   "new": "rogue_strip"
+  }
+ ],
+ "reverted": [
+  170256,
+  170788,
+  171567,
+  172442,
+  172571
+ ]
+}

@@ -1,0 +1,190 @@
+﻿# Local rAthena (packetver 20210107 = kRO RagexeRE 2021-01-07a client, Renewal) + OpenKore
+#   Start:   docker compose up -d --build
+#   Logs:    docker compose logs -f rathena
+#   Bot:     docker attach ro-openkore   (detach: Ctrl-P Ctrl-Q)
+name: ro
+
+services:
+  db:
+    image: mariadb:11.4
+    container_name: ro-db
+    environment:
+      MARIADB_ROOT_PASSWORD: ragnarok
+      MARIADB_DATABASE: ragnarok
+      MARIADB_USER: ragnarok
+      MARIADB_PASSWORD: ragnarok
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3306:3306"   # optional: inspect DB from host
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  rathena:
+    build:
+      context: ./rathena
+      args:
+        PACKETVER: "20210107"   # kRO RagexeRE 2021-01-07a = RagexeRE.exe from Gravity's full client Ragnarok_210607.zip
+        FORCE_MAIN: "0"
+    image: ro-rathena:20210107re
+    container_name: ro-rathena
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./rathena/conf/import:/rathena/conf/import
+      - ./rathena/sql/seed.sql:/seed.sql:ro
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro   # cheaper Kafra teleports
+      - ./rathena/conf/channels.conf:/rathena/conf/channels.conf:ro   # #global/#trade autojoin (server-wide chat)
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro   # server cap at transcendent classes: unloads 3rd/4th job NPCs
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro   # item price overrides (Butterfly Wing 300z, owner 2026-11-14)
+    ports:
+      - "127.0.0.1:6900:6900"   # login (localhost only)
+      - "127.0.0.1:6121:6121"   # char
+      - "127.0.0.1:5121:5121"   # map
+      - "127.0.0.1:8090:8090"   # Legion bot API (legion shares this network namespace)
+      - "127.0.0.1:6901:6901"   # OpenKore X-Kore 2 for Ayla: a game client connects here to watch her play
+    tty: true
+    restart: unless-stopped
+
+  agency:
+    # stand-in for kRO's login agency, used by the 2021 human client (see agency/agency.py)
+    image: python:3.12-alpine
+    container_name: ro-agency
+    command: ["python", "-u", "/agency.py"]
+    volumes:
+      - ./agency/agency.py:/agency.py:ro
+    ports:
+      - "127.0.0.1:6953:6953"
+    restart: unless-stopped
+
+  openkore:
+    build: ./openkore
+    image: ro-openkore:latest
+    container_name: ro-openkore
+    profiles: ["legacy"]   # old seed test bot "AIBot" (bot1): switched off by the owner 2026-11-14 ("fine switch it off")
+    depends_on:
+      - rathena
+    # share rathena's network namespace so 127.0.0.1:6900/6121/5121 just work
+    network_mode: "service:rathena"
+    environment:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    volumes:
+      - ./openkore/control:/openkore/control
+      - ./openkore/logs:/openkore/logs
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  openkore-ayla:
+    # OpenKore playing the human account's character Ayla (account player, slot 2). X-Kore 2: a real game client
+    # can connect to 127.0.0.1:6901 to watch (and the play-test agent steers it via control/commands.txt).
+    image: ro-openkore:latest
+    container_name: ro-openkore-ayla
+    depends_on:
+      - rathena
+    network_mode: "service:rathena"
+    environment:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    volumes:
+      - ./openkore-ayla/control:/openkore/control
+      - ./openkore-ayla/logs:/openkore/logs
+      - ./openkore-ayla/plugins/cmdfile:/openkore/plugins/cmdfile
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  openkore-qa:
+    # travel/services QA (owner 2026-11-14: "Use a GM account with unlimited money to move around maps and use all
+    # service"): account qatest (id 2000002, group 99), char Trailmark. Same image/code as Ayla; on start it overlays
+    # the RE field files (openkore/fields-re) and the QA table copies (openkore-qa/tables: portals.txt, npcs.txt ...).
+    # Profile "qa": never started by a plain `up`. Start: docker compose --profile qa up -d --no-deps openkore-qa
+    # Steer it by writing OpenKore commands to openkore-qa/control/commands.txt (plugin cmdfile).
+    image: ro-openkore:latest
+    container_name: ro-openkore-qa
+    profiles: ["qa"]
+    network_mode: "service:rathena"
+    environment:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    volumes:
+      - ./openkore-qa/control:/openkore/control
+      - ./openkore-qa/logs:/openkore/logs
+      - ./openkore-qa/plugins/qa:/openkore/plugins/qa
+      - ./openkore-qa/tables:/qa-tables:ro
+      - ./openkore/fields-re:/qa-fields:ro
+    entrypoint: ["/usr/bin/tini", "--", "sh", "-c", "cp /qa-fields/*.fld2.gz /openkore/fields/ 2>/dev/null; for f in /qa-fields/*.fld2.gz; do b=$$(basename $$f .fld2.gz); rm -f /openkore/fields/$$b.dist /openkore/fields/$$b.weight; done; cp /qa-tables/*.txt /openkore/tables/ 2>/dev/null; exec /entrypoint.sh"]
+    stdin_open: true
+    tty: true
+    restart: "no"
+
+  legion:
+    # high-volume bot engine (see legion/README.md). Seed once:  docker compose run --rm legion seed -personas 1000
+    build: ./legion
+    image: ro-legion:latest
+    container_name: ro-legion
+    depends_on:
+      - rathena
+    network_mode: "service:rathena"
+    volumes:
+      - ./legion/data:/data
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro   # Legion reads the custom shops (legion_shops.txt)
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro   # item price overrides (data.go loadItemOverrides)
+      - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro   # drop rates (droprate.go)
+      - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
+    # profiles log in/out on their own daily schedules; at most LEGION_MAX_ONLINE are online at once
+    # the owner's core test party runs in legion-core (below), so deploying this service never logs it out
+    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,Silent rogue,vex_x18}"]
+    restart: unless-stopped
+
+  legion-core:
+    # the bots of Ayla's core test party (pinned via legion/data/human-parties.json) in their own Legion instance, so
+    # deploying the main one doesn't log them out. Redeploy only when party-relevant code changes:
+    #   tools/deploy/depcore.sh  (= docker compose build legion && docker compose up -d --no-deps legion-core)
+    # Never a plain `up` without --no-deps: it recreates rathena when its config changed and strands Ayla.
+    # API on 127.0.0.1:8091 inside the rathena namespace; the main instance merges/forwards it on :8090.
+    # LEGION_CORE must list the same names here and in legion's -exclude (a bot run by both = double logins).
+    image: ro-legion:latest
+    container_name: ro-legion-core
+    depends_on:
+      - rathena
+    network_mode: "service:rathena"
+    volumes:
+      - ./legion/data:/data
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
+      - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro   # drop rates (droprate.go)
+      - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
+    command: ["run", "-only", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,Silent rogue,vex_x18}", "-api", "127.0.0.1:8091", "-pprof", "127.0.0.1:6061", "-stagger", "2s"]
+    restart: unless-stopped
+
+  mastermind:
+    # LLM strategy layer: 10 guild leaders + 2 independent-player minds (see mastermind/mastermind.py).
+    # Put ANTHROPIC_API_KEY=... in server/.env to use Claude; without it a rule-based stand-in runs.
+    # Optional fallback only (docker compose --profile fallback up -d mastermind). The intended setup is
+    # agent-driven: Claude Code / Copilot sub-agents run the masterminds via tools/legionctl.py (see AGENTS.md).
+    profiles: ["fallback"]
+    build: ./mastermind
+    image: ro-mastermind:latest
+    container_name: ro-mastermind
+    depends_on:
+      - legion
+    network_mode: "service:rathena"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      MASTERMIND_MODEL: ${MASTERMIND_MODEL:-claude-haiku-5-5}
+      MASTERMIND_CYCLE_SEC: ${MASTERMIND_CYCLE_SEC:-300}
+    volumes:
+      - ./legion/data:/data:ro
+      - ./mastermind/state:/state
+    restart: unless-stopped
+
+volumes:
+  dbdata:

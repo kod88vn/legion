@@ -1,0 +1,50 @@
+# Git tracks the AI harness; runtime state, logs, backups and big media stay on disk only.
+
+# backups and scratch
+backups/
+*.bak
+*.bak[0-9]*
+*.bak-*
+*.before-*
+__pycache__/
+*.pyc
+tools/.state/
+
+# logs and container state
+openkore/logs/
+openkore-ayla/logs/
+openkore-qa/logs/
+mastermind/state/
+*.log
+
+# engine runtime state (legion/data): written by the running engine
+legion/data/backup-*/
+legion/data/memory/
+legion/data/parties*.json
+legion/data/friends*.json
+legion/data/minds.json
+legion/data/levels.json
+legion/data/char_levels.json
+legion/data/resets_pending*.json
+legion/data/markdowns*.json
+legion/data/human-*.json
+legion/data/party-turns.json
+legion/data/guild_roster.json
+legion/data/guild_leaders.json
+legion/data/alchemists.json
+legion/data/brewers.json
+legion/data/shoptitles.json
+legion/data/trace.txt
+legion/data/goroutines-*.txt
+
+# compiled binaries
+legion/legion
+legion/legion.exe
+*.exe
+
+# demo screenshots (multi-MB)
+/*.png
+
+# watch-view screenshots and temp files
+tools/rogui/shots/
+tools/rogui/tmp/

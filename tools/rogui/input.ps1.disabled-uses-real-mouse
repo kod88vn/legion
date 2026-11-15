@@ -1,0 +1,61 @@
+# Drive the RO client window. Coordinates are relative to the window's top-left, in physical pixels.
+#   input.ps1 click X Y [right]     input.ps1 key ENTER|ESC|TAB|...|text:hello     input.ps1 move X Y
+#   input.ps1 drag X1 Y1 X2 Y2
+param([string]$Action, [string]$A, [string]$B, [string]$C, [string]$D)
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public class RoIn {
+  [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern void mouse_event(uint f, int dx, int dy, uint d, IntPtr e);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint f, IntPtr e);
+  [DllImport("user32.dll")] public static extern short VkKeyScan(char c);
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+}
+"@
+[RoIn]::SetProcessDPIAware() | Out-Null
+$p = Get-Process RO-AILab -ErrorAction SilentlyContinue | ? { $_.MainWindowHandle -ne 0 } | Select -First 1
+if (!$p) { "client not running"; exit 1 }
+$r = New-Object RoIn+RECT; [RoIn]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null
+[RoIn]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
+Start-Sleep -Milliseconds 120
+function Press([byte]$vk, [bool]$shift = $false) {
+  if ($shift) { [RoIn]::keybd_event(0x10, 0, 0, [IntPtr]::Zero) }
+  [RoIn]::keybd_event($vk, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 40
+  [RoIn]::keybd_event($vk, 0, 2, [IntPtr]::Zero)
+  if ($shift) { [RoIn]::keybd_event(0x10, 0, 2, [IntPtr]::Zero) }
+  Start-Sleep -Milliseconds 60
+}
+switch ($Action) {
+  'click' {
+    [RoIn]::SetCursorPos($r.L + [int]$A, $r.T + [int]$B) | Out-Null; Start-Sleep -Milliseconds 150
+    if ($C -eq 'right') { $dn = 8; $up = 16 } else { $dn = 2; $up = 4 }
+    [RoIn]::mouse_event($dn, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 60
+    [RoIn]::mouse_event($up, 0, 0, 0, [IntPtr]::Zero)
+    if ($C -eq 'double') { Start-Sleep -Milliseconds 80; [RoIn]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); [RoIn]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero) }
+  }
+  'move' { [RoIn]::SetCursorPos($r.L + [int]$A, $r.T + [int]$B) | Out-Null }
+  'drag' {
+    [RoIn]::SetCursorPos($r.L + [int]$A, $r.T + [int]$B) | Out-Null; Start-Sleep -Milliseconds 100
+    [RoIn]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 100
+    for ($i = 1; $i -le 10; $i++) {
+      $x = [int]$A + ([int]$C - [int]$A) * $i / 10; $y = [int]$B + ([int]$D - [int]$B) * $i / 10
+      [RoIn]::SetCursorPos($r.L + $x, $r.T + $y) | Out-Null; Start-Sleep -Milliseconds 30
+    }
+    [RoIn]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero)
+  }
+  'key' {
+    if ($A.StartsWith('text:')) {
+      foreach ($ch in $A.Substring(5).ToCharArray()) { $v = [RoIn]::VkKeyScan($ch); Press ([byte]($v -band 0xff)) (($v -band 0x100) -ne 0) }
+    } else {
+      $map = @{ ENTER = 0x0D; ESC = 0x1B; TAB = 0x09; SPACE = 0x20; BACK = 0x08; UP = 0x26; DOWN = 0x28; LEFT = 0x25; RIGHT = 0x27; INSERT = 0x2D
+                F1 = 0x70; F2 = 0x71; F3 = 0x72; F4 = 0x73; F5 = 0x74; F6 = 0x75; F7 = 0x76; F8 = 0x77; F9 = 0x78; F10 = 0x79; F11 = 0x7A; F12 = 0x7B }
+      if ($A -like 'ALT+*') { [RoIn]::keybd_event(0x12, 0, 0, [IntPtr]::Zero); $k = $A.Substring(4); $v = [RoIn]::VkKeyScan($k.ToLower()[0]); Press ([byte]($v -band 0xff)); [RoIn]::keybd_event(0x12, 0, 2, [IntPtr]::Zero) }
+      elseif ($A -like 'CTRL+*') { [RoIn]::keybd_event(0x11, 0, 0, [IntPtr]::Zero); $k = $A.Substring(5); $v = [RoIn]::VkKeyScan($k.ToLower()[0]); Press ([byte]($v -band 0xff)); [RoIn]::keybd_event(0x11, 0, 2, [IntPtr]::Zero) }
+      else { Press ([byte]$map[$A]) }
+    }
+  }
+}
+"ok window $($r.L),$($r.T) $($r.R - $r.L)x$($r.B - $r.T)"
