@@ -2980,6 +2980,40 @@ sub pack_tick {
 		$act = 'ok';
 		if (($pk{aheadSaid} || '') ne $prRow->[2]) { $pk{aheadSaid} = $prRow->[2]; pk_say("$prRow->[0] is in $prRow->[2] already, going in, follow me"); message "[partylead] AY22: $prRow->[0] is ahead on $prRow->[2] - joining it\n", 'system' }
 	}
+	# before a map change (her route's next map is another map) she collects a member still on this map far back
+	# (bug b1794746024920-544: Silversage13 fighting 61 cells back when she took the party pay_dun02 -> pay_dun03):
+	# 10 s for it to come, then she walks back to it (within 8 cells, 90 s at most) - the portal guards stay as they are
+	my $nmS = $nm ne '' ? $nm : ($pk{strag} ? ($pk{lastNm} || '') : ''); # a wait clears the route: the last next map
+	if (($act eq 'ok' || $pk{strag}) && $nmS ne '' && $nmS ne $here) {
+		my $s0 = $pk{strag};
+		my ($st) = $s0 ? grep({ $_->[0] eq $s0->{name} } @fr) : ();
+		if ($s0 && (!$st || $st->[2] ne $here || !defined $st->[3] || $st->[3] <= 8 || friend_dead($st->[0]) || time - $s0->{at} > 100)) {
+			message "[partylead] collected $s0->{name} before leaving $here\n", 'system' if $st && defined $st->[3] && $st->[3] <= 8;
+			$pk{strag} = undef; $s0 = undef; $st = undef;
+		}
+		if (!$s0) {
+			my $pp = route_portal($here);
+			my ($far) = sort { $b->[3] <=> $a->[3] } grep { $_->[2] eq $here && defined $_->[3] && $_->[3] > 20 && !friend_dead($_->[0]) } @fr;
+			if ($far && (!$pp || blockDistance(my_pos(), $pp) <= 15)) {
+				$pk{strag} = $s0 = {name => $far->[0], at => time};
+				$st = $far;
+				pk_say("$far->[0] we go to $nmS, come here first");
+			}
+		}
+		if ($s0 && $st) {
+			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
+			if (time - $s0->{at} < 10) { # 10 s for it to come
+				AI::clear('route', 'move') if AI::inQueue('route', 'move');
+			} elsif ($st->[4] && time - ($s0->{routeAt} || 0) > 5) {
+				$s0->{routeAt} = time;
+				AI::clear('route', 'move');
+				safe_route($here, $st->[4]{x}, $st->[4]{y}, distFromGoal => 6, maxRouteTime => 8, noMapRoute => 1, attackOnRoute => 1);
+				message "[partylead] going back for $st->[0] ($st->[3] cells) before leaving $here\n", 'system';
+			}
+			@pk{qw(act an seenAt)} = ('goto', $st, time);
+			return 1;
+		}
+	}
 	# (1) before a portal into a dungeon / a dangerous map she stops on the near side until the priest is within 6
 	if (!$prAhead && $act eq 'ok' && $nm ne '' && $nm ne $here && (is_dungeon($nm) || cross_danger($nm)) && !(defined $prD && $prD <= 6)) {
 		my $pp = route_portal($here);
