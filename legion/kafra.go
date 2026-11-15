@@ -636,7 +636,7 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 			n10++
 		}
 	}
-	if !b.kafraNoHard && (n10 >= 3 && !kafraChainHop(l, dest, goal, n10) || dest != "" && now.Sub(l.At) < 10*time.Minute && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() &&
+	if !b.kafraNoHard && (n10 >= 3 && !b.kafraChainOK(l, dest, goal, n10) || dest != "" && now.Sub(l.At) < 10*time.Minute && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() &&
 		!(l.ForTrip && b.trip == nil)) { // (the one way home after a town run stays free)
 		// when it clears (travel waits in town for it rather than walking a deadly way, see kafraWaitInTown)
 		until := l.At.Add(10 * time.Minute)

@@ -103,3 +103,39 @@ func TestKafraHardUntil(t *testing.T) {
 		t.Fatalf("hard limit clears at %v, want ~%v (oldest of the 3 + 10 min)", b.kafraHardUntil, want)
 	}
 }
+
+// QA 2026-11-15 (core): Zendancer84 waited in aldebaran for the Kafra toward payon (Ayla there): its 3 hops in the
+// last 10 min chased Ayla's earlier towns (other goals), so the same-goal chain failed and the hard cap held the
+// aldebaran -> geffen/izlude -> payon chain. A member on its leader's leg chains on; others still hit the cap.
+func TestKafraChainFollowsMovedLeader(t *testing.T) {
+	now := time.Now()
+	b := &Bot{P: &Persona{}, MapName: "aldebaran", Goal: Goal{Map: "payon", Mode: "party", Set: "human"}}
+	b.kafraLast = kafraHop{At: now.Add(-2 * time.Minute), From: "geffen", To: "aldebaran", Goal: "aldebaran"}
+	b.kafraHops = []time.Time{now.Add(-8 * time.Minute), now.Add(-5 * time.Minute), b.kafraLast.At}
+	parties.Lock()
+	parties.ofBot[b] = &Party{Human: "Ayla"}
+	parties.Unlock()
+	defer func() { parties.Lock(); delete(parties.ofBot, b); parties.Unlock() }()
+	if !healerStickOn() {
+		t.Skip("healer stick off")
+	}
+	if !b.kafraHold("geffen", "payon", now) {
+		t.Fatal("straight back still held")
+	}
+	if b.kafraHold("izlude", "payon", now) {
+		t.Fatal("aldebaran -> izlude toward Ayla in payon must not be held by the 3-in-10-min cap")
+	}
+	if !b.kafraChainOK(b.kafraLast, "izlude", "payon", 3) {
+		t.Fatal("a member following a human leader whose map moved: the next hop chains on")
+	}
+	if b.kafraChainOK(b.kafraLast, "geffen", "payon", 3) {
+		t.Fatal("never straight back to the town the last hop left")
+	}
+	if b.kafraChainOK(b.kafraLast, "izlude", "payon", kafraChainMax) {
+		t.Fatal("never past kafraChainMax hops in 10 min")
+	}
+	solo := &Bot{P: &Persona{}, MapName: "aldebaran", Goal: Goal{Map: "payon", Mode: "hunt"}}
+	if solo.kafraChainOK(b.kafraLast, "izlude", "payon", 3) {
+		t.Fatal("a solo bot with a changed goal keeps the plain cap")
+	}
+}
