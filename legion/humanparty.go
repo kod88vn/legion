@@ -357,20 +357,20 @@ func (b *Bot) humanPartySync(now time.Time) {
 		b.awaySince = time.Time{}
 	}
 	m = b.parkRedirect(p, m, now) // rallypark.go: a town we parked in front of for the cap -> the party's farm map
-	if b.Goal.Mode != "party" || b.Goal.Map != m || b.Goal.Set != "human" {
-		if b.Goal.Map != m {
-			b.route, b.path = nil, nil
-		}
-		b.Goal = Goal{Mode: "party", Map: m, Who: p.Human, Set: "human"}
-	}
 	// she is in a dungeon / on a hostile map and we are outside it (town or field - after a relog, a death, an errand):
-	// gather in the entrance town first and go in together, restocked (together.go escortGate; QA 14:40: friends saved
+	// gather in the entrance town first and go in together, restocked (together.go escortGate; decided BEFORE the goal is set - queue b1794711720v34: it ran after it, so the hold never redirected the goal; QA 14:40: friends saved
 	// in Payon, then walked into pay_dun00/01 one by one and got swarmed)
 	b.escortHold = ""
 	if ok && h.Map != "" && !waiting {
 		if t, why := b.escortGate(p, h.Map, now); t != "" && !(healerStickOn() && b.isHealer() && why != "the way in is too dangerous alone") { // healerstick.go: the healer goes in to her
 			m, b.escortHold = t, why
 		}
+	}
+	if b.Goal.Mode != "party" || b.Goal.Map != m || b.Goal.Set != "human" {
+		if b.Goal.Map != m {
+			b.route, b.path = nil, nil
+		}
+		b.Goal = Goal{Mode: "party", Map: m, Who: p.Human, Set: "human"}
 	}
 	if waiting && b.MapName == m {
 		b.setState("waiting for " + p.Human + " at " + m + " (too dangerous for me there)")

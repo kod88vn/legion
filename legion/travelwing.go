@@ -83,7 +83,9 @@ func warpListReplySave(pk []byte, save bool) []byte {
 // bwWantParty (b.mu held): Butterfly Wings a human leader's friend keeps: at least 2 when it can pay for them and keep
 // 1,000z (its party moves far and often - the next far move needs one).
 func (b *Bot) bwWantParty(base int) int {
-	if !partyDestOn() || b.pin == nil || base >= 2 {
+	// queue b17947117209mo (PR16): any party member, not only a human leader's friend (Zendancer84 had 0 wings at 7k
+	// zeny and walked out of pay_dun01 for 20+ min); party town runs (PT22) start with a wing
+	if base >= 2 || b.pin == nil && partyOf(b) == nil || b.pin != nil && !partyDestOn() {
 		return base
 	}
 	if b.Zeny >= 2*wingPrice()+1000 {
