@@ -125,5 +125,5 @@ func sayPartyDest(l *Bot, typing string, p *Party, m, why string) {
 		return
 	}
 	line := styled(typing, planLine(p, m, why))
-	go l.partySay(line)
+	ltGo(func() { l.partySay(line) })
 }

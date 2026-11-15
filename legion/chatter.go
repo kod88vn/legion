@@ -138,6 +138,9 @@ func typo(s string) string {
 	return strings.Join(words, " ")
 }
 
+// typoRoll: the dice for the odd typo (a seam for the unit tests: a typo can garble a place or name they match on).
+var typoRoll = cfloat
+
 func styled(typing, s string) string {
 	t := strings.ToLower(typing)
 	trade := tradeLine(s)
@@ -175,7 +178,7 @@ func styled(typing, s string) string {
 			s = string(r)
 		}
 	}
-	if !trade && cfloat() < 0.06 && len(s) > 8 { // the odd typo, on a filler word
+	if !trade && typoRoll() < 0.06 && len(s) > 8 { // the odd typo, on a filler word
 		s = typo(s)
 	}
 	if len(s) > 80 {
