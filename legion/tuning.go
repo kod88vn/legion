@@ -149,6 +149,10 @@ type Tuning struct {
 	// rally only with rally_enabled true; human-led parties (Ayla's) rally unless rally_human_disabled is true
 	RallyEnabled       bool `json:"rally_enabled"`
 	RallyHumanDisabled bool `json:"rally_human_disabled"`
+	// partydest.go PT30: members head for the leader's destination by their own route (true = old trailing)
+	PartyDestOff bool `json:"party_dest_off"`
+	// kafrachain.go: the next hop of one Kafra trip (same goal) is not refused by the 3-in-10-min cap (true = plain cap)
+	KafraChainOff bool `json:"kafra_chain_off"`
 	// staged rollout: with rally_enabled false, this percentage of bot parties (by party-name hash) rally
 	RallyBotShare int `json:"rally_bot_share"`
 	// rallypark.go: one owner of the rally/Kafra-wait sit, members leave a rally leg they can't travel, park cap.

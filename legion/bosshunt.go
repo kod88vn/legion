@@ -447,8 +447,10 @@ func endBossHunt(h *bossHunt, phase, why string) {
 		if back != "" {
 			l.mu.Lock()
 			l.Goal, l.route, l.path = Goal{Mode: "hunt", Map: back, Set: "party-leader"}, nil, nil
+			typing := l.P.Typing
 			l.mu.Unlock()
 			p.moveTo(back)
+			sayPartyDest(l, typing, p, back, "back to farming") // partydest.go PT30: say where to be
 		}
 	}
 }

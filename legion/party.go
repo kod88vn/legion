@@ -1385,7 +1385,7 @@ func (b *Bot) partyGoalSync(now time.Time) {
 	}
 	if behind {
 		// (not held by the 60 s goal hold: the hold point follows the leader map by map)
-		follow := !off && b.leadPrevMap == b.MapName && now.Sub(b.leadMapSince) < 90*time.Second
+		follow := !off && b.leadPrevMap == b.MapName && now.Sub(b.leadMapSince) < 90*time.Second && !partyDestOn() // PT30: no trailing - the meeting town by our own route
 		hold := b.stableHold(detourHold(want, checkpoint, lead.Map, b.MapName, off, follow), want, checkpoint, b.MapName, lead, now) // partyhold.go
 		if hold != "" && hold != b.Goal.Map {
 			b.Goal.Map, b.route, b.path, b.goalSyncAt = hold, nil, nil, now

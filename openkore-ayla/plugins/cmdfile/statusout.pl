@@ -51,6 +51,8 @@ sub tick {
 		'"sitting":' . ($char->{sitting} ? 'true' : 'false'), # Legion together.go: friends hold while she rests
 		'"guild":' . str(ref $char->{guild} ? $char->{guild}{name} : ''), # Legion humanguild.go: her guild (recruiting)
 		'"job_id":' . num($char->{jobID}),
+		'"dest":' . str(defined &partylead::status_dest ? (eval { partylead::status_dest() } || '') : ''), # Legion partydest.go (PT30)
+		'"town_run":' . ((defined &partylead::status_town_run && eval { partylead::status_town_run() }) ? 'true' : 'false'),
 		'"ts":' . int(time)) . "}\n";
 	my $tmp = "$file.tmp";
 	open(my $out, '>', $tmp) or return;

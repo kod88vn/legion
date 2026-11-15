@@ -34,6 +34,8 @@ type humanStatus struct {
 	Sitting   bool    `json:"sitting"`  // statusout.pl: she is sitting (resting) - the friends hold position
 	Guild     string  `json:"guild"`    // statusout.pl: her guild name ("" = none) - humanguild.go
 	JobID     int     `json:"job_id"`   // statusout.pl: her job (class id) - humanguild.go recruits the jobs she lacks
+	Dest      string  `json:"dest"`     // statusout.pl: where she is heading (goto map, rally town, lockMap; "" = there) - partydest.go
+	TownRun   bool    `json:"town_run"` // statusout.pl: she is on a town run (sell/buy/storage, the Kafra meet after it)
 }
 
 var humanStats struct {
