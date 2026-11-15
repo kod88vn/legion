@@ -16,13 +16,16 @@ my $file = shift || 'openkore-ayla/plugins/cmdfile/partylead.pl';
 open(my $fh, '<', $file) or die "$file: $!";
 my $src = do { local $/; <$fh> };
 
-package AI; our (@Q, $CLEARS); sub inQueue { my %q = map { $_ => 1 } @Q; return scalar grep { $q{$_} } @_ } sub clear { $CLEARS++ }
+package AI; our (@Q, $CLEARS, $AGGR); sub inQueue { my %q = map { $_ => 1 } @Q; return scalar grep { $q{$_} } @_ } sub clear { $CLEARS++ }
+sub findAction { return (@Q && $Q[0] eq 'attack') ? 'attack' : undef } sub args { return {ID => $main::ATTACK_ID} }
+sub ai_getAggressives { return $AGGR || 0 } sub action { '' }
 package main;
 package partylead;
 use constant DENSITY_PER_MEMBER => 20;
 use constant ATTACK_RECENT => 5;
 use constant ATTACK_RANGE => 12;
-our (%attackSeen, %attackAt);
+our (%attackSeen, %attackAt, $atkSeq, $atkDoneSeq, $fbMsgAt, $stickWingAt, $stickFlee);
+use constant STICK_DEADLY => 0.20;
 our (%config, %droppedUntil, %crowdedAt, $gotoMap, $homeMap, $homeAt, $homeBy, $fitAt, $lmSet, $saved, $char, $field);
 our (%waitEndSaid, %gatherDist, $gatherMoved, @FRIENDS, %DIST, $wdLast, $monstersList, %pgCross, $pgPrev, $pgFrom, $pgAt, $errand, $pgLog, $arrInfo, $portalHoldUntil, $portalHoldMap, %MAP_SPAWNS_STOCK, $MAP_RATE, $MAP_DENSITY_LOADED);
 sub seen_dist { return $DIST{$_[0]} }
@@ -37,15 +40,24 @@ sub status_town_run { 0 }
 sub pk_retreating { 0 }
 sub route_maps { ('payon_in01', 'payon') }
 sub online_friends { return @FRIENDS }
+our (%CALLS, $BOSS, $STICKRET, $PACKRET);
+sub stick_boss { $partylead::BOSS }
+sub stick_tick { $partylead::CALLS{stick}++; return $partylead::STICKRET }
+sub pack_tick { $partylead::CALLS{pack}++; return $partylead::PACKRET }
+sub stick_on { 1 }
+sub farm_sweep { 0 }
+package NetStub; sub getState { 5 }
 package MonStub; sub new { my $c = shift; bless {l => [@_]}, $c } sub getItems { $_[0]{l} }
 package FieldStub; sub new { bless {name => $_[1]}, $_[0] } sub baseName { $_[0]{name} }
 package main;
+sub attack { push @main::ATT, $_[0] }
+our (@ATT, $ATTACK_ID);
 
 my ($pass, $fail) = (0, 0);
 sub ok($$) { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
 
 # a sub missing from the plugin is a failure here (the fix is not in); the others are extracted from the source
-for my $sub (qw(wait_end_log_due rally_away gather_closing attacker_sample current_attacker nearest_attacker rally_gather_hold
+for my $sub (qw(wait_end_log_due rally_away gather_closing attacker_sample current_attacker nearest_attacker fight_tick rally_gather_hold
 	portal_back_guard drop_map load_map_density map_spawns map_dense_enough)) {
 	my ($code) = $src =~ /(sub $sub \{.*?\n\}\n)/s;
 	if (!$code) { ok(0, "$sub is missing from partylead.pl"); next }
@@ -90,8 +102,9 @@ for my $sub (qw(wait_end_log_due rally_away gather_closing attacker_sample curre
 	ok(partylead::gather_closing() == 0, 'a friend on another map does not count');
 }
 
-# ---- fightback 2026-11-15: a monster is fought when it hit or missed her recently, at any distance, within 12 cells
-# for a new target; the rally keeps it; the gather wait is per absence
+# ---- fightback 2026-11-15 (review 96e0953): sampling once per tick, recency, range, pruning
+# a sample runs once per tick: step() bumps the tick counter the way tick does
+sub step { $partylead::atkSeq++ }
 {
 	$partylead::char = {name => 'Ayla', pos_to => {x => 10, y => 10}};
 	my $m1 = {ID => 1, name => 'Near idle', pos_to => {x => 11, y => 10}, dmgToYou => 0};
@@ -99,25 +112,113 @@ for my $sub (qw(wait_end_log_due rally_away gather_closing attacker_sample curre
 	my $m3 = {ID => 3, name => 'Out of range', pos_to => {x => 25, y => 10}, dmgToYou => 0}; # 15 cells
 	my $dead = {ID => 4, name => 'Dead', pos_to => {x => 10, y => 11}, dmgToYou => 0, dead => 1};
 	$partylead::monstersList = MonStub->new($m1, $m2, $m3, $dead);
-	%partylead::attackSeen = (); %partylead::attackAt = ();
+	%partylead::attackSeen = (); %partylead::attackAt = (); $partylead::atkDoneSeq = -1; $partylead::atkSeq = 0;
+	step();
 	ok(!defined partylead::nearest_attacker(), 'fightback: no target before any monster hits or misses her');
-	$m2->{dmgToYou} = 5; $m3->{missedYou} = 2;
+	step(); $m2->{dmgToYou} = 5; $m3->{missedYou} = 2;
 	my $t = partylead::nearest_attacker();
 	ok($t && $t->{name} eq 'Ranged far', 'fightback: a monster that just hit her (8 cells, ranged) is the target');
 	ok(partylead::current_attacker($m2) == 1, 'fightback: a hit within 5 s is current at any distance');
 	ok(partylead::current_attacker($m3) == 1, 'fightback: a 15-cell attacker is current (any distance)');
 	$partylead::monstersList = MonStub->new($m3);
+	step();
 	ok(!defined partylead::nearest_attacker(), 'fightback: a new target must be within 12 cells');
 	$partylead::monstersList = MonStub->new($m1, $m2, $m3, $dead);
 	$partylead::attackAt{2} = time - 10;
 	ok(partylead::current_attacker($m2) == 0, 'fightback: an old hit (10 s) is no longer current');
-	my $m5 = {ID => 5, name => 'Seen late', pos_to => {x => 11, y => 11}, dmgToYou => 7}; # total 7, never sampled before
-	$partylead::monstersList = MonStub->new($m5);
-	partylead::nearest_attacker();
-	ok(!defined $partylead::attackAt{5}, 'fightback: a total seen for the first time is not counted as a new hit');
-	$m5->{dmgToYou} = 8;
-	ok(partylead::nearest_attacker() == $m5, 'fightback: the total rising again is a fresh hit on a near monster');
 	ok(partylead::current_attacker($dead) == 0, 'fightback: a dead monster is never current');
+}
+{
+	# once per tick: a second sample in the same tick changes nothing
+	%partylead::attackSeen = (); %partylead::attackAt = (); $partylead::atkDoneSeq = -1; $partylead::atkSeq = 7;
+	my $m = {ID => 21, name => 'Once', pos_to => {x => 11, y => 10}, dmgToYou => 3};
+	$partylead::monstersList = MonStub->new($m);
+	partylead::attacker_sample();
+	$m->{dmgToYou} = 9;
+	partylead::attacker_sample();
+	ok($partylead::attackSeen{21} == 3, 'sampling: a second sample in the same tick is skipped');
+	$partylead::atkSeq++;
+	partylead::attacker_sample();
+	ok($partylead::attackSeen{21} == 9 && defined $partylead::attackAt{21}, 'sampling: the next tick reads the rise as a hit');
+}
+{
+	# a first sample with a total above 0 counts as a hit (review 96e0953)
+	%partylead::attackSeen = (); %partylead::attackAt = (); $partylead::atkDoneSeq = -1; $partylead::atkSeq = 1;
+	my $m5 = {ID => 5, name => 'Seen late', pos_to => {x => 11, y => 11}, dmgToYou => 7};
+	$partylead::monstersList = MonStub->new($m5);
+	partylead::attacker_sample();
+	ok(defined $partylead::attackAt{5} && partylead::current_attacker($m5) == 1, 'sampling: a first sample with a total above 0 is a hit');
+}
+{
+	# pruning: monsters gone from the list, and hits older than 30 s
+	%partylead::attackSeen = (9 => 4); %partylead::attackAt = (9 => time, 8 => time - 40);
+	$partylead::atkDoneSeq = -1; $partylead::atkSeq = 2;
+	$partylead::monstersList = MonStub->new({ID => 1, pos_to => {x => 1, y => 1}, dmgToYou => 0});
+	partylead::attacker_sample();
+	ok(!exists $partylead::attackSeen{9} && !exists $partylead::attackAt{9}, 'pruning: a monster gone from the list is dropped');
+	ok(!exists $partylead::attackAt{8}, 'pruning: a hit older than 30 s is dropped');
+}
+
+# ---- tick itself: the fight comes before a pack wait, a stick wait and the retreat rules (review 96e0953)
+# tick is extracted and run through its early part; the stick / pack / boss / wing rules are stubs that record calls
+{
+	my ($code) = $src =~ /(sub tick \{.*?\n\}\n)/s;
+	if (!$code) { ok(0, 'tick is missing from partylead.pl') }
+	else { eval "no strict; package partylead;\n$code\n1" or die "tick: $@" }
+	my $mon = {ID => 30, name => 'Zombie', pos_to => {x => 12, y => 10}, dmgToYou => 0};
+	my $tick_run = sub { $partylead::last = 0; $partylead::atkSeq++; partylead::tick() };
+	my $reset = sub {
+		%partylead::attackSeen = (); %partylead::attackAt = (); $partylead::atkDoneSeq = -1; $partylead::fbMsgAt = 0;
+		@AI::Q = (); $AI::AGGR = 0; $partylead::BOSS = undef; $partylead::STICKRET = 0; $partylead::PACKRET = 1;
+		$mon->{dmgToYou} = 0; $mon->{missedYou} = 0;
+		%partylead::CALLS = (); @main::ATT = (); $partylead::stickWingAt = 0; $partylead::stickFlee = undef;
+		@FRIENDS = (['Zen.fox', 'pay_dun03']);
+		$partylead::char = {name => 'Ayla', pos_to => {x => 10, y => 10}, hp => 90, hp_max => 100, dead => 0,
+			party => {users => {1 => {name => 'Zen.fox', online => 1}}}};
+		$partylead::net = bless({}, 'NetStub');
+		$partylead::field = FieldStub->new('pay_dun03');
+		$partylead::monstersList = MonStub->new();
+	};
+	my $hit = sub { my $m = shift; $m->{dmgToYou} = ($m->{dmgToYou} || 0) + 2 };
+	# baseline tick (no hit yet), then the record is cleared and one hit lands before the tick that counts
+	my $attack_run = sub { my $m = shift; $tick_run->(); %partylead::CALLS = (); @main::ATT = (); $hit->($m); $tick_run->() };
+	# (a) a pack wait with an attacker: she attacks, the pack rule is not reached
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $partylead::PACKRET = 1;
+	$attack_run->($mon);
+	ok(scalar(@main::ATT) == 1 && $main::ATT[0] == 30, 'tick: with an attacker, a pack wait does not stop her fighting back');
+	ok(!$partylead::CALLS{pack}, 'tick: the pack wait is not reached while she is attacked');
+	# (b) the same pack wait with nobody attacking: the wait holds, nothing is attacked
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $partylead::PACKRET = 1;
+	$tick_run->();
+	ok(!@main::ATT && ($partylead::CALLS{pack} || 0) == 1, 'tick: no attacker, the pack wait holds as before');
+	# (c) 3 on her with friends online: the retreat (stick_tick) goes first, no attack
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $AI::AGGR = 3; $partylead::STICKRET = 1;
+	$attack_run->($mon);
+	ok(!@main::ATT && ($partylead::CALLS{stick} || 0) >= 1, 'tick: with 3 on her and friends online, the retreat (stick_tick) goes first');
+	# (d) the retreat does nothing: she fights the attacker in that same tick, before the pack rule
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $AI::AGGR = 3; $partylead::STICKRET = 0; $partylead::PACKRET = 1;
+	$attack_run->($mon);
+	ok(scalar(@main::ATT) == 1 && $main::ATT[0] == 30 && !$partylead::CALLS{pack}, 'tick: when the retreat does nothing, the attacker is fought');
+	# (e) a boss in sight: the deliberate pull-back keeps priority
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $partylead::BOSS = {name => 'Boss'};
+	$attack_run->($mon);
+	ok(!@main::ATT, 'tick: a boss in sight keeps the pull-back, no fight');
+	# (f) the PT31 Butterfly Wing just used keeps priority
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $partylead::stickWingAt = time;
+	$attack_run->($mon);
+	ok(!@main::ATT, 'tick: the PT31 wing keeps priority');
+	# (g) nearly dead: the wing decision (stick_tick) runs, no fight
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $partylead::char->{hp} = 10;
+	$attack_run->($mon);
+	ok(!@main::ATT && ($partylead::CALLS{stick} || 0) >= 1, 'tick: under 20% HP the stick / wing rule decides, no fight');
+	# (h) a fleeing commitment is not broken by a fight
+	$reset->(); $partylead::monstersList = MonStub->new($mon); $partylead::stickFlee = {map => 'pay_dun01', from => 'pay_dun03', at => time};
+	$attack_run->($mon);
+	ok(!@main::ATT, 'tick: a PT31 fall-back in progress is not interrupted');
+	# (i) already attacking this very monster: kept, not re-issued
+	$reset->(); $partylead::monstersList = MonStub->new($mon); @AI::Q = ('attack'); $main::ATTACK_ID = 30;
+	$attack_run->($mon);
+	ok(!@main::ATT, 'tick: an attack already on her attacker is kept, not re-issued');
 }
 
 # ---- rally gather wait: per absence (goneAt and gatherAt reset once everyone is back)
