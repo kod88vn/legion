@@ -2964,7 +2964,10 @@ sub farm_sweep {
 # from their change: a monster whose total rose within ATTACK_RECENT seconds hit or missed her, at any distance.
 use constant ATTACK_RECENT => 5;  # seconds since the last hit / miss that still counts as attacking her
 use constant ATTACK_RANGE => 12;  # cells: a monster this close is a new target (nearest_attacker)
-our (%attackSeen, %attackAt);
+use constant FB_REACH => 2;       # cells: within this a melee hit reaches the target
+use constant FB_STALL => 8;       # seconds of attacking one target with no damage dealt, out of reach, before she drops it
+use constant FB_DROP => 20;       # seconds a dropped target is ignored (ranged or unreachable: she goes on)
+our (%attackSeen, %attackAt, %fbEng, %fbDropped); # fbEng: target ID -> {since, dmg, last}; fbDropped: ID -> until
 our ($atkSeq, $atkDoneSeq) = (0, -1); # tick bumps $atkSeq; the sample runs once per value
 # once per tick (review 96e0953): a first sample with a total above 0 counts as a hit; monsters gone from the list and
 # hits older than 30 s are pruned (no growth over days, no old time inherited by a reused ID)
@@ -2996,6 +2999,7 @@ sub nearest_attacker {
 	my ($best, $bd);
 	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
 		next unless current_attacker($mo);
+		next if ($fbDropped{$mo->{ID}} || 0) > time; # dropped as unreachable (fight_tick), for FB_DROP s
 		my $d = blockDistance($char->{pos_to}, $mo->{pos_to});
 		next if $d > ATTACK_RANGE;
 		($best, $bd) = ($mo, $d) if !defined $bd || $d < $bd;
@@ -3019,6 +3023,21 @@ sub fight_tick {
 	my $aggr = scalar(AI::ai_getAggressives());
 	return 0 if $retreatFirst && online_friends() && ($aggr >= 3 || ($hpp < 0.45 && $aggr >= 1));
 	my $t = nearest_attacker() or return 0;
+	# stall (fightback 2026-11-15, the review of e736281): a ranged or unreachable attacker that takes no damage from her
+	# for FB_STALL s while out of reach is dropped for FB_DROP s, so she can walk away instead of re-issuing the attack
+	my $now = time;
+	my $e = $fbEng{$t->{ID}};
+	if (!$e || ($t->{dmgFromYou} || 0) > $e->{dmg} || $now - $e->{last} > ATTACK_RECENT) {
+		$e = $fbEng{$t->{ID}} = {since => $now, dmg => $t->{dmgFromYou} || 0};
+	}
+	$e->{last} = $now;
+	delete $fbEng{$_} for grep { $now - $fbEng{$_}{last} > 60 } keys %fbEng; # gone targets do not pile up
+	if ($now - $e->{since} >= FB_STALL && blockDistance($char->{pos_to}, $t->{pos_to}) > FB_REACH) {
+		$fbDropped{$t->{ID}} = $now + FB_DROP;
+		delete $fbEng{$t->{ID}};
+		message "[partylead] fightback: $t->{name} is out of reach and deals no damage - leaving it for " . FB_DROP . " s\n", 'system';
+		return 0;
+	}
 	if (AI::inQueue('attack')) {
 		my $ai = AI::findAction('attack');
 		my $a = (defined $ai && $ai ne '') ? AI::args($ai) : undef;

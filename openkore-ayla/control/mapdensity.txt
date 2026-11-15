@@ -1,4 +1,4 @@
-# Monster spawns per map from rathena npc/*/mobs (102 files, sum of the monster lines' amounts).
+# Monster spawns per map from rathena npc/*/mobs (248 files, sum of the monster lines' amounts).
 # Stock counts; the plugin scales them by rate/100 (mob_count_rate of this server).
 rate 400
 abbey01 266
@@ -77,6 +77,7 @@ ein_fild06 152
 ein_fild07 192
 ein_fild08 215
 ein_fild09 173
+einbech 5
 gef_dun00 92
 gef_dun01 173
 gef_dun02 151
@@ -157,6 +158,8 @@ iz_dun02 198
 iz_dun03 180
 iz_dun04 164
 iz_dun05 167
+jawaii 9
+jawaii_in 4
 jupe_core 278
 juperos_01 288
 juperos_02 318
@@ -171,6 +174,7 @@ lhz_dun_n 170
 lhz_fild01 299
 lhz_fild02 227
 lhz_fild03 228
+lhz_in01 1
 lou_dun01 127
 lou_dun02 106
 lou_dun03 90
@@ -292,6 +296,7 @@ rockmi2 31
 rockrdg1 100
 rockrdg2 118
 schg_dun01 72
+sec_in02 40
 sp_os 225
 sp_rudus 90
 sp_rudus2 180
