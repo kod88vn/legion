@@ -25,10 +25,14 @@ package partylead;
 use constant DENSITY_PER_MEMBER => 20;
 use constant ATTACK_RECENT => 5;
 use constant ATTACK_RANGE => 12;
-our (%attackSeen, %attackAt, $atkSeq, $atkDoneSeq, $fbMsgAt, $stickWingAt, $stickFlee);
+use constant FB_REACH => 2;
+use constant FB_STALL => 8;
+use constant FB_DROP => 20;
+our (%attackSeen, %attackAt, %fbEng, %fbDropped, $atkSeq, $atkDoneSeq, $fbMsgAt, $stickWingAt, $stickFlee);
 use constant STICK_DEADLY => 0.20;
 our (%config, %droppedUntil, %crowdedAt, $gotoMap, $homeMap, $homeAt, $homeBy, $fitAt, $lmSet, $saved, $char, $field);
 our (%waitEndSaid, %gatherDist, $gatherMoved, @FRIENDS, %DIST, $wdLast, $monstersList, %pgCross, $pgPrev, $pgFrom, $pgAt, $errand, $pgLog, $arrInfo, $portalHoldUntil, $portalHoldMap, %MAP_SPAWNS_STOCK, $MAP_RATE, $MAP_DENSITY_LOADED);
+$partylead::lastMsg = 0; $partylead::fbMsgAt = 0; # partylead.pl's file-level my/our values are not run here (only sub bodies are eval'd)
 sub seen_dist { return $DIST{$_[0]} }
 sub wd_report { $wdLast = [@_] }
 sub psay {}
@@ -108,6 +112,50 @@ for my $sub (qw(wait_end_log_due rally_away gather_closing attacker_sample curre
 	ok(partylead::gather_closing() == 0, 'a friend on another map does not count');
 }
 
+# ---- small followups (review e736281): a ranged or unreachable attacker that deals no damage is dropped after FB_STALL s
+{
+	# fight_tick reads the stick, boss and friend state; none of it applies here
+	$partylead::stickFlee = 0; $partylead::stickWingAt = 0; $partylead::BOSS = undef; $AI::AGGR = 0; @partylead::FRIENDS = ();
+	$partylead::char = {name => 'Ayla', pos_to => {x => 10, y => 10}, hp => 100, hp_max => 100};
+	my $fire = {ID => 41, name => 'Archer far', pos_to => {x => 18, y => 10}, dmgFromYou => 0};  # 8 cells, no damage
+	my $melee = {ID => 42, name => 'Melee near', pos_to => {x => 11, y => 10}, dmgFromYou => 0}; # 1 cell, in reach
+	my $hit = {ID => 43, name => 'Hit by me', pos_to => {x => 18, y => 11}, dmgFromYou => 0};   # 8 cells, takes damage
+	$partylead::monstersList = MonStub->new($fire, $melee, $hit);
+	%partylead::attackSeen = (); %partylead::attackAt = (); %partylead::fbEng = (); %partylead::fbDropped = ();
+	$partylead::atkDoneSeq = -1; $partylead::atkSeq = 0; @main::ATT = ();
+	$partylead::attackAt{41} = time; $partylead::attackAt{43} = time; # the melee one is not hitting her yet
+
+	step();
+	$partylead::attackAt{41} = time; $partylead::attackAt{43} = time;
+	ok(partylead::fight_tick(0) == 1 && $main::ATT[-1] == 41, 'stall: the first tick attacks the far archer');
+	# 9 s later with no damage dealt: the target is dropped and she goes on (fight_tick returns 0, no attack)
+	$partylead::fbEng{41}{since} = time - 9; $partylead::fbEng{41}{last} = time - 1;
+	my $before = scalar @main::ATT;
+	ok(partylead::fight_tick(0) == 0 && scalar(@main::ATT) == $before, 'stall: 8 s with no damage, out of reach: the archer is dropped');
+	ok(($partylead::fbDropped{41} || 0) > time + 15, 'stall: the drop lasts about 20 s');
+	ok(!defined partylead::nearest_attacker() || partylead::nearest_attacker()->{ID} != 41, 'stall: a dropped target is not chosen');
+	$partylead::attackAt{41} = time; $partylead::attackAt{43} = time;
+	# after the 20 s the archer is a target again
+	$partylead::fbDropped{41} = time - 1;
+	ok(partylead::nearest_attacker()->{ID} == 41, 'stall: after the drop time the archer counts again');
+
+	# a melee monster in reach is never dropped, however long it stands
+	%partylead::fbEng = ();
+	$partylead::monstersList = MonStub->new($melee);
+	$partylead::attackAt{42} = time;
+	partylead::fight_tick(0);
+	$partylead::fbEng{42}{since} = time - 30; $partylead::fbEng{42}{last} = time - 1;
+	ok(partylead::fight_tick(0) == 1 && !$partylead::fbDropped{42}, 'stall: a target in reach is fought, not dropped');
+
+	# damage dealt restarts the clock: a target that takes damage is not dropped
+	%partylead::fbEng = (); %partylead::fbDropped = ();
+	$partylead::monstersList = MonStub->new($hit);
+	$partylead::attackAt{43} = time;
+	partylead::fight_tick(0);
+	$partylead::fbEng{43}{since} = time - 9; $partylead::fbEng{43}{last} = time - 1;
+	$hit->{dmgFromYou} = 12;
+	ok(partylead::fight_tick(0) == 1 && !$partylead::fbDropped{43}, 'stall: damage dealt by her restarts the stall clock');
+}
 # ---- fightback 2026-11-15 (review 96e0953): sampling once per tick, recency, range, pruning
 # a sample runs once per tick: step() bumps the tick counter the way tick does
 sub step { $partylead::atkSeq++ }

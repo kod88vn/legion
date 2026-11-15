@@ -105,6 +105,12 @@ func (b *Bot) onStorageOpen() {
 		b.send(newPkt(0x0193).b)
 	}()
 	b.kafra = nil
-	b.lastTripOverLine = b.overRegenWeight() // the store step is the last one of the trip: did it clear the bag?
+	// the store step is the last one of the trip: did it clear the bag? The moves are only queued here, so b.Weight is
+	// still the old one; the server's next weight update (bot.go 0x00b0) settles lastTripOverLine. Nothing moved: now.
+	if n == 0 {
+		b.lastTripOverLine = b.overRegenWeight()
+	} else {
+		b.storeSettle = true
+	}
 	b.event("info", "", fmt.Sprintf("stored %d kinds of items in Kafra storage (%s)", n, k.Town))
 }

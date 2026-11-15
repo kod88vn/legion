@@ -173,7 +173,10 @@ type Bot struct {
 	// lastTripOverLine: the last trip ended (or is running) with the bag still over the regen line; a repeat heavy-bag
 	// trip then waits heavyTripGap (ai.go). A trip that cleared the bag does not hold the next one back.
 	lastTripOverLine bool
-	cur              *CharSpec // character played this session
+	// storeSettle: a Kafra store moved items out; lastTripOverLine is recomputed from the weight the server sends next
+	// (0x00b0 weight), not from the Weight still held when the moves were only queued (storage.go onStorageOpen).
+	storeSettle bool
+	cur             *CharSpec // character played this session
 	sessionEnd   time.Time
 	hangoutUntil time.Time
 
@@ -856,6 +859,10 @@ func (b *Bot) handle(pk []byte) {
 			b.BaseLv = v
 		case 24:
 			b.Weight = v
+			if b.storeSettle { // the server's weight after a Kafra store: did it clear the bag? (storage.go)
+				b.storeSettle = false
+				b.lastTripOverLine = b.overRegenWeight()
+			}
 		case 25:
 			b.MaxWeight = v
 		case 55:
