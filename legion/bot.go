@@ -137,47 +137,47 @@ type Bot struct {
 	Goal Goal
 	// lfg.go: the farm goal from the build (next gear piece / card / zeny / level, or heal for healers) and the
 	// goal just met (a party member leaves politely when its next goal is elsewhere)
-	fgoal        *farmGoal
-	fgoalDone    *farmGoal
-	fgoalDoneAt  time.Time
-	target       uint32
-	targetAt     time.Time
-	path         [][2]int
-	route        []Warp
-	lastMoveTx   time.Time
-	restUntil    time.Time
-	afkUntil     time.Time
-	lastPos      [3]interface{}
-	lastPosAt    time.Time
-	replanAt     time.Time
-	skillReady   time.Time
-	progressAt   time.Time
-	skillUpAt    time.Time // last skill-up request: one at a time, retried if the server doesn't confirm (progress.go)
-	sitSentAt    time.Time
-	wantSit      bool
-	restSitAt    time.Time // together.go restGuard: seated on purpose during a party rest (hunt must not stand us up)
-	songID       int       // song.go: the song being played (0 = none)
-	songAt       time.Time // song.go: when it was cast
-	songUntil    time.Time // song.go: when it ends
-	errand       *errand   // errand.go: a necessary build/class step away from the party (nil = none)
-	restOn       bool      // together.go restAnnounce: announced "need rest", no "ready" yet (published as Resting)
-	restSaidAt   time.Time // when the last "need rest" line went out (one per 45 s at most)
-	restSaid     bool      // the current rest was announced in chat: its end gets a "ready" line too
-	restSince    time.Time // together.go restAnnounce: resting (by state) since - a rest counts after restMinDur
-	deferAt      time.Time // tanklead.go leaderDefer: start of the window in which a non-tank leader holds its pull for the tank
-	noSitUntil   time.Time // party.go stood us up for the leader: no new rest sit before this (no sit/stand flicker)
-	potAt        time.Time
-	rdrop        regenDropState // regendrop.go: the town junk drop (in flight, refused, own drops)
-	tripAgain    time.Time
-	classAskAt   time.Time // human-led party: last "need a Rod/Bow" ask in party chat (once per 30 min)
-	lastTripAt   time.Time // last town trip start (min interval: tune().TripMinIntervalMin)
+	fgoal       *farmGoal
+	fgoalDone   *farmGoal
+	fgoalDoneAt time.Time
+	target      uint32
+	targetAt    time.Time
+	path        [][2]int
+	route       []Warp
+	lastMoveTx  time.Time
+	restUntil   time.Time
+	afkUntil    time.Time
+	lastPos     [3]interface{}
+	lastPosAt   time.Time
+	replanAt    time.Time
+	skillReady  time.Time
+	progressAt  time.Time
+	skillUpAt   time.Time // last skill-up request: one at a time, retried if the server doesn't confirm (progress.go)
+	sitSentAt   time.Time
+	wantSit     bool
+	restSitAt   time.Time // together.go restGuard: seated on purpose during a party rest (hunt must not stand us up)
+	songID      int       // song.go: the song being played (0 = none)
+	songAt      time.Time // song.go: when it was cast
+	songUntil   time.Time // song.go: when it ends
+	errand      *errand   // errand.go: a necessary build/class step away from the party (nil = none)
+	restOn      bool      // together.go restAnnounce: announced "need rest", no "ready" yet (published as Resting)
+	restSaidAt  time.Time // when the last "need rest" line went out (one per 45 s at most)
+	restSaid    bool      // the current rest was announced in chat: its end gets a "ready" line too
+	restSince   time.Time // together.go restAnnounce: resting (by state) since - a rest counts after restMinDur
+	deferAt     time.Time // tanklead.go leaderDefer: start of the window in which a non-tank leader holds its pull for the tank
+	noSitUntil  time.Time // party.go stood us up for the leader: no new rest sit before this (no sit/stand flicker)
+	potAt       time.Time
+	rdrop       regenDropState // regendrop.go: the town junk drop (in flight, refused, own drops)
+	tripAgain   time.Time
+	classAskAt  time.Time // human-led party: last "need a Rod/Bow" ask in party chat (once per 30 min)
+	lastTripAt  time.Time // last town trip start (min interval: tune().TripMinIntervalMin)
 	// lastTripOverLine: the last trip ended (or is running) with the bag still over the regen line; a repeat heavy-bag
 	// trip then waits heavyTripGap (ai.go). A trip that cleared the bag does not hold the next one back.
 	lastTripOverLine bool
 	// storeSettle: a Kafra store moved items out; lastTripOverLine is recomputed from the weight the server sends next
 	// (0x00b0 weight), not from the Weight still held when the moves were only queued (storage.go onStorageOpen).
-	storeSettle bool
-	cur             *CharSpec // character played this session
+	storeSettle  bool
+	cur          *CharSpec // character played this session
 	sessionEnd   time.Time
 	hangoutUntil time.Time
 

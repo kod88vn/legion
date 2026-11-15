@@ -79,5 +79,5 @@ tools/mindgate.paused
 docs/reports/league-*.md
 tools/puppet/workdir/.claude/
 
-# rathena npc/ copy used as gen_mapdensity.py input (local only; regenerate from the rathena source, see the generator docstring)
-tools/dev/rathena-npc/
+# rathena copies used as gen_mapdensity.py input (conf/ and npc/ from ro-rathena; local only, see the generator docstring)
+tools/dev/rathena-*/
