@@ -199,7 +199,9 @@ sub cmd_partylead {
 		foreach my $f (online_friends()) { my ($fu) = grep { $_ && $_->{name} eq $f->[0] } values %{$char->{party}{users}}; my ($fp) = $fu ? friend_pos($fu, $hereT) : (); $allNear = 0 if $f->[1] ne $hereT || !$fp || blockDistance($char->{pos_to}, $fp) > 15 }
 		# the regroup town: where she is if it's a town, else the destination's town when she is outside any dungeon
 		# (QA 20:54: goto from pay_fild08 while the plan said "regroup at payon kafra" - she walked through Payon alone)
-		my $rgT = is_townmap($hereT) ? $hereT : (!is_dungeon($hereT) && $KAFRA{$st} ? $st : '');
+		# the meeting town is the Kafra town nearest the DESTINATION, never the town she happens to be in (live 623cf94:
+		# a Payon rally for gef_dun01 while a member stood near Geffen) - from another town she travels there first
+		my $rgT = is_townmap($hereT) && $hereT eq $st ? $hereT : (!is_dungeon($hereT) && $KAFRA{$st} ? $st : '');
 		$hereT = $rgT if $rgT ne '';
 		# saved at the destination's Kafra in the last 15 min: no new regroup / save stop there, she goes straight (live
 		# 2026-11-14: a repeated 'goto gl_church' restarted the Geffen Kafra rally - save again, wait again)
@@ -536,7 +538,7 @@ sub town_of_map {
 	return 'payon';
 }
 
-use constant RALLY_WAIT => 180; # a rally waits at most 3 min for members after her save (owner 2026-11-14)
+use constant RALLY_WAIT => 60; # a rally waits at most 60 s for members after her save, then AY22 (owner 2026-11-14)
 sub start_rally {
 	my ($town, $x, $y, $why, $announce) = @_;
 	return unless $KAFRA{$town};
@@ -726,6 +728,10 @@ sub rally_tick {
 		set_home($goMap) if !is_townmap($goMap);
 		return 0 if wait_fight_start($town, "rally wait");
 	}
+	if ($mineOk && !$all && $goMap eq '' && time - $r->{mineAt} > RALLY_WAIT) { # no destination: the wait ends too
+		end_rally("waited " . int(time - $r->{mineAt}) . " s after saving, no destination", 4);
+		return 0;
+	}
 	if ($mineOk && !$all && $goMap ne '' && time - $r->{mineAt} > RALLY_WAIT) {
 		# owner 2026-11-14: she sat at the Geffen Kafra most of the time - after 3 min she goes with whoever is there; the
 		# others travel to the destination by their own route (Legion PT30 reads her dest)
@@ -746,7 +752,10 @@ sub rally_tick {
 		end_rally("everyone is at the Kafra" . (@unsaved ? " (no 'saved' from @unsaved)" : ', all saved'), 3);
 		return 0;
 	}
-	if ($all && $mineOk && @unsaved && time - ($r->{askSave} || 0) > 40) { $r->{askSave} = time; psay("@unsaved save at the kafra here pls, say when saved", 1, 0) }
+	if ($all && $mineOk && @unsaved) { # each member asked at most once per 2 min
+		my @ask = grep { time - ($r->{asked}{$_} || 0) > 120 } @unsaved;
+		if (@ask) { $r->{asked}{$_} = time foreach @ask; psay("@ask save at the kafra here pls, say when saved", 1, 0) }
+	}
 	my $low = ($char->{hp_max} && $char->{hp} / $char->{hp_max} < 0.5) || ($char->{sp_max} && $char->{sp} / $char->{sp_max} < 0.5);
 	if ($low) { Commands::run('sit') if !$char->{sitting} && !AI::inQueue('sitting', 'route', 'move') }
 	elsif ($char->{sitting} && !AI::inQueue('sitAuto')) { Commands::run('stand') } # no sitting around at the Kafra (owner 2026-11-14)
@@ -1936,6 +1945,7 @@ sub tick_guarded {
 	lockmap_guard();
 	tick(@_);
 	town_back_guard() if $net && $net->getState() == 5;
+	wait_idle_check() if $net && $net->getState() == 5;
 	$lmSet = $config{lockMap} || '' if defined $lmSet;
 }
 sub cmd_guarded {
@@ -2378,6 +2388,22 @@ sub pt32_target {
 }
 # a rally / departure wait turns into fighting near the meeting point (owner 2026-11-14: "fighting is her main
 # priority"): true when a safe field next to the town exists and the wait-farm started
+# ---- any wait (rally, pack, departure, regroup walk) longer than 2 min with no exp is IDLE (owner 2026-11-14: she
+# sat in a Payon rally for minutes and the watchdog said nothing - a rally counted as productive). Reported every
+# 2 min ("[watchdog] IDLE <kind> wait N min ..."), which also wakes her helper.
+my ($wiSince, $wiExp, $wiKind, $wiSaid) = (0, 0, '', 0);
+sub wait_idle_check {
+	return unless $char && $field;
+	my $kind = $rally ? "rally ($rally->{town})" : $depart ? "departure ($depart->{town})" : $regroupTo ne '' ? "regroup to $regroupTo"
+		: $pk{waitAt} ? 'party' : $holding ? 'hold' : '';
+	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
+	if ($kind eq '' || $exp != $wiExp) { ($wiSince, $wiExp, $wiKind, $wiSaid) = ($kind eq '' ? 0 : time, $exp, $kind, 0); return }
+	$wiSince ||= time;
+	my $n = time - $wiSince;
+	return if $n < 120 || time - $wiSaid < 120;
+	$wiSaid = time;
+	wd_report('IDLE', $field->baseName, "$kind wait " . int($n / 60) . " min with no exp at " . $field->baseName . " $char->{pos_to}{x},$char->{pos_to}{y}", "her helper should step in");
+}
 sub wait_fight_start {
 	my ($town, $why) = @_;
 	my (%tops, %danger);
