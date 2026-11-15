@@ -2014,6 +2014,20 @@ sub plan_track {
 	message "[partylead] PT16: farming $here - this is the plan for the next 2 h
 ", 'system';
 }
+# no crossing straight back through a portal: after a map change, 30 s without going back to the map she came from
+# (unless dying) - live: aldebaran <-> mjolnir_12 every few seconds
+my ($pgPrev, $pgFrom, $pgAt, $pgLog) = ('', '', 0, 0);
+sub portal_back_guard {
+	return unless $char && $field;
+	my $here = $field->baseName;
+	if ($here ne $pgPrev) { ($pgFrom, $pgAt, $pgPrev) = ($pgPrev, time, $here) }
+	return if $pgFrom eq '' || time - $pgAt >= 30 || AI::inQueue('teleport');
+	return if $char->{hp_max} && $char->{hp} / $char->{hp_max} < 0.2;
+	my ($dm, $nm) = route_maps();
+	return unless $nm eq $pgFrom || ($dm eq $pgFrom && $nm eq '');
+	AI::clear('route', 'move');
+	if (time - $pgLog > 10) { $pgLog = time; message "[partylead] no crossing back to $pgFrom within 30 s of coming from it - holding on $here\n", 'system' }
+}
 sub tick_guarded {
 	tp_guard();
 	route_guard();
@@ -2022,6 +2036,7 @@ sub tick_guarded {
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
+	portal_back_guard() if $net && $net->getState() == 5;
 	$lmSet = $config{lockMap} || '' if defined $lmSet;
 }
 sub cmd_guarded {
@@ -2387,6 +2402,8 @@ sub pack_tick {
 		if ($g && !($g->[2] eq $here && defined $g->[3] && $g->[3] <= 5)) { ($act, $an) = ('goto', $g) }
 		else { $pk{goName} = ''; $pk{waitAt} = 0; $regroupTo = ''; message "[partylead] AY22: with the priest again - going on together\n", 'system' if $g }
 	}
+	# gave up collecting (3 min, or the priest stuck far away): she holds and waits for 10 min before trying again
+	($act) = ('wait') if $act eq 'goto' && $pk{goGaveUp} && time - $pk{goGaveUp} < 600;
 	if (($act eq 'ok' || $act eq 'solo') && $pk{wf}) {
 		$pk{wf} = undef; ($pk{waitAt}, $pk{goName}) = (0, '');
 		my $go = $homeMap ne '' ? $homeMap : ($config{lockMap} || (($saved && $saved->{lockMap}) || ''));
@@ -2421,10 +2438,26 @@ sub pack_tick {
 	if ($act eq 'goto') {
 		my $a = $apiPos{$an->[0]};
 		my ($am, $ax, $ay) = ($an->[2], $an->[4] ? ($an->[4]{x}, $an->[4]{y}) : ($a && time - $a->{at} < 10 && $a->{map} eq $an->[2] ? ($a->{x}, $a->{y}) : (undef, undef)));
+		# the priest stuck on one cell for 2+ min far away (e.g. waiting for a Kafra): go only when one Kafra hop
+		# (she is in a Kafra town, the priest's map belongs to a Kafra town); otherwise hold and tell it where she is
+		my $ak = join(',', $am, $ax // '', $ay // '');
+		if (($pk{anKey} || '') ne $ak) { ($pk{anKey}, $pk{anSince}) = ($ak, time) }
+		my $stuckFar = $am ne $here && time - $pk{anSince} > 120 && !($KAFRA{$here} && $KAFRA{town_of_map($am)});
+		if ($am ne '' && ($stuckFar || ($pk{goAt} && $pk{goName} eq $an->[0] && time - $pk{goAt} > 180))) {
+			$pk{goGaveUp} = time; ($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
+			my $out = $here =~ /^(.+?)_in\d*$/ ? $1 : $here;
+			psay("$an->[0] im at $out $cx,$cy, come to me", 1, 0);
+			message "[partylead] AY22: stopped collecting $an->[0] (" . ($stuckFar ? "stuck on $am for " . int((time - $pk{anSince}) / 60) . " min" : '3 min without reaching it') . ") - holding at $here\n", 'system';
+			$am = ''; # falls through to the wait below
+		}
 		if ($am ne '') {
-			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; $regroupTo = $am; psay("coming to u, $an->[0]", 1, 0); message "[partylead] AY22: $an->[0] fell behind ($am) - walking back to them\n", 'system' }
+			# one owner of movement: lockMap set aside while she collects (no lockMap route between the ticks)
+			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
+			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; $pk{goAt} = time; $regroupTo = $am; psay("coming to u, $an->[0]", 1, 0); message "[partylead] AY22: $an->[0] fell behind ($am) - walking back to them\n", 'system' }
 			my ($rdm) = route_maps();
-			if (time - $pk{routeAt} > 10 || !AI::inQueue('route', 'move') || ($rdm ne '' && $rdm ne $am)) { # never onward: only to the friend
+			# the route is made once and kept (re-made every 10 s it flipped between the Kafra and the walk: aldebaran <->
+			# mjolnir_12 ping-pong) - only when there is none, it points elsewhere, or she hasn't moved for 20 s
+			if (!AI::inQueue('route', 'move') || ($rdm ne '' && $rdm ne $am) || (!moved_recently() && time - $pk{routeAt} > 20)) { # never onward: only to the friend
 				$pk{routeAt} = time;
 				Commands::run('stand') if $char->{sitting};
 				AI::clear('attack', 'route', 'move');
