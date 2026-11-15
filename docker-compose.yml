@@ -189,6 +189,8 @@ services:
     # ayla-switch (AY24, package C): nothing changes until cut-over. At cut-over (deploy agent, once, see the
     # cut-over steps in the ayla-switch report): add Ayla to LEGION_CORE in .env and to the -exclude list of legion,
     # run tools/system/ayla_engine_migrate.py, then set tuning engine_parties to "Ayla". Until then Ayla is not in -only.
+    # Stop openkore-ayla (ro-openkore-ayla) BEFORE legion-core logs her in: two sessions on one account kick each other (G19).
+    # Engine start order: ro-openkore-ayla stopped, migration applied, tuning engine_parties set, then legion-core recreated.
     command: ["run", "-only", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,LilLilyblade,vex_x18}", "-api", "127.0.0.1:8091", "-pprof", "127.0.0.1:6061", "-stagger", "2s"]
     restart: unless-stopped
 
