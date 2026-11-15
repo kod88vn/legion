@@ -187,7 +187,14 @@ func (p *Party) startRally(dest, why string, now time.Time) bool {
 	if dest == "" || isTown(dest) || !p.rallyOn() {
 		return false
 	}
-	town := nearestTown(dest)
+	return p.startRallyAt(nearestTown(dest), dest, why, now)
+}
+
+// startRallyAt: a rally at the Kafra of town (AY25: the owner's rally to a town passes the town as dest too).
+func (p *Party) startRallyAt(town, dest, why string, now time.Time) bool {
+	if town == "" || !p.rallyOn() {
+		return false
+	}
 	x, y, save, ok := rallySpot(town, dest)
 	if !ok {
 		return false

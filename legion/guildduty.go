@@ -40,6 +40,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -281,6 +282,10 @@ func activeDirsLocked(guild string, now time.Time) []*GuildDirection {
 	var out []*GuildDirection
 	seen := map[string]bool{}
 	excl := false
+	if od := ovGuildDirFor(guild, now); od != nil { // AY25: the owner's guild direction outranks the puppet master's
+		out = append(out, od)
+		seen[od.Kind+"|"+fmt.Sprint(od.ItemID)+"|"+od.Map] = true
+	}
 	keep := gduty.dirs[guild][:0]
 	for _, d := range gduty.dirs[guild] {
 		if now.After(d.Expires) {
@@ -308,6 +313,54 @@ func activeDirsLocked(guild string, now time.Time) []*GuildDirection {
 		out = append(out, d)
 	}
 	return out
+}
+
+// ovGuildDirFor: the owner's guild direction for Ayla's guild (humanGuildID) while engine_parties is on (AY25). Its
+// value reads "kind[:item_id][@map]", e.g. "stock:501@pay_fild08" or "wealth". nil when none is in force or it is bad.
+func ovGuildDirFor(guild string, now time.Time) *GuildDirection {
+	if guild != humanGuildID || strings.TrimSpace(tune().EngineParties) == "" {
+		return nil
+	}
+	d := aylaDirective(ovGuildDir, now, "", "")
+	if d.Source != "owner" {
+		return nil
+	}
+	// the owner's guild direction is free text (owner panel, up to 200 characters): a structured "kind[:item][@map]" is
+	// read as such; any other text is the owner's words, a level direction (the leader's call: any fitting map)
+	kind, item, mp, ok := parseOwnerGuildDir(d.Value)
+	if !ok {
+		kind, item, mp = dirLevel, 0, ""
+	}
+	g := &GuildDirection{ID: "owner-" + d.OverrideID, Guild: guild, Kind: kind, ItemID: item, Map: mp, SetBy: "owner",
+		Set: now, Expires: d.ExpiresAt, Note: d.Value}
+	if item > 0 {
+		g.Item = itemName(item)
+	}
+	return g
+}
+
+// parseOwnerGuildDir: "kind[:item_id][@map]" (kind as dirKinds). ok=false for an unknown kind, map or item, or a
+// stock/gear direction without an item.
+func parseOwnerGuildDir(v string) (kind string, item int, mp string, ok bool) {
+	v = strings.ToLower(strings.TrimSpace(v))
+	if i := strings.Index(v, "@"); i >= 0 {
+		mp, v = strings.TrimSpace(v[i+1:]), v[:i]
+		if maps[mp] == nil {
+			return "", 0, "", false
+		}
+	}
+	if i := strings.Index(v, ":"); i >= 0 {
+		n, err := strconv.Atoi(strings.TrimSpace(v[i+1:]))
+		if err != nil || n <= 0 || items[n] == nil {
+			return "", 0, "", false
+		}
+		item, v = n, v[:i]
+	}
+	kind = strings.TrimSpace(v)
+	if !validDirKind(kind) || ((kind == dirStock || kind == dirGear) && item == 0) {
+		return "", 0, "", false
+	}
+	return kind, item, mp, true
 }
 
 // autopilotDirs: what a guild with no AI asks of its members (pure: built from the stock round and the roster).
@@ -430,6 +483,12 @@ func (b *Bot) dutyMaps(d *GuildDirection, now time.Time) (maps []string, mob str
 			}
 		}
 		return false
+	}
+	if d.SetBy == "owner" && d.Map != "" && b.soloMapOK(d.Map) { // AY25: the owner's map first, the item is what they farm there
+		if d.ItemID > 0 {
+			items, item = []int{d.ItemID}, itemName(d.ItemID)
+		}
+		return []string{d.Map}, "", items, item
 	}
 	switch d.Kind {
 	case dirStock, dirGear:

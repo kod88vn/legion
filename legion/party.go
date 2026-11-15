@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -95,6 +96,8 @@ type Party struct {
 	SaveAskAt   time.Time
 	// party rally at the Kafra nearest the destination (rally.go). Guarded by parties.Mutex.
 	Rally rallyState
+	// AY25 (ovFireOrders): owner order overrides already fired for this engine party, by kind|override id. parties.Mutex.
+	OvDone map[string]bool
 	// restored from data/parties.json after a Legion restart (partypersist.go): the 90-min refresh counts from here
 	Restored time.Time
 	// map changes (moveTo): when the party last moved and the maps it left, so the pickers don't send it straight
@@ -457,6 +460,7 @@ func fitHold(leaderMap, partyMap string, sinceMove, sinceArrive time.Duration, n
 // Kimchi07's party kept hunting mjolnir_06's Poison Spore swarm while he fled). Called from partyManager.
 func partyFitCheck(last map[*Party]time.Time) {
 	now := time.Now()
+	ovFireOrders(now)
 	parties.Lock()
 	type fc struct {
 		p    *Party
@@ -515,6 +519,12 @@ func partyFitCheck(last map[*Party]time.Time) {
 	moves := 0 // relocations this round (fitMovesPerRound): parties change maps one by one, like people, not as a wave
 	for _, c := range list {
 		if isRestoring(c.p) || c.p.bossActive() { // bosshunt.go decides a boss hunt's map
+			continue
+		}
+		if om, ok := ovPartyMap(c.p, now); ok { // AY25: the owner's farm map wins over the fit rules until it expires
+			if c.m != om {
+				go c.p.relocate(c.m, -1, -1, "")
+			}
 			continue
 		}
 		if c.anc && goalMapSafeItem(c.ms, c.m, c.itm) {
@@ -1526,4 +1536,122 @@ func partyLeaderName(b *Bot) string {
 		return p.Leader.P.Name
 	}
 	return ""
+}
+
+// ---------------------------------------------------------------- owner overrides on Ayla's engine party (AY25)
+
+// ovEngineParty: p is an engine party whose human is in engine_parties. Only such a party takes the owner overrides.
+func ovEngineParty(p *Party) bool {
+	return p != nil && p.Engine && p.Leader != nil && enginePartyOn(p.Leader.charName())
+}
+
+// ovPartyMap: the owner's farm map for an engine party (aylaDirective, owner first). The engine holds no puppet farm
+// map (the helper's map orders go to OpenKore), so the puppet value is empty. ok only while an owner override is in
+// force; then the fit check, relocate and the roam give-up keep the party on that map.
+func ovPartyMap(p *Party, now time.Time) (string, bool) {
+	if !ovEngineParty(p) {
+		return "", false
+	}
+	d := aylaDirective(ovFarmMap, now, "", "")
+	return d.Value, d.Source == "owner"
+}
+
+// ovFireOrders: each owner order (town_run, rally, party_order) fires once per engine party, when it is set. An order
+// that cannot run yet (a town run within 6 min, a rally on cooldown, a leader on a trip) is tried again on the next
+// round until it runs or the override ends. Logged when it fires.
+func ovFireOrders(now time.Time) {
+	parties.Lock()
+	var ps []*Party
+	for _, p := range parties.byName {
+		if ovEngineParty(p) {
+			ps = append(ps, p)
+		}
+	}
+	parties.Unlock()
+	for _, p := range ps {
+		for _, kind := range []string{ovTownRun, ovRally, ovPartyOrder} {
+			d := aylaDirective(kind, now, "", "")
+			key := kind + "|" + d.OverrideID
+			if d.Source != "owner" || ovDone(p, key) {
+				continue
+			}
+			if ovFireOne(p, kind, d.Value, now) {
+				parties.Lock()
+				if p.OvDone == nil {
+					p.OvDone = map[string]bool{}
+				}
+				p.OvDone[key] = true
+				parties.Unlock()
+			}
+		}
+	}
+}
+
+// ovDone: the owner order (kind|id) already fired for p.
+func ovDone(p *Party, key string) bool {
+	parties.Lock()
+	defer parties.Unlock()
+	return p.OvDone[key]
+}
+
+// ovRallyTowns: the towns an owner's rally may name (owner panel, package F); the engine has no Kafra for some of them.
+var ovRallyTowns = []string{"prontera", "geffen", "payon", "morocc", "alberta", "izlude", "aldebaran", "comodo", "yuno", "lutie", "umbala", "hugel"}
+
+// ovFireOne runs one owner order now. true = done (fired, or refused for good with a log line); false = try again.
+// Values (owner panel, package F): town_run "now"; rally a town from ovRallyTowns or "cancel"; party_order "follow_me".
+func ovFireOne(p *Party, kind, value string, now time.Time) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch kind {
+	case ovTownRun:
+		if value != "now" {
+			log.Printf("engine party %s: owner order town_run %q is not \"now\": not run", p.Name, value)
+			return true
+		}
+		parties.Lock()
+		m := p.Map
+		parties.Unlock()
+		if m == "" {
+			return false
+		}
+		town := nearestTown(m)
+		if !p.callTownRun(town, "owner", now) {
+			return false // a town run within the last 6 min: next round
+		}
+		log.Printf("engine party %s: owner order town_run now: town run to %s called", p.Name, town)
+	case ovRally:
+		if value == "cancel" {
+			parties.Lock()
+			had := p.Rally.Town != ""
+			p.Rally = rallyState{Next: p.Rally.Next} // the cooldown stays; the rally ends
+			parties.Unlock()
+			log.Printf("engine party %s: owner order rally cancel (a rally was running: %v)", p.Name, had)
+			return true
+		}
+		if !containsStr(ovRallyTowns, value) {
+			log.Printf("engine party %s: owner order rally %q is neither a listed town nor cancel: not run", p.Name, value)
+			return true
+		}
+		if _, ok := townSpawn[value]; !ok && len(kafraSpots[value]) == 0 {
+			log.Printf("engine party %s: owner order rally to %s: the engine has no Kafra there: not run", p.Name, value)
+			return true
+		}
+		if !p.startRallyAt(value, value, "owner order", now) {
+			return false // a rally running or on cooldown, or rallies off: next round
+		}
+		log.Printf("engine party %s: owner order rally to %s started", p.Name, value)
+	case ovPartyOrder:
+		if value != "follow_me" {
+			log.Printf("engine party %s: owner order party_order %q is not follow_me: not run", p.Name, value)
+			return true
+		}
+		l := p.Leader
+		l.mu.Lock()
+		acted := l.partyCmdCall(p, now, true)
+		l.mu.Unlock()
+		if !acted {
+			return false // the leader is on a trip, in town or not hunting here: next round
+		}
+		log.Printf("engine party %s: owner order party_order follow_me: members called to the leader", p.Name)
+	}
+	return true
 }

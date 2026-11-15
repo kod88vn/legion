@@ -1980,6 +1980,16 @@ func (b *Bot) deathLoopCheck(now time.Time) {
 		go p.drop(b)
 		return
 	}
+	// AY25: under an owner farm map the death-loop guard keeps the map (the owner's choice outlasts the deaths)
+	if om, ok := ovPartyMap(p, now); ok {
+		parties.Lock()
+		pm := p.Map
+		parties.Unlock()
+		if pm == om {
+			b.event("party", "", fmt.Sprintf("override kept, party died: twice on %s in 10 min, the owner's map %s stays", last.m, om))
+			return
+		}
+	}
 	b.event("party", "", fmt.Sprintf("died twice on %s in 10 min: the party moves to an easier map", last.m))
 	go p.relocate(last.m, -1, -1, "") // deaths are danger: not held back by a party rest (together.go)
 }
@@ -2702,7 +2712,15 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	if p.bossActive() { // bosshunt.go decides when a boss hunt leaves (kill, retreat, timeout)
 		return
 	}
-	m := partySpotNear(p, from, x, y)
+	// AY25: an engine party under an owner farm map goes to that map and only that map (a roam give-up, a death loop
+	// or the fit check all come here); the spot picker and the beginner rule do not apply to the owner's choice
+	om, owner := ovPartyMap(p, time.Now())
+	m := ""
+	if owner {
+		m = om
+	} else {
+		m = partySpotNear(p, from, x, y)
+	}
 	l := p.Leader
 	if m == "" || l == nil {
 		return
@@ -2710,7 +2728,7 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	parties.Lock()
 	ms := append([]*Bot(nil), p.Members...)
 	parties.Unlock()
-	if partyBeginnerFar(ms, m) {
+	if !owner && partyBeginnerFar(ms, m) {
 		return // lfg.go: beginners stay near their home town - no relocation across the world for them
 	}
 	l.mu.Lock()
@@ -2720,6 +2738,10 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	parties.Lock()
 	pm := p.Map
 	parties.Unlock()
+	if owner && pm == m {
+		l.mu.Unlock() // already on the owner's map: it stays
+		return
+	}
 	if l.MapName != from && l.Goal.Map != from && pm != from || l.Goal.Set == "api" || strings.HasPrefix(l.Goal.Set, "boss") {
 		l.mu.Unlock()
 		return
@@ -2730,7 +2752,10 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	}
 	typing := l.P.Typing
 	l.mu.Unlock()
-	if why != "" {
+	if owner {
+		l.event("party", "", fmt.Sprintf("owner farm map %s: the party moves there from %s (override)", m, from))
+		l.partySay(styled(typing, planLine(p, m, "the owner set this map")))
+	} else if why != "" {
 		l.event("party", "", fmt.Sprintf("%s on %s: moving the party to %s", why, from, m))
 		reason := "too rough here for some of us"
 		switch {

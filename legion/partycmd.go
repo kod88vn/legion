@@ -392,8 +392,15 @@ func (b *Bot) partyCmdAck(o partyCmdOrder, now time.Time) {
 // another map for 90 s, or 25+ cells away on this map for 40 s, while the leader hunts here: "<name> come to me, im at
 // <map> x,y" - once per 4 min per member, one line per 30 s.
 func (b *Bot) partyCmdLead(p *Party, now time.Time) {
-	if b.trip != nil || b.errand != nil || isTown(b.MapName) || townOf(b.MapName) != "" || b.Goal.Map != b.MapName || now.Before(b.buffAt["cmdlead"]) {
-		return
+	b.partyCmdCall(p, now, false)
+}
+
+// partyCmdCall (b.mu held): the leader's calls. owner (AY25, an owner party_order): every far member is called at once,
+// without the waits and the 30 s throttle; returns false while the leader cannot act (trip, errand, town, not hunting
+// here), so the owner's order is tried again. The normal path returns after one call and ignores its result.
+func (b *Bot) partyCmdCall(p *Party, now time.Time, owner bool) bool {
+	if b.trip != nil || b.errand != nil || isTown(b.MapName) || townOf(b.MapName) != "" || b.Goal.Map != b.MapName || (!owner && now.Before(b.buffAt["cmdlead"])) {
+		return false
 	}
 	for _, m := range p.Members {
 		if m == b {
@@ -407,6 +414,11 @@ func (b *Bot) partyCmdLead(p *Party, now time.Time) {
 		far := s.Map != b.MapName || dist(b.X, b.Y, s.X, s.Y) > 25
 		if !far || s.Trip || s.Errand || s.Waiting || s.Resting {
 			delete(b.buffAt, key)
+			continue
+		}
+		if owner {
+			typing, where := b.P.Typing, fmt.Sprintf("%s %d,%d", b.MapName, b.X, b.Y)
+			go b.partySay(styled(typing, pick(s.Name+" come to me, im at "+where, s.Name+" come here, im at "+where, s.Name+" where r u? come to me at "+where)))
 			continue
 		}
 		since, seen := b.buffAt[key]
@@ -425,6 +437,7 @@ func (b *Bot) partyCmdLead(p *Party, now time.Time) {
 		b.buffAt["cmdlead"] = now.Add(30 * time.Second)
 		typing, where := b.P.Typing, fmt.Sprintf("%s %d,%d", b.MapName, b.X, b.Y)
 		go b.partySay(styled(typing, pick(s.Name+" come to me, im at "+where, s.Name+" come here, im at "+where, s.Name+" where r u? come to me at "+where)))
-		return
+		return true
 	}
+	return owner
 }
