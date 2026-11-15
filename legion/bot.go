@@ -364,6 +364,8 @@ type Bot struct {
 	meter                meterCounters // meter.go: kills, income, deaths, time budget (guarded by mu)
 	ConnectedAt          time.Time
 	LastErr              string
+	PrevErr              string    // loginready.go: LastErr moved here at the next good login
+	PrevErrAt            time.Time // when that login happened
 	pktsIn               int64
 }
 
@@ -417,7 +419,7 @@ func (b *Bot) connect(loginAddr string) error {
 	}
 	op := le.Uint16(pk)
 	if op != 0x0ac4 && op != 0x0069 {
-		return fmt.Errorf("login refused (%04x, code %d)", op, pk[2])
+		return loginRefusedErr(op, pk[2]) // loginready.go
 	}
 	b.lid1, b.aid, b.lid2 = le.Uint32(pk[4:]), le.Uint32(pk[8:]), le.Uint32(pk[12:])
 	b.sex = pk[46]
@@ -499,6 +501,9 @@ func (b *Bot) connect(loginAddr string) error {
 			b.cid = le.Uint32(pk[2:])
 			b.MapName = trimGat(cstr(pk[6:22]))
 			mapAddr = fmt.Sprintf("%s:%d", ip4(le.Uint32(pk[22:])), le.Uint16(pk[26:]))
+		case 0x0840: // loginready.go: map server not up yet; the server sends nothing else, so stop waiting
+			c.Close()
+			return accessibleMapsErr(pk)
 		case 0x006c, 0x0081:
 			c.Close()
 			return fmt.Errorf("char select refused (%04x)", le.Uint16(pk))
@@ -1543,7 +1548,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 				return
 			case <-time.After(backoff + time.Duration(b.rng.Intn(5000))*time.Millisecond):
 			}
-			if backoff < 2*time.Minute {
+			if backoff < 2*time.Minute && !(serverStarting(err) && backoff >= 20*time.Second) { // loginready.go
 				backoff *= 2
 			}
 			continue
@@ -1563,6 +1568,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			b.hangoutUntil = now.Add(time.Duration(float64(30+b.rng.Intn(int(30+150*b.P.Sociability)))*b.tactics().Hangout) * time.Second)
 		}
 		b.remember("logged in on %s", b.MapName)
+		b.noteLoginOK(now)        // loginready.go: an old error is no longer the current one
 		b.kafraLastFromDiary(now) // kafra.go: an hourly restart doesn't reset the "no Kafra back-and-forth" memory
 		b.meterLogin(now)         // meter.go: purse baseline, new counters for another character
 		b.mu.Unlock()

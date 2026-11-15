@@ -45,6 +45,7 @@ type BotSummary struct {
 	Kills     int    `json:"kills"`
 	Deaths    int    `json:"deaths"`
 	Error     string `json:"error,omitempty"`
+	PrevError string `json:"prev_error,omitempty"` // loginready.go: the error before the last good login
 	// the guild's one leader (guilds.go pickGuildLeaders / in-game master); its Guild is the guild it leads
 	GuildLeader bool `json:"guild_leader,omitempty"`
 }
@@ -58,7 +59,7 @@ func (b *Bot) summary() BotSummary {
 	defer b.mu.Unlock()
 	return BotSummary{Name: b.charName(), Player: b.P.Name, Role: b.charRole(), Class: className(b.Class), Level: b.BaseLvOr(), Guild: guild, GuildLeader: lead,
 		Archetype: b.P.Archetype, Online: b.Online, State: b.State, Map: b.MapName, X: b.X, Y: b.Y,
-		HP: strconv.Itoa(b.HP) + "/" + strconv.Itoa(b.MaxHP), Weight: weightStr(b.Weight, b.MaxWeight), Goal: b.Goal, Kills: b.Kills, Deaths: b.Deaths, Error: b.LastErr}
+		HP: strconv.Itoa(b.HP) + "/" + strconv.Itoa(b.MaxHP), Weight: weightStr(b.Weight, b.MaxWeight), Goal: b.Goal, Kills: b.Kills, Deaths: b.Deaths, Error: b.LastErr, PrevError: b.PrevErr}
 }
 
 // weightStr: "cur/max" raw weight, "" when the limit isn't known yet.
@@ -225,7 +226,7 @@ func serveAPI(addr string, bots []*Bot) {
 				"x": b.X, "y": b.Y, "hp": b.HP, "max_hp": b.MaxHP, "sp": b.SP, "max_sp": b.MaxSP,
 				"base_level": b.BaseLv, "job_level": b.JobLv, "zeny": b.Zeny, "weight": b.Weight, "max_weight": b.MaxWeight,
 				"goal": b.Goal, "kills": b.Kills, "deaths": b.Deaths, "loots": b.Loots, "inventory": inv,
-				"nearby": nearby, "error": b.LastErr, "plan": b.planStatus(), "class": className(b.Class),
+				"nearby": nearby, "error": b.LastErr, "prev_error": b.PrevErr, "prev_error_cleared": prevErrAt(b.PrevErrAt), "plan": b.planStatus(), "class": className(b.Class),
 				"gear_next": b.gearStepView()} // gearpool.go: next gear step (item, cost, funded by, party turn)
 			b.mu.Unlock()
 			writeJSON(w, d)
