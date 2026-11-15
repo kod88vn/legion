@@ -1,0 +1,3 @@
+notes/*.md
+notes/*.json
+!notes/.gitkeep
