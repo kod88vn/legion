@@ -1175,6 +1175,7 @@ func (b *Bot) handle(pk []byte) {
 			b.event("party", "", cstr(pk[8:]))
 			friendHeard(b, cstr(pk[8:]), false) // friends.go
 			b.buffAskHeard(cstr(pk[8:]), now)   // priestbuff.go PT29: a party mate asks the priest for buffs
+			b.partyCmdHeard(cstr(pk[8:]), now)  // partycmd.go: the leader's command (follow me, come to me at <map> x,y, wait here...)
 			if b.pin != nil {
 				txt := cstr(pk[8:])
 				go func() { rallyHeard(partyOf(b), txt) }()                 // the human called a rally (rally.go)

@@ -548,6 +548,9 @@ func (b *Bot) think() {
 	if b.escortThink(gm, moving, now) {
 		return
 	}
+	if b.partyCmdThink(gm, moving, now) { // partycmd.go: the leader's party-chat command (follow me, wait here...) comes first
+		return
+	}
 	// a pending Kafra save (save gate, the party town, a rally) is done wherever the rest of think would take over
 	if b.kafra != nil && b.kafra.Save && b.MapName == b.kafra.Town && !b.underAttack(now) && b.kafraThink(gm, moving, now) {
 		return
