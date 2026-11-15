@@ -57,6 +57,10 @@ sub safe_route {
 	eval { main::ai_route($m, $x, $y, %a) };
 	plugin_error("ai_route($m)", $@) if $@;
 }
+# "Can't loot item...wait..." (someone else's drop under the party's item rules): no retry loop - her pickups pause 15 s
+# (queue b1794725893jju: 31 times in 10 min on pay_dun01)
+our $lootBlockUntil = 0;
+my $logHook = eval { Log::addHook(sub { my (undef, undef, undef, undef, $msg) = @_; $lootBlockUntil = time + 15 if defined $msg && $msg =~ /Can't loot item/ }) };
 my $hooks = Plugins::addHooks(['AI_pre', guarded('tick', \&tick_guarded)], ['packet_partyMsg', guarded('heard', \&heard)], ['ai_processRandomWalk', guarded('short_walk', \&short_walk)], ['checkMonsterAutoAttack', guarded('area_target', \&area_target)], ['npc_talk', guarded('npc_said', \&npc_said)], ['target_died', guarded('gm_kill', \&gm_kill)], ['self_died', guarded('gm_died', \&gm_died)]);
 my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', guarded('command', \&cmd_guarded)]);
 # 'respawn' from outside (cmdfile: her helper) goes through respawn_guard (live 06:38: a Butterfly Wing in payon at full
@@ -2219,6 +2223,7 @@ sub tick_guarded {
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
 	plan_track() if $net && $net->getState() == 5;
+	AI::clear('take', 'items_take', 'items_gather') if time < $lootBlockUntil && AI::inQueue('take', 'items_take', 'items_gather');
 	hp_sample() if $net && $net->getState() == 5;
 	portal_back_guard() if $net && $net->getState() == 5;
 	if ($portalHoldUntil && time < $portalHoldUntil && $field && $field->baseName eq ($portalHoldMap || '') && AI::inQueue('route', 'move') && !AI::inQueue('teleport')) {
@@ -2445,7 +2450,8 @@ sub respawn_guard {
 # more than 10 cells away; never toward a group (another monster within 5 cells of the spot); not the same spot twice
 my ($fsIdleSince, $fsAt, @fsLast) = (0, 0);
 my ($fsWhyAt, $fsWhy) = (0, '');
-my $fsFightAt = 0; # her last fight on the farm map (the sweep then goes on from the nearest waypoint)
+my $fsFightAt = 0;
+my $fsLeg; # {idx, d0, at}: the waypoint leg under way (unreachable check) # her last fight on the farm map (the sweep then goes on from the nearest waypoint)
 # why no leg (debug, every 30 s when it repeats): "[partylead] sweep waits: <reason>"
 sub fs_why { my ($r, $w) = @_; if ($w ne $fsWhy || time - $fsWhyAt > 30) { ($fsWhy, $fsWhyAt) = ($w, time); message "[partylead] sweep waits: $w\n", 'system' if $w !~ /^idle under/ } return $r }
 # a monster she attacks (mon_control attack flag not 0: plants / mushrooms are 0)
@@ -2471,6 +2477,17 @@ sub farm_sweep {
 	if (grep { blockDistance($me, $_->{pos_to}) <= 8 } @mons) { $fsIdleSince = 0; $fsFightAt = time; return fs_why(0, 'a monster within 8 cells') }
 	$fsIdleSince ||= time;
 	return fs_why(0, 'idle under 8 s') if time - $fsIdleSince < 8;
+	# a waypoint leg that brought her no closer within 12 s: that waypoint is unreachable, skipped from now on (queue
+	# b1794726149fx4: "Cannot reach target" on pay_dun02 waypoints)
+	if ($fsLeg && time - $fsLeg->{at} > 12) {
+		my $w = $sweep[$fsLeg->{idx}];
+		if ($w && blockDistance($me, {x => $w->[0], y => $w->[1]}) > $fsLeg->{d0} - 3 && !$sweepBad{$fsLeg->{idx}}) {
+			$sweepBad{$fsLeg->{idx}} = 1;
+			message sprintf("[partylead] sweep: waypoint %d (%d,%d) unreachable - skipped\n", $fsLeg->{idx} + 1, @$w), 'system';
+			AI::clear('route', 'move');
+		}
+		$fsLeg = undef;
+	}
 	return 1 if AI::inQueue('route', 'move') && time - $fsAt < 12; # a leg under way
 	my $an = stick_anchor(stick_mates());
 	my $ap = $an ? $an->[1] : undef;
@@ -2518,6 +2535,7 @@ sub farm_sweep {
 			($tx, $ty) = (int($me->{x} + $dx * $k), int($me->{y} + $dy * $k));
 			($tx, $ty) = ($w->[0], $w->[1]) unless eval { $field->isWalkable($tx, $ty) };
 			$what = sprintf("waypoint %d/%d", $sweepIdx + 1, scalar @sweep);
+			$fsLeg = {idx => $sweepIdx, d0 => blockDistance($me, {x => $w->[0], y => $w->[1]}), at => time};
 		}
 	}
 	return fs_why(0, 'no walkable leg cell found') unless defined $tx;
@@ -3875,6 +3893,7 @@ sub status_intent {
 sub unload {
 	if (defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef }
 	Plugins::delHooks($hooks);
+	eval { Log::delHook($logHook) } if defined $logHook;
 	Commands::unregister($respCmd) if $respCmd;
 	Commands::unregister($pCmd) if $pCmd;
 	Commands::register(['p', 'Chat in the party chat.', \&Commands::cmdChat]); # the built-in handler back

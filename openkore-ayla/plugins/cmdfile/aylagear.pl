@@ -92,9 +92,16 @@ sub cmd_give {
 	message "[aylagear] give: queued ${z}z for $to" . ($why ? " ($why)" : '') . "\n", 'system';
 }
 
+# a failing send is not retried in a loop (queue b1794721137hus: 295 "mail to xXRinfangXx failed" lines in 6 h): two
+# failures to the same friend within an hour suspend mail to it for 6 h (a sale payment still gets its 3 tries)
+our %giveFails; # name -> [count, last]
+sub give_suspended { my $f = $giveFails{$_[0] || ''}; return $f && $f->[0] >= 2 && time - $f->[1] < 21600 ? 1 : 0 }
 sub give_fail {
 	my $why = shift;
 	error "[aylagear] give: mail to $give->{to} failed: $why\n";
+	my $f = $giveFails{$give->{to}} ||= [0, 0];
+	$f->[0] = time - $f->[1] < 3600 ? $f->[0] + 1 : 1; $f->[1] = time;
+	message "[aylagear] give: mail to $give->{to} suspended for 6 h (2 failures)\n", 'system' if $f->[0] == 2;
 	# a payment for an item she already took must not be lost: retry it later (3 tries, then log it for the mind)
 	if ($give->{sale}) {
 		if (($give->{tries} || 0) < 3) { push @gives, {%$give, tries => ($give->{tries} || 0) + 1, notBefore => time + 60} }
@@ -112,6 +119,7 @@ sub give_tick {
 		return unless @gives;
 		return if $mailjob || AI::inQueue('NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal');
 		return if $gives[0]{notBefore} && time < $gives[0]{notBefore};
+		if (give_suspended($gives[0]{to}) && !$gives[0]{sale}) { shift @gives; return } # mail to that friend is off for now
 		$give = shift @gives;
 		@$give{qw(stage at)} = (0, time);
 	}
@@ -394,6 +402,7 @@ sub gift_tick {
 		my ($it) = grep { $_->{name} eq $i && !$_->{equipped} } inv_items() or next;
 		my $to = $giftItems{$i};
 		my $p = $playersList ? $playersList->getByName($to) : undef;
+		next if give_suspended($to) && !($p && $p->{pos_to} && blockDistance($char->{pos_to}, $p->{pos_to}) <= 12); # a trade next to her still works
 		if ($p && $p->{pos_to} && blockDistance($char->{pos_to}, $p->{pos_to}) <= 12) {
 			$dealjob = {to => $to, item => $i, stage => 0, at => time, had => scalar(grep { $_->{name} eq $i } inv_items())};
 			deal_log("TRADING $i to $to (next to her, no fee)");
@@ -803,10 +812,13 @@ sub heard_pm {
 
 sub got_mail { my (undef, $args) = @_; $readMail{$args->{mailID}} = $args if $args && $args->{mailID} }
 
+our $mailFails = 0;
 sub mail_end {
 	my $why = shift;
 	my $j = $mailjob;
 	message "[aylagear] mailbox: $why\n", 'system' if $why;
+	# no answer from the mailbox: the next look waits longer (5, 10, 20 ... 60 min), a good look resets it
+	if (($why || '') =~ /no answer/) { $mailFails++; my $w = 300 * 2 ** ($mailFails - 1); $mailNext = time + ($w > 3600 ? 3600 : $w) } else { $mailFails = 0 }
 	Commands::run('rodex close') if defined $rodexList;
 	push @gives, @{$j->{pays}} if $j && $j->{pays};
 	$mailjob = undef;
