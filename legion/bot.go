@@ -167,6 +167,7 @@ type Bot struct {
 	deferAt      time.Time // tanklead.go leaderDefer: start of the window in which a non-tank leader holds its pull for the tank
 	noSitUntil   time.Time // party.go stood us up for the leader: no new rest sit before this (no sit/stand flicker)
 	potAt        time.Time
+	rdrop        regenDropState // regendrop.go: the town junk drop (in flight, refused, own drops)
 	tripAgain    time.Time
 	classAskAt   time.Time // human-led party: last "need a Rod/Bow" ask in party chat (once per 30 min)
 	lastTripAt   time.Time // last town trip start (min interval: tune().TripMinIntervalMin)
@@ -327,12 +328,12 @@ type Bot struct {
 	humanAskAt                 time.Time // ai.go: first "need a town run" to a human leader not yet answered by a party run
 	idleLeadPos                [2]int    // heal.go healerIdleSit: the leader's position as last seen, still since ...
 	idleLeadStill              time.Time
-	idleSitAt                  time.Time // ... and when the idle sit went down (hysteresis / minimum sit time)
-	kafraVirtual               bool      // kafra.go kafraWouldTake: planning from a town we are not in (no fare requests)
-	kafraNoHard                bool      // farmshare.go kafraWaitUseful: a probe plan that ignores the hard limit
-	escortHold                 string    // humanparty.go escortGate: why we wait in the entrance town ("" = not waiting)
+	idleSitAt                  time.Time       // ... and when the idle sit went down (hysteresis / minimum sit time)
+	kafraVirtual               bool            // kafra.go kafraWouldTake: planning from a town we are not in (no fare requests)
+	kafraNoHard                bool            // farmshare.go kafraWaitUseful: a probe plan that ignores the hard limit
+	escortHold                 string          // humanparty.go escortGate: why we wait in the entrance town ("" = not waiting)
 	kafraMeet                  *kafraMeetState // kaframeet.go (PT22): after a bot party's town run, wait at the town's Kafra
-	leadMap                    string    // partyGoalSync: the leader's map as last seen, since when, and when our goal changed
+	leadMap                    string          // partyGoalSync: the leader's map as last seen, since when, and when our goal changed
 	leadMapSince               time.Time
 	goalSyncAt                 time.Time
 	stuckPos                   [3]interface{} // stuck watchdog (rally.go unstick): position not changing since stuckSince
@@ -1185,7 +1186,7 @@ func (b *Bot) handle(pk []byte) {
 			go leaderHeard(b, cstr(pk[8:]))     // leadertalk.go PT26: a bot leader answers its members
 			if b.pin != nil {
 				txt := cstr(pk[8:])
-				partyChatHeard(b.pin.Human, txt, now) // partyintent.go: the party chat on the dashboard
+				partyChatHeard(b.pin.Human, txt, now)                       // partyintent.go: the party chat on the dashboard
 				go func() { rallyHeard(partyOf(b), txt) }()                 // the human called a rally (rally.go)
 				go func() { humanRestHeard(partyOf(b), txt, time.Now()) }() // together.go: "resting" / "ready" from the human leader
 			}
