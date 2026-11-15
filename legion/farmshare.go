@@ -40,6 +40,17 @@ func kafraWaitCap() time.Duration {
 	return time.Duration(s) * time.Second
 }
 
+// kafraMemberWaitOn: the party member's Kafra-wait rule (kafraMemberWait); tuning kafra_member_wait_off switches it off.
+func kafraMemberWaitOn() bool { return farmShareOn() && !tune().KafraMemberWaitOff }
+
+func kafraMemberWaitCap() time.Duration {
+	s := tune().KafraMemberWaitCapSec
+	if s <= 0 {
+		s = 180
+	}
+	return time.Duration(s) * time.Second
+}
+
 func kafraLongWalkCells() int {
 	c := tune().KafraLongWalkCells
 	if c <= 0 {
@@ -67,6 +78,8 @@ type goalClock struct {
 	since      time.Time
 	seen       time.Time
 	wingedGoal string // kafra wait: already flew home with a Butterfly Wing for this goal
+	saidGoal   string // kafra wait (member): the party was told about the wait for this goal
+	movedGoal  string // kafra wait (leader): the party was moved for this goal
 }
 
 func (c *goalClock) step(goal string, now time.Time, gap time.Duration) time.Duration {
@@ -183,6 +196,9 @@ func (b *Bot) kafraWaitSkip(goal string, now time.Time) bool {
 	c := clockOf(&kafraWaitClocks, b)
 	in := kafraWaitIn{useful: b.kafraWaitUseful(goal, now), solo: b.soloGoal(), cap: kafraWaitCap()}
 	in.waited = c.step(goal, now, 30*time.Second)
+	if !in.solo && in.waited >= in.cap && kafraMemberWaitOn() {
+		return b.kafraMemberWait(goal, now, c, in)
+	}
 	if in.waited >= in.cap {
 		in.wing = c.wingedGoal != goal && b.savedTown != "" && b.savedTown != b.MapName &&
 			townHops(b.savedTown, goal) < townHops(b.MapName, goal) && b.escItemOK(itemButterflyWing, now)
@@ -203,6 +219,134 @@ func (b *Bot) kafraWaitSkip(goal string, now time.Time) bool {
 		b.useEscapeItem(itemButterflyWing, now, "kafra wait "+b.MapName+" -> "+goal)
 	}
 	return false
+}
+
+// memberWaitIn: a party member's state once it has waited the cap at the Kafra (kafraMemberWait).
+type memberWaitIn struct {
+	useful    bool          // a Kafra plan exists once the hard limit is ignored
+	waited    time.Duration // on this goal
+	cap       time.Duration // kafra_wait_cap_sec
+	memberCap time.Duration // kafra_member_wait_cap_sec: after it a stuck leader moves the party
+	safe      bool          // the walk to the goal is safe for our level (kafraWaitInTown already rated it unsafe)
+	wing      bool          // a usable Butterfly Wing and a better save town, not used for this goal yet
+	buy       bool          // a wing can be bought here, it helps (save town better), none bought for this goal yet
+	leader    bool          // we lead the party
+	said      bool          // the party was already told about the wait for this goal
+	moved     bool          // a leader already moved the party for this goal
+}
+
+// memberWaitPlan: "walk" (no wait: the Kafra can't help, or the route is safe), "wait" (keep sitting), "say" (ask the
+// party to collect us, once), "wing" (fly to the save town with a wing we carry), "buy" (buy wings here, once per goal),
+// "relocate" (a stuck leader moves the whole party to a reachable map after memberCap). A party member never gives up
+// its goal: it keeps waiting at the Kafra until the Kafra opens (the hard limit) or the party collects it (PT12).
+func memberWaitPlan(in memberWaitIn) string {
+	if !in.useful {
+		return "walk"
+	}
+	if in.waited < in.cap {
+		return "wait"
+	}
+	switch {
+	case in.wing:
+		return "wing"
+	case in.buy:
+		return "buy"
+	case in.safe:
+		return "walk"
+	case in.leader && in.waited >= in.memberCap && !in.moved:
+		return "relocate"
+	case !in.said:
+		return "say"
+	}
+	return "wait"
+}
+
+// test hooks: the real actions in production, replaced by the tests
+var (
+	memberBuyTrip    = func(b *Bot, why string, now time.Time) { b.startTrip(why, now) }
+	leaderRelocate   = func(p *Party, from string, x, y int, why string) { p.relocate(from, x, y, why) }
+	wingSoldHere     = func(m string) bool { return potionShop(m) != nil }
+	savedStartBetter = func(b *Bot, goal string) bool {
+		return b.savedTown != "" && b.savedTown != b.MapName && townHops(b.savedTown, goal) < townHops(b.MapName, goal)
+	}
+)
+
+// kafraBuys: Butterfly Wing buys per goal for one bot (*Bot -> map[goal]int). Not cleared by the goal clock: a trip
+// out of town resets the wait clock, and a failed buy must not start the trip again. Used under b.mu.
+var kafraBuys sync.Map
+
+func wingBuysFor(b *Bot, goal string) int {
+	v, ok := kafraBuys.Load(b)
+	if !ok {
+		return 0
+	}
+	return v.(map[string]int)[goal]
+}
+
+func markWingBuy(b *Bot, goal string) {
+	v, _ := kafraBuys.LoadOrStore(b, map[string]int{})
+	v.(map[string]int)[goal]++
+}
+
+// kafraMemberWait (b.mu held; kafraWaitSkip for a party member past the cap): acts on memberWaitPlan and returns
+// true when the bot should not wait. Never gives the goal up: a stuck member keeps its party's map. Only a bot-led
+// party's leader relocates it; a human-led party (Ayla's friends) is never moved by its bot members.
+func (b *Bot) kafraMemberWait(goal string, now time.Time, c *goalClock, in kafraWaitIn) bool {
+	p := partyOf(b)
+	mi := memberWaitIn{
+		useful:    in.useful,
+		waited:    in.waited,
+		cap:       in.cap,
+		memberCap: kafraMemberWaitCap(),
+		safe:      b.routeSafeFrom(b.MapName, b.X, b.Y, goal),
+		leader:    p != nil && p.Leader == b && p.Human == "",
+		said:      c.saidGoal == goal,
+		moved:     c.movedGoal == goal,
+		wing:      c.wingedGoal != goal && savedStartBetter(b, goal) && b.escItemOK(itemButterflyWing, now),
+		buy:       b.canBuyWingHere(goal, now),
+	}
+	switch memberWaitPlan(mi) {
+	case "walk":
+		return true
+	case "wing":
+		c.wingedGoal = goal
+		b.parkEvent(fmt.Sprintf("waited %ds in %s for the Kafra toward %s: Butterfly Wing to %s", int(in.waited.Seconds()), b.MapName, goal, b.savedTown))
+		if p != nil { // PT12: a member that leaves the party's area says so
+			b.partySay(styled(b.P.Typing, pick(
+				"flying to "+b.savedTown+" with a wing, the walk to "+goal+" is too rough, meet me there",
+				"taking a wing back to "+b.savedTown+", the way to "+goal+" is too dangerous for me")))
+		}
+		b.useEscapeItem(itemButterflyWing, now, "kafra wait "+b.MapName+" -> "+goal)
+	case "buy":
+		markWingBuy(b, goal)
+		b.parkEvent(fmt.Sprintf("waited %ds in %s for the Kafra toward %s: buying Butterfly Wings for the walk", int(in.waited.Seconds()), b.MapName, goal))
+		memberBuyTrip(b, "buying a Butterfly Wing for the Kafra walk", now)
+		return true
+	case "relocate":
+		c.movedGoal = goal
+		b.parkEvent(fmt.Sprintf("parked %ds in %s for the Kafra toward %s, the walk is too dangerous: moving the party", int(in.waited.Seconds()), b.MapName, goal))
+		go leaderRelocate(p, b.MapName, b.X, b.Y, "kafra closed, the walk to "+goal+" is too dangerous")
+	case "say":
+		c.saidGoal = goal
+		b.parkEvent(fmt.Sprintf("waiting in %s for the Kafra toward %s: the walk is too dangerous, asking the party to collect me", b.MapName, goal))
+		if p != nil {
+			b.partySay(styled(b.P.Typing, pick(
+				"the kafra is closed and the walk to "+goal+" is too rough for me, can someone come get me?",
+				"stuck at the kafra here, the way to "+goal+" is too dangerous, come get me when you can",
+				"waiting at the kafra in "+b.MapName+", the walk to "+goal+" is too rough, come collect me")))
+		}
+	}
+	return false
+}
+
+// canBuyWingHere (b.mu held): we stand in a town whose tool dealer sells Butterfly Wings, carry none, the save town
+// is a better start toward goal (else a wing would go unused), the zeny covers one (bwWant), we are not on a trip, and
+// we have not bought for this goal yet.
+func (b *Bot) canBuyWingHere(goal string, now time.Time) bool {
+	if b.trip != nil || b.countItem(itemButterflyWing) > 0 || !wingSoldHere(b.MapName) || !savedStartBetter(b, goal) {
+		return false
+	}
+	return wingBuysFor(b, goal) == 0 && b.bwWant() > 0
 }
 
 // ---------------------------------------------------------------- 2. no-route ping-pong
