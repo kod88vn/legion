@@ -30,6 +30,7 @@ import (
 func registerGuildDuty(mux *http.ServeMux, bots []*Bot) {
 	if !coreInstance() {
 		go guildDutyManager(bots)
+		go starveilLeadManager(bots) // starveillead.go: Starveil led with no AI (AY19)
 	}
 	mux.HandleFunc("/api/guild-direction", guildDirAPI)
 	mux.HandleFunc("/api/guild-direction/", guildDirAPI)
@@ -424,9 +425,9 @@ func guildDutyPost(w http.ResponseWriter, r *http.Request, rest string, now time
 			gduty.Unlock()
 			apiErr(w, 409, m.Char+" is never kicked: "+m.Exempt)
 			return
-		case id == humanGuildID:
+		case id == humanGuildID && !starveilAutoLead():
 			gduty.Unlock()
-			apiErr(w, 409, "Starveil's master is Ayla (OpenKore): the engine cannot expel from it")
+			apiErr(w, 409, "Starveil's master is Ayla (OpenKore): tuning starveil_auto_lead is off")
 			return
 		}
 		m.Standing, m.KickPending, m.KickAt, m.KickSentAt, m.KickTries = standKicked, true, now, time.Time{}, 0

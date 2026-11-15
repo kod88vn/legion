@@ -9,6 +9,14 @@
 #   gskill [auto|off|NAME]        guild skills: spend points on the plan (Guild Extension first: +6 members a level),
 #                                 or one named skill (GD_...). "auto" (the default after load) checks every 10 min.
 #   ginfo                         guild level, EXP, members/max, skill points, tax per position (from the server)
+#   grecruit [auto|off|now]       automatic recruiting (owner rule AY19, 2026-11-14: Starveil is led with no AI around):
+#                                 every 4-8 min one recruit Legion suggests by role gap (GET :8090 /api/guild-recruits?n=1
+#                                 &mark=1: online, unguilded, never another guild's leader), invited as with ginvite.
+#                                 Default auto; "off" is kept in control/guildrecruit.txt. A full guild waits an hour.
+#   (orders)                      every 30 s the plugin takes Legion's Starveil orders (GET :8090 /api/human-guild/orders,
+#                                 starveillead.go): "say" / "warn" = one guild chat line, "kick" = the line, then the expel
+#                                 (CZ_REQ_BAN_GUILD 0x015b) 5-10 s later - the same guild-duty rules as every guild (G25).
+#                                 Never anyone in her own party (G20), only in her own guild, only as its master.
 # Packets: CZ_REQ_GUILD_MENU 0x014f (0 info, 2 positions, 3 skills); ZC_POSITION_ID_NAME_INFO 0x0166, ZC_POSITION_INFO
 # 0x0160, ZC_GUILD_SKILLINFO 0x0162, ZC_GUILD_INFO 0x0b7b; CZ_UPGRADE_SKILLLEVEL 0x0112 (guild skill ids >= 10000).
 package guildrecruit;
@@ -28,6 +36,7 @@ my @cmds = (
 	Commands::register(['gtax', 'guild EXP tax: gtax <member%> [master%] | gtax off', \&cmd_gtax]),
 	Commands::register(['gskill', 'guild skills: gskill [auto|off|GD_NAME]', \&cmd_gskill]),
 	Commands::register(['ginfo', 'guild level / exp / members / skill points / tax', \&cmd_ginfo]),
+	Commands::register(['grecruit', 'automatic guild recruiting: grecruit [auto|off|now]', \&cmd_grecruit]),
 );
 my $hooks = Plugins::addHooks(
 	['packet/guild_members_title_list', \&on_titles],
@@ -39,6 +48,11 @@ my $hooks = Plugins::addHooks(
 );
 
 my $taxFile = 'control/guildtax.txt';
+my $recruitFile = 'control/guildrecruit.txt';
+my $recruitMode = 'auto';                      # auto | off
+my ($nextRecruit, $fullUntil, $inviteSentAt) = (time + 120 + rand(180), 0, 0);
+my $nextOrders = time + 30;
+my @pendingKicks;                              # [time, order] - the expel follows the line
 my @SKILL_PLAN = (
 	['GD_EXTENSION', 10], ['GD_APPROVAL', 1], ['GD_GUARDRESEARCH', 1], ['GD_BATTLEORDER', 1], ['GD_REGENERATION', 1],
 	['GD_EMERGENCYCALL', 1], ['GD_GLORYWOUNDS', 1], ['GD_SOULCOLD', 1], ['GD_LEADERSHIP', 1], ['GD_HAWKEYES', 1],
@@ -54,6 +68,11 @@ my %skill;                              # name -> {id, lv, up}
 my $skillPoints = 0;
 my ($nextCheck, $pendingTax, $pendingSkill, $infoWanted) = (time + 20, 0, 0, 0);
 
+if (open(my $f, '<', $recruitFile)) {
+	my $l = <$f>;
+	close $f;
+	$recruitMode = 'off' if defined $l && $l =~ /^\s*off/i;
+}
 if (open(my $f, '<', $taxFile)) {
 	my $l = <$f>;
 	close $f;
@@ -85,6 +104,94 @@ sub aid_of {
 	}
 	return 0;
 }
+# GET a Legion API path on the main instance (:8090) -> decoded JSON or undef. Short timeouts: called from the main loop
+# every 30 s at most (as aid_of).
+sub legion_get {
+	my $path = shift;
+	my $sock = IO::Socket::INET->new(PeerAddr => '127.0.0.1', PeerPort => 8090, Proto => 'tcp', Timeout => 0.5) or return;
+	print $sock "GET $path HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
+	my $raw = ''; my $deadline = time + 1.0;
+	while (time < $deadline) { my $n = sysread($sock, my $buf, 65536); last unless $n; $raw .= $buf }
+	close $sock;
+	my ($body) = $raw =~ /\r\n\r\n(.*)$/s or return;
+	return eval { JSON::PP::decode_json($body) };
+}
+
+# Ayla leads her own guild: in a guild, and its master when the server told us who that is
+sub isMaster {
+	return 0 unless $char->{guild} && $char->{guild}{name};
+	return 0 if defined $guild{master} && $guild{master} ne '' && $guild{master} ne $char->{name};
+	return 1;
+}
+
+# a name in her own party (G20: never kicked)
+sub inMyParty {
+	my $name = lc(shift // '');
+	return 0 unless $char->{party} && $char->{party}{users};
+	foreach my $u (values %{$char->{party}{users}}) {
+		return 1 if $u && defined $u->{name} && lc($u->{name}) eq $name;
+	}
+	return 0;
+}
+
+sub cmd_grecruit {
+	my (undef, $args) = @_;
+	$args = '' unless defined $args;
+	$args =~ s/^\s+|\s+$//g;
+	if ($args =~ /^(auto|on)$/i) {
+		$recruitMode = 'auto';
+		unlink $recruitFile;
+	} elsif ($args =~ /^off$/i) {
+		$recruitMode = 'off';
+		if (open(my $f, '>', $recruitFile)) { print $f "off\n"; close $f }
+	} elsif ($args =~ /^now$/i) {
+		($nextRecruit, $fullUntil) = (0, 0);
+	}
+	message "[guildrecruit] automatic recruiting: $recruitMode" . ($fullUntil > time ? ' (guild full, waiting)' : '') . "\n", 'success';
+}
+
+# one suggested recruit, invited like ginvite
+sub autoRecruit {
+	my $d = legion_get('/api/guild-recruits?n=1&mark=1') or return;
+	return unless $d->{guild} && $char->{guild}{name} && lc($d->{guild}) eq lc($char->{guild}{name});
+	my $r = $d->{recruits} && $d->{recruits}[0] or return;
+	return unless $r->{account_id} && $r->{name};
+	message "[guildrecruit] recruiting $r->{name} ($r->{class} lv$r->{level}, $r->{why})\n", 'info';
+	$inviteSentAt = time;
+	cmd_ginvite(undef, "$r->{account_id} $r->{name}");
+}
+
+# Legion's Starveil orders (starveillead.go)
+sub takeOrders {
+	my $d = legion_get('/api/human-guild/orders') or return;
+	my $mine = $char->{guild}{name} // '';
+	foreach my $o (@{$d->{orders} || []}) {
+		next unless ref $o eq 'HASH' && defined $o->{guild} && lc($o->{guild}) eq lc($mine);
+		my $line = $o->{line} // '';
+		$line =~ s/[\r\n]+/ /g;
+		if ($o->{kind} eq 'kick') {
+			if (!$o->{char} || inMyParty($o->{char}) || lc($o->{char}) eq lc($char->{name})) {
+				error "[guildrecruit] expel of '" . ($o->{char} // '?') . "' REFUSED: in my party or myself\n";
+				next;
+			}
+			next unless $o->{guild_id} && $o->{account_id} && $o->{char_id};
+			Commands::run("g $line") if $line ne '';
+			push @pendingKicks, [time + 5 + rand(5), $o];
+		} elsif ($o->{kind} eq 'warn' || $o->{kind} eq 'say') {
+			next if $o->{kind} eq 'warn' && inMyParty($o->{char});
+			Commands::run("g $line") if $line ne '';
+		}
+	}
+}
+
+sub doKick {
+	my $o = shift;
+	return unless inGame() && isMaster() && !inMyParty($o->{char});
+	my $reason = substr($o->{reason} // 'not helping the guild', 0, 39);
+	$messageSender->sendToServer(pack('v V V V a40', 0x015b, $o->{guild_id}, $o->{account_id}, $o->{char_id}, $reason));
+	message "[guildrecruit] expelled $o->{char} from $o->{guild} (guild duty: $reason)\n", 'success';
+}
+
 my %invited; # account id -> name (for the result line)
 sub cmd_ginvite {
 	my (undef, $args) = @_;
@@ -109,6 +216,8 @@ sub cmd_ginvite {
 sub on_invite_result {
 	my (undef, $h) = @_;
 	my %t = (0 => 'already in a guild', 1 => 'declined', 2 => 'ACCEPTED - joined Starveil', 3 => 'guild is full');
+	$fullUntil = time + 3600 if defined $h->{type} && $h->{type} == 3;
+	$inviteSentAt = 0;
 	my $who = join(', ', values %invited) || '?';
 	message "[guildrecruit] ginvite RESULT for $who: " . ($t{$h->{type}} // "unknown ($h->{type})") . "\n", 'success';
 	%invited = ();
@@ -238,6 +347,15 @@ sub tick {
 	return unless inGame();
 	if ($pendingSkill && $now > $pendingSkill) { $pendingSkill = 0; req(3) if $skillMode ne 'off' }
 	if ($pendingTax && $now > $pendingTax) { $pendingTax = 0; req(2) if $taxMember }
+	if (@pendingKicks && $now > $pendingKicks[0][0]) { my $k = shift @pendingKicks; doKick($k->[1]) }
+	if ($now > $nextOrders) {
+		$nextOrders = $now + 30;
+		takeOrders() if isMaster();
+	}
+	if ($recruitMode eq 'auto' && $now > $nextRecruit && $now > $fullUntil && isMaster()) {
+		$nextRecruit = $now + 240 + rand(240); # one every 4-8 min
+		autoRecruit() unless $inviteSentAt && $now - $inviteSentAt < 60;
+	}
 	return if $now < $nextCheck;
 	$nextCheck = $now + 600;
 	return unless $char->{guild} && $char->{guild}{name};
