@@ -85,6 +85,7 @@ func registerPartyDash(mux *http.ServeMux) {
 				FormedMin: int(now.Sub(p.Formed).Minutes()), EvenShare: p.ShareSet, Rally: rallyView(p, now), Need: need, Purpose: purpose}
 			leadMap, leadX, leadY := "", 0, 0
 			humMap, humX, humY := "", 0, 0 // the human leader's freshest position (status.json, else the bots' sight)
+			var humAt time.Time            // when the server's party data / the friends' sight last placed her
 			if p.Human != "" {
 				v.Leader = p.Human
 				hm := partyMemberView{Name: p.Human, Class: "human", Role: "leader", Leader: true, Human: true, State: "played by a person / OpenKore", HP: -1, SP: -1, Zeny: -1}
@@ -96,7 +97,7 @@ func registerPartyDash(mux *http.ServeMux) {
 					hm.Map, hm.X, hm.Y, hm.HP = h.Map, h.X, h.Y, -1
 					leadMap = h.Map
 					leadX, leadY = h.X, h.Y
-					humMap, humX, humY = h.Map, h.X, h.Y
+					humMap, humX, humY, humAt = h.Map, h.X, h.Y, h.At
 					v.Map = h.Map
 				}
 				hm.Level = humanLevel(p.Human)
@@ -106,11 +107,14 @@ func registerPartyDash(mux *http.ServeMux) {
 				hm.Detail = humanDetailOf(p.Human) // partyintent.go
 				if hm.Detail != nil {
 					hm.Intent, hm.LastDec = hm.Detail.Intent, hm.Detail.LastDecision
-					if hm.Detail.Fresh && hm.Detail.Map != "" {
-						humMap, humX, humY = hm.Detail.Map, hm.Detail.X, hm.Detail.Y
+				}
+				if hm.Detail != nil { // diagnostics: what the party data said before the pick
+					hm.Detail.PartyMap, hm.Detail.PartyX, hm.Detail.PartyY = humMap, humX, humY
+					if !humAt.IsZero() {
+						hm.Detail.PartyAgeS = int(now.Sub(humAt).Seconds())
 					}
 				}
-				humSrc := leadPosSource(hm.Detail, &humMap, &humX, &humY, now) // partyintent.go: stale status / no sight fallbacks
+				humSrc := leadPosPick(hm.Detail, &humMap, &humX, &humY, humAt, now) // partyintent.go: the newer of status.json / party data
 				if hm.Detail != nil {
 					hm.Detail.LeadPosSrc = humSrc
 				}

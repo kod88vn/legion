@@ -56,6 +56,12 @@ type humanDetail struct {
 	// where partydash.go took her position for the members' dist_lead: status (fresh status.json), status_old (< 2 min),
 	// party (server party data + the friends' sight), none (unknown: dist_lead -1)
 	LeadPosSrc string `json:"lead_pos_src,omitempty"`
+	Online     bool   `json:"ok_online"`           // statusout.pl: OpenKore in game (false while a map loads)
+	PartyMap   string `json:"party_map,omitempty"` // her map / cell from the server's party data and the friends' sight
+	PartyX     int    `json:"party_x,omitempty"`
+	PartyY     int    `json:"party_y,omitempty"`
+	PartyAgeS  int    `json:"party_age_s,omitempty"` // seconds since that position was last updated
+	StatusAgeS int    `json:"status_age_s"`          // seconds since status.json was written
 }
 
 // humanDetailOf: her detail from the last status.json read, fresh or not (a stale one still says what she did last).
@@ -68,7 +74,8 @@ func humanDetailOf(name string) *humanDetail {
 		return nil
 	}
 	return &humanDetail{humanExtras: s.humanExtras, Map: s.Map, X: s.X, Y: s.Y, LockMap: s.LockMap, Dest: s.Dest,
-		TownRun: s.TownRun, StatusTS: s.TS, Fresh: time.Since(time.Unix(s.TS, 0)) <= 30*time.Second}
+		TownRun: s.TownRun, StatusTS: s.TS, Fresh: time.Since(time.Unix(s.TS, 0)) <= 30*time.Second, Online: s.Online,
+		StatusAgeS: int(time.Since(time.Unix(s.TS, 0)).Seconds())}
 }
 
 // ---------------------------------------------------------------- party chat
@@ -319,6 +326,31 @@ func helperLastRun(role string) *helperRun {
 // sameMap: map names as the engine and OpenKore write them ("pay_dun00", "pay_dun00.gat", any case).
 func sameMap(a, b string) bool {
 	return strings.EqualFold(strings.TrimSuffix(a, ".gat"), strings.TrimSuffix(b, ".gat"))
+}
+
+// leadPosPick (live 2026-11-15 00:42:47: status.json, 1 s old, still said pay_dun00 26,166 while the server's party
+// data already had her on pay_arche 39,131 after the warp - and the friends there showed dist_lead -1): status.json is
+// used while fresh and in game when it agrees with the party data's map; on a disagreement the party map wins (its
+// cell when a friend sees her, else the distance stays unknown), unless the party data is over 2 min old.
+func leadPosPick(d *humanDetail, m *string, x, y *int, partyAt, now time.Time) string {
+	stOK := d != nil && d.Fresh && d.Online && d.Map != "" && d.X+d.Y > 0
+	if stOK && (*m == "" || sameMap(d.Map, *m)) {
+		*m, *x, *y = d.Map, d.X, d.Y
+		return "status"
+	}
+	// status.json's ts is its write time, not when OpenKore saw the map (it rewrites a stale $field every 3 s), so on a
+	// disagreement the server's party map wins - it is sent on every map change - unless it is over 2 min old
+	if stOK && now.Sub(partyAt) > 2*time.Minute {
+		*m, *x, *y = d.Map, d.X, d.Y
+		return "status_newer"
+	}
+	if stOK { // the party data moved her to another map after the last status.json write
+		if *x+*y > 0 {
+			return "party_newer"
+		}
+		return "party_map_no_cell"
+	}
+	return leadPosSource(d, m, x, y, now)
 }
 
 // leadPosSource completes the human leader's position for dist_lead (live 2026-11-15: dist_lead -1 for every friend
