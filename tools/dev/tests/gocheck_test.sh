@@ -69,5 +69,17 @@ else
   bad "real run: exit $rc: $out"
 fi
 
+# 5. a -run pattern that matches no test is a failure, never a pass (nothing was checked)
+if [ "$inside_wsl" = 1 ] || command -v wsl >/dev/null 2>&1 || [ -x /c/Windows/System32/wsl.exe ]; then
+  out="$(bash "$GC" -run 'ZZNoSuchTestGocheck$' 2>&1)"; rc=$?
+  if [ "$rc" -ne 0 ] && echo "$out" | grep -q "NO TESTS RAN"; then
+    ok "-run matches nothing: exit $rc, not a pass"
+  else
+    bad "-run matches nothing: exit $rc, output tail: $(echo "$out" | tail -5)"
+  fi
+else
+  ok "-run case skipped: no WSL route on this host"
+fi
+
 echo "gocheck_test: $fails failure(s)"
 [ "$fails" -eq 0 ]
