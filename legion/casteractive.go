@@ -312,7 +312,7 @@ func (b *Bot) casterWall(cands []boltCand, members []pubState, mx, my int, now t
 // casting range near the group instead of looting / standing by with full SP. lead: the party leader's state.
 func (b *Bot) casterHelp(lead pubState, members []pubState, leaderLeaving, moving bool, now time.Time) bool {
 	if !b.casterOn() || leaderLeaving || b.wantSit || b.MapName != lead.Map || isTown(b.MapName) ||
-		b.SP*100 < tune().CasterHelpSPPct*b.MaxSP || now.Before(b.skillReady) {
+		b.SP*100 < tune().CasterHelpSPPct*b.MaxSP || b.hpFrac() < 0.7 || now.Before(b.skillReady) {
 		return false
 	}
 	mx, my := b.myPos(now)

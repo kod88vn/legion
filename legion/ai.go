@@ -2760,6 +2760,9 @@ func (b *Bot) fight(e *Entity, moving bool, now time.Time) {
 	if b.kiteStep(e, moving, now) { // kite.go: a bow user steps back out of melee reach (hit and run), Ankle Snare
 		return
 	}
+	if b.casterKite(e, moving, now) { // casterkite.go: a Mage-line caster walls / backs off a monster next to it
+		return
+	}
 	if b.trapCast(e, now) { // trap.go: Claymore Trap / Land Mine where the monster will step (trapper Hunter)
 		return
 	}
