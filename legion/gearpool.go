@@ -814,7 +814,7 @@ func (b *Bot) giftableZeny() int {
 	if g := b.gearNext; g != nil && g.Cost > 0 && g.Cost <= 2*max(b.spareZeny(), 1) {
 		keep += g.Cost
 	}
-	return max(0, min(b.Zeny-keep, b.Zeny))
+	return aylaGiftCap(b.charName(), b.Zeny, max(0, min(b.Zeny-keep, b.Zeny))) // G12: Ayla keeps 10,000z
 }
 
 // townBuyNow (b.mu held): the gear piece to buy right here, standing in this town: the class weapon, the party

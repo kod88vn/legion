@@ -1692,6 +1692,10 @@ func (b *Bot) onMarketTrade(op uint16, pk []byte) bool {
 				cancel("not enough zeny")
 				return true
 			}
+			if !aylaSpendOK(b.charName(), b.Zeny, d.Price) { // G12: Ayla's own deal keeps her at 10,000z
+				cancel("zeny floor (G12)")
+				return true
+			}
 			b.send(newPkt(0x00e8).u16(0).u32(uint32(d.Price)).b)
 			s.added = true
 			if d.ItemID == 0 && !s.lockSent { // a gift: nothing comes back, lock right after the zeny

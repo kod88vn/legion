@@ -23,9 +23,13 @@ package main
 //   Recruiting  guildrecruit.pl invites one suggested recruit (GET /api/guild-recruits?n=1&mark=1) every 4-8 min.
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -42,7 +46,12 @@ const (
 	starveilKeepMax    = 5000 // the pool's per-donor cap (guildFundEach) times one
 )
 
-func starveilAutoLead() bool { return tune().StarveilAutoLead && !coreInstance() }
+// starveilAutoLead: the engine leads Starveil on the main instance; with ayla_engine_on also on the core instance,
+// where Ayla's engine bot is the master (the coreInstance gate is relaxed for Starveil only).
+func starveilAutoLead() bool { return tune().StarveilAutoLead && (!coreInstance() || aylaEngineOn()) }
+
+// aylaEngineOn: Ayla is played by the engine (package D, tuning ayla_engine_on, default off). Off changes nothing.
+func aylaEngineOn() bool { return tune().AylaEngineOn }
 
 // starveilOrder: something Ayla's plugin does as Starveil's master (guild chat line, expel)
 type starveilOrder struct {
@@ -107,7 +116,7 @@ func starveilTake(now time.Time) []*starveilOrder {
 // starveilDutyOK: a Starveil member the engine may warn or kick (the duty ledger already exempts these; this is the
 // second guard for gate G20 - Ayla's party is never kicked).
 func starveilDutyOK(s *dutySnap) bool {
-	return starveilAutoLead() && s != nil && !s.pinned && !s.core && !s.keep && !coreInstance()
+	return starveilAutoLead() && s != nil && !s.pinned && !s.core && !s.keep && (!coreInstance() || aylaEngineOn())
 }
 
 // starveilDuty: dutyActions' warning / expel for a Starveil member, done by Ayla's plugin
@@ -194,10 +203,11 @@ func starveilKeepAmount(gearShort int) int {
 
 // starveilLeadManager: Starveil's funding, keep gifts and member parties (main instance; registerGuildDuty hook)
 func starveilLeadManager(bots []*Bot) {
-	t := time.NewTicker(time.Minute)
+	t := time.NewTicker(15 * time.Second) // the engine's orders go out within 15 s (starveilEngineDrain)
 	defer t.Stop()
 	fundAt := time.Now().Add(5 * time.Minute) // after login settles
 	partyAt := time.Now().Add(8 * time.Minute)
+	recruitAt := time.Now().Add(6 * time.Minute)
 	for range t.C {
 		if !starveilAutoLead() {
 			continue
@@ -207,6 +217,13 @@ func starveilLeadManager(bots []*Bot) {
 			continue
 		}
 		now := time.Now()
+		if aylaEngineOn() {
+			starveilEngineDrain(now) // the queued warnings, expels, invites and lines go to Ayla's engine bot in core
+			if now.After(recruitAt) {
+				recruitAt = now.Add(time.Duration(4+crand(5)) * time.Minute) // guildrecruit.pl's cadence (4-8 min)
+				starveilRecruitRound(bots, guild, now)
+			}
+		}
 		if now.After(fundAt) {
 			fundAt = now.Add(starveilFundGap)
 			starveilFundRound(bots, guild, now)
@@ -302,6 +319,11 @@ func starveilPartyRound(bots []*Bot, guild string, now time.Time) {
 func registerStarveilOrders(mux *http.ServeMux) {
 	mux.HandleFunc("/api/human-guild/orders", func(w http.ResponseWriter, r *http.Request) {
 		now := time.Now()
+		if aylaEngineOn() && r.URL.Query().Get("peek") != "1" {
+			// the hand-off to Ayla's OpenKore plugin stops: the engine's bot does these orders (package D)
+			writeJSON(w, map[string]any{"on": false, "engine": true, "orders": []*starveilOrder{}})
+			return
+		}
 		if r.URL.Query().Get("peek") == "1" {
 			starveilLead.Lock()
 			q := append([]*starveilOrder(nil), starveilLead.q...)
@@ -327,4 +349,166 @@ func registerStarveilOrders(mux *http.ServeMux) {
 		}
 		writeJSON(w, map[string]any{"on": starveilAutoLead(), "orders": orders})
 	})
+}
+
+// ---------------------------------------------------------------- Ayla on the engine (package D, ayla_engine_on)
+//
+// With ayla_engine_on, Ayla's engine bot (her character, the Starveil master already in game) acts as the guild leader
+// of Starveil on the core instance. The decisions stay on the main instance, where the members are: the queue above
+// (warn, expel, say, invite) is drained every 15 s and posted to the core instance, whose master bot does it. Tax and
+// guild skills need nothing new: guildAdminThink runs for any bot that is its guild's master (guildtax.go).
+
+// starveilMasterBot: the engine bot that is Starveil's in-game master on this instance (nil if none). b.mu is taken.
+func starveilMasterBot(bots []*Bot, guild string) *Bot {
+	for _, b := range bots {
+		b.mu.Lock()
+		ok := b.Online && b.guildMaster && b.GuildID != 0 && strings.EqualFold(b.GuildName, guild)
+		b.mu.Unlock()
+		if ok {
+			return b
+		}
+	}
+	return nil
+}
+
+// starveilExec: one order, done by the master bot l (core instance). The waits are its own; b.mu is not held across them.
+func starveilExec(l *Bot, o starveilOrder) {
+	switch o.Kind {
+	case "say", "warn":
+		l.mu.Lock()
+		if l.Online && l.GuildName != "" {
+			l.guildSay(styled(l.P.Typing, o.Line))
+		}
+		l.mu.Unlock()
+	case "kick":
+		l.mu.Lock()
+		gid := l.GuildID
+		ok := l.Online && l.guildMaster && gid != 0 && (o.GID == 0 || o.GID == gid)
+		if ok {
+			l.guildSay(styled(l.P.Typing, o.Line))
+			l.event("guild", o.Char, "expelling "+o.Char+" (guild duty: "+o.Reason+")")
+		}
+		l.mu.Unlock()
+		if !ok {
+			starveilCount("engine kick: master not in the guild")
+			return
+		}
+		time.Sleep(time.Duration(4+crand(6)) * time.Second)
+		l.send(dutyExpelPacket(gid, o.AID, o.CID, o.Reason))
+	case "invite":
+		l.mu.Lock()
+		ok := l.Online && l.guildMaster && l.GuildID != 0
+		l.mu.Unlock()
+		if ok {
+			l.send(newPkt(0x0168).u32(o.AID).u32(l.aid).u32(l.cid).b) // CZ_REQ_JOIN_GUILD: the candidate answers itself
+		}
+	}
+}
+
+// registerStarveilEngine: POST /api/human-guild/engine (core instance, ayla_engine_on): main posts the orders it drained.
+func registerStarveilEngine(mux *http.ServeMux, bots []*Bot) {
+	mux.HandleFunc("/api/human-guild/engine", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			apiErr(w, 405, "POST the orders")
+			return
+		}
+		if !aylaEngineOn() || !coreInstance() {
+			apiErr(w, 409, "ayla_engine_on is off on this instance")
+			return
+		}
+		var orders []starveilOrder
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&orders); err != nil {
+			apiErr(w, 400, "bad orders: "+err.Error())
+			return
+		}
+		l := starveilMasterBot(bots, humanGuildInfo().Guild)
+		if l == nil {
+			starveilCount("engine: no master bot in core")
+			apiErr(w, 409, "Starveil's master is not online in core")
+			return
+		}
+		for _, o := range orders {
+			go starveilExec(l, o)
+		}
+		writeJSON(w, map[string]any{"master": l.P.Name, "orders": len(orders)})
+	})
+}
+
+// starveilEngineDrain (main, ayla_engine_on): the queued orders are taken once; the member side of each runs here
+// (its fetch), the rest goes to the master bot in core. A failed post is counted, not retried (orders expire anyway).
+func starveilEngineDrain(now time.Time) {
+	orders := starveilTake(now)
+	if len(orders) == 0 {
+		return
+	}
+	for _, o := range orders {
+		if o.fetch != nil {
+			o.fetch()
+		}
+	}
+	base := coreAPIURL()
+	if base == "" {
+		starveilCount("engine: no core API, orders dropped")
+		return
+	}
+	raw, _ := json.Marshal(orders)
+	resp, err := coreClient.Post(base+"/api/human-guild/engine", "application/json", bytes.NewReader(raw))
+	if err != nil {
+		starveilCount("engine: core unreachable")
+		return
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		starveilCount("engine: core refused the orders")
+		return
+	}
+	starveilCount("engine: orders sent to core")
+}
+
+// starveilRecruitRound (main, ayla_engine_on): the next recruit is the one guildrecruit.pl would invite (her party
+// friends first, then the biggest role gap; the same inputs as /api/guild-recruits?n=1&mark=1). The invite goes out
+// from the master bot in core.
+func starveilRecruitRound(bots []*Bot, guild string, now time.Time) {
+	info := humanGuildInfo()
+	hs, _ := humanStatusOf(info.Human)
+	minLv := 40
+	if hs.BaseLevel-30 > minLv {
+		minLv = hs.BaseLevel - 30
+	}
+	local := localGuildScan(withAdopted(bots), guild, minLv, now)
+	members, cands := local.Members, local.Candidates
+	if base := coreAPIURL(); base != "" {
+		resp, err := coreClient.Get(base + "/api/guild-recruits?local=1&guild=" + urlQuery(guild) + "&min_lv=" + strconv.Itoa(minLv))
+		if err == nil {
+			var core guildRecruitsLocal
+			if json.NewDecoder(resp.Body).Decode(&core) == nil {
+				for _, m := range core.Members {
+					m.key, _ = recruitJob(classIDByName(m.Class))
+					members = append(members, m)
+				}
+				for _, c := range core.Candidates {
+					c.key, c.second = recruitJob(classIDByName(c.Class))
+					cands = append(cands, c)
+				}
+			}
+			resp.Body.Close()
+		}
+	}
+	job := hs.JobID
+	if job == 0 {
+		job = info.Job
+	}
+	picks, _ := pickGuildRecruits(members, cands, job, hs.BaseLevel, 1)
+	if len(picks) == 0 {
+		starveilCount("recruit rounds: no candidate")
+		return
+	}
+	c := picks[0]
+	humanGuild.Lock()
+	if c.account != "" {
+		humanGuild.invited[c.account] = now
+	}
+	humanGuild.Unlock()
+	starveilQueue(&starveilOrder{Kind: "invite", Char: c.Name, Guild: guild, AID: c.AID}, now)
+	log.Printf("starveil lead: invite %s (engine)", c.Name)
 }

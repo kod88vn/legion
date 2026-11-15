@@ -1,6 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -84,5 +89,187 @@ func TestStarveilOrdersTakeOnceAndExpire(t *testing.T) {
 	}
 	if n := len(starveilTake(now)); n != starveilOrderMax {
 		t.Fatalf("queue cap: %d", n)
+	}
+}
+
+// ---------------------------------------------------------------- Ayla on the engine (package D, ayla_engine_on)
+
+// withAylaEngine runs f with ayla_engine_on set to on and the instance set to core (onlyNames) or main, then restores.
+func withAylaEngine(t *testing.T, on, core bool, f func()) {
+	t.Helper()
+	old := tune()
+	nt := *old
+	nt.AylaEngineOn = on
+	curTuning.Store(&nt)
+	oldO, oldE, oldC := *onlyNames, *excludeNames, *coreAPI
+	defer func() {
+		curTuning.Store(old)
+		*onlyNames, *excludeNames, *coreAPI = oldO, oldE, oldC
+	}()
+	*onlyNames, *excludeNames = "", ""
+	if core {
+		*onlyNames = "Ayla"
+	} else {
+		*excludeNames = "Ayla"
+	}
+	f()
+}
+
+func TestAylaEngineDefaultOff(t *testing.T) {
+	if defaultTuning.AylaEngineOn {
+		t.Fatal("ayla_engine_on must default off: the switch stays dark until the owner says so")
+	}
+}
+
+func TestAylaEngineOffChangesNothing(t *testing.T) {
+	withAylaEngine(t, false, true, func() {
+		if starveilAutoLead() {
+			t.Fatal("switch off, core instance: Starveil is not led by the engine (unchanged)")
+		}
+		if starveilDutyOK(&dutySnap{name: "member"}) {
+			t.Fatal("switch off, core instance: no duty for Starveil (unchanged)")
+		}
+	})
+	withAylaEngine(t, false, false, func() {
+		if !starveilAutoLead() || !starveilDutyOK(&dutySnap{name: "member"}) {
+			t.Fatal("switch off, main instance: the engine leads Starveil as before")
+		}
+	})
+	withAylaEngine(t, false, true, func() {
+		// the orders endpoint keeps handing the queue to Ayla's plugin while the switch is off
+		starveilLead.Lock()
+		old := starveilLead.q
+		starveilLead.q = nil
+		starveilLead.Unlock()
+		defer func() { starveilLead.Lock(); starveilLead.q = old; starveilLead.Unlock() }()
+		starveilQueue(&starveilOrder{Kind: "say", Guild: "Starveil", Line: "hi"}, time.Now())
+		mux := http.NewServeMux()
+		registerStarveilOrders(mux)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/human-guild/orders", nil))
+		var got struct {
+			On     bool            `json:"on"`
+			Orders []starveilOrder `json:"orders"`
+		}
+		json.Unmarshal(rec.Body.Bytes(), &got)
+		if len(got.Orders) != 1 {
+			t.Fatalf("switch off: the plugin must still get its order, got %d", len(got.Orders))
+		}
+	})
+}
+
+func TestAylaEngineOnCoreRunsStarveilLead(t *testing.T) {
+	withAylaEngine(t, true, true, func() {
+		if !starveilAutoLead() {
+			t.Fatal("switch on, core instance: the engine leads Starveil (gate relaxed for Starveil)")
+		}
+		if !starveilDutyOK(&dutySnap{name: "member"}) {
+			t.Fatal("switch on, core instance: a plain Starveil member is under the duty rules")
+		}
+		for _, s := range []*dutySnap{{pinned: true}, {core: true}, {keep: true}} {
+			if starveilDutyOK(s) {
+				t.Fatalf("switch on: Ayla's party is still never warned or kicked (G20): %+v", s)
+			}
+		}
+	})
+}
+
+func TestAylaEngineMasterBotFound(t *testing.T) {
+	member := &Bot{Online: true, GuildID: 7, GuildName: "Starveil"}
+	notOnline := &Bot{Online: false, guildMaster: true, GuildID: 7, GuildName: "Starveil"}
+	other := &Bot{Online: true, guildMaster: true, GuildID: 9, GuildName: "Crimson Oath"}
+	master := &Bot{Online: true, guildMaster: true, GuildID: 7, GuildName: "Starveil"}
+	if got := starveilMasterBot([]*Bot{member, notOnline, other, master}, "Starveil"); got != master {
+		t.Fatalf("master bot = %p, want the online master of Starveil", got)
+	}
+	if got := starveilMasterBot([]*Bot{member, notOnline, other}, "Starveil"); got != nil {
+		t.Fatal("no online master: nil, so nothing is sent")
+	}
+}
+
+func TestAylaEngineDrainPostsToCore(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.Write([]byte(`{"orders":1}`))
+	}))
+	defer srv.Close()
+	withAylaEngine(t, true, false, func() {
+		*coreAPI = srv.URL
+		starveilLead.Lock()
+		old := starveilLead.q
+		starveilLead.q = nil
+		starveilLead.Unlock()
+		defer func() { starveilLead.Lock(); starveilLead.q = old; starveilLead.Unlock() }()
+		now := time.Now()
+		starveilQueue(&starveilOrder{Kind: "invite", Guild: "Starveil", AID: 2000001}, now)
+		starveilEngineDrain(now)
+		var sent []starveilOrder
+		if err := json.Unmarshal(body, &sent); err != nil || len(sent) != 1 || sent[0].AID != 2000001 || sent[0].Kind != "invite" {
+			t.Fatalf("core got %s (err %v), want the one invite", body, err)
+		}
+		if left := starveilTake(now); len(left) != 0 {
+			t.Fatal("drained orders are taken once: the queue must be empty")
+		}
+	})
+}
+
+func TestAylaEngineCoreEndpointGated(t *testing.T) {
+	mux := http.NewServeMux()
+	registerStarveilEngine(mux, nil)
+	post := func() int {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/human-guild/engine", strings.NewReader("[]")))
+		return rec.Code
+	}
+	withAylaEngine(t, false, true, func() {
+		if c := post(); c != http.StatusConflict {
+			t.Fatalf("switch off: %d, want 409", c)
+		}
+	})
+	withAylaEngine(t, true, true, func() {
+		if c := post(); c != http.StatusConflict {
+			t.Fatalf("switch on but no master bot in core: %d, want 409", c)
+		}
+	})
+}
+
+func TestTaxAndGuildSkillsPlan(t *testing.T) {
+	if taxTarget(0) != taxMasterPct || taxTarget(1) != taxOfficerPct || taxTarget(3) != taxOfficerPct || taxTarget(4) != taxMemberPct {
+		t.Fatal("tax: master, officers (1-3) and members pay their own pay rates")
+	}
+	if len(guildSkillPlan) == 0 || guildSkillPlan[0].Name != "GD_EXTENSION" || guildSkillPlan[0].Lv != 10 {
+		t.Fatal("guild skills: Guild Extension to level 10 is bought first (more members)")
+	}
+}
+
+func TestAylaSpendFloorG12(t *testing.T) {
+	cases := []struct {
+		name         string
+		zeny, amount int
+		want         bool
+	}{
+		{"Ayla", 15000, 5000, true},  // leaves exactly 10,000
+		{"ayla", 15000, 5001, false}, // one zeny under the floor
+		{"Ayla", 10000, 1, false},
+		{"Ayla", 15000, 0, false},  // nothing to send
+		{"Human", 100, 5000, true}, // other characters are not limited here
+	}
+	for _, c := range cases {
+		if got := aylaSpendOK(c.name, c.zeny, c.amount); got != c.want {
+			t.Errorf("aylaSpendOK(%s, %d, %d) = %v, want %v", c.name, c.zeny, c.amount, got, c.want)
+		}
+	}
+}
+
+func TestAylaGiftCapG12(t *testing.T) {
+	if got := aylaGiftCap("Ayla", 12000, 9000); got != 2000 {
+		t.Fatalf("Ayla with 12,000z may give 2,000z, got %d", got)
+	}
+	if got := aylaGiftCap("Ayla", 9000, 5000); got != 0 {
+		t.Fatalf("Ayla under the floor gives nothing, got %d", got)
+	}
+	if got := aylaGiftCap("Human", 12000, 9000); got != 9000 {
+		t.Fatalf("other characters keep their gift, got %d", got)
 	}
 }
