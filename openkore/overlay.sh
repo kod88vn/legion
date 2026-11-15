@@ -43,9 +43,13 @@ else
   alert "FIELD MISMATCH: $SRC/fields-re not mounted - classic izlude/morocc/alberta fields in use, routes there WILL fail"
 fi
 
-# portals: Renewal Izlude first, then the Kafra lines (fix_kafra_portals.py must stay the last patch)
+# portals: Renewal Izlude first, then the server's warps (portals-srv.txt: removed Renewal links such as
+# gef_fild10<->gef_fild14, wrong landing cells, 1,600 missing warps), then the Kafra lines (fix_kafra_portals.py last)
 if [ -f "$SRC/fix_re_portals.sh" ]; then
   sh "$SRC/fix_re_portals.sh" tables/portals.txt 2>&1 | while read -r l; do say "$l"; done
+fi
+if [ -f "$SRC/fix_srv_portals.py" ] && [ -f "$SRC/portals-srv.txt" ]; then
+  python3 -I "$SRC/fix_srv_portals.py" tables/portals.txt "$SRC/portals-srv.txt" 2>&1 | while read -r l; do say "$l"; done
 fi
 if [ -f "$SRC/fix_kafra_portals.py" ]; then
   K=""; [ -f /ok-kafras.txt ] && K=/ok-kafras.txt

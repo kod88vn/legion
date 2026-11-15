@@ -29,6 +29,8 @@ RUN cd /openkore && for f in /tmp/fields-re/*.fld2.gz; do b=$(basename "$f" .fld
     && sh /tmp/fix_re_portals.sh tables/portals.txt
 # Kafra teleport lines matching this server's Kafras (2026-11-14 travel QA; keep it the LAST portals.txt patch:
 # it owns every Kafra "c r2 c rN" line, fix_re_portals.sh and others must not write Kafra lines)
+COPY fix_srv_portals.py portals-srv.txt /tmp/
+RUN python3 -I /tmp/fix_srv_portals.py tables/portals.txt /tmp/portals-srv.txt
 COPY fix_kafra_portals.py /tmp/fix_kafra_portals.py
 RUN python3 /tmp/fix_kafra_portals.py tables/portals.txt
 # packet layouts of the 20210107 client that stock OpenKore misparses (RefineUI 0AA2/0AA3, NPC market 09D5/09D6, RODEX
