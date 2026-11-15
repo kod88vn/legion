@@ -94,6 +94,10 @@ package main
 //   chat_react_chattiness     0.5
 //   chat_react_jobchange      0.25 ...then for a job change, this chance on top
 //   chat_react_death          0.3  ...for a death, this chance on top
+//   Ambient talk (convo.go): short 2-4 line conversations between two players near each other (town / party)
+//   ambient_talk_on           true conversations on (system layer, CT02 "server feels alive")
+//   ambient_talk_div          150  conversations per minute = online bots / div (at least 0.3)
+//   ambient_talk_max_per_min  3    never more than this many started in any minute (and the rate's upper clamp)
 //
 //   Exchange and chat jobs (exchange.go, chatjobs.go, chatintent.go; docs/design/exchange.md)
 //   exchange_tiers_on         false party free, guild mate / friend free for a spare else kin_discount_pct, ask order
@@ -295,6 +299,10 @@ type Tuning struct {
 	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
 	// party / guild get first refusal on a want for this long in all (split over the buyer's kin stages), then anyone
 	ExchangeFirstRefusalSec int  `json:"exchange_first_refusal_sec"`
+	// convo.go ambient talk (default on: an older tuning.json without the keys keeps these defaults)
+	AmbientTalkOn        bool    `json:"ambient_talk_on"`
+	AmbientTalkDiv       float64 `json:"ambient_talk_div"`
+	AmbientTalkMaxPerMin float64 `json:"ambient_talk_max_per_min"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -327,6 +335,7 @@ var defaultTuning = Tuning{
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
 	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
 	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept",
+	AmbientTalkOn: true, AmbientTalkDiv: 150, AmbientTalkMaxPerMin: 3,
 }
 
 var curTuning atomic.Value // *Tuning
@@ -392,6 +401,8 @@ func (t *Tuning) sanitize() {
 	posF(&t.ChatLocalDiv, d.ChatLocalDiv)
 	posF(&t.ChatPartyDiv, d.ChatPartyDiv)
 	posF(&t.ChatGuildDiv, d.ChatGuildDiv)
+	posF(&t.AmbientTalkDiv, d.AmbientTalkDiv)
+	posF(&t.AmbientTalkMaxPerMin, d.AmbientTalkMaxPerMin)
 	if t.PriestBuffRenewHi <= t.PriestBuffRenewLo {
 		t.PriestBuffRenewHi = t.PriestBuffRenewLo + 1
 	}

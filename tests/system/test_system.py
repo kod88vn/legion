@@ -122,6 +122,47 @@ class TestBugq(Env):
         bugq.mark_woken(bugq.wake_reasons())
         self.assertEqual(bugq.wake_reasons(), [])
 
+    def test_urgent_wake_flag_and_file(self):
+        import bugq
+        i, new = bugq.add("partycheck", "high", "[party apart] Knight apart", key="partycheck:apart:Knight", wake=True)
+        self.assertTrue(new)
+        self.assertTrue(os.path.exists(os.path.join(self.d, "bugq.wake")))
+        r = bugq.wake_reasons()
+        self.assertEqual([k for k, _, _ in r], ["urgent"])
+        self.assertEqual(r[0][2], i)
+        bugq.mark_woken(r)
+        self.assertEqual(bugq.wake_reasons(), [])
+        # the same problem again: dedupe bumps the count, no second wake
+        self.clock(T0 + 1000)
+        i2, new2 = bugq.add("partycheck", "high", "[party apart] Knight apart", key="partycheck:apart:Knight", wake=True)
+        self.assertEqual((i2, new2), (i, False))
+        self.assertEqual(bugq.wake_reasons(), [])
+        self.assertEqual(bugq.load()[i]["count"], 2)
+        # a closed problem that comes back is new: it wakes again
+        bugq.close(i)
+        self.clock(T0 + 2000)
+        i3, new3 = bugq.add("partycheck", "high", "[party apart] Knight apart", key="partycheck:apart:Knight", wake=True)
+        self.assertTrue(new3)
+        self.assertEqual([k for k, _, _ in bugq.wake_reasons()], ["urgent"])
+
+    def test_wake_file_alone_wakes(self):
+        """another writer (a script without the flag in its own file) only touched bugq.wake"""
+        import bugq
+        bugq.touch_wake("stuck bots")
+        self.assertEqual([k for k, _, _ in bugq.wake_reasons()], ["urgent"])
+        bugq.mark_woken(bugq.wake_reasons())
+        self.assertEqual(bugq.wake_reasons(), [])
+
+    def test_watch_exits_for_urgent(self):
+        import bugq
+        bugq.add("sentinel", "high", "[party] Ayla's party is split", key="sentinel:party", wake=True)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = bugq.main(["watch", "--once"])
+        self.assertEqual(rc, 0)
+        self.assertIn("urgent", buf.getvalue())
+        self.assertIn("split", buf.getvalue())
+
     def test_no_plan_wake_early(self):
         import bugq
         bugq.C.append_jsonl(os.path.join(self.d, "deploys.jsonl"), {"epoch": T0 - 3600, "tag": "t1"})
@@ -407,6 +448,24 @@ class TestSentinelMeter(Env):
         self.assertIn("legion_api", sentinel.OUTAGE_KEYS)
         self.assertNotIn("farming", sentinel.OUTAGE_KEYS)
 
+    def test_party_and_stuck_wake(self):
+        import sentinel
+        import bugq
+        sentinel.DATA = self.d
+        sentinel.file_problem("party", "Ayla's party is split for 8+ min: Knight(prontera: idle)")
+        sentinel.file_problem("deaths", "deaths/min 9")
+        live = {e["key"]: e for e in bugq.rank(list(bugq.load().values()))}
+        self.assertTrue(live["sentinel:party"].get("wake"))
+        self.assertEqual(live["sentinel:party"]["priority"], "high")
+        self.assertFalse(live["sentinel:deaths"].get("wake"))
+        self.assertEqual([k for k, _, _ in bugq.wake_reasons()], ["urgent"])
+        self.assertEqual(sentinel.URGENT_KEYS, {"party", "stuck", "frozen"})
+
+    def test_watch_client_checks_retired(self):
+        src = open(os.path.join(REPO, "tools", "sentinel.py"), encoding="utf-8").read()
+        for gone in ("RO-AILab.exe", "ai-client.sh", "roai-restarts.log", "'client_loop'", "'launcher'"):
+            self.assertNotIn(gone, src.split('"""', 2)[2])
+
     def test_imports_without_legion_data(self):
         """Regression b1794706820063-060: with LEGION_DATA unset, ROOT was used before it was defined."""
         env = {k: v for k, v in os.environ.items() if k != "LEGION_DATA"}
@@ -494,6 +553,17 @@ class TestPartyCheck(Env):
         live = bugq.rank(list(bugq.load().values()))
         self.assertEqual(len(live), 1)
         self.assertEqual(live[0]["from"], "partycheck")
+        self.assertTrue(live[0]["wake"])
+
+    def test_violations_filed_high_and_wake(self):
+        import partycheck as P
+        import bugq
+        P.file_violations([("sit", "party", "normal", "party sitting for 5+ min"),
+                           ("idle", "Knight", "normal", "Knight has been idle on payon")])
+        live = bugq.rank(list(bugq.load().values()))
+        self.assertEqual(sorted(e["priority"] for e in live), ["high", "high"])
+        self.assertEqual([k for k, _, _ in bugq.wake_reasons()], ["urgent", "urgent"])
+        self.assertEqual(P.file_priority("outage"), "outage")
 
     def test_snapshot_cli(self):
         import partycheck as P

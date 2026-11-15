@@ -321,6 +321,7 @@ func chatterLoop(bots []*Bot, stop <-chan struct{}) {
 		if cfloat() < guild/30 {
 			chatterGuild(on)
 		}
+		ambientTalk(on, byMap) // convo.go: short conversations between players near each other
 	}
 }
 

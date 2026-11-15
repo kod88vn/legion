@@ -216,10 +216,36 @@ class ScheduleTests(unittest.TestCase):
         s.started("chat", NOW)
         self.assertNotIn("chat", s.pending)
 
-    def test_build_on_demand_only(self):
+    def test_build_daily_and_on_demand(self):
         s = self.sched()
-        self.assertIsNone(s.due("build", NOW + 99999, [], {}))
-        self.assertEqual(s.due("build", NOW + 99999, [], {"wake": {"build": True}}), "wake")
+        self.assertIsNone(s.due("build", NOW + 60, [], {}))  # first daily review 2 h after start
+        self.assertEqual(s.due("build", NOW + 60, [], {"wake": {"build": True}}), "wake")
+        self.assertEqual(s.due("build", NOW + 2 * 3600 + 1, [], {}), "schedule")
+        s = self.sched([{"role": "build", "t": NOW - 23 * 3600}])
+        self.assertIsNone(s.due("build", NOW, [], {}))
+        self.assertEqual(s.due("build", NOW + 3601, [], {}), "schedule")
+
+    def test_qa_every_3h_and_daily_cap(self):
+        s = self.sched([{"role": "qa", "t": NOW - 2 * 3600}])
+        self.assertIsNone(s.due("qa", NOW, [], {}))
+        self.assertEqual(s.due("qa", NOW + 3601, [], {}), "schedule")
+        day = [{"role": "qa", "t": NOW - 5 * 3600, "cost_usd": dispatch.ROLES["qa"]["daily_cap"]}]
+        self.assertIsNone(s.due("qa", NOW + 3601, [], {}, day))   # 24 h spend reached
+        self.assertEqual(s.due("qa", NOW + 3601, [], {}, []), "schedule")
+
+    def test_qa_wakes_after_deploy(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(dispatch.deploy_wake(None, NOW, d))  # no deploy record
+            with open(os.path.join(d, "deploys.jsonl"), "w") as f:
+                f.write(json.dumps({"epoch": NOW - 3600 * 8, "tag": "old"}) + "\n")
+                f.write(json.dumps({"epoch": NOW - 300, "tag": "run12"}) + "\n")
+            self.assertIsNone(dispatch.deploy_wake(None, NOW, d))  # still settling (10 min)
+            self.assertEqual(dispatch.deploy_wake(None, NOW + 600, d), "run12")
+            self.assertEqual(dispatch.deploy_wake(NOW - 7200, NOW + 600, d), "run12")  # QA ran before the deploy
+            self.assertIsNone(dispatch.deploy_wake(NOW + 400, NOW + 600, d))  # QA already ran after it
+            self.assertIsNone(dispatch.deploy_wake(None, NOW + 7 * 3600, d))  # too old to chase
+        s = self.sched([{"role": "qa", "t": NOW - 3600}])
+        self.assertEqual(s.due("qa", NOW, [], {"wake": {"qa": "deploy:run12"}}), "deploy:run12")
 
     def test_ayla_event_wake_respects_gap(self):
         s = self.sched([{"role": "ayla", "t": NOW - 30}])
@@ -250,6 +276,49 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(s.poll()["ayla_event"], "idle")
         s.consumed("ayla")
         self.assertIsNone(s.poll()["ayla_event"])
+
+
+class ReviewerBriefingTests(unittest.TestCase):
+    BOTS = [{"name": "Kira", "class": "Knight", "level": 55, "online": True, "state": "hunting", "map": "gef_fild10",
+             "kills": 30, "deaths": 0},
+            {"name": "Bo", "class": "Knight", "level": 50, "online": True, "state": "stuck: no path", "map": "prt_fild08"},
+            {"name": "Vend", "class": "Merchant", "level": 40, "online": True, "role": "vendor", "state": "vending"},
+            {"name": "Off", "class": "Wizard", "level": 70, "online": False, "state": "offline"},
+            {"name": "Zap", "class": "Wizard", "level": 61, "online": True, "state": "hunting", "map": "gl_church"}]
+
+    def api(self):
+        return briefing.Api(fetch=MockApi(dict(FULL, **{"/api/bots": self.BOTS})))
+
+    def test_class_digest_reads_class_files(self):
+        import qabrief
+        d = qabrief.class_digest()
+        text = qabrief.digest_text(d)
+        self.assertIn("Knight", text)
+        self.assertIn("Stats", text)
+        self.assertIn("Skills", text)
+        self.assertNotIn("Engine notes", text)
+        only = qabrief.class_digest(fields=("Use",), only={"wizard"})
+        self.assertTrue(all("izard" in r or r.startswith("  ") for rows in only.values() for r in rows))
+
+    def test_qa_briefing_samples_every_class(self):
+        with tempfile.TemporaryDirectory() as nd:
+            text, snap = briefing.assemble("qa", self.api(), nd, trigger="deploy:run12")
+        self.assertIn("deploy:run12", text)
+        self.assertIn("Knight (2 online)", text)
+        self.assertIn("Wizard (1 online)", text)
+        self.assertNotIn("Vend", text)  # vendors vend all day
+        self.assertNotIn("Off ", text)
+        self.assertIn("! Bo lv50", text)  # suspicious state flagged
+        self.assertEqual(snap["metrics"]["suspicious"], 1)
+        self.assertLess(len(text), 12300)
+
+    def test_build_briefing_has_plans(self):
+        with tempfile.TemporaryDirectory() as nd:
+            text, _ = briefing.assemble("build", self.api(), nd, trigger="schedule")
+        self.assertIn("Planned builds", text)
+        self.assertIn("Your notes from earlier calls", text)  # before the digest: never cut away
+        self.assertIn("Knight (2):", text)
+        self.assertLess(len(text), 16300)
 
 
 class BudgetTests(unittest.TestCase):
@@ -301,13 +370,19 @@ class CommandTests(unittest.TestCase):
 
     def test_models(self):
         self.assertEqual(dispatch.ROLES["ayla"]["model"], "haiku")  # PR38/AY05: a watcher
-        self.assertEqual(dispatch.ROLES["build"]["model"], "sonnet")
-        for r in ["market", "chat"] + dispatch.GUILDS:
+        for r in ["market", "chat", "qa", "build"] + dispatch.GUILDS:
             self.assertEqual(dispatch.ROLES[r]["model"], "haiku")
 
     def test_only_ayla_gets_ayla_sh(self):
         self.assertEqual(len(dispatch.allowed_tools("ayla")), 2 + len(dispatch.AYLA_READ) + len(dispatch.AYLA_ACT))
         self.assertEqual(len(dispatch.allowed_tools("market")), 1)
+
+    def test_reviewers_observe_only(self):
+        for r in ("qa", "build"):
+            self.assertEqual(len(dispatch.allowed_tools(r)), 1)  # legionctl only (bug, bot, meter, notes, think)
+            denied = " ".join(dispatch.denied_tools(role=r))
+            for c in ("say", "whisper", "goal", "shop", "party"):
+                self.assertIn(" %s:*)" % c, denied)
 
     def test_all_briefs_load(self):
         for r in dispatch.ROLES:
