@@ -444,11 +444,11 @@ class IntegrationTests(unittest.TestCase):
     def test_ayla_helper_guarded_commands_only(self):
         tl = dispatch.allowed_tools("ayla")
         tools = " ".join(tl)
-        for w in ("cmd:", "rally:", "map", "party", "say", "give", "whisper", "guild"):
+        for w in ("cmd:", "say", "give", "whisper", "guild"):
             self.assertNotIn(f"ayla.sh {w}", tools)
         self.assertIn(f"Bash({dispatch.ayla_cmd()} cmd respawn)", tl)   # exact: no free console text (G05)
-        self.assertIn(f"Bash({dispatch.ayla_cmd()} rally cancel:*)", tl)
-        self.assertFalse(any(" map" in t or "rally:" in t for t in tl))   # AY05: the helper never picks maps
+        for a in ("map", "rally", "party"):   # owner 2026-11-14: Haiku controls Ayla again (map / rally / party)
+            self.assertIn(f"Bash({dispatch.ayla_cmd()} {a}:*)", tl)
         self.assertTrue(any("bugq.py add:*" in t for t in tl))
         denied = " ".join(dispatch.denied_tools("python", "ayla"))
         for c in ("party-say:*", "say:*", "chat-jobs:*", "guild-direction-set:*", "goal:*"):

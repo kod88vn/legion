@@ -110,12 +110,12 @@ ORDER_GAP = 120  # an owner order wakes a role at most this often
 
 
 # ----------------------------------------------------------------- command line for the Claude CLI
-# ayla.sh actions the helper may use: reads (docker logs, deals.log, status/lead print), and the guarded plugin orders
-# for getting her unstuck (partylead rally cancel, a Butterfly Wing respawn). AY05 narrowed (2026-11-15): the helper
-# never picks maps - no `map`, `rally <town>` or `party` (her plugin chooses by the gear table). Never `cmd` with free
-# text: no bare ai / ai off / ai manual can be formed (G05; cmdfile.pl blocks them too).
+# ayla.sh actions the helper may use: reads (docker logs, deals.log, status/lead print) and her control (owner reversed
+# AY05, 2026-11-14 "Let Haiku control Ayla again"): map (partylead goto - her plugin still rejects a map far above
+# the party's gear-rated level or behind dangerous packs), rally <town> [map] / rally cancel, a Butterfly Wing respawn,
+# party chat. Never `cmd` with free text: no bare ai / ai off / ai manual can be formed (G05; cmdfile.pl blocks them too).
 AYLA_READ = ["log", "chat", "deals", "lead", "status"]
-AYLA_ACT = ["rally cancel", "cmd respawn"]
+AYLA_ACT = ["map", "rally", "party", "cmd respawn"]
 BUGQ = os.path.join(REPO, "tools", "system", "bugq.py").replace("\\", "/")
 WD_QUEUE = os.path.join(REPO, "openkore-ayla", "logs", "bugqueue.jsonl")  # partylead.pl wd_report writes here
 # her OpenKore console log (every "[watchdog] CAUSE ..." line, also the repeats the queue file dedupes for an hour)

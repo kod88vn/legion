@@ -32,8 +32,33 @@ use constant RESUME => 12;   # hysteresis (= collect_stop_cells+4): once waiting
                              # when everyone is within 12 - stopping and going at 20/21 flip-flopped (QA 2026-11-14)
 
 Plugins::register('partylead', 'Ayla waits for, guards and talks to her party', \&unload);
-my $hooks = Plugins::addHooks(['AI_pre', \&tick_guarded], ['packet_partyMsg', \&heard], ['ai_processRandomWalk', \&short_walk], ['checkMonsterAutoAttack', \&area_target], ['npc_talk', \&npc_said], ['target_died', \&gm_kill], ['self_died', \&gm_died]);
-my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', \&cmd_guarded]);
+# every hook and the command run inside eval: a plugin error is logged ("[watchdog] ERROR ...", bug queue) and never
+# kills OpenKore (owner 2026-11-14 "Must keep openkore running" - 04:29:58 an ai_route with undef coordinates did)
+my $plErrAt = 0;
+sub plugin_error {
+	my ($where, $err) = @_;
+	$err =~ s/\s+$//;
+	Log::warning("[watchdog] ERROR in partylead $where: $err
+");
+	return if time - $plErrAt < 60;
+	$plErrAt = time;
+	eval { wd_report('ERROR', ($field ? $field->baseName : '-'), "plugin error in $where: $err", 'caught, OpenKore keeps running') };
+}
+sub guarded { my ($name, $f) = @_; return sub { my @r = eval { $f->(@_) }; plugin_error($name, $@) if $@; return wantarray ? @r : $r[0] } }
+# ai_route that never dies: no coordinates -> a plain map route (no noMapRoute); nothing to route to -> skip
+sub safe_route {
+	my ($m, $x, $y, %a) = @_;
+	return unless defined $m && $m ne '';
+	if (!defined $x || !defined $y || $x !~ /^\d+$/ || $y !~ /^\d+$/) {
+		($x, $y) = (undef, undef);
+		return if $a{noMapRoute} || ($field && $m eq $field->baseName); # a cell on this map without a cell: nothing to do
+		delete $a{noMapRoute};
+	}
+	eval { main::ai_route($m, $x, $y, %a) };
+	plugin_error("ai_route($m)", $@) if $@;
+}
+my $hooks = Plugins::addHooks(['AI_pre', guarded('tick', \&tick_guarded)], ['packet_partyMsg', guarded('heard', \&heard)], ['ai_processRandomWalk', guarded('short_walk', \&short_walk)], ['checkMonsterAutoAttack', guarded('area_target', \&area_target)], ['npc_talk', guarded('npc_said', \&npc_said)], ['target_died', guarded('gm_kill', \&gm_kill)], ['self_died', guarded('gm_died', \&gm_died)]);
+my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', guarded('command', \&cmd_guarded)]);
 
 my ($holding, $saved, $last, $lastMsg, $lastFetch) = (0, undef, 0, 0, 0);
 my ($lastSay, $nextIdle, $lastLv, $errand, @pending) = (0, time + 60, 0, 0);
@@ -288,7 +313,7 @@ sub depart_tick {
 		$depart->{routeAt} = time;
 		Commands::run('stand') if $char->{sitting};
 		AI::clear('route', 'move');
-		main::ai_route($lm, undef, undef, attackOnRoute => route_aor(), maxRouteTime => 6);
+		safe_route($lm, undef, undef, attackOnRoute => route_aor(), maxRouteTime => 6);
 	}
 	return 1;
 }
@@ -485,7 +510,7 @@ sub back_tick {
 			$backRouteAt = time;
 			Commands::run('stand') if $char->{sitting};
 			AI::clear('route', 'move');
-			main::ai_route($bm, undef, undef, attackOnRoute => 1);
+			safe_route($bm, undef, undef, attackOnRoute => 1);
 		}
 	} elsif (!wait_farm() && AI::inQueue('route', 'move') && (!$waitSpot || blockDistance($char->{pos_to}, $waitSpot) <= 4)) {
 		AI::clear('route', 'move'); # outside the dungeon (or the friend is on this map): wait here, farming around the spot
@@ -646,7 +671,7 @@ sub rally_tick {
 			$r->{routeAt} = time;
 			Commands::run('stand') if $char->{sitting};
 			AI::clear('route', 'move');
-			main::ai_route($r->{town}, $r->{x}, $r->{y}, distFromGoal => 3, attackOnRoute => route_aor());
+			safe_route($r->{town}, $r->{x}, $r->{y}, distFromGoal => 3, attackOnRoute => route_aor());
 		}
 		if (time - $lastMsg > 30) { $lastMsg = time; message "[partylead] rally: going to the Kafra in $r->{town} ($r->{x},$r->{y})\n", 'system' }
 		return 1;
@@ -819,7 +844,7 @@ sub portal_guard {
 			my ($x, $y) = free_cell(int(($field->width || 200) / 2), int(($field->height || 200) / 2), 0, 25);
 			if (defined $x) {
 				AI::clear('route', 'move');
-				main::ai_route($here, $x, $y, maxRouteTime => 30, noMapRoute => 1, attackOnRoute => 2);
+				safe_route($here, $x, $y, maxRouteTime => 30, noMapRoute => 1, attackOnRoute => 2);
 				message "[partylead] after the warp loop: walking to the middle of $here ($x,$y)\n", 'system';
 				$arriveStep = 0;
 				return 1;
@@ -833,7 +858,7 @@ sub portal_guard {
 			my ($x, $y) = free_cell($cx, $cy, 6, 12); # must clear PORTAL_KEEP (9) from a cell next to the portal
 			if (defined $x) {
 				AI::clear('route', 'move');
-				main::ai_route($here, $x, $y, maxRouteTime => 8, noMapRoute => 1, attackOnRoute => 2);
+				safe_route($here, $x, $y, maxRouteTime => 8, noMapRoute => 1, attackOnRoute => 2);
 				message "[partylead] arrived next to a portal: stepping off to $x,$y\n", 'system';
 			}
 		}
@@ -1065,7 +1090,7 @@ sub wait_farm {
 	# nothing to fight: back to the wait spot if she wandered off chasing a kill
 	if (blockDistance($char->{pos_to}, $waitSpot) > 4 && !AI::inQueue('route', 'move') && time - $waitBackAt > 5) {
 		$waitBackAt = time;
-		main::ai_route($here, $waitSpot->{x}, $waitSpot->{y}, distFromGoal => 2, maxRouteTime => 10, noMapRoute => 1);
+		safe_route($here, $waitSpot->{x}, $waitSpot->{y}, distFromGoal => 2, maxRouteTime => 10, noMapRoute => 1);
 	}
 	return 0;
 }
@@ -1148,7 +1173,7 @@ sub short_walk {
 		my $dd = blockDistance({x => $cx, y => $cy}, {x => $tx, y => $ty});
 		if ($dd > 12) { ($tx, $ty) = (int($cx + ($tx - $cx) * 12 / $dd), int($cy + ($ty - $cy) * 12 / $dd)) }
 		if (eval { $field->isWalkable($tx, $ty) } && !near_portal($m, $tx, $ty)) {
-			main::ai_route($m, $tx, $ty, maxRouteTime => 10, attackOnRoute => 2, noMapRoute => 1, isRandomWalk => 1, distFromGoal => 2);
+			safe_route($m, $tx, $ty, maxRouteTime => 10, attackOnRoute => 2, noMapRoute => 1, isRandomWalk => 1, distFromGoal => 2);
 			return;
 		}
 	}
@@ -1185,7 +1210,7 @@ sub short_walk {
 			if (eval { $field->isWalkable($ix + $ox, $iy + $oy) } && !near_portal($m, $ix + $ox, $iy + $oy)) { ($tx, $ty, $found) = ($ix + $ox, $iy + $oy, 1); last OUTER }
 		} } }
 	}
-	main::ai_route($m, $tx, $ty, maxRouteTime => 10, attackOnRoute => 2, noMapRoute => 1, isRandomWalk => 1, distFromGoal => 2);
+	safe_route($m, $tx, $ty, maxRouteTime => 10, attackOnRoute => 2, noMapRoute => 1, isRandomWalk => 1, distFromGoal => 2);
 }
 
 # queue a party line; $gap = minimum seconds since her last line
@@ -1452,7 +1477,7 @@ sub goto_tick {
 	$gotoRouteAt = time;
 	$idleSince = 0;
 	if ($char->{sitting}) { Commands::run('stand'); AI::clear('sitting') }
-	main::ai_route($tgt, undef, undef, attackOnRoute => route_aor());
+	safe_route($tgt, undef, undef, attackOnRoute => route_aor());
 	message "[partylead] " . ($tgt eq $gotoMap ? 'goto' : 'idle, not on lockMap') . ": route to $tgt started\n", 'system';
 }
 
@@ -2058,7 +2083,7 @@ sub watchdog_tick {
 		my %a = (return => 0);
 		short_walk(undef, \%a);
 	} else {
-		main::ai_route($tgt, undef, undef, attackOnRoute => route_aor());
+		safe_route($tgt, undef, undef, attackOnRoute => route_aor());
 	}
 }
 
@@ -2273,7 +2298,7 @@ sub pack_tick {
 		if ($go ne '' && $go ne $here) {
 			$config{lockMap} = $go if ($config{lockMap} || '') eq '' && !is_townmap($go);
 			AI::clear('route', 'move'); AI::clear('attack') unless scalar(AI::ai_getAggressives());
-			main::ai_route($go, undef, undef, attackOnRoute => route_aor());
+			safe_route($go, undef, undef, attackOnRoute => route_aor());
 		}
 		return 1;
 	}
@@ -2291,7 +2316,7 @@ sub pack_tick {
 		if (time - $pk{routeAt} > 4 && $an->[4]) {
 			$pk{routeAt} = time;
 			AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
-			main::ai_route($here, $an->[4]{x}, $an->[4]{y}, distFromGoal => 4, maxRouteTime => 8, noMapRoute => 1, attackOnRoute => 1);
+			safe_route($here, $an->[4]{x}, $an->[4]{y}, distFromGoal => 4, maxRouteTime => 8, noMapRoute => 1, attackOnRoute => 1);
 		}
 		return 1;
 	}
@@ -2305,7 +2330,7 @@ sub pack_tick {
 				$pk{routeAt} = time;
 				Commands::run('stand') if $char->{sitting};
 				AI::clear('attack', 'route', 'move');
-				main::ai_route($am, $ax, $ay, distFromGoal => 4, attackOnRoute => route_aor(), ($am eq $here ? (noMapRoute => 1, maxRouteTime => 10) : ()));
+				safe_route($am, $ax, $ay, distFromGoal => 4, attackOnRoute => route_aor(), ($am eq $here ? (noMapRoute => 1, maxRouteTime => 10) : ()));
 			}
 			return 1;
 		}
@@ -2376,7 +2401,7 @@ sub wait_fight {
 	if (blockDistance($char->{pos_to}, $w->{spot}) > 4) { # after a fight: back to her spot (same map, a few cells)
 		$pk{routeAt} = time;
 		AI::clear('route', 'move');
-		main::ai_route($here, $w->{spot}{x}, $w->{spot}{y}, distFromGoal => 1, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 1);
+		safe_route($here, $w->{spot}{x}, $w->{spot}{y}, distFromGoal => 1, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 1);
 	}
 	return 1;
 }
@@ -2492,7 +2517,7 @@ sub stick_tick {
 			my ($rdm) = route_maps();
 			if (!AI::inQueue('route', 'move') || ($rdm ne '' && $rdm ne $stickFlee->{map})) {
 				AI::clear('route', 'move');
-				main::ai_route($stickFlee->{map}, undef, undef, attackOnRoute => 1);
+				safe_route($stickFlee->{map}, undef, undef, attackOnRoute => 1);
 			}
 			return 1;
 		}
@@ -2509,7 +2534,7 @@ sub stick_tick {
 			($tx, $ty) = ($an->[1]{x}, $an->[1]{y}) if $an && blockDistance($an->[1], $boss->{pos_to}) > $bd;
 			if (eval { $field->isWalkable($tx, $ty) }) {
 				AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
-				main::ai_route($here, $tx, $ty, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 0);
+				safe_route($here, $tx, $ty, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 0);
 				message "[partylead] PT31: $boss->{name} $bd cells away - the party pulls back together\n", 'system';
 				return 1;
 			}
@@ -2519,7 +2544,7 @@ sub stick_tick {
 	if (0 && $aggr == 2 && $hpp >= 0.45 && $an && $ad > 5 && time - $stickRunAt > 3 && !AI::inQueue('attack') && !(defined $config{partylead_pt32} && $config{partylead_pt32} eq '0')) {
 		$stickRunAt = time;
 		AI::clear('route', 'move');
-		main::ai_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 3, maxRouteTime => 4, noMapRoute => 1, attackOnRoute => 1);
+		safe_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 3, maxRouteTime => 4, noMapRoute => 1, attackOnRoute => 1);
 		message "[partylead] PT32: 2 monsters on her - stepping back toward $an->[0] ($ad cells)\n", 'system';
 		return 1;
 	}
@@ -2533,7 +2558,7 @@ sub stick_tick {
 			$stickRunAt = time;
 			Commands::run('stand') if $char->{sitting};
 			AI::clear('route', 'move', 'items_take', 'take', 'items_gather'); # never the attack: she fights back what hits her
-			main::ai_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 1);
+			safe_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 1);
 			message sprintf("[partylead] PT31: falling back to %s (%d cells; HP %d%%, %d monsters on her)\n", $an->[0], $ad, $hpp * 100, $aggr), 'system';
 			return 1;
 		}
@@ -2545,7 +2570,7 @@ sub stick_tick {
 				$stickRunAt = time;
 				$stickFlee = {map => $fm, from => $here, at => time};
 				AI::clear('route', 'move', 'items_take', 'take', 'items_gather'); # never the attack (she fights back)
-				main::ai_route($fm, undef, undef, attackOnRoute => 1);
+				safe_route($fm, undef, undef, attackOnRoute => 1);
 				psay(pick("too many here, falling back to u in $fm", "$aggr on me on $here, coming back to $fm"), 0, 20);
 				message sprintf("[partylead] PT31: %d monsters on her on %s with no friend here (HP %d%%): falling back to the friends on %s\n", $aggr, $here, $hpp * 100, $fm), 'system';
 				return 1;
@@ -2651,7 +2676,7 @@ sub tick {
 		message "[partylead] standing still too long, stepping to $x,$y
 ", 'system';
 		AI::clear('route', 'move');
-		main::ai_route($field->baseName, $x, $y, distFromGoal => 1, maxRouteTime => 8);
+		safe_route($field->baseName, $x, $y, distFromGoal => 1, maxRouteTime => 8);
 	}
 
 	if ($char->{lv} && $lastLv && $char->{lv} > $lastLv) {
@@ -2799,7 +2824,7 @@ sub tick {
 			if (my $t = $town{$here}) {
 				$lastExit = time;
 				Commands::run('stand') if $char->{sitting};
-				main::ai_route($t, undef, undef);
+				safe_route($t, undef, undef);
 				psay(pick("done shopping, meet me outside", "coming out, wait for me outside"), 1, 60);
 				return;
 			}
@@ -2811,7 +2836,7 @@ sub tick {
 			if (blockDistance($char->{pos_to}, {x => $k->[0], y => $k->[1]}) > 5) {
 				$meetRouteAt = time;
 				Commands::run('stand') if $char->{sitting};
-				main::ai_route($here, $k->[0], $k->[1], distFromGoal => 3, maxRouteTime => 20);
+				safe_route($here, $k->[0], $k->[1], distFromGoal => 3, maxRouteTime => 20);
 				if (!$meetSaid) { $meetSaid = 1; psay(pick("done? meet me at the kafra, we go back together", "everyone to the kafra when ur done, then back to hunting"), 1, 0) }
 			}
 		}
@@ -3036,7 +3061,7 @@ sub tick {
 			if (!AI::inQueue('attack') && time - $lastFetch > 3) {
 				$lastFetch = time;
 				AI::clear('route', 'move');
-				main::ai_route($here, $tpos->{x}, $tpos->{y}, distFromGoal => 2, attackOnRoute => 1);
+				safe_route($here, $tpos->{x}, $tpos->{y}, distFromGoal => 2, attackOnRoute => 1);
 			}
 		} else {
 			# nobody needs help: wait here and farm around the spot (owner rule "farm while waiting"), let them catch up
@@ -3081,7 +3106,7 @@ sub tick {
 				} elsif (!AI::inQueue('attack') && time - $lastFetch > 15) {
 					$lastFetch = time;
 					AI::clear('route', 'move');
-					main::ai_route($fetchMap, undef, undef, attackOnRoute => 1);
+					safe_route($fetchMap, undef, undef, attackOnRoute => 1);
 				}
 			}
 		}
