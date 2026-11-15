@@ -59,6 +59,9 @@ sub safe_route {
 }
 my $hooks = Plugins::addHooks(['AI_pre', guarded('tick', \&tick_guarded)], ['packet_partyMsg', guarded('heard', \&heard)], ['ai_processRandomWalk', guarded('short_walk', \&short_walk)], ['checkMonsterAutoAttack', guarded('area_target', \&area_target)], ['npc_talk', guarded('npc_said', \&npc_said)], ['target_died', guarded('gm_kill', \&gm_kill)], ['self_died', guarded('gm_died', \&gm_died)]);
 my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', guarded('command', \&cmd_guarded)]);
+# 'respawn' from outside (cmdfile: her helper) goes through respawn_guard (live 06:38: a Butterfly Wing in payon at full
+# HP with the party around); the plugin's own STUCK respawn calls Commands::cmdRespawn directly
+my $respCmd = Commands::register(['respawn', 'Respawn (guarded by partylead: refused in town / with friends near / when not stuck)', guarded('respawn', \&respawn_guard)]);
 
 my ($holding, $saved, $last, $lastMsg, $lastFetch) = (0, undef, 0, 0, 0);
 my ($lastSay, $nextIdle, $lastLv, $errand, @pending) = (0, time + 60, 0, 0);
@@ -2264,7 +2267,7 @@ sub watchdog_tick {
 		$depart = undef; $gotoMap = ''; $holding = 0;
 		AI::clear('route', 'move');
 		if ($sameTown) { ($wdStuckSince, $wdProdAt, $wdAct) = ($now, $now, $now); $wdExp = $exp; $wdPos = $pos; $fitAt = 0; return } # no respawn: fit_tick picks her own map now
-		Commands::run('respawn');
+		Commands::cmdRespawn('respawn'); # the watchdog's own respawn (not through the outside-command guard)
 		($wdStuckSince, $wdProdAt, $wdAct) = ($now, $now, $now);
 		$wdExp = $exp; $wdPos = $pos;
 		return;
@@ -2333,6 +2336,23 @@ sub moved_recently {
 	my $k = "$char->{pos_to}{x},$char->{pos_to}{y}";
 	if ($k ne $mvPos) { ($mvPos, $mvAt) = ($k, time) }
 	return time - $mvAt < 2 ? 1 : 0;
+}
+# an outside 'respawn' (Butterfly Wing to the save point) only when she is really stuck: not in a town, no friend within
+# 20 cells, and on one cell for 3+ min; dead = the normal respawn. Refusals: "[watchdog] RESPAWN refused: <reason>"
+sub respawn_guard {
+	my ($sw, $args) = @_;
+	return Commands::cmdRespawn($sw) if !$char || $char->{dead};
+	my $here = $field ? $field->baseName : '';
+	my $why = '';
+	if (is_townmap($here)) { $why = "she is in $here (a town)" }
+	else {
+		foreach my $f (stick_mates()) { if (blockDistance($char->{pos_to}, $f->[1]) <= 20) { $why = "$f->[0] is " . blockDistance($char->{pos_to}, $f->[1]) . " cells away"; last } }
+		moved_recently();
+		$why = 'she moved ' . int(time - $mvAt) . ' s ago (not stuck 3+ min)' if $why eq '' && $mvAt && time - $mvAt < 180;
+	}
+	if ($why ne '') { wd_report('RESPAWN', $here, "refused: $why", 'no wing'); return }
+	message "[partylead] respawn allowed: stuck on $here for " . int(time - $mvAt) . " s with no friend near\n", 'system';
+	return Commands::cmdRespawn($sw);
 }
 # the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
 sub fight_back {
@@ -3640,6 +3660,8 @@ sub status_intent {
 sub unload {
 	if (defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef }
 	Plugins::delHooks($hooks);
+	Commands::unregister($respCmd) if $respCmd;
+	Commands::register(['respawn', 'Respawn', \&Commands::cmdRespawn]); # the built-in handler back
 	$config{route_randomWalk} = $restRW if defined $restRW && !$holding; # don't leave a rest's random-walk switch-off behind
 	$config{itemsMaxWeight_sellOrStore} = $sellTrigSaved if $sellTrigUntil; # don't leave the raised trigger behind
 	if (%travelSaved) { $config{$_} = $travelSaved{$_} foreach keys %travelSaved; %travelSaved = () } # travel mode's switches back
