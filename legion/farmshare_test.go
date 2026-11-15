@@ -146,3 +146,48 @@ func TestKafraWaitOpenLive(t *testing.T) {
 	}
 	t.Logf("unsafe=%v kafra=%+v", unsafe, b.kafra)
 }
+
+// party member past the cap at a Kafra town (kafraMemberWait): each branch, in the order memberWaitPlan takes them
+func TestMemberWaitPlan(t *testing.T) {
+	cap, memberCap := time.Minute, 3*time.Minute
+	base := memberWaitIn{useful: true, waited: 61 * time.Second, cap: cap, memberCap: memberCap}
+	cases := []struct {
+		name string
+		mod  func(*memberWaitIn)
+		want string
+	}{
+		{"before the cap keeps waiting", func(m *memberWaitIn) { m.waited = 30 * time.Second }, "wait"},
+		{"no teleport possible: walk as before", func(m *memberWaitIn) { m.useful = false }, "walk"},
+		{"branch a: carried wing is used", func(m *memberWaitIn) { m.wing = true; m.buy = true }, "wing"},
+		{"branch a: buy a wing here", func(m *memberWaitIn) { m.buy = true }, "buy"},
+		{"branch b: safe walk", func(m *memberWaitIn) { m.safe = true }, "walk"},
+		{"branch c: unsafe, tell the party once", func(m *memberWaitIn) {}, "say"},
+		{"branch c: unsafe, already told: keep waiting", func(m *memberWaitIn) { m.said = true; m.waited = 2 * time.Minute }, "wait"},
+		{"branch c: after 3 min give the goal up", func(m *memberWaitIn) { m.said = true; m.waited = 3 * time.Minute }, "repick"},
+	}
+	for _, c := range cases {
+		in := base
+		c.mod(&in)
+		if got := memberWaitPlan(in); got != c.want {
+			t.Errorf("%s: got %q want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// kafra_member_wait_off restores the open-ended member wait; the default turns the rule on
+func TestKafraMemberWaitFlag(t *testing.T) {
+	defer curTuning.Store(&defaultTuning)
+	curTuning.Store(&defaultTuning)
+	if !kafraMemberWaitOn() {
+		t.Fatal("member wait rule must be on by default")
+	}
+	off := defaultTuning
+	off.KafraMemberWaitOff = true
+	curTuning.Store(&off)
+	if kafraMemberWaitOn() {
+		t.Fatal("kafra_member_wait_off must switch the member rule off")
+	}
+	if kafraMemberWaitCap() != 180*time.Second {
+		t.Fatalf("default member cap %v, want 3 min", kafraMemberWaitCap())
+	}
+}
