@@ -36,6 +36,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   stop the party for idle sitting.
 
 ### Variant: "Magnus Exorcismus Priest" (plan `priest_me`, Base priest; support role allowed)
+- **Stats:** INT 20, DEX 15, VIT 10, INT 40, DEX 30, VIT 25, INT 60, DEX 50, VIT 40, INT 80, DEX 65, VIT 55, INT 99, DEX 70, VIT 60.
+- **Skills (order):** Heal 10, Divine Protection 5, Blessing 10, Increase AGI 10, Angelus 2, Ruwach 1, Aqua Benedicta 1, Kyrie Eleison 10, Magnificat 3, Impositio Manus 3, Aspersio 4, Sanctuary 3, Status Recovery 1, Resurrection 1, Increase SP Recovery 4, Lex Divina 5, Lex Aeterna 1, Turn Undead 3, Safety Wall 1, Magnus Exorcismus 10.
 - INT 99, DEX 90, VIT 70. Acolyte part as the support priest | Priest: Kyrie 5, Aqua Benedicta, Impositio 3, Aspersio 4,
   Sanctuary 3, Safety Wall 1, Status Recovery, Increase SP Recovery 4, Resurrection, Lex Divina 5, Turn Undead 3, Lex
   Aeterna, Magnus Exorcismus 10 early, then Magnificat 5, Kyrie 10, Sanctuary 7, Gloria 5. Heals the party first;

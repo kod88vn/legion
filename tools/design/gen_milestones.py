@@ -163,6 +163,7 @@ def plan_bullets(path, group, plans, tree, desc):
     out = []
     cur = None
     stats_at = None  # index in out of the Stats bullet of the current plan section
+    header_at = None  # index in out of the current section's header
     has_skills = False
 
     def skills_line(plan):
@@ -173,8 +174,18 @@ def plan_bullets(path, group, plans, tree, desc):
             parts.append(f"{desc[n]} {min(lv, st[n][1])}")
         return f"- **Skills (order):** {', '.join(parts)}."
 
+    def stats_line(plan):
+        return "- **Stats:** " + ", ".join(f"{pl.STATS[s]} {v}" for s, v in plan["stats"]) + "."
+
     def close():
-        if cur is not None and stats_at is not None and not has_skills:
+        # a plan section gets both bullets: a missing Stats bullet goes under the header, a missing Skills one under Stats
+        nonlocal stats_at
+        if cur is None:
+            return
+        if stats_at is None:
+            out.insert(header_at + 1, stats_line(cur))
+            stats_at = header_at + 1
+        if not has_skills:
             out.insert(stats_at + 1, skills_line(cur))
 
     i = 0
@@ -188,6 +199,7 @@ def plan_bullets(path, group, plans, tree, desc):
             if cur is not None:
                 ln = re.sub(r"end goal [^)]*\)", f"end goal {pl.SECOND_JOB[cur['cls']]})", ln)
             out.append(ln)
+            header_at = len(out) - 1
             i += 1
             continue
         if cur is not None and ln.startswith("- **Stats:**"):

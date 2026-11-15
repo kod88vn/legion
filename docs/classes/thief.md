@@ -9,7 +9,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 
 ### Assassin: "Crit Katar Assassin" (plan `assassin`, end goal Assassin)
 - **Party role:** melee DPS / evasion off-tank (dodges hits, so can tank for a party).
-- **Stats:** AGI 20, STR 20, DEX 10, VIT 15, AGI 40, STR 35, LUK 15, AGI 60, STR 50, LUK 30, DEX 25, VIT 30, AGI 80, STR 70, LUK 40, DEX 35, STR 80, VIT 40.
+- **Stats:** AGI 20, STR 20, DEX 10, VIT 15, AGI 40, STR 35, LUK 15, AGI 60, STR 50, LUK 30, DEX 25, VIT 30, AGI 80, STR 70, LUK 40, DEX 35, STR 80, VIT 40, DEX 40.
 - **Skills (order):** Double Attack 10, Improve Dodge 10, Steal 5, Hiding 2, Envenom 10, Detoxify 1, Hiding 3, Katar Mastery 4, Sonic Blow 10, Katar Mastery 10, Cloaking 2, Grimtooth 5, Enchant Poison 5, Poison React 5, Cloaking 5, Venom Dust 5, Cloaking 6, Cloaking 7, Cloaking 8, Cloaking 9.
 - **Use:** Sonic Blow and Katar Mastery need a katar.
 - **Gear:** a katar right after the Main Gauche: lv1-32 Main Gauche / Dirk / Stiletto; lv18-60 Jur[3] -> Katar[2];
@@ -50,7 +50,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 
 ### Variant: "DEX/AGI Bow Rogue" (plan `rogue_bow`, Base rogue; run 4)
 - **Stats:** DEX 20, VIT 15, AGI 15, DEX 40, AGI 30, DEX 60, AGI 45, LUK 10, VIT 25, DEX 80, AGI 60, VIT 35, DEX 99, AGI 70, LUK 20, VIT 45, AGI 80.
-- **Skills (order):** Improve Dodge 10, Steal 5, Hiding 1, Envenom 10, Detoxify 1, Hiding 3, Vulture's Eye 10, Double Strafe 10, Gank 10, Mug 4, Stalk 5, Remove Trap 1, Steal 6, Steal 7, Steal 8, Steal 9, Steal 10, Hiding 4, Hiding 5, Hiding 6, Hiding 7, Hiding 8, Mug 5, Mug 6, Mug 7, Mug 8, Mug 9, Mug 10, Sword Mastery 1, Sword Mastery 2, Sword Mastery 3.
+- **Skills (order):** Improve Dodge 10, Steal 5, Hiding 1, Envenom 10, Detoxify 1, Hiding 3, Vulture's Eye 10, Double Strafe 10, Gank 10, Mug 4, Stalk 5, Remove Trap 1, Steal 6, Steal 7, Steal 8, Steal 9, Steal 10, Sand Attack 1, Back Slide 1, Find Stone 1, Stone Fling 1, Hiding 4, Divest Helm 1, Divest Helm 2, Divest Helm 3, Divest Helm 4, Divest Helm 5, Mug 5, Mug 6, Mug 7, Mug 8.
 - **Use:** gear style "bow" (builds.go gearStyle / buildgear buildStyle: bows score like an archer's, no shield);
   Double Strafe in the Thief offense list (progress.go; skipped without a bow), arrows like any bow user (ammo.go
   bowUser). A copied (Plagiarism) skill has no fight rule yet.
@@ -61,7 +61,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 ### Build milestones and playstyle (rebalanced 2026-11-15)
 - Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every build of this line are in `legion/data/buildmilestones.json` (`assassin`, `rogue`, `assassin_sonic`, `assassin_dagger`, `rogue_bow`, `rogue_strip`). Gear is by band in `buildgear.json`; the party role stays in code.
 - Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:
-  - `assassin` (Crit Katar Assassin): stat goals 1,390 before (budget 1,273), skill points 84 before (budget 88), not reached before: STR 85; VIT 40; now stat goals 1,242 (spare 31), skill points 88, ends STR 80, AGI 80, VIT 40, DEX 35, LUK 40, not reached now: none.
+  - `assassin` (Crit Katar Assassin): stat goals 1,390 before (budget 1,273), skill points 84 before (budget 88), not reached before: STR 85; VIT 40; now stat goals 1,267 (spare 6), skill points 88, ends STR 80, AGI 80, VIT 40, DEX 40, LUK 40, not reached now: none.
   - `rogue` (AGI/STR Dagger Rogue): stat goals 1,240 before (budget 1,273), skill points 88 before (budget 88), not reached before: none; now stat goals 1,240 (spare 33), skill points 88, ends STR 80, AGI 85, VIT 40, DEX 50, not reached now: none.
   - `assassin_sonic` (STR/AGI Sonic Blow Assassin): stat goals 1,359 before (budget 1,273), skill points 84 before (budget 88), not reached before: STR 90; VIT 40; now stat goals 1,259 (spare 14), skill points 88, ends STR 85, AGI 85, VIT 40, DEX 45, not reached now: none.
   - `assassin_dagger` (AGI/STR Dagger Assassin): stat goals 1,288 before (budget 1,273), skill points 88 before (budget 88), not reached before: STR 80; now stat goals 1,272 (spare 1), skill points 88, ends STR 80, AGI 85, VIT 30, DEX 55, LUK 20, not reached now: none.

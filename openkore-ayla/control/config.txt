@@ -300,7 +300,7 @@ sitAuto_look_delay
 sitTensionRelax 0
 
 statsAddAuto 1
-statsAddAuto_list 20 agi, 20 str, 10 dex, 15 vit, 40 agi, 35 str, 15 luk, 60 agi, 50 str, 30 luk, 25 dex, 30 vit, 80 agi, 70 str, 40 luk, 35 dex, 80 str, 40 vit
+statsAddAuto_list 20 agi, 20 str, 10 dex, 15 vit, 40 agi, 35 str, 15 luk, 60 agi, 50 str, 30 luk, 25 dex, 30 vit, 80 agi, 70 str, 40 luk, 35 dex, 80 str, 40 vit, 40 dex
 statsAddAuto_dontUseBonus 0
 statsAdd_over_99 1
 

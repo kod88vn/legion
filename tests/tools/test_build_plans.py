@@ -22,6 +22,10 @@ STAT_BUDGET = 1273         # statpoint.yml at base 99
 TRANSCENDENT = {"Lord Knight", "Paladin", "High Wizard", "Professor", "Sniper", "Clown", "Gypsy", "High Priest",
                 "Champion", "Whitesmith", "Creator", "Assassin Cross", "Stalker"}   # ST01 / G10: never an end goal
 
+# variants the class docs describe only in all.md's "Run 5 / Run 6 variants" prose (no own section in a class file)
+NO_SECTION = {"knight_pierce", "crusader_spear", "wizard_fire", "wizard_frost", "sage_hindsight", "hunter_agi",
+              "priest_battle", "bard_arrow", "dancer_arrow", "rogue_strip", "hunter_trap", "monk_occult"}
+
 TREE = pl.server_tree()
 PLANS = pl.parse_builds()
 DESC = {}
@@ -130,28 +134,29 @@ class StatPlans(unittest.TestCase):
                 last[s] = v
 
     def test_legacy_stat_plans_are_capped_at_99_and_the_excess_is_reported(self):
-        excess = {}
+        # LegacyStats are earlier plans kept for old characters: every goal 1..99 (checked for each plan that has
+        # one); the ones costing more than 1273 are the F16 finding, reported and pinned here, not repaired
         src = open(os.path.join(ROOT, "legion", "builds.go"), encoding="utf-8").read()
+        excess, with_legacy = {}, 0
         for bid in PLANS:
             m = re.search(r'"%s": \{ID: .*?\n\t\tLegacyStats: st\(([^)]*)\)' % bid, src, re.S)
             if not m:
                 continue
+            with_legacy += 1
             toks = [t.strip() for t in m.group(1).split(",")]
             goals = [(pl.STAT_IDX[toks[i]], int(toks[i + 1])) for i in range(0, len(toks), 2)]
             for _, v in goals:
-                self.assertLessEqual(v, 99, bid)
+                self.assertTrue(1 <= v <= 99, f"{bid} LegacyStats {v}")
             total = pl.spent([max([1] + [v for s, v in goals if s == i]) for i in range(6)])
             if total > STAT_BUDGET:
                 excess[bid] = total - STAT_BUDGET
-        # not a failure: an earlier stat plan that was never reachable (F16); the list is what the audit reported
-        self.assertTrue(isinstance(excess, dict))
+        self.assertEqual(with_legacy, 37, "every plan has a LegacyStats line that was read")
+        self.assertEqual(len(excess), 17, "F16: 17 LegacyStats plans cost more than 1273 (reported, not repaired)")
 
     def test_stat_points_follow_statpoint_yml(self):
-        import yaml as _y
-        rows = _y.load(open(pl.SERVER_DB / "statpoint.yml", encoding="utf-8"), Loader=_L)["Body"]
-        table = {r["Level"]: r["Points"] for r in rows} if rows and "Level" in rows[0] else None
-        if table is None:
-            self.skipTest("statpoint.yml layout not recognised")
+        rows = yaml.load(open(pl.SERVER_DB / "statpoint.yml", encoding="utf-8"), Loader=_L)["Body"]
+        table = {r["Level"]: r["Points"] for r in rows}
+        self.assertTrue(set(range(1, 100)) <= set(table), "statpoint.yml has a row for every level 1-99")
         for lv in range(1, 100):
             self.assertEqual(pl.stat_points(lv), table[lv], lv)
 
@@ -160,31 +165,41 @@ class DocsFollowTheCode(unittest.TestCase):
     """F10-F12, F17: class docs state the plans of builds.go, end at the 2nd job, and the variant mix of the code."""
 
     def test_every_plan_section_has_the_builds_go_stats_and_skills_lines(self):
+        # 25 plans have a section in the class docs with both bullets; the other 12 are variants that the docs
+        # describe only in the "Run 5 / Run 6 variants" prose of all.md (NO_SECTION), counted here, not skipped
+        checked = []
         for bid, plan in PLANS.items():
             sec = plan_section(bid)
             if sec is None:
-                continue  # a variant may have no own section
-            stats = re.search(r"^- \*\*Stats:\*\* .*$", sec, re.M)
-            if stats is None:
+                self.assertIn(bid, NO_SECTION, f"{bid} has no section in the class docs and is not a listed variant")
                 continue
+            stats = re.search(r"^- \*\*Stats:\*\* .*$", sec, re.M)
+            self.assertIsNotNone(stats, bid)
             self.assertEqual(stats.group(0), expected_stats_line(plan), bid)
             skills = re.search(r"^- \*\*Skills \(order\):\*\* .*$", sec, re.M)
             self.assertIsNotNone(skills, bid)
             self.assertEqual(skills.group(0), expected_skills_line(plan), bid)
+            checked.append(bid)
+        self.assertEqual(len(checked), len(PLANS) - len(NO_SECTION))
+        self.assertEqual(len(NO_SECTION), 12)
 
     def test_no_transcendent_end_goal(self):
+        found = 0
         for name, text in CLASS_DOCS.items():
             for m in re.finditer(r"end goal ([A-Za-z' ]+)\)", text):
+                found += 1
                 self.assertNotIn(m.group(1), TRANSCENDENT, f"{name}: {m.group(0)}")
+        self.assertEqual(found, 13, "the 13 plan headers that name an end goal were all read")
 
     def test_end_goal_is_the_plans_2nd_job(self):
+        found = []
         for bid, plan in PLANS.items():
             sec = plan_section(bid)
-            if sec is None:
-                continue
-            m = re.search(r"end goal ([A-Za-z' ]+)\)", sec)
+            m = re.search(r"end goal ([A-Za-z' ]+)\)", sec) if sec else None
             if m:
                 self.assertEqual(m.group(1), pl.SECOND_JOB[plan["cls"]], bid)
+                found.append(bid)
+        self.assertEqual(len(found), 13)
 
     def test_all_md_states_the_variant_mix_of_the_code(self):
         text = " ".join(open(os.path.join(ROOT, "docs", "classes", "all.md"), encoding="utf-8").read().split())
@@ -226,16 +241,18 @@ class Routes(unittest.TestCase):
         atk = {r["Id"]: r["Attack"] for r in yaml.load(open(pl.SERVER_DB / "weapon_attack.yml", encoding="utf-8"),
                                                        Loader=_L)["Body"]}
         src = open(os.path.join(ROOT, "legion", "builds.go"), encoding="utf-8").read()
+        routes = 0
         for m in re.finditer(r'^\t"([a-z_]+)": \{ID: ', src, re.M):
             bid = m.group(1)
             i = m.start()
             seg = src[i:src.find("\n\t},", i)]
             w = re.search(r"Weapons:\s*\[\]int\{([^}]*)\}", seg)
-            if not w:
-                continue
+            self.assertIsNotNone(w, f"{bid} has a Weapons route")
             ids = [int(x) for x in w.group(1).split(",") if x.strip()]
             vals = [atk[x] for x in ids]
             self.assertEqual(vals, sorted(vals), f"{bid}: {ids} -> {vals}")
+            routes += 1
+        self.assertEqual(routes, 37)
 
 
 if __name__ == "__main__":

@@ -45,12 +45,16 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Do / don't:** same as the Knight.
 
 ### Variant: "Brandish Spear Knight" (plan `knight_spear`, Base knight; build variants step 1, 2026-11-14)
+- **Stats:** STR 20, VIT 20, DEX 15, AGI 10, STR 40, VIT 40, DEX 30, STR 60, VIT 55, DEX 45, AGI 20, STR 80, VIT 70, DEX 55, STR 90, VIT 80, VIT 83.
+- **Skills (order):** Bash 5, Provoke 5, Endure 10, Magnum Break 5, Increase HP Recovery 10, Peco Peco Riding 1, Spear Mastery 10, Pierce 10, Brandish Spear 10, Spear Stab 5, Cavalier Mastery 5, Spear Boomerang 5, Bash 6, Bash 7, Bash 8, Bash 9, Spear Stab 6, Spear Stab 7, Spear Stab 8.
 - STR/VIT/DEX (STR 90, VIT 80, DEX 55, AGI 20). Swordman: Bash 5, Provoke 5, Endure 1, Magnum Break 10, HP Recovery 10,
   Bash 10, Provoke 10 | Knight: Spear Mastery 10, Riding 1, Pierce 5, Spear Stab 3, Brandish Spear 10, Cavalier Mastery
   5, Spear Boomerang 5, Spear Stab 10, Pierce 10, Endure 10. Weapon: spear only (Javelin -> Spear -> Pike -> Guisarme ->
   Glaive -> Partizan; planWeaponSubs). Brandish Spear on crowds (crowdSkills), on a Peco. New characters only.
 
 ### Variant: "INT/VIT Grand Cross Crusader" (plan `crusader_gc`, Base crusader)
+- **Stats:** VIT 20, INT 20, DEX 15, VIT 40, INT 40, DEX 30, VIT 60, INT 60, DEX 45, VIT 80, INT 80, DEX 60, INT 90, VIT 85.
+- **Skills (order):** Increase HP Recovery 10, Provoke 5, Endure 10, Bash 10, Faith 10, Holy Cross 10, Guard 5, Smite 3, Shield Boomerang 3, Shield Reflect 5, Grand Cross 10, Sacrifice 1, Provoke 6, Provoke 7, Provoke 8, Provoke 9, Guard 6, Guard 7.
 - VIT/INT/DEX (INT 99, VIT 80, DEX 60). Swordman: HP Recovery 10, Provoke 5, Endure 1, Sword Mastery 10, Bash 10,
   Magnum Break 10 | Crusader: Faith 10, Holy Cross 6, Grand Cross 10, Auto Guard 5, Cure, Divine Protection 5, Demon
   Bane 5, Heal 5, Shield Charge 3, Shield Boomerang 3, Reflect Shield 5, Devotion 1, Holy Cross 10 (run 4: Riding 1

@@ -34,6 +34,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   the 50% weight line; "no arrows" outranks "out of potions").
 
 ### Variant: "DEX/INT Blitz Hunter" (plan `hunter_blitz`, Base hunter)
+- **Stats:** DEX 20, INT 10, DEX 40, VIT 20, INT 25, AGI 10, DEX 60, INT 40, LUK 20, DEX 80, INT 55, DEX 99, INT 70, VIT 30, VIT 50.
+- **Skills (order):** Double Strafe 10, Owl's Eye 3, Vulture's Eye 10, Improve Concentration 10, Arrow Shower 5, Owl's Eye 4, Beast Bane 1, Falconry Mastery 1, Blitz Beat 5, Steel Crow 10, Beast Bane 10, Arrow Shower 10, Owl's Eye 10, Skid Trap 1, Ankle Snare 3, Land Mine 5, Skid Trap 2, Skid Trap 3, Skid Trap 4.
 - DEX/INT (DEX 99, INT 70, LUK 20, VIT 30): Renewal Blitz Beat scales with INT/DEX. Archer basics | Beast Bane 1,
   Falconry 1, Blitz Beat 5, Steel Crow 10, Beast Bane 10, Arrow Shower 10, Owl's Eye 10, then traps. Bow route, caster
   extras (headgear/garment). Needs the falcon (legion.txt rental).
@@ -58,6 +60,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - DB 2026-11-14: 26 Bards avg lv59 but job 18-29 - only Moon.fang has a song (Bragi 2).
 
 ### Dancer: "DEX/INT Dancer" (plan `dancer`, female, end goal Dancer)
+- **Stats:** DEX 20, AGI 10, VIT 15, DEX 40, AGI 25, DEX 60, AGI 40, VIT 25, INT 20, DEX 80, AGI 55, VIT 40, INT 40, DEX 99, INT 60.
 - **Party role / stats:** as the Bard.
 - **Skills (order):** Double Strafe 10, Owl's Eye 10, Vulture's Eye 10, Improve Concentration 5, Amp 1, Dance Lessons 1, Hip Shaker 3, Focus Ballet 10, Slow Grace 10, Lady Luck 10, Gypsy's Kiss 10, Improve Concentration 6, Improve Concentration 7, Improve Concentration 8, Improve Concentration 9, Dance Lessons 2, Dance Lessons 3, Dance Lessons 4, Dance Lessons 5.
 - **Use:** dances with a whip in hand in a party (song.go): Please Don't Forget Me on 3+ monsters near it, Service for

@@ -231,7 +231,7 @@ var builds = map[string]*Build{
 	"assassin": {ID: "assassin", Name: "Crit Katar Assassin", Class: 12, First: 6, Branch: 0,
 		// a katar right after the Main Gauche (build review 2026-11-14): Sonic Blow and Katar Mastery need one, and
 		// all 31 online Assassins (lv51-76) held a dagger, saving for an 8,500z Dirk - Sonic Blow was never cast
-		Stats:       st(stAGI, 20, stSTR, 20, stDEX, 10, stVIT, 15, stAGI, 40, stSTR, 35, stLUK, 15, stAGI, 60, stSTR, 50, stLUK, 30, stDEX, 25, stVIT, 30, stAGI, 80, stSTR, 70, stLUK, 40, stDEX, 35, stSTR, 80, stVIT, 40),
+		Stats:       st(stAGI, 20, stSTR, 20, stDEX, 10, stVIT, 15, stAGI, 40, stSTR, 35, stLUK, 15, stAGI, 60, stSTR, 50, stLUK, 30, stDEX, 25, stVIT, 30, stAGI, 80, stSTR, 70, stLUK, 40, stDEX, 35, stSTR, 80, stVIT, 40, stDEX, 40),
 		LegacyStats: st(stAGI, 20, stSTR, 20, stDEX, 10, stAGI, 40, stSTR, 35, stLUK, 15, stVIT, 15, stAGI, 60, stSTR, 50, stLUK, 30, stDEX, 25, stVIT, 30, stAGI, 80, stSTR, 70, stLUK, 40, stDEX, 35, stAGI, 90, stSTR, 85, stVIT, 40),
 		Skills:      sk(48, 10, 49, 10, 50, 5, 51, 2, 52, 10, 53, 1, 51, 3, 134, 4, 136, 10, 134, 10, 135, 2, 137, 5, 138, 5, 139, 5, 135, 5, 140, 5, 135, 6, 135, 7, 135, 8, 135, 9),
 		Weapons:     []int{1201, 1207, 1250, 1252, 1254}, Armors: armorThief, Extras: extrasMelee,
@@ -316,7 +316,7 @@ var builds = map[string]*Build{
 		// Thief part as the main plan; Rogue (bow): Vulture's Eye 10 -> Double Strafe 10 (progress.go, bow + arrows), then
 		// Snatcher 4 and Steal Coin 4. Back Stab / Raid / Intimidate / Plagiarism are out: Back Stab needs a dagger, so a
 		// bow rogue cannot use it (rebalance 2026-11-15). Earlier bow rogues keep those goals in Legacy.
-		Skills:  sk(49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 10, 211, 4, 213, 5, 124, 1, 50, 6, 50, 7, 50, 8, 50, 9, 50, 10, 51, 4, 51, 5, 51, 6, 51, 7, 51, 8, 211, 5, 211, 6, 211, 7, 211, 8, 211, 9, 211, 10, 2, 1, 2, 2, 2, 3),
+		Skills:  sk(49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 10, 211, 4, 213, 5, 124, 1, 50, 6, 50, 7, 50, 8, 50, 9, 50, 10, 149, 1, 150, 1, 151, 1, 152, 1, 51, 4, 218, 1, 218, 2, 218, 3, 218, 4, 218, 5, 211, 5, 211, 6, 211, 7, 211, 8),
 		Legacy:  sk(48, 10, 49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 4, 211, 4, 212, 4, 213, 2, 214, 5, 219, 5, 225, 5),
 		Weapons: []int{1701, 1201, 1704, 1707, 1710, 1713, 1714}, Armors: armorThief, Extras: extrasMelee,
 		Summary: "DEX/AGI bow rogue: Double Strafe from range with Vulture's Eye, Snatcher and Steal Coin; end goal Rogue"},
@@ -345,7 +345,7 @@ var builds = map[string]*Build{
 		// fire AoE: Fire Bolt / Fire Ball / Fire Wall as a Mage (Thunderstorm 1 for Meteor Storm), then Sightrasher 2 ->
 		// Meteor Storm 10, Heaven's Drive for fire-resistant crowds, Lord of Vermilion later (aoe.go picks the element)
 		Skills:  sk(19, 10, 17, 10, 18, 5, 10, 1, 21, 1, 20, 4, 16, 1, 11, 1, 81, 2, 83, 10, 84, 5, 85, 10, 90, 3, 91, 5, 18, 6, 18, 7, 18, 8, 18, 9, 18, 10, 21, 2, 81, 3, 81, 4, 81, 5, 81, 6, 81, 7, 81, 8, 81, 9, 81, 10, 84, 6, 84, 7, 84, 8, 84, 9, 84, 10, 90, 4),
-		Legacy:  sk(19, 10, 17, 5, 10, 1, 18, 5, 20, 4, 21, 1, 17, 10, 11, 1, 16, 1, 18, 10, 14, 1, 81, 2, 83, 5, 90, 3, 91, 5, 83, 10, 92, 3, 84, 5, 85, 10, 21, 10, 20, 10),
+		Legacy:  sk(19, 10, 17, 5, 10, 1, 18, 5, 20, 4, 21, 1, 17, 10, 11, 1, 16, 1, 18, 10, 14, 1, 81, 2, 83, 5, 90, 3, 91, 5, 83, 10, 92, 3, 84, 5, 85, 10, 21, 10, 20, 10, 14, 6),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX fire wizard: Fire Ball, Fire Wall and Meteor Storm on groups, Heaven's Drive vs fire monsters; end goal Wizard"},
 	"wizard_frost": {ID: "wizard_frost", Base: "wizard", Name: "INT/DEX Frost Wizard", Class: 9, First: 2, Branch: 0,
@@ -354,7 +354,7 @@ var builds = map[string]*Build{
 		// water AoE: Cold Bolt / Frost Diver / Thunderstorm as a Mage, then Jupitel 3 -> Storm Gust 10 (freezes the crowd),
 		// Lord of Vermilion, Heaven's Drive / Quagmire
 		Skills:  sk(14, 10, 15, 10, 20, 4, 11, 1, 16, 1, 21, 5, 19, 1, 84, 5, 89, 10, 85, 10, 91, 5, 84, 10, 90, 3, 87, 10, 20, 5, 20, 6, 20, 7, 20, 8, 20, 9, 20, 10, 11, 2, 90, 4),
-		Legacy:  sk(14, 10, 15, 5, 16, 1, 11, 1, 20, 4, 21, 5, 10, 1, 19, 1, 15, 10, 21, 10, 20, 5, 84, 3, 89, 5, 87, 1, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 92, 5, 84, 10),
+		Legacy:  sk(14, 10, 15, 5, 16, 1, 11, 1, 20, 4, 21, 5, 10, 1, 19, 1, 15, 10, 21, 10, 20, 5, 84, 3, 89, 5, 87, 1, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 92, 5, 84, 10, 19, 8),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX frost wizard: Storm Gust freezes the crowd, Lord of Vermilion and Cold Bolt; end goal Wizard"},
 	"sage_hindsight": {ID: "sage_hindsight", Base: "sage", Name: "INT/AGI Hindsight Sage", Class: 16, First: 2, Branch: 1,
@@ -363,7 +363,7 @@ var builds = map[string]*Build{
 		// melee with a book: Hindsight (Auto Spell) casts bolts on its own while it hits (skillbuff.go key buff; bot.go
 		// answers the server's spell list 0x0afb); Study 10 = book ASPD; Earth Spike / Heaven's Drive join the list at
 		// Hindsight 6 / 9
-		Skills:  sk(19, 10, 14, 10, 20, 10, 16, 1, 10, 1, 11, 1, 15, 1, 17, 5, 274, 10, 275, 1, 278, 10, 279, 5, 275, 2, 275, 3, 275, 4, 275, 5, 279, 6, 279, 7, 279, 8, 279, 9, 279, 10, 93, 1, 276, 1, 276, 2, 276, 3, 276, 4, 276, 5, 277, 1, 277, 2, 277, 3, 277, 4, 277, 5, 280, 1, 280, 2, 280, 3),
+		Skills:  sk(19, 10, 14, 10, 20, 10, 16, 1, 10, 1, 11, 1, 15, 1, 17, 5, 274, 10, 275, 1, 278, 10, 279, 5, 17, 6, 17, 7, 17, 8, 17, 9, 17, 10, 18, 1, 18, 2, 18, 3, 18, 4, 18, 5, 18, 6, 18, 7, 18, 8, 18, 9, 18, 10, 9, 1, 9, 2, 9, 3, 9, 4, 9, 5, 9, 6, 9, 7, 9, 8),
 		Legacy:  sk(19, 10, 14, 10, 20, 10, 16, 1, 10, 1, 11, 1, 17, 5, 21, 5, 11, 4, 13, 3, 274, 5, 275, 1, 278, 4, 279, 5, 283, 1, 90, 3, 91, 5, 279, 10, 274, 10, 278, 10, 276, 1, 277, 3, 289, 1),
 		Weapons: []int{1201, 1550, 1551, 1552}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/AGI melee sage: Hindsight fires bolts on every hit, book in hand; end goal Sage"},
