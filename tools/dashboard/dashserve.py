@@ -690,7 +690,7 @@ def build_status(engine, watch, started):
 # {"kind":"order"|"request","id","t" (epoch s),"text", optional "value" and "hours"}, and status rows
 # {"kind":"status","id","status":"confirmed"|"declined","by"}. This module reads it and appends status rows; the file is
 # append-only, so the two writers never clash. A pending order older than REQ_LIFETIME_S drops out of the list.
-REQ_LIFETIME_S = 24 * 3600
+REQ_LIFETIME_S = C.REQUEST_LIFETIME_S   # one window for the dashboard and tools/puppet/orders.py (common.request_live)
 REQ_LIST = "/api/ayla/requests"
 REQ_STATUS = re.compile(r"^/api/ayla/requests/([A-Za-z0-9_-]{1,80})/status$")
 REQ_LOCK = threading.Lock()
@@ -715,7 +715,7 @@ def pending_requests(now=None):
     out = []
     for rid, r in asked.items():
         t = r.get("t")
-        if rid in answered or not isinstance(t, (int, float)) or not (now - REQ_LIFETIME_S <= t <= now + 300):
+        if rid in answered or not C.request_live(t, now):
             continue
         row = {"id": rid, "t": t, "text": str(r.get("text") or "")[:400]}
         if r.get("value") is not None:

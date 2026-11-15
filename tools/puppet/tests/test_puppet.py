@@ -708,6 +708,28 @@ class AylaWatcherTests(unittest.TestCase):
         elif os.path.exists(p):
             os.remove(p)
 
+    def test_pending_requests_expire_after_24h_like_the_dashboard(self):
+        """a stale owner order (older than 24 h) drops out of the briefing, as it does on the dashboard (AY25)"""
+        sys.path.insert(0, os.path.join(TOOLS, "dashboard"))
+        import dashserve
+        self.set_mode(True)
+        now = 1_800_000_000.0
+        day = 24 * 3600
+        rows = [
+            {"kind": "request", "id": "old1", "t": now - day - 60, "text": "stale order"},
+            {"kind": "request", "id": "new1", "t": now - 3600, "text": "fresh order"},
+            {"kind": "request", "id": "fut1", "t": now + 3600, "text": "clock skew, not live"},
+        ]
+        with open(self.req, "w", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps(r) + "\n")
+        got = [r["id"] for r in orders.pending_requests(now=now)]
+        self.assertEqual(got, ["new1"])
+        # the dashboard cuts at the same point: same window, same rows (common.request_live is the one rule)
+        dash = [r["id"] for r in dashserve.pending_requests(now=now)]
+        self.assertEqual(dash, got)
+        self.assertEqual(dashserve.REQ_LIFETIME_S, 24 * 3600)
+
     def test_switch_reads_engine_parties(self):
         import aylaswitch
         self.set_mode(False)
