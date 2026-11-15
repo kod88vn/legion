@@ -1200,6 +1200,7 @@ func (b *Bot) handle(pk []byte) {
 			b.dialogNPC = le.Uint32(pk[2:])
 		}
 		b.onKafraDialog(op, pk)
+		b.onFerryDialog(op, pk)   // ferry.go: the Sailor's boat
 		b.onAlchemyDialog(op, pk) // alchemy.go: the Alchemist Union's Guild Dealer
 		b.onResetDialog(op, pk)   // reset.go: the Hypnotist (natural build reset)
 		b.answerStrayDialog(op)   // nav.go: a dialog nobody drives would freeze walking and item use (pc_cant_act)

@@ -1333,6 +1333,10 @@ func (b *Bot) travel(gm *GameMap, moving bool) {
 	if moving {
 		return
 	}
+	if w.NPC != "" {
+		b.ferryStep(gm, w, now) // ferry.go: the Sailor's boat (Izlude <-> Byalan Island)
+		return
+	}
 	b.lastWarp = w // the portal we mean to take (warp-loop detector compares it with the one actually taken)
 	// walk to a walkable cell of the portal's trigger area: many field-edge portals sit on a blocked centre cell,
 	// FindPath to it returned nil and bots only nudged randomly in a ~10-cell box for minutes (nav.go portalCell)

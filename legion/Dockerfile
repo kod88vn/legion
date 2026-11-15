@@ -13,11 +13,9 @@ COPY --from=rdata /rathena/db/map_cache.dat /rathena/db/map_cache.dat
 COPY --from=rdata /rathena/db/re/map_cache.dat /rathena/db/re/map_cache.dat
 COPY --from=rdata /rathena/db/re/mob_db.yml /rathena/db/re/mob_db.yml
 COPY --from=rdata /rathena/db/re/mob_skill_db.txt /rathena/db/re/mob_skill_db.txt
-COPY --from=rdata /rathena/npc/re/mobs /rathena/npc/re/mobs
-COPY --from=rdata /rathena/npc/re/warps /rathena/npc/re/warps
-COPY --from=rdata /rathena/npc/warps /rathena/npc/warps
-COPY --from=rdata /rathena/npc/re/merchants /rathena/npc/re/merchants
-COPY --from=rdata /rathena/npc/merchants /rathena/npc/merchants
+# the whole npc tree: srvwarps.go reads the warps of exactly the files npc/re/scripts_main.conf loads (quest/city
+# scripts included), like the map server; compose mounts scripts_custom.conf, functions_kafras.txt and custom-local
+COPY --from=rdata /rathena/npc /rathena/npc
 COPY --from=rdata /rathena/db/re/item_db_usable.yml /rathena/db/re/item_db_etc.yml /rathena/db/re/item_db_equip.yml /rathena/db/re/
 ENTRYPOINT ["legion"]
 CMD ["run", "-n", "100"]

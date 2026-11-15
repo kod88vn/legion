@@ -1,5 +1,5 @@
 #!/bin/sh
-# overlay.sh - start step for OpenKore containers (openkore-ayla): make the server-matching field files and portal
+# overlay.sh - start step for every OpenKore container (openkore-ayla, openkore-qa, legacy openkore; PR16): make the server-matching field files and portal
 # patches part of every container start, so they survive any recreate even when the ro-openkore image is stale.
 # 2026-11-14/15: the fields-re + portals fixes were in openkore/Dockerfile but the image (built 2026-11-12) was never
 # rebuilt; the docker-cp hotfix died with the next recreate and Ayla was stranded on izlude 24,98 again
@@ -43,9 +43,13 @@ else
   alert "FIELD MISMATCH: $SRC/fields-re not mounted - classic izlude/morocc/alberta fields in use, routes there WILL fail"
 fi
 
-# portals: Renewal Izlude first, then the Kafra lines (fix_kafra_portals.py must stay the last patch)
+# portals: Renewal Izlude first, then the server's warps (portals-srv.txt: removed Renewal links such as
+# gef_fild10<->gef_fild14, wrong landing cells, 1,600 missing warps), then the Kafra lines (fix_kafra_portals.py last)
 if [ -f "$SRC/fix_re_portals.sh" ]; then
   sh "$SRC/fix_re_portals.sh" tables/portals.txt 2>&1 | while read -r l; do say "$l"; done
+fi
+if [ -f "$SRC/fix_srv_portals.py" ] && [ -f "$SRC/portals-srv.txt" ]; then
+  python3 -I "$SRC/fix_srv_portals.py" tables/portals.txt "$SRC/portals-srv.txt" 2>&1 | while read -r l; do say "$l"; done
 fi
 if [ -f "$SRC/fix_kafra_portals.py" ]; then
   K=""; [ -f /ok-kafras.txt ] && K=/ok-kafras.txt

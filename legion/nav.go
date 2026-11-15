@@ -287,7 +287,9 @@ type Warp struct {
 	X, Y     int
 	To       string
 	ToX, ToY int
-	XS, YS   int // trigger span: rAthena warps fire on any cell within X±XS, Y±YS
+	XS, YS   int    // trigger span: rAthena warps fire on any cell within X±XS, Y±YS
+	NPC      string // ferry.go: not a warp but a talk NPC at X,Y; the menu option to pick (prefix)
+	Fare     int    // ferry.go: zeny the NPC charges
 }
 
 var warpsFrom = map[string][]Warp{}
@@ -579,7 +581,7 @@ func routeMapsBad(a string, ax, ay int, b string, wantRegion uint16, ignoreBad b
 			return out
 		}
 		cm := maps[c.k.m]
-		for _, w := range warpsFrom[c.k.m] {
+		for _, w := range routeEdges(c.k.m) { // ferry.go: warps + Sailor boats
 			if (!ignoreBad && warpBad(w)) || (skip != nil && skip(w)) {
 				continue
 			}
@@ -601,7 +603,7 @@ func routeMapsBad(a string, ax, ay int, b string, wantRegion uint16, ignoreBad b
 			}
 			// danger bends routes around death traps but never makes travel impossible (a level 1 Novice still
 			// walks from Morroc to Prontera, carefully)
-			nc := c.cost + 10 + math.Min(dg, 300)
+			nc := c.cost + 10 + math.Min(dg, 300) + float64(w.Fare)/10
 			if i, ok := index[nk]; ok {
 				if !done[i] && nc < nodes[i].cost {
 					nodes[i].cost, nodes[i].prev, nodes[i].via = nc, cur, w
@@ -656,6 +658,10 @@ func (b *Bot) escapeNoRoute(gm *GameMap, moving bool, now time.Time) bool {
 // the walk (QA 2026-11-14: Thorn.rose at geffen 98-101,138 beside door 98,141 "town trip: go" for 5+ min, stuckWatch
 // 15 times; Kimchiz izlude 112,179, Kaifire alberta 114,41, Holyshot payon 138,156).
 func (b *Bot) walkToPortal(gm *GameMap, w Warp) {
+	if w.NPC != "" {
+		b.ferryStep(gm, w, time.Now()) // ferry.go: a boat, not a portal
+		return
+	}
 	b.lastWarp = w
 	tx, ty := portalCell(gm, b.X, b.Y, w)
 	if dist(b.X, b.Y, tx, ty) <= 1 {
@@ -1180,6 +1186,9 @@ func (b *Bot) answerStrayDialog(op uint16) {
 	}
 	if b.resetDialogOwned() {
 		return // reset.go: the Hypnotist
+	}
+	if b.ferryDialogOwned(time.Now()) {
+		return // ferry.go: the Sailor
 	}
 	id := b.dialogNPC
 	if id == 0 {
