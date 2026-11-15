@@ -64,6 +64,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - DB05. The dashboard is one page with the server status always on top and tabs below it: Ayla's party, Legion, Economy, Puppet master decisions, Leaderboard, System (with every agent's status). No clutter; nothing is removed (G08), it moves into its tab. (2026-11-15)
 - DB06. The dashboard page is always on, also when the stack or the agents are down; it then shows what is down. (2026-11-15)
 - DB07. A dashboard tab inspects any player in the database: search by name, then the full character (stats, gear, inventory, skills, zeny, guild, party, history). Read-only. (2026-11-15)
+- DB09. A dashboard Builds tab lists every class and build path the build agent plans, with its end goal: equipment and cards, stats, skills, and how it plays when farming solo, in a party, against MVPs and in PvP. It shows what the engine actually uses; gaps are shown as gaps. (2026-11-15)
 - DB08. Everything that exists on disk is shown when the stack is down (files, logs, reports, the last saved world data with its age); "engine down, no data" only where nothing exists. (2026-11-15)
 - PR38. See Constitution 2.7, 2.8 and 2.9. Ayla's Haiku helper steers her only through guarded commands (AY05); until the goal of 2.9 is reached AY05 and PR18 run. (2026-11-14)
 - PR39. See Constitution 3.3; it covers every system agent, script and watchdog (sentinel, partycheck, Ayla's watchdog and Haiku helper, qa, watcher, fixers that notice side bugs). (2026-11-14)

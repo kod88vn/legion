@@ -17,7 +17,7 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 - G07 (SA07) No anti-cheat bypass, no pirated client downloads, no unpacking of protected executables.
 - G08 (SA08) Never remove information from the dashboard; add, do not replace.
 - G09 (EC10) No items added to NPC shops; stock rAthena shops stay as shipped.
-- G10 (ST01) The server caps at transcendent classes: no 3rd or 4th jobs.
+- G10 (ST01) The server caps at 2nd classes: no rebirth (no transcendent classes), no 3rd or 4th jobs.
 - G11 (EC02) A wrong build is deleted and restarted only on bot accounts, never on humans or Ayla's party.
 - G12 (AY09) Nothing may send away Ayla's zeny if it would leave her under 10,000z; under 10,000z she sends none.
 - G13 (PR23) See Constitution 1.3. The owner's own instructions to Ayla (AY20) and owner-ordered restarts of her OpenKore go through an agent.

@@ -59,7 +59,7 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | SA06 | Re-seeds never touch human characters | hard gate | RULES 1 (l.149) | RULES.md as G06 | kept as hard gate |
 | SA07 | No anti-cheat bypass, pirated clients, unpacking protected executables | hard gate | RULES 1 (l.150) | RULES.md as G07 | kept as hard gate |
 | SA08 | Never remove dashboard information | hard gate | RULES 1 (l.151) | RULES.md as G08 | kept as hard gate |
-| ST01 | Server caps at transcendent classes (server config, no 3rd jobs) | hard gate | RULES 2 (l.154) | RULES.md as G10 and docs/rules/settings.md | kept as hard gate and server setting |
+| ST01 | Server caps at 2nd classes, no rebirth (amended 2026-11-15; was transcendent) | hard gate | RULES 2 (l.154) | RULES.md as G10 and docs/rules/settings.md | kept as hard gate and server setting, amended |
 | EC01 | Real progression from level 1 Novice | behaviour spec | RULES 2 (l.159) | docs/rules/economy.md | kept |
 | EC02 | Wrong build = delete and restart (bot accounts only) | hard gate | RULES 2 (l.161) | RULES.md as G11 | kept as hard gate |
 | EC03 | Mages/Wizards are AoE builds (pointer) | behaviour spec | RULES 2 (l.163) | docs/classes/mage.md (CL06) | merged into CL06 |
@@ -208,6 +208,7 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | DB06 | Dashboard page always on, also when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | DB07 | Dashboard tab to inspect any player in the database, read-only (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | DB08 | Dashboard shows everything on disk when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| DB09 | Dashboard Builds tab: end goal per class/build with items, stats, skills and playstyle (solo, party, MVP, PvP) (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR45 | Haiku implements, Sonnet reviews (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PT35 | Wider level band for forming parties (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
 | PR44 | Verify every change at once; commit as soon as verified (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |

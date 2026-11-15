@@ -2,9 +2,10 @@
 
 One line per setting: ID, value, date. Owner words in `archive.md`.
 
-- ST01 / G10. Server caps at transcendent classes: Novice, 1st, 2nd, rebirth (High Novice), high 1st, transcendent 2nd. No 3rd or
-  4th jobs, no Expanded Super Novice; the NPCs are unloaded in `rathena/npc-custom/scripts_custom.conf` (needs a rathena
-  recreate to apply; `docs/handover/builds.md` (6f4)). Class form: `docs/classes/transcendent.md` (CL12). (2026-11-14)
+- ST01 / G10. Server caps at 2nd classes: Novice, 1st, 2nd (and Super Novice). No rebirth: no High Novice, no high 1st, no
+  transcendent classes; no 3rd or 4th jobs, no Expanded Super Novice. The NPCs are unloaded in
+  `rathena/npc-custom/scripts_custom.conf` (needs a rathena recreate to apply; `docs/handover/builds.md` (6f4)). Bots plan builds
+  to their 2nd class. Characters already reborn are left as they are. (2026-11-14, rebirth removed 2026-11-15)
 - ST04. Base and job EXP rate 5x (live since 2026-11-14 12:23).
 - ST05. Drop rates 5x for all items (common, healing, usable, equipment, cards, boss/MVP, treasure) in the rathena config. (2026-11-14)
 - ST06. Capacity as is: about 1,024 connections, Legion 960 normal bot slots with headroom for guild leaders, Ayla's party and

@@ -1936,6 +1936,16 @@ Resolved by newest owner word per PR41; see coverage.md.
 "fix the 3 conflicts you found. Like I said we're starting over and the constitution is the law of the land"
 ```
 
+## DB09
+```text
+"I need to review the build agent. In dashboard, list the end goal of each class/build path, including items, stats, and skills, as well as playstyle for farming solo, in a party, MVP, PVP"
+```
+
+## ST01 / G10 (amended 2026-11-15)
+```text
+"btw, change the server to not allow any rebirth"
+```
+
 ## PR45
 ```text
 "are you building using haiku? I forgot to tell you use Haiku to implement and Sonnet to review"
