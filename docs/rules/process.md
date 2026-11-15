@@ -52,6 +52,8 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - PR35. Write everything down for the next AI in `HANDOVER.md`, and keep the rule files current. (2026-11-13)
 - PR13. The AI harness lives in the git repository `G:\RO\legion`. (2026-11-14)
 
+- PR37. All systems are on whenever the world runs: every built system is switched on (tuning flags included: guild duty, exchange, meter, puppet masters, sentinel, party check, watchers, Ayla's watch client and the dashboard). Do not ask the owner whether to turn something on; the owner has already answered. Ask only when something is hard to reverse. (2026-11-14)
+
 ## Recording rules and deploys
 - PR02. When the owner states a rule ("must", "always", "never", "should", "apply to all ..."), the same turn: one short line
   in the right file under `docs/rules/` (class rules in `docs/classes/`), the owner's words with the date in `archive.md`

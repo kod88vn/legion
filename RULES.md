@@ -25,7 +25,7 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 - G18 (CT05) Never reveal or hint that players are bots, AI, a simulation or a script.
 - G19 (AY03) Ayla and her party are always online. (G19 to G23 confirmed as hard gates by the owner, 2026-11-14.)
 - G20 Ayla's party is never subjected to kicks, resets or build resets. (Human part removed by the owner 2026-11-14; see G25.)
-- G21 Nothing is started until the owner says so (`STATUS.md` hold; temporary).
+- G21 Nothing is started until the owner says so. The owner said so on 2026-11-14: all systems are on (PR37); no further asking.
 - G22 Ask the owner before outward-facing or hard-to-reverse actions (installing external tools, deleting data).
 - G23 Tests and experiments never touch live data: not `ro-db`, not `~/.wine-ro`, not the running-state files in `legion/data`.
 - G24 (PR31) The deploy agent may `docker stop`/`docker kill` stray golang test or build containers that block a deploy, NEVER rathena, Ayla, legion or the db.
