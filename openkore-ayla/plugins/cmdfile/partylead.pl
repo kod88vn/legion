@@ -82,6 +82,14 @@ my ($travelWant, $travelWantAt) = (0, 0); # travel-mode hysteresis
 # mind last gave (or repeated) it; the map loaded from config has an unknown age (0 = stale at once).
 our ($homeMap, $homeAt) = ((defined $config{lockMap} && $config{lockMap} =~ /\S/ && $config{lockMap} !~ /^(prontera|payon|geffen|morocc|alberta|izlude|aldebaran|yuno|comodo|umbala)$/) ? $config{lockMap} : '', 0);
 our $homeBy = 'mind';
+our $plan; # PT16 map commitment {map, at, expAt}: logs/ayla_plan.json (survives reloads / restarts)
+our @planDeaths; # [time, map]
+use constant PLAN_SECS => 7200;
+sub plan_save { eval { open(my $f, '>', 'logs/ayla_plan.json') or die; print $f JSON::PP->new->canonical->encode($plan || {}); close $f } }
+sub plan_load { eval { open(my $f, '<', 'logs/ayla_plan.json') or die; local $/; my $d = JSON::PP->new->decode(<$f>); close $f; $plan = ($d && ref $d eq 'HASH' && $d->{map}) ? $d : undef } }
+plan_load();
+# the committed map while the 2 h last ('' = none)
+sub plan_map { return ($plan && $plan->{map} && time - $plan->{at} < PLAN_SECS) ? $plan->{map} : '' }
 our $autoPick = 0; # true while her own choice runs the goto (set_home then marks the map 'auto')
 sub set_home { my $m = shift || ''; return if $m eq '' || is_townmap($m); ($homeMap, $homeAt, $homeBy) = ($m, ($autoPick ? $homeAt : time), ($autoPick ? 'auto' : 'mind')) if $m ne $homeMap }
 sub refresh_home { my $m = shift || ''; return if $m eq '' || is_townmap($m); ($homeMap, $homeAt, $homeBy) = ($m, time, 'mind') } # a mind's order, even for the same map
@@ -147,6 +155,11 @@ sub cmd_partylead {
 		message "[partylead] rally cancelled by order; no rally for 30 min\n", 'system';
 	} elsif ($args =~ /^\s*rally\s+([a-z]+)(?:\s+(\S+))?/i) {
 		my ($town, $dest) = (lc $1, defined $2 ? $2 : '');
+		my $pc = plan_map();
+		if ($dest ne '' && $pc ne '' && $dest ne $pc && plan_reason() eq '') { # PT16
+			wd_report('PLAN_KEEP', $dest, "rally $town $dest: destination kept as $pc (committed, PT16)", "rally, then $pc");
+			$dest = $pc;
+		}
 		$rallyNext = 0;
 		# the mind's order replaces a rally already under way (QA 2026-11-14: 'partylead rally prontera' was ignored while
 		# a Geffen rally ran - start_rally returns early when one exists - and she kept walking to the Geffen Kafra)
@@ -168,8 +181,18 @@ sub cmd_partylead {
 			$gotoMap = '';
 			message "[partylead] rally $town: after it " . ($dest ? "the party goes to $dest" : "she waits there for a goto") . "\n", 'system';
 		}
-	} elsif ($args =~ /^\s*goto\s+(\S+)/i) {
-		my $m = $1;
+	} elsif ($args =~ /^\s*goto\s+(\S+)(\s+force)?/i) {
+		my ($m, $force) = ($1, $2 ? 1 : 0);
+		my $c = plan_map();
+		if (!$autoPick && $c ne '' && $m ne $c) { # PT16: one map for ~2 h
+			my $why = $force ? 'owner order' : plan_reason();
+			if ($why eq '') {
+				my $left = int((PLAN_SECS - (time - $plan->{at})) / 60);
+				wd_report('PLAN_KEEP', $m, "goto $m ignored: committed to $c for $left more min (PT16; 'partylead goto $m force' = owner order)", "stays on $c");
+				return;
+			}
+			plan_change($m, $why);
+		}
 		if (my $why = map_dropped($m)) { # a destination whose route kept failing (STUCK) is off for 2 h, for everyone
 			wd_report('MIND_MAP', $m, "rejected: goto $m - $why", "keeping " . ($homeMap || '-'));
 			return;
@@ -1705,7 +1728,7 @@ my ($gmKills, $gmDeaths) = (0, 0);
 my %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
 my $gmOff = 0;
 sub gm_kill { $gmKills++ }
-sub gm_died { $gmDeaths++ }
+sub gm_died { $gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths }
 sub gm_step_offset {
 	return $gmOff unless $char && $field;
 	my $here = $field->baseName;
@@ -1774,6 +1797,13 @@ sub choose_map {
 sub auto_goto {
 	my ($m, $why) = @_;
 	message "[partylead] own map choice: $m - $why (was " . ($homeMap || '-') . ($homeBy eq 'mind' && $homeMap ne '' ? ", mind's order " . int((time - $homeAt) / 60) . " min old" : '') . ")\n", 'system';
+	my $c = plan_map();
+	if ($c ne '' && $m ne $c) { # PT16: her own choice leaves a committed map only for a real reason
+		my ($tm) = party_turn();
+		my $r = plan_reason() || ($tm ne '' && $tm eq $m ? "gear turn ($m)" : '');
+		return if $r eq '';
+		plan_change($m, $r);
+	}
 	local $autoPick = 1;
 	cmd_partylead(undef, "goto $m");
 }
@@ -1784,6 +1814,10 @@ sub fit_tick {
 	$gmRecheck = 0;
 	$fitAt = time;
 	return if mind_fresh();
+	if ((my $pc = plan_map()) ne '') { # PT16: one map for ~2 h
+		my ($tm) = party_turn();
+		return if plan_reason() eq '' && ($tm eq '' || $tm eq $pc);
+	}
 	# the party's levels and classes come from Legion's API: no choice before they are in (live 2026-11-15: the first
 	# pick right after a reload saw no friends - "level 81, no healer" - with a Priest in the party); 5 min at most
 	my @fr = online_friends();
@@ -1830,6 +1864,28 @@ sub drop_map {
 	$fitAt = 0; $lmSet = $config{lockMap} || '';
 	wd_report('DROP_MAP', $m, "$m dropped for 2 h: $why", "own gear-rated choice");
 }
+# a real reason to leave the committed map now ('' = none): 2+ deaths there in 30 min, no exp there for 20 min,
+# dropped (route failing) / crowded / its way unsafe
+sub plan_reason {
+	my $c = plan_map();
+	return '' if $c eq '';
+	my $d = grep { $_->[1] eq $c && time - $_->[0] < 1800 } @planDeaths;
+	return "$d deaths on $c in 30 min" if $d >= 2;
+	return "no kills on $c for 20 min" if $field && $field->baseName eq $c && $plan->{expAt} && time - $plan->{expAt} > 1200;
+	return "$c can't be reached (dropped)" if $droppedUntil{$c} && time < $droppedUntil{$c};
+	return "$c is crowded" if $crowdedAt{$c} && time - $crowdedAt{$c} < 3600;
+	my $v = route_unsafe($c);
+	return "the way to $c crosses $v" if $v ne '';
+	return '';
+}
+# leave the commitment for $new, logged ("[watchdog] PLAN_CHANGE old -> new: reason")
+sub plan_change {
+	my ($new, $why) = @_;
+	my $c = plan_map();
+	return if $c eq '' || $c eq ($new || '');
+	wd_report('PLAN_CHANGE', $c, "$c -> " . ($new || '-') . ": $why", "new plan on arrival");
+	$plan = undef; plan_save();
+}
 sub lockmap_guard {
 	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
 	my $lm = $config{lockMap} || '';
@@ -1839,6 +1895,8 @@ sub lockmap_guard {
 		my @fr = online_friends();
 		return if @fr && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr) && time - $fitLoadAt < 300;
 		my $why = map_dropped($lm) || mind_map_far($lm);
+		my $pc = plan_map();
+		$why = "committed to $pc (PT16)" if !$why && $pc ne '' && $lm ne $pc && plan_reason() eq '';
 		if ($why) {
 			my $back = defined $lmSet && !map_dropped($lmSet) && !mind_map_far($lmSet) ? $lmSet : '';
 			$config{lockMap} = $back;
@@ -1939,6 +1997,23 @@ sub route_guard {
 		wd_report('ROUTE_UNSAFE', $m, "$m dropped as destination: its way crosses $v (party rated " . transit_fit_lv() . ")", "own choice");
 	}
 }
+# PT16: farming (exp gained) on her hunting map commits it for 2 h; exp there keeps expAt fresh
+my $ptExp = -1;
+sub plan_track {
+	return unless $char && $field;
+	my $here = $field->baseName;
+	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
+	my $gain = $ptExp >= 0 && $exp != $ptExp;
+	$ptExp = $exp;
+	return if !$gain || is_townmap($here);
+	my $hunt = ($config{lockMap} || '') ne '' ? $config{lockMap} : $homeMap;
+	if ($plan && $plan->{map} eq $here) { $plan->{expAt} = time; plan_save() if time - ($plan->{savedAt} || 0) > 60 && ($plan->{savedAt} = time); return }
+	return if $here ne $hunt || plan_map() ne '';
+	$plan = {map => $here, at => time, expAt => time};
+	plan_save();
+	message "[partylead] PT16: farming $here - this is the plan for the next 2 h
+", 'system';
+}
 sub tick_guarded {
 	tp_guard();
 	route_guard();
@@ -1946,6 +2021,7 @@ sub tick_guarded {
 	tick(@_);
 	town_back_guard() if $net && $net->getState() == 5;
 	wait_idle_check() if $net && $net->getState() == 5;
+	plan_track() if $net && $net->getState() == 5;
 	$lmSet = $config{lockMap} || '' if defined $lmSet;
 }
 sub cmd_guarded {
@@ -1996,6 +2072,8 @@ use constant WD_IDLE => 60;
 my ($wdProdAt, $wdExp, $wdPos, $wdAct, $wdFired) = (time, 0, '', 0, 0);
 my ($wdStuckSince, $wdStuckMap, %wdStuckN) = (time, '');
 sub wd_target {
+	my $pc = plan_map();
+	return $pc if $pc ne '' && plan_reason() eq ''; # PT16: the committed map
 	return $homeMap if mind_fresh();
 	my ($tm) = party_turn();
 	return $homeMap if $homeMap ne '' && $tm eq '' && map_fits($homeMap, party_fit_lv()) && !(time - ($crowdedAt{$homeMap} || 0) < 3600);
