@@ -13,7 +13,10 @@ package main
 // party tank holds them, only quick spells (a long cast is interrupted by every hit).
 // Fire Wall: a solo caster drops it between itself and a monster walking in on it (kiting/blocking).
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type aoeSpell struct {
 	id     int
@@ -47,24 +50,42 @@ var aoeSpells = []aoeSpell{ // best first
 	{id: mgFireBall, radius: 2, castMs: func(lv int) int { return 800*7/10 + 200 + 700 }, elem: "Fire"},
 }
 
-// elemMul: rough Renewal element table (level-1 monsters) for the area spells' elements. Same element is resisted,
-// the counter element hurts more; Fire burns Undead.
+// elemOrder: the elements of rAthena's db/re/attr_fix.yml (rows: attacker's weapon element, columns: defender's)
+var elemOrder = []string{"Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Dark", "Ghost", "Undead"}
+
+// attrLv1: the level-1 attribute table of attr_fix.yml, in percent (copied from the server's file; the Holy and Ghost
+// rows and the Fire>Undead 125 are the ones the Silver / Immaterial arrows and the Undead maps need)
+var attrLv1 = [10][10]int{
+	{100, 100, 100, 100, 100, 100, 100, 100, 90, 100}, // Neutral
+	{100, 25, 100, 150, 90, 150, 100, 100, 100, 100},  // Water
+	{100, 100, 25, 90, 150, 150, 100, 100, 100, 100},  // Earth
+	{100, 90, 150, 25, 100, 150, 100, 100, 100, 125},  // Fire
+	{100, 150, 90, 100, 25, 150, 100, 100, 100, 100},  // Wind
+	{100, 150, 150, 150, 150, 0, 75, 75, 75, 75},      // Poison
+	{100, 100, 100, 100, 100, 75, 0, 125, 100, 125},   // Holy
+	{100, 100, 100, 100, 100, 75, 125, 0, 100, 0},     // Dark
+	{90, 100, 100, 100, 100, 75, 90, 90, 125, 100},    // Ghost
+	{100, 100, 100, 90, 100, 75, 125, 0, 100, 0},      // Undead
+}
+
+// elemIndex: the row / column of an element name (case-insensitive); -1 for anything else
+func elemIndex(e string) int {
+	for i, n := range elemOrder {
+		if strings.EqualFold(n, e) {
+			return i
+		}
+	}
+	return -1
+}
+
+// elemMul: the damage multiplier of an attack of element spell against a monster of element mob (attr_fix level 1).
+// Unknown or empty elements are neutral.
 func elemMul(spell, mob string) float64 {
-	if spell == "" || mob == "" {
+	a, d := elemIndex(spell), elemIndex(mob)
+	if a < 0 || d < 0 {
 		return 1
 	}
-	if spell == mob {
-		return 0.25
-	}
-	switch spell + ">" + mob {
-	case "Water>Fire", "Wind>Water", "Earth>Wind", "Fire>Earth":
-		return 1.5
-	case "Fire>Undead":
-		return 1.25
-	case "Fire>Water", "Water>Wind", "Wind>Earth", "Earth>Fire":
-		return 0.5
-	}
-	return 1
+	return float64(attrLv1[a][d]) / 100
 }
 
 // aoeReserve: SP kept back from area spells (escape skills, a bolt to finish one off).

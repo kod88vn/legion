@@ -37,6 +37,7 @@ type cardBonus struct {
 	atk, matk, def, mdef   int
 	hit, flee, flee2, crit int
 	aspd, situational      int
+	ele, race              map[string]int // bonus2 bAddEle / bAddRace: element and race damage bonuses (huntfit.go)
 }
 
 var (
@@ -53,6 +54,7 @@ func loadCardBonuses() {
 	for _, fn := range []string{"item_db_etc.yml", "item_db_equip.yml"} {
 		loadBonusFile(filepath.Join(*rathena, "db", "re", fn))
 	}
+	loadAmmoElements(filepath.Join(*rathena, "db", "re", "item_db_etc.yml")) // huntfit.go: arrow elements (bAtkEle)
 }
 
 func loadBonusFile(path string) {
@@ -76,6 +78,27 @@ func loadBonusFile(path string) {
 			continue
 		}
 		if cur == nil {
+			continue
+		}
+		if strings.HasPrefix(t, "bonus2 bAddEle,") || strings.HasPrefix(t, "bonus2 bAddRace,") {
+			// element / race damage bonus: valued against the hunting map (huntfit.go)
+			kv := strings.SplitN(strings.TrimSuffix(strings.TrimSpace(t[len("bonus2 "):]), ";"), ",", 3)
+			if len(kv) == 3 {
+				if n, err := strconv.Atoi(strings.TrimSpace(kv[2])); err == nil && n > 0 {
+					if kv[0] == "bAddEle" {
+						if cur.ele == nil {
+							cur.ele = map[string]int{}
+						}
+						cur.ele[strings.ToLower(strings.TrimPrefix(strings.TrimSpace(kv[1]), "Ele_"))] += n
+					} else {
+						if cur.race == nil {
+							cur.race = map[string]int{}
+						}
+						cur.race[strings.ToLower(strings.TrimPrefix(strings.TrimSpace(kv[1]), "RC_"))] += n
+					}
+				}
+			}
+			cur.situational++
 			continue
 		}
 		if strings.HasPrefix(t, "bonus2 ") || strings.HasPrefix(t, "bonus3 ") || strings.HasPrefix(t, "autobonus") {
@@ -169,16 +192,21 @@ func (b *Bot) bonusValue(cb *cardBonus) int {
 		sum += w[s]
 	}
 	v += cb.all * sum * 2
-	v += cb.hp/25 + cb.hpPct*3 + cb.def*3 + cb.mdef*2 + cb.hit/2 + cb.flee/2 + cb.flee2*2 + cb.crit + cb.aspd*2
+	v += cb.hp/25 + cb.hpPct*3 + cb.def*3 + cb.mdef*2 + cb.hit/2 + cb.flee/2 + cb.flee2*2 + cb.aspd*2
 	if b.usesSP() {
 		v += cb.sp / 15
 	}
+	// crit does nothing for the spell styles: a priest or mage with a crit card on its staff gets no value from it (QA 2026-11-15)
 	switch b.gearStyle() {
 	case "magic":
 		v += cb.matk * 2
+		if !fitBuyOn() {
+			v += cb.crit // tuning fit_buy_off: the pre-fit valuation counted crit for every style
+		}
 	default:
-		v += cb.atk / 2
+		v += cb.atk/2 + cb.crit
 	}
+	v += b.huntFitValue(cb) // element / race bonuses that hit the hunting map (huntfit.go)
 	if cb.situational > 0 && v == 0 {
 		v = 1 // race/element cards: some use, not worth buying
 	}

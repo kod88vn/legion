@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 // QA 2026-11-14 04:03: 105 lv30+ non-healers carried 0 Red/Orange/Yellow potions because the starter kit (Novice,
 // Light potions) counted as stock. A lv52 with 115 starter potions must buy real ones first, and drink the strongest
@@ -123,6 +126,9 @@ func TestPotTopUpKeepsFloor(t *testing.T) {
 		t.Fatalf("6000z lv60: bought %d, want only the minimum %d", hpN, b.potMin())
 	}
 	b.Zeny = 20000
+	// the top-up above the minimum is capped by the potion budget (zeny per hour): this bot earns 200k/h (15% = 30k)
+	b.meter.sessFrom = time.Now().Add(-time.Hour)
+	b.meter.record(time.Now(), func(s *meterSlot) { s.ZIn += 200000 })
 	hpN, _, _ = b.potBuyPlan(502, 200, 0, 0, 0)
 	if hpN != b.hpPotTarget() || b.Zeny-hpN*200 < wingSaveFloor(60) {
 		t.Fatalf("20000z lv60: bought %d (target %d)", hpN, b.hpPotTarget())

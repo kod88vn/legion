@@ -313,15 +313,17 @@ func (b *Bot) ammoThink(now time.Time) {
 	}
 	if b.bowEquipped() {
 		if b.arrowCount() > 0 {
+			// the arrow stack that fits the hunting map's monsters best (Fire Arrows vs Undead); ties keep the loaded one
+			m := b.huntMap()
+			best := bestArrowStack(b, m) // huntfit.go: the stack that fits the hunting map best
 			if a := b.equipped[eqpAmmo]; a != nil && a.Count > 0 && b.inv[a.Index] == a && isArrow(a.ItemID) {
-				return // loaded
-			}
-			for _, it := range b.inv {
-				if it.Count > 0 && isArrow(it.ItemID) {
-					b.ammoAt = now.Add(5 * time.Second)
-					go b.send(newPkt(0x0998).u16(uint16(it.Index)).u32(eqpAmmo).b)
-					return
+				if best == nil || !huntKnown(m) || ammoFit(a.ItemID, m) >= ammoFit(best.ItemID, m)-0.01 {
+					return // loaded
 				}
+			}
+			if best != nil {
+				b.ammoAt = now.Add(5 * time.Second)
+				go b.send(newPkt(0x0998).u16(uint16(best.Index)).u32(eqpAmmo).b)
 			}
 			return
 		}

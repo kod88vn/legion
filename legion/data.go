@@ -23,8 +23,9 @@ type Mob struct {
 	Boss       bool
 	Champion   bool // AegisName C1_..C5_: Ringleader / Swift / Solid / Furious / Elusive mini-bosses (bossnote.go)
 	Element    string
-	Exp        int // BaseExp (0: plants / mushrooms - worthless targets)
-	Def        int // Defense (hard DEF; variantskill.go Occult Impaction picks armoured targets)
+	Race       string // mob_db Race (Undead, Demon, Brute...): card race bonuses (huntfit.go)
+	Exp        int    // BaseExp (0: plants / mushrooms - worthless targets)
+	Def        int    // Defense (hard DEF; variantskill.go Occult Impaction picks armoured targets)
 }
 
 var mobs = map[int]*Mob{}
@@ -240,6 +241,8 @@ func loadMobDB(path string) error {
 			cur.Def, _ = strconv.Atoi(strings.TrimSpace(t[8:]))
 		case strings.HasPrefix(t, "Element:"):
 			cur.Element = strings.TrimSpace(t[8:])
+		case strings.HasPrefix(t, "Race:"):
+			cur.Race = strings.TrimSpace(t[5:])
 		case strings.HasPrefix(t, "Ai:"):
 			ai = strings.TrimSpace(t[3:])
 		case strings.HasPrefix(t, "Class:"):
