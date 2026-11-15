@@ -77,22 +77,6 @@ yuno_in05,49,43,1	script	Heart of Ymir	111,{
 }
 
 valkyrie,44,33,5	script	Teleporter	124,{
-	if (Upper != 1) {
-		set .@karma_d,rand(1,10);
-		if (.@karma_d > 4) {
-			mes "[Teleporter]";
-			mes "Congratulations.";
-			mes "Honor to the warriors!";
-			close;
-		}
-		mes "[Teleporter]";
-		mes "Please refrain";
-		mes "from touching any";
-		mes "of the exhibitions.";
-		mes "..........";
-		close;
-	}
-	else {
 		mes "[Teleporter]";
 		mes "Honorable one,";
 		mes "which place do you wish to go?";
@@ -110,7 +94,6 @@ valkyrie,44,33,5	script	Teleporter	124,{
 		case 8: callsub S_Warpchar,"comodo",209,143;
 		case 9: callsub S_Warpchar,"yuno",328,101;
 		}
-	}
 S_WarpChar:
 	mes "[Teleporter]";
 	mes "Have a nice trip.";
