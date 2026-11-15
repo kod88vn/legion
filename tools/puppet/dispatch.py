@@ -117,6 +117,9 @@ AYLA_READ = ["log", "chat", "deals", "lead", "status"]
 AYLA_ACT = ["rally cancel", "map", "cmd respawn"]
 BUGQ = os.path.join(REPO, "tools", "system", "bugq.py").replace("\\", "/")
 WD_QUEUE = os.path.join(REPO, "openkore-ayla", "logs", "bugqueue.jsonl")  # partylead.pl wd_report writes here
+# her OpenKore console log (every "[watchdog] CAUSE ..." line, also the repeats the queue file dedupes for an hour)
+WD_CONSOLE = os.path.join(REPO, "openkore-ayla", "logs", "console_player_2.txt")
+WD_RE = re.compile(r"\[watchdog\] (STUCK|IDLE|WRONG_MAP)\b")
 
 
 def allowed_tools(role, python="python"):
@@ -344,6 +347,7 @@ class Signals:
         self.pending_ayla = None
         self.ayla_seen = {}  # event class -> last time it woke her (a repeating class must not wake her every 2 min)
         self.wd_offset = None  # bytes of her watchdog's queue file already seen
+        self.wd_console = None  # bytes of her console log already seen
 
     def _ayla_wake(self, cls, cooldown):
         now = time.time()
@@ -399,7 +403,7 @@ class Signals:
         if ayla_idle_state(api.get("/api/meter/neo") or {}):
             self._ayla_wake("idle", 600)
         # her watchdog's reports (partylead.pl wd_report: STUCK / WRONG_MAP / IDLE) wake her helper
-        for cause in self.watchdog_reports():
+        for cause in self.watchdog_reports() + self.watchdog_console():
             self._ayla_wake("watchdog:" + cause, 300)
         out["ayla_event"] = self.pending_ayla
         return out
@@ -430,6 +434,31 @@ class Signals:
             m = re.match(r"Ayla watchdog (\w+)", str(r.get("text", "")))
             if r.get("from") == "ayla-watchdog" and m and m.group(1).lower() not in out:
                 out.append(m.group(1).lower())
+        return out
+
+    def watchdog_console(self, path=None):
+        """causes of new '[watchdog] STUCK|IDLE|WRONG_MAP' lines in her console log since the last poll"""
+        path = path or WD_CONSOLE
+        try:
+            size = os.path.getsize(path)
+        except OSError:
+            return []
+        if self.wd_console is None or size < self.wd_console:
+            self.wd_console = size
+            return []
+        start = max(self.wd_console, size - 2_000_000)  # never read more than 2 MB in one poll
+        try:
+            with open(path, "rb") as f:
+                f.seek(start)
+                chunk = f.read(size - start)
+        except OSError:
+            return []
+        self.wd_console = size
+        out = []
+        for m in WD_RE.finditer(chunk.decode("utf-8", "replace")):
+            c = m.group(1).lower()
+            if c not in out:
+                out.append(c)
         return out
 
     def consumed(self, role):

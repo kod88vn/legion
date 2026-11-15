@@ -468,3 +468,10 @@ class IntegrationTests(unittest.TestCase):
                 f.write("junk\n")
             self.assertEqual(sig.watchdog_reports(q), ["wrong_map"])
             self.assertEqual(sig.watchdog_reports(q), [])
+            c = os.path.join(d, "console.txt")
+            open(c, "w").write("[partylead] rally: going to the Kafra in yuno\n")
+            self.assertEqual(sig.watchdog_console(c), [])  # first poll: offset only
+            with open(c, "a") as f:
+                f.write("\x1b[1;33m[watchdog] STUCK izlude 24,98 for 3 min -> respawn\x1b[0m\n[watchdog] STUCK again\n")
+            self.assertEqual(sig.watchdog_console(c), ["stuck"])
+            self.assertEqual(sig.watchdog_console(c), [])
