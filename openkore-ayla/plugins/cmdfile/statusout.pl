@@ -148,6 +148,11 @@ sub extras {
 }
 
 my $lastMap = '';
+sub rally_json {
+	my @r = defined &partylead::status_rally ? (eval { partylead::status_rally() }) : ();
+	my $dep = (defined &partylead::status_departing && eval { partylead::status_departing() }) ? 'true' : 'false';
+	return '"rally_town":' . str($r[0] // '') . ',"rally_x":' . num($r[1]) . ',"rally_y":' . num($r[2]) . ',"departing":' . $dep;
+}
 sub tick {
 	return unless $char && $char->{name};
 	# queue b1794721505e1m: during a map change OpenKore isn't in game yet and $field / the position are the old map's
@@ -182,6 +187,7 @@ sub tick {
 		'"job_id":' . num($char->{jobID}),
 		'"dest":' . str(defined &partylead::status_dest ? (eval { partylead::status_dest() } || '') : ''), # Legion partydest.go (PT30)
 		'"town_run":' . ((defined &partylead::status_town_run && eval { partylead::status_town_run() }) ? 'true' : 'false'),
+		rally_json(), # Legion rallysync.go: her rally (rally_town / rally_x / rally_y) and departing
 		'"effects":' . effects(), # Legion effects.go: her buffs/debuffs for the party dashboard
 		$ex, # dashboard extras: intent, last decision / order, exp and kill meter, deaths, restarts
 		'"ts":' . int(time)) . "}\n";

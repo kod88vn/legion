@@ -1370,6 +1370,10 @@ sub status_dest {
 	$d = pk_lmhold() || $homeMap || plan_map() if ($d || '') eq ''; # queue b1794712675pfj: lockMap held / cleared for a moment
 	return $d eq $here ? '' : $d;
 }
+# rallysync (Legion rallysync.go): her rally right now - (town, x, y) or () - and whether she is setting out with the
+# party; the members wait at her Kafra while she rallies and follow her when it ends (one rally clock for both sides)
+sub status_rally { return $rally ? ($rally->{town}, $rally->{x} || 0, $rally->{y} || 0) : () }
+sub status_departing { return $depart ? 1 : 0 }
 sub status_town_run {
 	return 1 if $errand || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto');
 	return ($field && is_townmap($field->baseName) && time - $errandEnd < 180) ? 1 : 0;
