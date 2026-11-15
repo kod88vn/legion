@@ -576,8 +576,9 @@ class TestPartyCheck(Env):
 
 class TestAgentsAndSkill(unittest.TestCase):
     def test_agent_frontmatter(self):
-        want = {"fixer": "sonnet", "hard-fixer": "opus", "deploy": "sonnet", "watcher": "haiku", "qa": "haiku",
-                "analyst-review": "sonnet"}
+        # Constitution 4.1-4.2 (PR45): Haiku implements, Sonnet reviews
+        want = {"fixer": "haiku", "hard-fixer": "haiku", "deploy": "haiku", "watcher": "haiku", "qa": "haiku",
+                "analyst-review": "sonnet", "reviewer": "sonnet"}
         for name, model in want.items():
             p = os.path.join(REPO, ".claude", "agents", name + ".md")
             self.assertTrue(os.path.exists(p), p)
