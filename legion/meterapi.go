@@ -479,6 +479,7 @@ type meterBotOut struct {
 	Counted  bool               `json:"counted"`
 	KPM      float64            `json:"kpm"`
 	KPMOwn   float64            `json:"kpm_own"`
+	KPMAll   float64            `json:"kpm_all"` // own kills of any level per minute (kpm counts fair kills only)
 	ZPH      float64            `json:"zph"`
 	ZPHOwn   float64            `json:"zph_own"`
 	DPH      float64            `json:"deaths_h"`
@@ -493,7 +494,7 @@ func (v *meterView) botOut(r *meterRow, w int, shares bool) meterBotOut {
 	st := r.stat[w]
 	o := meterBotOut{Name: r.Name, Class: r.Class, Lv: r.Lv, Cohort: r.cohort, Instance: r.Instance, Online: r.Online,
 		Map: r.Map, Bucket: r.Bucket, Party: r.Party, Guild: r.Guild, Min: math.Round(r.Win[w].Min*10) / 10,
-		Counted: st.Counted, KPM: st.KPM, KPMOwn: st.KPMOwn, ZPH: st.ZPH, ZPHOwn: st.ZPHOwn, DPH: st.DPH}
+		Counted: st.Counted, KPM: st.KPM, KPMOwn: st.KPMOwn, KPMAll: st.KPMAll, ZPH: st.ZPH, ZPHOwn: st.ZPHOwn, DPH: st.DPH}
 	if c := v.par[w][r.cohort]; c != nil {
 		o.ParKPM, o.ParZPH = c.KPM.Par, c.ZPH.Par
 		o.GapKPM, o.GapZPH = round3(c.KPM.Par-st.KPM), math.Round(c.ZPH.Par-st.ZPH)
@@ -564,10 +565,10 @@ func neoSum(list []meterBotOut) neoGroup {
 // in a party with one of them; Starveil = every bot whose guild is Ayla's (status.json guild, default Starveil).
 func meterNeo(v *meterView, w int) neoOut {
 	out := neoOut{T: v.T, Window: meterWinNames[w], Ayla: v.Ayla, Members: []meterBotOut{}, Guild: []meterBotOut{}}
-	parties := map[uint32]bool{}
+	parties := map[string]bool{} // by meterPartyKey: b.PartyID is a placeholder 1 for every party (meterparty.go)
 	for _, r := range v.Rows {
-		if r.Instance == "core" && r.PartyID != 0 {
-			parties[r.PartyID] = true
+		if k := r.partyKey(); r.Instance == "core" && k != "" {
+			parties[k] = true
 		}
 	}
 	guild := "Starveil"
@@ -575,7 +576,7 @@ func meterNeo(v *meterView, w int) neoOut {
 		guild = v.Ayla.Guild
 	}
 	for _, r := range v.Rows {
-		if r.Instance == "core" || r.PartyID != 0 && parties[r.PartyID] {
+		if k := r.partyKey(); r.Instance == "core" || k != "" && parties[k] {
 			out.Members = append(out.Members, v.botOut(r, w, true))
 		}
 		if strings.EqualFold(r.Guild, guild) {
