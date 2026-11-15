@@ -63,6 +63,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Class rules
   contact. Friends prefer to party again and share a guild; a bot may leave its guild to follow close friends. It is its own
   system with its own data and dashboard view. (2026-11-14)
 - PT29. Party members ask for buffs when they lack them, and the priest buffs them (Blessing, Increase Agility and the like) unless its SP is low; the priest is never passive. Applies to every party, Ayla's included. (2026-11-14)
+- PT35. Parties form across a wider level band than ±10, as wide as the server's even-share range allows, so high-level bots find parties too. (2026-11-15)
 - PT34. A character taken off a party's roster leaves the in-game party right away, Ayla's party and every other party alike. (2026-11-15)
 - PT33. A town-run request from a party member is answered (leader or helper); a member at 50% weight is a critical town run and goes even if the leader does not respond, and catches up with the party later. (2026-11-15)
 - PT32b. Party members catch up with the party leader first and engage monsters second: a member who is behind moves to the leader before it fights anything that is not already on it. (2026-11-15)

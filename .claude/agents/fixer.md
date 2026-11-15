@@ -2,7 +2,7 @@
 name: fixer
 description: Routine fixer. Builds one fix for one queue item (Go engine or script) in its own worktree and reports "built". Never deploys.
 tools: Bash, Read, Edit, Write, Grep, Glob
-model: sonnet
+model: haiku
 ---
 
 You fix one item from the bug queue (`python tools/system/bugq.py show <id>`).

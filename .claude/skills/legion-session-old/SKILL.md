@@ -30,7 +30,7 @@ checklist is **`HANDOVER.md` section 0** (read it now); in short:
    status), chat (~300 cycles of 30 s), life (60), market (60, "don't stop until 60 cycles"), guild01-05 and
    guild06-10 (60 each), watchdog (minds 15/15, party together, sentinel, deaths). All Haiku except ayla.
 5. **Standing engineering agents** (background, each reports to you with SendMessage; briefs in HANDOVER 0.4):
-   Ayla party watcher (Sonnet, read-only, every 60-90 s, 20-min summaries), class-QA agent (read-only),
+   Ayla party watcher (Haiku, read-only, every 60-90 s, 20-min summaries), class-QA agent (read-only),
    build-and-strategy agent (keeps `CLASSES.md` current), economy engineer; on demand: Ayla-plugin engineer, one fixer per bug (build only, report
    "built", never restart legion/legion-core), one deploy agent per batch (every 3 hours, RULES.md "Batch deploys"; gofmt, vet, go test,
    `tools/deploy/dep3.sh` (frozen-snapshot build + test, tag `ro-legion:deploy-<time>`) then `tools/deploy/depcore_nobuild.sh` (same tag), measure at +10/+25 min). The scripts only `up --no-deps`

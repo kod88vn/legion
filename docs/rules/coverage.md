@@ -208,6 +208,8 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | DB06 | Dashboard page always on, also when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | DB07 | Dashboard tab to inspect any player in the database, read-only (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | DB08 | Dashboard shows everything on disk when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PR45 | Haiku implements, Sonnet reviews (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PT35 | Wider level band for forming parties (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
 | PR44 | Verify every change at once; commit as soon as verified (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PT34 | Off the roster means leave the in-game party right away (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
 | ST07 | rathena chat logging on, for @partyspy (2026-11-15) | settings | owner 2026-11-15 | docs/rules/settings.md | new rule |

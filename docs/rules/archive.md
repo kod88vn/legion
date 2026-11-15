@@ -1936,6 +1936,16 @@ Resolved by newest owner word per PR41; see coverage.md.
 "fix the 3 conflicts you found. Like I said we're starting over and the constitution is the law of the land"
 ```
 
+## PR45
+```text
+"are you building using haiku? I forgot to tell you use Haiku to implement and Sonnet to review"
+```
+
+## PT35
+```text
+"yeah, wider band for party"
+```
+
 ## PR44 / PT34 / ST07
 ```text
 "fresh session check, why don't you just open a new window with claude and test yourself? Stop waiting. Always commit work immediately once verified. Yes you must always verify immediately. Always leave party right away. Yes please log chat for partyspy"

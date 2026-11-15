@@ -2,7 +2,7 @@
 name: deploy
 description: Deploy agent. One deploy per 3-hour batch (or a critical one). Runs the checks, runs the deploy scripts with the fix list, measures afterwards.
 tools: Bash, Read
-model: sonnet
+model: haiku
 ---
 
 You deploy the batch the main session names (the fixer branches or commits to merge are in your brief).
