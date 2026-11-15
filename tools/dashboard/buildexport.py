@@ -32,6 +32,9 @@ PERSONA_GO = os.path.join(REPO, "legion", "persona.go")
 DOCS_DIR = os.path.join(REPO, "docs", "classes")
 ITEMS_TSV = os.path.join(REPO, "openkore-ayla", "logs", "items_lut.tsv")   # the item table the dashboard reads
 SKILLS_TSV = os.path.join(REPO, "tools", ".state", "dbsnap", "skills.tsv")  # the skill table the dashboard reads
+# fallbacks when the git-ignored tables above are missing: the client's item table and the tracked rAthena skill DB
+CLIENT_ITEMS_LUA = os.environ.get("DASH_CLIENT_ITEMS") or r"G:\RO\ClientEN\SystemEN\LuaFiles514\itemInfo.lua"
+SKILL_DB = os.path.join(REPO, "tools", "measure", "rd", "skill_db.yml")
 
 STAT_KEYS = ["str", "agi", "vit", "int", "dex", "luk"]   # the char table columns, in builds.go iota order
 GEAR_SLOTS = ["weapon", "armor", "shield", "headgear", "garment", "shoes", "accessory"]
@@ -207,6 +210,67 @@ def parse_docs(docs_dir):
 
 # ----------------------------------------------------------------- names and gear tables
 
+# a solo sentence counts only when it says how the build fights or farms alone (not where it travels, what it sells
+# or buys, or who sources from it): it needs a fight or farm word and at least three words after "solo"
+SOLO_FIGHT = re.compile(r"\b(fight|farm|kill|attack|hit|cast|skill|monster|boss|heal|buff|target|SP|HP|walker|swarm|"
+                        r"crowd|group|spell|strafe|combo|tank|damage|pull|hunt)\w*", re.I)
+SOLO_SKIP = re.compile(r"\b(wing|trip|errand|economy|sourc\w*|seller|buy\w*|shop\w*|farmers|come from|guild)\b", re.I)
+
+
+def solo_clauses(text):
+    """the clauses of a doc bullet that describe solo fighting or farming: from the word "solo" to the end of its sentence"""
+    out = []
+    for m in re.finditer(r"\bsolo\b", text, re.I):
+        end = len(text)
+        for sep in (";", ". "):
+            i = text.find(sep, m.start())
+            if i != -1:
+                end = min(end, i)
+        clause = text[m.start():end].strip(" ,.)(")
+        if len(clause.split()[1:]) < 3 or SOLO_SKIP.search(clause) or not SOLO_FIGHT.search(clause):
+            continue
+        if clause not in out:
+            out.append(clause)
+    return out
+
+
+def load_items_lua(path):
+    """the client's item table (LuaFiles514/itemInfo.lua): [id] = { ... identifiedDisplayName = "..." }"""
+    out, cur = {}, None
+    try:
+        f = open(path, encoding="utf-8", errors="replace")
+    except OSError:
+        return out
+    with f:
+        for line in f:
+            m = re.match(r"^\t\[(\d+)\] = \{", line)
+            if m:
+                cur = int(m.group(1))
+                continue
+            m = re.match(r'^\t\tidentifiedDisplayName = "(.*)",\s*$', line)
+            if m and cur is not None and cur not in out:
+                out[cur] = m.group(1)
+    return out
+
+
+def load_skill_db(path):
+    """the rAthena skill database (tools/measure/rd/skill_db.yml, tracked): id -> Description (the display name)"""
+    out, cur = {}, None
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                m = re.match(r"^  - Id:\s*(\d+)\s*$", line)
+                if m:
+                    cur = int(m.group(1))
+                    continue
+                m = re.match(r"^    Description:\s*(.+?)\s*$", line)
+                if m and cur is not None and cur not in out:
+                    out[cur] = m.group(1)
+    except OSError:
+        pass
+    return out
+
+
 def load_items(path):
     out = {}
     try:
@@ -231,6 +295,21 @@ def load_skills(path):
     except OSError:
         pass
     return out
+
+
+def _count_unnamed(doc):
+    """how many names in the export are placeholders ("#id ...") because no table had the id"""
+    n = 0
+    stack = [doc["builds"]]
+    while stack:
+        cur = stack.pop()
+        if isinstance(cur, dict):
+            stack.extend(cur.values())
+        elif isinstance(cur, list):
+            stack.extend(cur)
+        elif isinstance(cur, str) and cur.startswith("#") and "no name" in cur:
+            n += 1
+    return n
 
 
 def item_name(items, i):
@@ -352,8 +431,8 @@ def build_export(items, skills, paths=None):
                     party["lines"].insert(0, {"text": text, "source": src_ref})
                 if label == "boss role":
                     mvp = {"status": "defined", "lines": [{"text": text, "source": src_ref}], "note": ""}
-                if label == "party role" and "solo" in text.lower():   # the solo line the docs give, in the party-role bullet
-                    solo["lines"].append({"text": "%s: %s" % (label, text), "source": src_ref})
+                for clause in solo_clauses(text):   # every solo sentence the docs give, from any bullet of the section
+                    solo["lines"].append({"text": "%s: %s" % (label, clause), "source": src_ref})
             if solo["lines"]:
                 solo = {"status": "defined", "lines": solo["lines"], "note": ""}
         playstyle = {"solo": solo, "party": party, "mvp": mvp, "pvp": pvp}
@@ -415,10 +494,37 @@ def build_export(items, skills, paths=None):
     }
 
 
+def _show(path):
+    """a path for the export: relative to the repo when it is inside it"""
+    try:
+        return os.path.relpath(path, REPO)
+    except ValueError:   # another drive
+        return path
+
+
+def lookup_names(items_path=ITEMS_TSV, skills_path=SKILLS_TSV, client_items=CLIENT_ITEMS_LUA, skill_db=SKILL_DB):
+    """(items, skills, sources): the dashboard's tables first, the fallbacks for any id they lack"""
+    items, skills = load_items(items_path), load_skills(skills_path)
+    src = {"items": _show(items_path) if items else None,
+           "skills": _show(skills_path) if skills else None}
+    if os.path.exists(client_items):
+        for i, n in load_items_lua(client_items).items():
+            items.setdefault(i, n)
+        src["items_fallback"] = "client itemInfo.lua"
+    if os.path.exists(skill_db):
+        for i, n in load_skill_db(skill_db).items():
+            skills.setdefault(i, n)
+        src["skills_fallback"] = "tools/measure/rd/skill_db.yml"
+    return items, skills, src
+
+
 def export(out=OUT, items_path=ITEMS_TSV, skills_path=SKILLS_TSV, paths=None):
-    doc = build_export(load_items(items_path), load_skills(skills_path), paths)
+    items, skills, src = lookup_names(items_path, skills_path)
+    doc = build_export(items, skills, paths)
+    doc["name_sources"] = src
+    doc["unnamed"] = _count_unnamed(doc)
     tmp = out + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:   # LF on every platform
         json.dump(doc, f, ensure_ascii=False, indent=1)
     os.replace(tmp, out)
     return doc

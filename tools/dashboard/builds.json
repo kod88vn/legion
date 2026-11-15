@@ -1,6 +1,6 @@
 {
- "generated": "2026-11-15T16:30:36",
- "generated_epoch": 1794778236,
+ "generated": "2026-11-15T16:42:30",
+ "generated_epoch": 1794778950,
  "sources": {
   "builds": "legion/builds.go",
   "gear": "legion/data/buildgear.json",
@@ -10,7 +10,7 @@
   "items": "openkore-ayla/logs/items_lut.tsv",
   "skills": "tools/.state/dbsnap/skills.tsv"
  },
- "item_names": 26623,
+ "item_names": 26793,
  "skill_names": 1627,
  "transcendent": "Transcendent classes (already-reborn characters only): a 4th-job or transcendent character keeps the plan of its 2nd job (builds.go transToSecond); ST01 caps the server at 2nd classes.",
  "builds": [
@@ -18,7 +18,7 @@
    "id": "knight",
    "base": "",
    "name": "Two-Hand Sword Knight",
-   "summary": "AGI/STR two-hand sword knight: Two-Hand Quicken + Bowling Bash, end goal Lord Knight",
+   "summary": "AGI/STR two-hand sword knight: Two-Hand Quicken + Bowling Bash, end goal Knight",
    "milestones": [
     {
      "range": "1-32",
@@ -981,7 +981,7 @@
    "id": "crusader",
    "base": "",
    "name": "VIT Holy Cross Crusader",
-   "summary": "VIT/STR shield crusader: Holy Cross and Auto Guard, end goal Paladin",
+   "summary": "VIT/STR shield crusader: Holy Cross and Auto Guard, end goal Crusader",
    "milestones": [
     {
      "range": "1-26",
@@ -2029,7 +2029,7 @@
    "id": "wizard",
    "base": "",
    "name": "INT/DEX Wizard",
-   "summary": "INT/DEX AoE wizard: Fire Ball, Thunder Storm and Fire Wall as a Mage, then Storm Gust, Lord of Vermilion, Meteor Storm and Heaven's Drive on grouped monsters; end goal High Wizard",
+   "summary": "INT/DEX AoE wizard: Fire Ball, Thunder Storm and Fire Wall as a Mage, then Storm Gust, Lord of Vermilion, Meteor Storm and Heaven's Drive on grouped monsters; end goal Wizard",
    "milestones": [
     {
      "range": "1-30",
@@ -2864,9 +2864,14 @@
    },
    "playstyle": {
     "solo": {
-     "status": "gap",
-     "lines": [],
-     "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
+     "status": "defined",
+     "lines": [
+      {
+       "text": "use (aoe.go `aoecast`, runs first in fight()): Solo: no boss/swarm, Fire Wall vs a walker",
+       "source": "docs/classes/mage.md:26"
+      }
+     ],
+     "note": ""
     },
     "party": {
      "status": "defined",
@@ -2911,7 +2916,7 @@
    "id": "sage",
    "base": "",
    "name": "INT/DEX Battle Sage",
-   "summary": "INT/DEX caster sage: bolts, Earth Spike, Heaven's Drive on groups, Free Cast; end goal Professor",
+   "summary": "INT/DEX caster sage: bolts, Earth Spike, Heaven's Drive on groups, Free Cast; end goal Sage",
    "milestones": [
     {
      "range": "1-30",
@@ -3818,7 +3823,7 @@
    "id": "hunter",
    "base": "",
    "name": "DEX/AGI Bow Hunter",
-   "summary": "DEX/AGI hunter: Double Strafe on one monster, Arrow Shower on groups, falcon Blitz Beat; end goal Sniper",
+   "summary": "DEX/AGI hunter: Double Strafe on one monster, Arrow Shower on groups, falcon Blitz Beat; end goal Hunter",
    "milestones": [
     {
      "range": "1-20",
@@ -4891,7 +4896,7 @@
    "id": "bard",
    "base": "",
    "name": "DEX/INT Bard",
-   "summary": "DEX bard: Double Strafe solo; in a party a support singer (Bragi, Assassin Cross, Whistle, Apple of Idun); end goal Clown",
+   "summary": "DEX bard: Double Strafe solo; in a party a support singer (Bragi, Assassin Cross, Whistle, Apple of Idun); end goal Bard",
    "milestones": [
     {
      "range": "1-20",
@@ -5864,7 +5869,7 @@
      "status": "defined",
      "lines": [
       {
-       "text": "party role: solo, a Double Strafe archer; in a party, a support singer.",
+       "text": "party role: solo, a Double Strafe archer",
        "source": "docs/classes/archer.md:46"
       }
      ],
@@ -5913,7 +5918,7 @@
    "id": "dancer",
    "base": "",
    "name": "DEX/INT Dancer",
-   "summary": "DEX dancer: Double Strafe solo; in a party a support dancer (Service for You, Humming, Please Don't Forget Me, Fortune's Kiss); end goal Gypsy",
+   "summary": "DEX dancer: Double Strafe solo; in a party a support dancer (Service for You, Humming, Please Don't Forget Me, Fortune's Kiss); end goal Dancer",
    "milestones": [
     {
      "range": "1-20",
@@ -6921,7 +6926,7 @@
    "id": "priest",
    "base": "",
    "name": "Full Support Priest",
-   "summary": "INT/VIT/DEX support priest: Heal, Blessing, Increase AGI, Kyrie, Magnificat; end goal High Priest",
+   "summary": "INT/VIT/DEX support priest: Heal, Blessing, Increase AGI, Kyrie, Magnificat; end goal Priest",
    "milestones": [
     {
      "range": "1-26",
@@ -7907,9 +7912,18 @@
    },
    "playstyle": {
     "solo": {
-     "status": "gap",
-     "lines": [],
-     "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
+     "status": "defined",
+     "lines": [
+      {
+       "text": "use: solo keeps 20% SP, a party healer 50%",
+       "source": "docs/classes/acolyte.md:25"
+      },
+      {
+       "text": "use: solo support Acolyte casts Blessing and Increase AGI on itself",
+       "source": "docs/classes/acolyte.md:25"
+      }
+     ],
+     "note": ""
     },
     "party": {
      "status": "defined",
@@ -7954,7 +7968,7 @@
    "id": "knight_spear",
    "base": "knight",
    "name": "Brandish Spear Knight",
-   "summary": "STR/VIT spear knight on a Peco: Brandish Spear on groups, Pierce on large monsters; end goal Lord Knight",
+   "summary": "STR/VIT spear knight on a Peco: Brandish Spear on groups, Pierce on large monsters; end goal Knight",
    "milestones": [
     {
      "range": "1-32",
@@ -8915,7 +8929,7 @@
    "id": "crusader_gc",
    "base": "crusader",
    "name": "INT/VIT Grand Cross Crusader",
-   "summary": "INT/VIT holy crusader: Grand Cross on undead/demon crowds, Heal; end goal Paladin",
+   "summary": "INT/VIT holy crusader: Grand Cross on undead/demon crowds, Heal; end goal Crusader",
    "milestones": [
     {
      "range": "1-26",
@@ -9991,7 +10005,7 @@
    "id": "hunter_blitz",
    "base": "hunter",
    "name": "DEX/INT Blitz Hunter",
-   "summary": "DEX/INT falcon hunter: Blitz Beat (INT/DEX damage) and Double Strafe; end goal Sniper",
+   "summary": "DEX/INT falcon hunter: Blitz Beat (INT/DEX damage) and Double Strafe; end goal Hunter",
    "milestones": [
     {
      "range": "1-20",
@@ -10990,7 +11004,7 @@
    "id": "priest_me",
    "base": "priest",
    "name": "Magnus Exorcismus Priest",
-   "summary": "INT/DEX exorcist priest: heals the party and clears undead/demons with Magnus Exorcismus; end goal High Priest",
+   "summary": "INT/DEX exorcist priest: heals the party and clears undead/demons with Magnus Exorcismus; end goal Priest",
    "milestones": [
     {
      "range": "1-26",
@@ -11963,7 +11977,7 @@
    "id": "monk",
    "base": "",
    "name": "AGI/STR Combo Monk",
-   "summary": "AGI/STR combo monk: Triple Attack > Chain Combo > Combo Finish, end goal Champion",
+   "summary": "AGI/STR combo monk: Triple Attack > Chain Combo > Combo Finish, end goal Monk",
    "milestones": [
     {
      "range": "1-30",
@@ -12728,7 +12742,7 @@
    "id": "blacksmith",
    "base": "",
    "name": "STR/DEX Axe Blacksmith",
-   "summary": "STR/DEX axe blacksmith: Adrenaline Rush + Power Thrust, vends on the side; end goal Whitesmith",
+   "summary": "STR/DEX axe blacksmith: Adrenaline Rush + Power Thrust, vends on the side; end goal Blacksmith",
    "milestones": [
     {
      "range": "1-30",
@@ -13666,7 +13680,7 @@
    "id": "alchemist",
    "base": "",
    "name": "STR/INT Alchemist",
-   "summary": "STR/INT alchemist: Acid Terror / Demonstration and potions, end goal Creator",
+   "summary": "STR/INT alchemist: Acid Terror / Demonstration and potions, end goal Alchemist",
    "milestones": [
     {
      "range": "1-30",
@@ -14425,7 +14439,7 @@
    "id": "assassin",
    "base": "",
    "name": "Crit Katar Assassin",
-   "summary": "AGI/LUK/STR crit katar assassin, dodges hits so can tank for a party: Double Attack, Katar Mastery, Sonic Blow; end goal Assassin Cross",
+   "summary": "AGI/LUK/STR crit katar assassin, dodges hits so can tank for a party: Double Attack, Katar Mastery, Sonic Blow; end goal Assassin",
    "milestones": [
     {
      "range": "1-32",
@@ -15380,7 +15394,7 @@
    "id": "rogue",
    "base": "",
    "name": "AGI/STR Dagger Rogue",
-   "summary": "AGI/VIT evasion rogue (party dodge tank): Double Attack + Backstab and Raid, end goal Stalker",
+   "summary": "AGI/VIT evasion rogue (party dodge tank): Double Attack + Backstab and Raid, end goal Rogue",
    "milestones": [
     {
      "range": "1-30",
@@ -16173,7 +16187,7 @@
    "id": "sage_support",
    "base": "sage",
    "name": "Support Sage",
-   "summary": "INT/VIT/DEX support sage: endows, Dispell, Volcano / Deluge / Whirlwind and Magnetic Earth for the party, bolts and Heaven's Drive to fight; end goal Professor",
+   "summary": "INT/VIT/DEX support sage: endows, Dispell, Volcano / Deluge / Whirlwind and Magnetic Earth for the party, bolts and Heaven's Drive to fight; end goal Sage",
    "milestones": [
     {
      "range": "1-30",
@@ -17137,7 +17151,7 @@
    "id": "monk_asura",
    "base": "monk",
    "name": "Asura Strike Monk",
-   "summary": "STR/INT/DEX Asura monk: Fury + Asura Strike burst on tough monsters, sits with Spiritual Cadence to refill SP; end goal Champion",
+   "summary": "STR/INT/DEX Asura monk: Fury + Asura Strike burst on tough monsters, sits with Spiritual Cadence to refill SP; end goal Monk",
    "milestones": [
     {
      "range": "1-30",
@@ -17891,7 +17905,7 @@
    "id": "alchemist_battle",
    "base": "alchemist",
    "name": "STR/DEX Battle Alchemist",
-   "summary": "STR/DEX battle alchemist: Axe Mastery, Acid Terror and Bomb, homunculus; end goal Creator",
+   "summary": "STR/DEX battle alchemist: Axe Mastery, Acid Terror and Bomb, homunculus; end goal Alchemist",
    "milestones": [
     {
      "range": "1-30",
@@ -18680,7 +18694,7 @@
    "id": "alchemist_potion",
    "base": "alchemist",
    "name": "INT/DEX/LUK Potion Alchemist",
-   "summary": "INT/DEX/LUK potion alchemist: brews and sells the guild's potions (SP potions too), Aid Potion for the party; end goal Creator",
+   "summary": "INT/DEX/LUK potion alchemist: brews and sells the guild's potions (SP potions too), Aid Potion for the party; end goal Alchemist",
    "milestones": [
     {
      "range": "1-30",
@@ -19397,7 +19411,7 @@
    "id": "blacksmith_mace",
    "base": "blacksmith",
    "name": "VIT/STR Mace Blacksmith",
-   "summary": "VIT/STR mace blacksmith: Hammer Fall stuns, Adrenaline Rush + Power Thrust, tough enough to off-tank; end goal Whitesmith",
+   "summary": "VIT/STR mace blacksmith: Hammer Fall stuns, Adrenaline Rush + Power Thrust, tough enough to off-tank; end goal Blacksmith",
    "milestones": [
     {
      "range": "1-30",
@@ -20384,7 +20398,7 @@
    "id": "assassin_sonic",
    "base": "assassin",
    "name": "STR/AGI Sonic Blow Assassin",
-   "summary": "STR/AGI/DEX katar assassin: Sonic Blow on everything, Enchant Poison, Grimtooth; end goal Assassin Cross",
+   "summary": "STR/AGI/DEX katar assassin: Sonic Blow on everything, Enchant Poison, Grimtooth; end goal Assassin",
    "milestones": [
     {
      "range": "1-32",
@@ -21344,7 +21358,7 @@
    "id": "assassin_dagger",
    "base": "assassin",
    "name": "AGI/STR Dagger Assassin",
-   "summary": "AGI/STR dagger assassin: Double Attack, Enchant Poison and Envenom with a dagger; end goal Assassin Cross",
+   "summary": "AGI/STR dagger assassin: Double Attack, Enchant Poison and Envenom with a dagger; end goal Assassin",
    "milestones": [
     {
      "range": "1-32",
@@ -22315,7 +22329,7 @@
    "id": "rogue_bow",
    "base": "rogue",
    "name": "DEX/AGI Bow Rogue",
-   "summary": "DEX/AGI bow rogue: Double Strafe from range with Vulture's Eye, Plagiarism; end goal Stalker",
+   "summary": "DEX/AGI bow rogue: Double Strafe from range with Vulture's Eye, Plagiarism; end goal Rogue",
    "milestones": [
     {
      "range": "1-30",
@@ -23283,7 +23297,7 @@
    "id": "knight_pierce",
    "base": "knight",
    "name": "AGI/STR Pierce Lancer Knight",
-   "summary": "AGI/STR lancer knight on a Peco: Pierce and Spear Boomerang with a spear and shield, Brandish Spear on groups; end goal Lord Knight",
+   "summary": "AGI/STR lancer knight on a Peco: Pierce and Spear Boomerang with a spear and shield, Brandish Spear on groups; end goal Knight",
    "milestones": [
     {
      "range": "1-32",
@@ -24300,7 +24314,7 @@
    "id": "crusader_spear",
    "base": "crusader",
    "name": "STR/VIT Spear Crusader",
-   "summary": "STR/VIT spear crusader on a Grand Peco: Spear Quicken and Holy Cross with a two-handed spear; end goal Paladin",
+   "summary": "STR/VIT spear crusader on a Grand Peco: Spear Quicken and Holy Cross with a two-handed spear; end goal Crusader",
    "milestones": [
     {
      "range": "1-32",
@@ -25257,7 +25271,7 @@
    "id": "wizard_fire",
    "base": "wizard",
    "name": "INT/DEX Fire Wizard",
-   "summary": "INT/DEX fire wizard: Fire Ball, Fire Wall and Meteor Storm on groups, Heaven's Drive vs fire monsters; end goal High Wizard",
+   "summary": "INT/DEX fire wizard: Fire Ball, Fire Wall and Meteor Storm on groups, Heaven's Drive vs fire monsters; end goal Wizard",
    "milestones": [
     {
      "range": "1-30",
@@ -26095,7 +26109,7 @@
    "id": "wizard_frost",
    "base": "wizard",
    "name": "INT/DEX Frost Wizard",
-   "summary": "INT/DEX frost wizard: Storm Gust freezes the crowd, Lord of Vermilion and Cold Bolt; end goal High Wizard",
+   "summary": "INT/DEX frost wizard: Storm Gust freezes the crowd, Lord of Vermilion and Cold Bolt; end goal Wizard",
    "milestones": [
     {
      "range": "1-30",
@@ -26928,7 +26942,7 @@
    "id": "sage_hindsight",
    "base": "sage",
    "name": "INT/AGI Hindsight Sage",
-   "summary": "INT/AGI melee sage: Hindsight fires bolts on every hit, book in hand; end goal Professor",
+   "summary": "INT/AGI melee sage: Hindsight fires bolts on every hit, book in hand; end goal Sage",
    "milestones": [
     {
      "range": "1-30",
@@ -27804,7 +27818,7 @@
    "id": "hunter_agi",
    "base": "hunter",
    "name": "AGI/DEX Auto-Attack Hunter",
-   "summary": "AGI/DEX hunter: fast auto-attacks with a bow, Double Strafe on tough monsters, falcon procs; end goal Sniper",
+   "summary": "AGI/DEX hunter: fast auto-attacks with a bow, Double Strafe on tough monsters, falcon procs; end goal Hunter",
    "milestones": [
     {
      "range": "1-20",
@@ -28792,7 +28806,7 @@
    "id": "priest_battle",
    "base": "priest",
    "name": "STR/INT Battle Priest",
-   "summary": "STR/INT battle priest: mace, Blessing / Increase AGI / Impositio on itself, heals the party; end goal High Priest",
+   "summary": "STR/INT battle priest: mace, Blessing / Increase AGI / Impositio on itself, heals the party; end goal Priest",
    "milestones": [
     {
      "range": "1-26",
@@ -29899,7 +29913,7 @@
    "id": "bard_arrow",
    "base": "bard",
    "name": "DEX/AGI Arrow Bard",
-   "summary": "DEX/AGI bard: a Double Strafe / Arrow Shower archer with a bow; end goal Clown",
+   "summary": "DEX/AGI bard: a Double Strafe / Arrow Shower archer with a bow; end goal Bard",
    "milestones": [
     {
      "range": "1-20",
@@ -30872,7 +30886,7 @@
    "id": "dancer_arrow",
    "base": "dancer",
    "name": "DEX/AGI Arrow Dancer",
-   "summary": "DEX/AGI dancer: a Double Strafe / Arrow Shower archer with a bow; end goal Gypsy",
+   "summary": "DEX/AGI dancer: a Double Strafe / Arrow Shower archer with a bow; end goal Dancer",
    "milestones": [
     {
      "range": "1-20",
@@ -31845,7 +31859,7 @@
    "id": "rogue_strip",
    "base": "rogue",
    "name": "DEX/STR Divest Rogue",
-   "summary": "DEX/STR strip rogue: Divest Weapon / Shield on bosses and tough monsters so the party takes less and hits harder, Back Stab; end goal Stalker",
+   "summary": "DEX/STR strip rogue: Divest Weapon / Shield on bosses and tough monsters so the party takes less and hits harder, Back Stab; end goal Rogue",
    "milestones": [
     {
      "range": "1-30",
@@ -32649,7 +32663,7 @@
    "id": "hunter_trap",
    "base": "hunter",
    "name": "DEX/INT Trapper Hunter",
-   "summary": "DEX/INT trapper hunter: Claymore Trap and Land Mine where monsters step, Double Strafe and the falcon in between; end goal Sniper",
+   "summary": "DEX/INT trapper hunter: Claymore Trap and Land Mine where monsters step, Double Strafe and the falcon in between; end goal Hunter",
    "milestones": [
     {
      "range": "1-20",
@@ -33702,7 +33716,7 @@
    "id": "monk_occult",
    "base": "monk",
    "name": "VIT/STR Occult Tank Monk",
-   "summary": "VIT/STR tank monk: Occult Impaction on armoured monsters, Mental Strength (Steel Body) when mobbed or on a boss; end goal Champion",
+   "summary": "VIT/STR tank monk: Occult Impaction on armoured monsters, Mental Strength (Steel Body) when mobbed or on a boss; end goal Monk",
    "milestones": [
     {
      "range": "1-30",
@@ -34787,11 +34801,6 @@
    "note": "no PvP playstyle exists in the code or the docs: legion/persona.go has only a flavour line (\"lives for WoE\") and legion/guilds.go names War of Emperium as a goal"
   },
   {
-   "build": "priest",
-   "part": "solo",
-   "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
-  },
-  {
    "build": "priest_battle",
    "part": "mvp",
    "note": "no build-specific boss role in docs/classes/*.md; the generic boss hunt applies (legion/bosshunt.go (party makeup, tactics and retreat; bossReady needs a tank and a healer))"
@@ -34905,11 +34914,6 @@
    "build": "wizard",
    "part": "pvp",
    "note": "no PvP playstyle exists in the code or the docs: legion/persona.go has only a flavour line (\"lives for WoE\") and legion/guilds.go names War of Emperium as a goal"
-  },
-  {
-   "build": "wizard",
-   "part": "solo",
-   "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
   },
   {
    "build": "wizard_fire",
@@ -34941,5 +34945,12 @@
    "part": "solo",
    "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
   }
- ]
+ ],
+ "name_sources": {
+  "items": null,
+  "skills": null,
+  "items_fallback": "client itemInfo.lua",
+  "skills_fallback": "tools/measure/rd/skill_db.yml"
+ },
+ "unnamed": 0
 }

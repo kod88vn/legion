@@ -63,6 +63,27 @@ class ExportTests(unittest.TestCase):
             self.assertTrue(b["steps"]["stats"], b["id"])
             self.assertTrue(b["steps"]["skills"], b["id"])
 
+    def test_solo_sentences_must_describe_fighting_or_farming_alone(self):
+        # the three false hits of the first version: a wing rule, an errand, a sourcing line
+        self.assertEqual(buildexport.solo_clauses("Fly Wing only solo"), [])
+        self.assertEqual(buildexport.solo_clauses("solo trip, or the party member's \"weapon\" errand"), [])
+        self.assertEqual(buildexport.solo_clauses("Guild farmers (economy agent) come from these solo DS Hunters."), [])
+        # real solo fighting text is kept
+        self.assertEqual(buildexport.solo_clauses("Solo: no boss/swarm, Fire Wall vs a walker; quick"),
+                         ["Solo: no boss/swarm, Fire Wall vs a walker"])
+
+    def test_knight_assassin_hunter_solo_stays_not_defined(self):
+        by = {b["id"]: b for b in load_export()["builds"]}
+        for bid in ("knight", "assassin", "hunter"):
+            self.assertEqual(by[bid]["playstyle"]["solo"]["status"], "gap", bid)
+            self.assertEqual(by[bid]["playstyle"]["solo"]["lines"], [], bid)
+
+    def test_mage_and_acolyte_solo_text_is_defined(self):
+        # docs/classes/mage.md:26 (wizard, sage plans) and acolyte.md:26-27 (priest plans) describe solo play
+        by = {b["id"]: b for b in load_export()["builds"]}
+        self.assertEqual(by["wizard"]["playstyle"]["solo"]["status"], "defined")
+        self.assertEqual(by["priest"]["playstyle"]["solo"]["status"], "defined")
+
     def test_pvp_is_a_gap_everywhere(self):
         for b in load_export()["builds"]:
             self.assertEqual(b["playstyle"]["pvp"]["status"], "gap", b["id"])
@@ -86,13 +107,43 @@ class ExportTests(unittest.TestCase):
                 self.assertEqual(m["skills"]["status"], "gap")
                 self.assertEqual(m["range"], "%s-%s" % (m["min"], m["max"]))
 
-    def test_the_export_is_the_same_as_a_fresh_run(self):
-        # the committed file must match the Go source it was made from
-        fresh = buildexport.build_export(buildexport.load_items(buildexport.ITEMS_TSV),
-                                         buildexport.load_skills(buildexport.SKILLS_TSV))
+    def test_the_export_is_the_same_as_a_fresh_run_in_every_value(self):
+        # the committed file must equal what the Go source says now: every value, not only the ids and gaps
+        items, skills, _ = buildexport.lookup_names()
+        fresh = buildexport.build_export(items, skills)
         old = load_export()
         self.assertEqual([b["id"] for b in fresh["builds"]], [b["id"] for b in old["builds"]])
         self.assertEqual(fresh["gaps"], old["gaps"])
+        for fb, ob in zip(fresh["builds"], old["builds"]):
+            for key in fb:
+                self.assertEqual(fb[key], ob[key], "%s: %s differs from builds.json (re-run buildexport.py)" % (fb["id"], key))
+
+    def test_the_stats_skills_class_and_gear_of_builds_go_are_read_back(self):
+        # independent of the parser: the Go literal's own numbers, read straight from the source text
+        with open(BUILDS_GO, encoding="utf-8") as f:
+            src = f.read()
+        doc = load_export()
+        by = {b["id"]: b for b in doc["builds"]}
+        for bid, cls in re.findall(r'^	"(\w+)": \{ID: "\w+", (?:Base: "\w+", )?Name: "[^"]*", Class: (\d+)', src, re.M):
+            self.assertEqual(by[bid]["class"]["id"], int(cls), bid)
+        # every stat goal of hunter, in order, as written in builds.go ("stDEX, 20, stAGI, 10, ...")
+        m = re.search(r'"hunter": \{ID:[^\n]*\n\s*Stats: st\(([^)]*)\)', src)
+        toks = [t.strip() for t in m.group(1).split(",")]
+        expected = ["%s %s" % (toks[i][2:].upper(), toks[i + 1]) for i in range(0, len(toks), 2)]
+        self.assertEqual([s["label"] for s in by["hunter"]["steps"]["stats"]], expected)
+
+    def test_names_are_resolved_not_placeholders(self):
+        self.assertEqual(load_export().get("unnamed"), 0,
+                         "builds.json has '#id' placeholder names: a lookup table is missing (see name_sources)")
+
+    def test_build_ids_are_found_without_the_parser_regex(self):
+        # three different reads of builds.go: every ID: "x" literal, every builds["x"] assignment, every map key
+        with open(BUILDS_GO, encoding="utf-8") as f:
+            src = f.read()
+        found = set(re.findall(r'\bID:\s*"(\w+)"', src)) | set(re.findall(r'builds\["(\w+)"\]\s*=', src))
+        exported = {b["id"] for b in load_export()["builds"]}
+        self.assertEqual(sorted(found - exported), [], "builds in builds.go missing from builds.json")
+        self.assertGreaterEqual(len(found), len(go_build_ids()))
 
 
 class LiveCountTests(unittest.TestCase):
@@ -168,6 +219,8 @@ class RouteAndTabTests(unittest.TestCase):
         for t in ["ayla", "legion", "economy", "puppet", "leaderboard", "players", "system"]:   # G08: nothing removed
             self.assertIn("data-tab=\"%s\"" % t, html)
         self.assertIn("'system', 'builds'", html)
+        for cls in (".bd-part", ".bd-card", ".bd-gap"):   # each class the tab uses has a rule
+            self.assertRegex(html, re.escape(cls) + r"\s*\{", cls)
 
 
 if __name__ == "__main__":

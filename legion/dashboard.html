@@ -152,6 +152,8 @@ a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; }
 .tabs .tb { font-size: 11px; margin-left: 6px; padding: 0 6px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); font-weight: 500; }
 .tabs .tb.bad { background: #5a2020; color: #ffb3b3; }
 .tab { display: none; } .tab.cur { display: block; }
+.bd-card { margin-top: 12px; } .bd-part { margin: 4px 0; font-size: 12.5px; line-height: 1.45; }
+.bd-gap { color: var(--muted); font-style: italic; }
 .banner { border: 1px solid #6b2a2a; background: #2a1616; color: #ffc9c9; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
 .banner.info { border-color: var(--border); background: var(--surface); color: var(--text-2); }
 .banner:empty { display: none; }
@@ -1559,7 +1561,11 @@ function bdCard(b, live) {
 }
 async function refreshBuilds() {
   const r = await eget('/api/builds');
-  if (!r.ok) { $('bdCards').innerHTML = `<div class="empty">Builds not available: ${esc(r.err || '')}</div>`; return; }
+  if (!r.ok) {   // eget() drops the body on an error, so the reason is the status code only
+    const why = r.status ? 'HTTP ' + r.status : 'the dashboard server did not answer';
+    $('bdCards').innerHTML = `<div class="empty">Builds not available: ${esc(why)}. Retry with reload.</div>`;
+    return;
+  }
   BD = r.data;
   const lv = BD.live || {};
   const ageS = BD.generated_epoch ? Date.now() / 1000 - BD.generated_epoch : null;
