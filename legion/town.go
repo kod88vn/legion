@@ -64,6 +64,13 @@ func (b *Bot) buyPotCount() int {
 	return n
 }
 
+// outOfPotions: the one restock trigger for a trip (needTrip) and for a party friend's hold in town before it goes in
+// (together.go escortGate). The two must agree: a hold on a higher potion minimum than the trip starts waited with
+// no trip, forever (QA 2026-11-15: Zen.fox 15 Red Potions held in Payon from 09:05 to the end of the log).
+func (b *Bot) outOfPotions() bool {
+	return b.realPotCount() < 3 && (b.Zeny >= 500 || b.hasLoot()) && !b.isHealer()
+}
+
 // realPotCount: the HP potions that count as stock. From lv20 only bought-grade potions (Red..White): the starter kit
 // (Novice 30 HP, Light potions) heals a few dozen HP, nothing for a 1,600 HP Hunter (QA 2026-11-14: 105 lv30+ bots had
 // 0 Red Potions and 100-150 starter potions, and the buy step thought them stocked).
@@ -158,7 +165,7 @@ func (b *Bot) needTrip() string {
 	// affordable at all (10 Red Potions) or paid for by the loot sold on the same trip (QA 2026-11-14 12:10: Zen.fox,
 	// Wizard lv72 in Ayla's party, had 0 potions and 1,024z - under the old 1,100z line it never even asked, and died
 	// five times crossing pay_dun00)
-	if b.realPotCount() < 3 && (b.Zeny >= 500 || b.hasLoot()) && !b.isHealer() {
+	if b.outOfPotions() {
 		return "out of potions"
 	}
 	if it, _ := b.weaponNeed(); it != nil {

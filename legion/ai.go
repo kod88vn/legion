@@ -348,17 +348,9 @@ func (b *Bot) think() {
 	if b.trip == nil && !b.underAttack(now) && b.target == 0 {
 		p := partyOf(b)
 		if p != nil {
-			// the human leader is in town: that's a town run for everyone
-			if p.Human != "" {
-				// only when the human is actually shopping (inside a town building): just walking through town, or
-				// waiting at the Kafra for a rally, is no town run (owner: ~90% of online time must be farming; Ayla
-				// passing through Payon dragged everyone into town trips ~10 times an hour)
-				if h, ok := humanAt(p.Human); ok && now.Sub(h.At) < 2*time.Minute {
-					if t := townOf(h.Map); t != "" && t != h.Map {
-						p.callTownRun(t, p.Human, now)
-					}
-				}
-			}
+			// no town run starts from the human leader entering a town building (QA 2026-11-15: 23 entries overnight each
+			// sent the whole party to town): a party town run only comes from a real call or a real need (PT33,
+			// callTownRun in town.go / needTrip), never from her walking into a shop
 			b.saveAskThink(p, now) // savepoints.go: the leader said "save here" - save at her Kafra in this town
 			// join the party's town run once: with business (loot, potions, gear) do it now, otherwise come along
 			if at, town, by := p.townRun(); !at.IsZero() && now.Sub(at) < 2*time.Minute && b.townRunSeen != at {

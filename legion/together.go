@@ -311,9 +311,12 @@ var humanRest = struct {
 }{on: map[string]bool{}, at: map[string]time.Time{}, sitSince: map[string]time.Time{}, help: map[string]time.Time{}}
 
 var (
-	humanHelpLineRe  = regexp.MustCompile(`(?i)\b(help|heal me|save me|im dying)\b`)
-	humanRestLineRe  = regexp.MustCompile(`(?i)\b(rest(ing)?|sit(ting)?( down)?|need (sp|hp|a (sec|break|moment))|regen|brb sp)\b`)
-	humanReadyLineRe = regexp.MustCompile(`(?i)\b(ready|rdy|let'?s (go|move)|lets (go|move)|moving( on)?|done resting|go go|ok go|full sp)\b`)
+	humanHelpLineRe   = regexp.MustCompile(`(?i)\b(help|heal me|save me|im dying)\b`)
+	// a rest line is a whole clause of her message ("need sp, resting"): a rest word inside a sentence is not one
+	// ("the rest of you", "k, sit, we cover u", "tell me if u need a break", "np, rest up" were all false rests)
+	humanRestClauseRe  = regexp.MustCompile(`(?i)^((ok|okay|k|kk|yep|np|brb)\s+)?(resting|rest|sitting( down)?|sit down|brb (resting|rest|sp)|need (sp|hp|a (sec|break|moment))|regen(ing)?)( (a bit|a sec|a min|a moment|a little|now|rn|real quick))?$`)
+	humanClauseSplitRe = regexp.MustCompile(`[,.!;]+`)
+	humanReadyLineRe   = regexp.MustCompile(`(?i)\b(ready|rdy|let'?s (go|move)|lets (go|move)|moving( on)?|done resting|go go|ok go|full sp)\b`)
 )
 
 const (
@@ -334,13 +337,23 @@ func humanRestHeard(p *Party, text string, now time.Time) {
 	humanRestLine(p.Human, text[i+3:], now)
 }
 
+// humanRestClause: some clause of the line (split on , . ! ;) is a rest announcement on its own.
+func humanRestClause(line string) bool {
+	for _, c := range humanClauseSplitRe.Split(line, -1) {
+		if humanRestClauseRe.MatchString(strings.TrimSpace(c)) {
+			return true
+		}
+	}
+	return false
+}
+
 func humanRestLine(name, line string, now time.Time) {
 	if humanHelpLineRe.MatchString(line) {
 		humanRest.Lock()
 		humanRest.help[strings.ToLower(name)] = now // protectSupport: she called for help
 		humanRest.Unlock()
 	}
-	ready, rest := humanReadyLineRe.MatchString(line), humanRestLineRe.MatchString(line)
+	ready, rest := humanReadyLineRe.MatchString(line), humanRestClause(line)
 	if !ready && !rest {
 		return
 	}
@@ -1061,7 +1074,15 @@ func (b *Bot) protectSupport(gm *GameMap, members []pubState, moving bool, now t
 func (b *Bot) escortGate(p *Party, herMap string, now time.Time) (string, string) {
 	// dungeons only (a field next to town is no reason to hold a friend in town: QA 20:19Z xXRinfangXx stood at the
 	// Payon respawn while Ayla walked pay_fild10)
-	if p == nil || p.Human == "" || b.MapName == herMap || !dungeonMap(herMap) || dungeonMap(b.MapName) {
+	if p == nil || p.Human == "" || b.MapName == herMap || !dungeonMap(herMap) {
+		escortRestockClear(b)
+		return "", ""
+	}
+	// inside a dungeon: a floor is crossed only with a friend on the same floor (PT04, PT32b: members travel together
+	// or with the leader; QA 2026-11-15: members walked pay_dun00-02 alone, 4x monsters, and died on the way). Alone on
+	// a floor of her dungeon, the member goes back to the entrance town to gather there instead.
+	if dungeonMap(b.MapName) && (dungeonFamily(b.MapName) != dungeonFamily(herMap) || friendOnFloor(p, b, b.MapName, now)) {
+		escortRestockClear(b)
 		return "", ""
 	}
 	town := humanSaveTown(p)
@@ -1069,13 +1090,19 @@ func (b *Bot) escortGate(p *Party, herMap string, now time.Time) (string, string
 		town = nearestTown(herMap)
 	}
 	if town == "" || len(kafraSpots[town]) == 0 {
+		escortRestockClear(b)
 		return "", ""
 	}
 	if b.MapName != town {
+		escortRestockClear(b)
 		return town, "gathering before going in"
 	}
-	if !b.isHealer() && b.realPotCount() < b.potMin() && b.Zeny >= 500 {
-		return town, "restocking potions before going in"
+	if b.outOfPotions() { // the same test that starts the trip (town.go needTrip): the hold is bounded, see escortRestockOK
+		if escortRestockOK(b, now) {
+			return town, "restocking potions before going in"
+		}
+	} else {
+		escortRestockClear(b)
 	}
 	outside, inTown := 0, 0
 	for _, m := range p.Members {
@@ -1098,6 +1125,60 @@ func (b *Bot) escortGate(p *Party, herMap string, now time.Time) (string, string
 		return town, "the way in is too dangerous alone"
 	}
 	return town, "waiting for the others to go in together"
+}
+
+// dungeonFamily: the dungeon a floor belongs to ("pay_dun03" -> "pay_dun"); "" for a map that is no dungeon floor.
+func dungeonFamily(m string) string {
+	if !dungeonMap(m) {
+		return ""
+	}
+	return strings.TrimRight(m, "0123456789")
+}
+
+// friendOnFloor: the human leader or another online friend of the party is on floor m (seen recently).
+func friendOnFloor(p *Party, self *Bot, m string, now time.Time) bool {
+	if h, ok := humanAt(p.Human); ok && h.Map == m && now.Sub(h.At) < 2*time.Minute {
+		return true
+	}
+	for _, o := range p.Members {
+		if o == self {
+			continue
+		}
+		if s, ok := peek(o.P.Name); ok && s.Online && s.Map == m {
+			return true
+		}
+	}
+	return false
+}
+
+// escortRestock: when each bot's restock hold in town began (bot name -> since). A hold ends after escortRestockMax
+// even if no trip came, so a friend cannot wait in town forever (QA 2026-11-15: Zen.fox held 15 Red Potions in Payon
+// for the rest of the night).
+var escortRestock = struct {
+	sync.Mutex
+	since map[string]time.Time
+}{since: map[string]time.Time{}}
+
+const escortRestockMax = 5 * time.Minute
+
+// escortRestockOK: the restock hold is still within its time (starts it on the first call).
+func escortRestockOK(b *Bot, now time.Time) bool {
+	escortRestock.Lock()
+	defer escortRestock.Unlock()
+	key := strings.ToLower(b.P.Name)
+	t, ok := escortRestock.since[key]
+	if !ok {
+		escortRestock.since[key] = now
+		return true
+	}
+	return now.Sub(t) < escortRestockMax
+}
+
+// escortRestockClear: the bot is no longer holding for a restock (in the dungeon, out of the hold, or restocked).
+func escortRestockClear(b *Bot) {
+	escortRestock.Lock()
+	defer escortRestock.Unlock()
+	delete(escortRestock.since, strings.ToLower(b.P.Name))
 }
 
 // humanTrail: the maps a human leader walked through lately (oldest first), so her friends take the same road.
