@@ -1155,6 +1155,9 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 		var best *GroundItem
 		bd := 8
 		for _, it := range b.items {
+			if b.regenOwnDrop(it, now) { // regendrop.go: never pick up what this bot dropped itself
+				continue
+			}
 			// batch 18: the solo loot filters apply to party members too (batch 16's spareGearFull sat only in ai.go,
 			// and most bots are party members: lv30+ spare weapons median 3 -> 4, max 15 -> 27 after it went live)
 			if b.spareGearFull(it.ItemID) || b.overRegenWeight() && heavyJunk(it.ItemID) {

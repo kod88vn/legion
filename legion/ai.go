@@ -1698,6 +1698,9 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		sRefs, sOK := b.stickRefs(now) // partystick.go: no drop beyond together_cells of the party
 		sx0, sy0 := b.livePos(now)
 		for _, it := range b.items {
+			if b.regenOwnDrop(it, now) { // regendrop.go: never pick up what this bot dropped itself
+				continue
+			}
 			if sOK && !stickAllows(sx0, sy0, it.X, it.Y, sRefs, togetherCells()) {
 				continue
 			}

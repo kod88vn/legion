@@ -312,8 +312,9 @@ type Tuning struct {
 	// chatjobs.go: an ask for an item already waiting in the same channel is not queued twice (default on)
 	ChatJobDedupeOn bool `json:"chat_job_dedupe_on"`
 	// party / guild get first refusal on a want for this long in all (split over the buyer's kin stages), then anyone
-	ExchangeFirstRefusalSec int  `json:"exchange_first_refusal_sec"`
+	ExchangeFirstRefusalSec int `json:"exchange_first_refusal_sec"`
 	// convo.go ambient talk (default on: an older tuning.json without the keys keeps these defaults)
+	TownDropJunk         bool    `json:"town_drop_junk"` // regendrop.go: over the regen line in town with nothing else to do, drop junk (EC37)
 	AmbientTalkOn        bool    `json:"ambient_talk_on"`
 	AmbientTalkDiv       float64 `json:"ambient_talk_div"`
 	AmbientTalkMaxPerMin float64 `json:"ambient_talk_max_per_min"`
@@ -335,7 +336,7 @@ type Tuning struct {
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
 var defaultTuning = Tuning{
-	GearScoreOn: true, GearPerfOn: true, FairSpotGateOn: true, FairSpotShare: 0.5,
+	GearScoreOn: true, GearPerfOn: true, FairSpotGateOn: true, FairSpotShare: 0.5, TownDropJunk: true,
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
 	PriestActiveBuffs: true, PriestBuffHoldSP: 30, PartyCmd: true,

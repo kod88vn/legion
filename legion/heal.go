@@ -268,6 +268,9 @@ func (b *Bot) lowHPGuard(gm *GameMap, moving bool, now time.Time) bool {
 			return true
 		}
 	}
+	if b.regenDrop(now) { // regendrop.go: last resort in town - drop the lowest value per weight until under the line
+		return true
+	}
 	if b.overRegenWeight() && b.potionCount() == 0 {
 		delete(b.buffAt, "lowrest")
 		return false // no way to recover here: carry on (the trip logic sells)
