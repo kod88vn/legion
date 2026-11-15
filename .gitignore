@@ -88,3 +88,15 @@ legion/data/lfgstats.json
 # map-truth snapshot of the server data (tools/system/fieldcheck.py refreshes it: read-only copy of ro-rathena)
 tools/dev/mapsnap/
 legion/data/owner.token
+
+# Ayla rotation and runtime state (local only, written by the running stack)
+legion/data/ayla_rotation.json
+legion/data/aylalog.state.json
+legion/data/bugq.wake
+legion/data/bugq.wake.state
+legion/data/dashboard-8099.lock
+legion/data/instance_handoff.json
+legion/data/instance_handoff_main.json
+legion/data/partychat.json
+legion/data/rotation_candidates.json
+legion/data/tuning.json.pre-*

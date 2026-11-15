@@ -65,5 +65,6 @@
   "skill_canact_off": false,
   "guild_duty_on": true,
   "exchange_tiers_on": true,
-  "chat_jobs_on": true
+  "chat_jobs_on": true,
+  "ayla_rotation_off": true
 }

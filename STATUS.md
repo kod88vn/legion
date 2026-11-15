@@ -1,7 +1,12 @@
 # STATUS - read this first
 
+**2026-11-15 16:24:** no rebirth live (ST01/G10), rathena restarted 16:24 (merge 72e5956, rules fe40f94).
+
 **2026-11-15: game server only is up (owner order).** `ro-db` and `ro-rathena` were started with `docker start`; the Legion
 engine (legion, legion-core), Ayla's OpenKore, the agency and every agent, mind and loop stay down; `stack.hold` stays.
+**2026-11-15 15:18:** rathena restarted once with chat logging on (ST07, `log_chat: 63`, table `chatlog`); the dashboard
+reads ro-db as the SELECT-only user `dash_ro`. Silversage13 and Echo.0783 were already out of Ayla's party (party 2 has
+the five roster members); no party rows were changed.
 
 ## 2026-11-15 09:05 local: everything shut down for a system redesign (owner order)
 The owner said "we need a system redesign. Shut down everything". All six containers are stopped (`docker stop`: legion,
