@@ -784,6 +784,9 @@ func (b *Bot) partyGoalFit(now time.Time) {
 // (the map is safe for the whole group, the party hasn't just moved) or leads on the party's map with a levelling
 // goal for now. Members follow the leader (partyGoalSync), so the leader is with its party either way.
 func (b *Bot) leaderGoalSync(p *Party, pm string, others []*Bot, now time.Time) {
+	if _, ok := ovPartyMap(p, now); ok { // AY25: under an owner farm map the party does not take its goals elsewhere
+		return
+	}
 	b.mu.Lock()
 	g, lv := b.fgoal, b.BaseLvOr()
 	at, ax, ay := b.MapName, b.X, b.Y

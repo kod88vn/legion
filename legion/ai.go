@@ -1977,8 +1977,11 @@ func (b *Bot) deathLoopCheck(now time.Time) {
 		return
 	}
 	b.deathLog = nil
-	b.badMap, b.badMapUntil = last.m, now.Add(30*time.Minute)
 	p := partyOf(b)
+	// AY25: the owner's map is never marked bad for the party (no away-and-back oscillation)
+	if om, ok := ovPartyMap(p, now); !ok || om != last.m {
+		b.badMap, b.badMapUntil = last.m, now.Add(30*time.Minute)
+	}
 	if p == nil || p.Human != "" {
 		if b.Goal.Set == "auto" || b.Goal.Set == "" {
 			b.Goal, b.route, b.path = Goal{}, nil, nil
@@ -1998,6 +2001,17 @@ func (b *Bot) deathLoopCheck(now time.Time) {
 		go b.partySay(styled(typing, pick("too strong here for me, gonna lvl a bit on my own. ty!", "i keep dying lol, ill go lvl elsewhere, cya")))
 		go p.drop(b)
 		return
+	}
+	// AY25: under an owner farm map the death-loop guard keeps the map (the owner's choice outlasts the deaths)
+	if om, ok := ovPartyMap(p, now); ok {
+		parties.Lock()
+		pm := p.Map
+		parties.Unlock()
+		if pm == om {
+			ovFlagKept(p.Name, om, now) // the dashboard flag (aylaoverride.go "flags")
+			b.event("party", "", fmt.Sprintf("override kept, party died: twice on %s in 10 min, the owner's map %s stays", last.m, om))
+			return
+		}
 	}
 	b.event("party", "", fmt.Sprintf("died twice on %s in 10 min: the party moves to an easier map", last.m))
 	go p.relocate(last.m, -1, -1, "") // deaths are danger: not held back by a party rest (together.go)
@@ -2524,6 +2538,12 @@ func routeCrossesTooHard(from string, x, y int, dest string, minLv int) bool {
 // how parties ended up ~20 levels over their weakest member. Now the party map stays the party's: the current one
 // while it suits the weakest member and is reachable, else the nearest one that does. False: nothing fits.
 func (b *Bot) leaderPartyPick(p *Party) bool {
+	if om, ok := ovPartyMap(p, time.Now()); ok { // AY25: the owner's farm map is the party's map, whatever the pickers say
+		if b.Goal.Map != om || b.Goal.Set != "party-leader" {
+			b.Goal, b.route, b.path = Goal{Mode: "hunt", Map: om, Set: "party-leader"}, nil, nil
+		}
+		return true
+	}
 	if h := huntOf(p); h != nil { // bosshunt.go: the party is on a boss hunt - its map is the boss map
 		if b.Goal.Map != h.Boss.Map {
 			b.Goal, b.route, b.path = Goal{Mode: "hunt", Map: h.Boss.Map, Set: "party-leader"}, nil, nil
@@ -2725,7 +2745,15 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	if p.bossActive() { // bosshunt.go decides when a boss hunt leaves (kill, retreat, timeout)
 		return
 	}
-	m := partySpotNear(p, from, x, y)
+	// AY25: an engine party under an owner farm map goes to that map and only that map (a roam give-up, a death loop
+	// or the fit check all come here); the spot picker and the beginner rule do not apply to the owner's choice
+	om, owner := ovPartyMap(p, time.Now())
+	m := ""
+	if owner {
+		m = om
+	} else {
+		m = partySpotNear(p, from, x, y)
+	}
 	l := p.Leader
 	if m == "" || l == nil {
 		return
@@ -2733,7 +2761,7 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	parties.Lock()
 	ms := append([]*Bot(nil), p.Members...)
 	parties.Unlock()
-	if partyBeginnerFar(ms, m) {
+	if !owner && partyBeginnerFar(ms, m) {
 		return // lfg.go: beginners stay near their home town - no relocation across the world for them
 	}
 	l.mu.Lock()
@@ -2743,6 +2771,10 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	parties.Lock()
 	pm := p.Map
 	parties.Unlock()
+	if owner && pm == m {
+		l.mu.Unlock() // already on the owner's map: it stays
+		return
+	}
 	if l.MapName != from && l.Goal.Map != from && pm != from || l.Goal.Set == "api" || strings.HasPrefix(l.Goal.Set, "boss") {
 		l.mu.Unlock()
 		return
@@ -2753,7 +2785,10 @@ func (p *Party) relocate(from string, x, y int, why string) {
 	}
 	typing := l.P.Typing
 	l.mu.Unlock()
-	if why != "" {
+	if owner {
+		l.event("party", "", fmt.Sprintf("owner farm map %s: the party moves there from %s (override)", m, from))
+		l.partySay(styled(typing, planLine(p, m, "the owner set this map")))
+	} else if why != "" {
 		l.event("party", "", fmt.Sprintf("%s on %s: moving the party to %s", why, from, m))
 		reason := "too rough here for some of us"
 		switch {
