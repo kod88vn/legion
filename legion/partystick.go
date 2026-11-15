@@ -18,12 +18,47 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 )
 
-// counters (for tests and the log): walks clamped, runs to the party instead of a random teleport, announced wings
-var stickVetoes, stickRuns, stickWings atomic.Int64
+// counters (for tests and the log): walks clamped, runs to the party instead of a random teleport, announced wings,
+// near-death holds (drink / ask the healer / stay with the party instead of a Butterfly Wing)
+var stickVetoes, stickRuns, stickWings, stickHolds atomic.Int64
+
+// stickHealer (b.mu held): the party's healer on this map within reach (40 cells; any distance in a dungeon, where
+// a wing to town is the worst split), with its live position. A healer bot counts itself (it can Heal itself).
+// ok=false: no healer of the party here.
+func (b *Bot) stickHealer(now time.Time) (pubState, int, bool) {
+	p := partyOf(b)
+	if p == nil {
+		return pubState{}, 0, false
+	}
+	me := b.charName()
+	if b.isHealer() {
+		return pubState{Name: me, Map: b.MapName, X: b.X, Y: b.Y, Online: true, Support: true}, 0, true
+	}
+	reach := 40
+	if strings.Contains(b.MapName, "_dun") {
+		reach = 1 << 30
+	}
+	_, _, members := b.partyView(p, now)
+	var best pubState
+	bd, found := 1<<30, false
+	for _, s := range members {
+		if s.Name == me || !s.Online || !s.Support || s.Map != b.MapName || s.X|s.Y == 0 || s.X >= 1000 || s.Y >= 1000 {
+			continue
+		}
+		if s.LX|s.LY != 0 {
+			s.X, s.Y = s.LX, s.LY
+		}
+		if d := dist(b.X, b.Y, s.X, s.Y); d <= reach && d < bd {
+			best, bd, found = s, d, true
+		}
+	}
+	return best, bd, found
+}
 
 // stickRefs (b.mu held): the party positions a grinding move of this bot must stay near - for a member its leader (a
 // human party's leader too), for a bot party's leader every online member on its map. ok=false: no limit right now.
@@ -185,8 +220,30 @@ func (b *Bot) stickEscape(gm *GameMap, hp float64, n int, deadly, moving bool, n
 		return false, false
 	}
 	if hp < 0.2 || deadly {
-		// about to die: Butterfly Wing to the party's save Kafra and say so (not a random cell on this map)
-		if b.escItemOK(itemButterflyWing, now) {
+		// QA 12:37:37 (bug b1794746339362-336): four of Ayla's six members (Zen.fox, xXRinfangXx, Echo.0783,
+		// Silversage13) Butterfly-winged to Payon at 10-28% HP with the priest on their map and sat there while the leader
+		// farmed pay_dun03 alone. Real players with a priest next to them back off to it, drink, shout for a heal and
+		// keep fighting with the party (PT29, PT31, PT04). The wing-out is only for a party bot with no healer on its
+		// map and no potion left.
+		healer, _, hok := b.stickHealer(now)
+		pot := b.potionIndex()
+		if hok || pot >= 0 {
+			if pot >= 0 && now.After(b.potAt) {
+				b.potAt = now.Add(time.Second)
+				go b.useItem(pot)
+			}
+			if hok && healer.Name != b.charName() && now.After(b.buffAt["healcall"]) {
+				b.buffAt["healcall"] = now.Add(20 * time.Second)
+				typing, first := b.P.Typing, healer.Name
+				line := pick("heal pls", "heal!! im low", "need heal", "heal me pls "+first, first+" heal pls", "low hp, heal?")
+				go b.partySay(styled(typing, line))
+			}
+			if hok && healer.Name != b.charName() {
+				mate, d = healer, dist(b.X, b.Y, healer.X, healer.Y)
+			}
+			stickHolds.Add(1)
+		} else if b.escItemOK(itemButterflyWing, now) {
+			// about to die, no healer here and nothing to drink: Butterfly Wing to the save Kafra and say so
 			town := b.savedTown
 			if town == "" {
 				town = "town"

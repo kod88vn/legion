@@ -185,3 +185,57 @@ func TestStickEscapeRunsToMate(t *testing.T) {
 		t.Fatal("flag off: old rules")
 	}
 }
+
+// bug b1794746339362-336 (QA 12:37:37): Ayla's members Butterfly-winged to Payon at 10-28% HP with the priest on their
+// map. Near death with a healer here (or a potion left) a party member stays: drinks, asks for a heal, backs off to the
+// priest. The wing-out stays for a party member with no healer here and nothing to drink.
+func TestStickEscapeNoWingWithHealer(t *testing.T) {
+	stickTune(t, true)
+	now := time.Now()
+	l := stickBot("Lh", "pay_dun02", 100, 100)
+	pr := stickBot("Ph", "pay_dun02", 110, 100)
+	m := stickBot("Mh", "pay_dun02", 130, 100)
+	v := &atomic.Value{}
+	v.Store(pubState{Name: "Ph", Map: "pay_dun02", X: 110, Y: 100, Online: true, Support: true})
+	pubs.Store("Ph", v)
+	stickParty(t, l, pr, m)
+	m.savedTown = "payon"
+	m.inv = map[int]*InvItem{1: {Index: 1, ItemID: itemButterflyWing, Count: 2}}
+	t.Cleanup(func() { escPend.Delete(m); escHold.Delete(m); escHoldIdx.Delete(m) })
+
+	// healer on the map, no potions: no wing, run to the priest
+	h, fled := m.stickEscape(nil, 0.12, 2, false, true, now, "test")
+	if _, winged := escPend.Load(m); winged {
+		t.Fatal("priest on the map: must not Butterfly Wing out")
+	}
+	if !h || !fled || m.fleeTo != [2]int{110, 100} {
+		t.Fatalf("priest on the map: want a run to the priest, got handled=%v fled=%v fleeTo=%v", h, fled, m.fleeTo)
+	}
+	if m.buffAt["healcall"].IsZero() {
+		t.Fatal("priest on the map: want a heal request in party chat")
+	}
+
+	// no healer here but a potion: drink, stay with the party
+	pr.MapName = "pay_dun03"
+	stickPub(pr)
+	m.inv[2] = &InvItem{Index: 2, ItemID: itemRedPotion, Count: 5}
+	m.potAt = time.Time{}
+	if h, _ := m.stickEscape(nil, 0.12, 2, false, true, now, "test"); !h {
+		t.Fatal("party on the map: PT31 applies")
+	}
+	if _, winged := escPend.Load(m); winged {
+		t.Fatal("potion left: must drink, not wing")
+	}
+	if !m.potAt.After(now) {
+		t.Fatal("potion left: want a potion drunk")
+	}
+
+	// no healer here, no potion, nearly dead: the announced wing to the save Kafra
+	delete(m.inv, 2)
+	if h, fled := m.stickEscape(nil, 0.12, 2, false, true, now, "test"); !h || !fled {
+		t.Fatalf("no healer, no potion: want the wing, got handled=%v fled=%v", h, fled)
+	}
+	if _, winged := escPend.Load(m); !winged {
+		t.Fatal("no healer, no potion, nearly dead: want the Butterfly Wing")
+	}
+}
