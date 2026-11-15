@@ -1403,7 +1403,11 @@ func (b *Bot) hearFrom(kind, from, line string) {
 // ---------------------------------------------------------------- actions
 
 func (b *Bot) walkTo(x, y int) {
-	x, y, ok := b.safeWalkDest(x, y) // nav.go: never walk into / across a warp that isn't the portal we mean to take
+	x, y, ok := b.stickDest(x, y) // partystick.go PT04/PT06/PT31: a grinding party member never walks beyond 20 cells of its party
+	if !ok {
+		return
+	}
+	x, y, ok = b.safeWalkDest(x, y) // nav.go: never walk into / across a warp that isn't the portal we mean to take
 	if !ok {
 		return
 	}

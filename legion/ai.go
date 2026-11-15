@@ -1663,7 +1663,12 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	if !heavy {
 		var best *GroundItem
 		bd := 7
+		sRefs, sOK := b.stickRefs(now) // partystick.go: no drop beyond together_cells of the party
+		sx0, sy0 := b.livePos(now)
 		for _, it := range b.items {
+			if sOK && !stickAllows(sx0, sy0, it.X, it.Y, sRefs, togetherCells()) {
+				continue
+			}
 			if b.overRegenWeight() && heavyJunk(it.ItemID) {
 				continue // over the regen line: low-value NPC junk stays on the ground (lootvalue.go heavyJunk)
 			}
@@ -1744,7 +1749,9 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	clv := b.champLv() // bossnote.go: champions measured with the party's strength
 	var pick *Entity
 	pd := 99
-	bt := b.bossHuntTarget() // bosshunt.go: the party hunts this boss here - everyone goes for it on sight
+	bt := b.bossHuntTarget()       // bosshunt.go: the party hunts this boss here - everyone goes for it on sight
+	tRefs, tOK := b.stickRefs(now) // partystick.go: no pull beyond together_cells of the party (what hits us still counts)
+	tx0, ty0 := b.livePos(now)
 	for _, e := range b.ents {
 		if e.Type != objMob {
 			continue
@@ -1761,6 +1768,9 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		if now.Sub(e.LastHitMe) < 4*time.Second {
 			pick, pd = e, -1
 			break
+		}
+		if tOK && !stickAllows(tx0, ty0, ex, ey, tRefs, togetherCells()) {
+			continue
 		}
 		mb := mobs[e.Class]
 		if mb != nil && (mb.Boss || mb.Level > maxLv || mb.worthless()) {

@@ -218,6 +218,9 @@ func (b *Bot) bossWatch(gm *GameMap, moving bool, now time.Time) bool {
 		b.event("info", "", fmt.Sprintf("a level %d %s %d cells away on %s: leaving", lvl, mobName(near.Class), nd, b.MapName))
 	}
 	why := fmt.Sprintf("a level %d %s nearby", lvl, mobName(near.Class))
+	if b.stickBoss(gm, near, nx, ny, moving, now, why) { // partystick.go PT31: the party pulls back together
+		return true
+	}
 	switch {
 	case now.Sub(b.buffAt["flywing"]) < 20*time.Second && b.escItemOK(itemButterflyWing, now):
 		b.useEscapeItem(itemButterflyWing, now, "boss: "+why)

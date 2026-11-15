@@ -163,8 +163,8 @@ type Tuning struct {
 	// ON by default (rally_park_off true switches it off); rally_park_cap_min 0 = 12 (Ayla's rally timeout)
 	RallyParkOff    bool `json:"rally_park_off"`
 	RallyParkCapMin int  `json:"rally_park_cap_min"`
-	PotHPAcolyte  int `json:"pot_hp_acolyte"`
-	PotSPTarget   int `json:"pot_sp_target"`
+	PotHPAcolyte    int  `json:"pot_hp_acolyte"`
+	PotSPTarget     int  `json:"pot_sp_target"`
 	// parcel.go (economy batch 17): surplus gear mailed to vendors. Off by default; parcel_test_bots (comma-separated
 	// character names) turns it on for those bots only, for a live test before enabling it for everyone.
 	ParcelsEnabled bool `json:"parcels_enabled"`
@@ -267,6 +267,11 @@ type Tuning struct {
 	// shop_announce_gap_sec = server-wide seconds between two shop lines
 	ShopAnnounceOn     bool `json:"shop_announce_on"`
 	ShopAnnounceGapSec int  `json:"shop_announce_gap_sec"`
+	// partystick.go (PT04/PT06/PT31, 2026-11-14): no move / target / loot takes a grinding party member beyond
+	// together_cells of its party (party_stick_on), and no solo random Fly Wing / Teleport escape while party mates are
+	// on the map (party_stick_escape_on): run to the party, call for help, Butterfly Wing only when about to die. Both ON.
+	PartyStickOn       bool `json:"party_stick_on"`
+	PartyStickEscapeOn bool `json:"party_stick_escape_on"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -297,6 +302,7 @@ var defaultTuning = Tuning{
 	LfgGlobalPerMin: 6,
 	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
+	PartyStickOn: true, PartyStickEscapeOn: true,
 }
 
 var curTuning atomic.Value // *Tuning
