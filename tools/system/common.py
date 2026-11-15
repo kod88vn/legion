@@ -82,14 +82,25 @@ def to_epoch(v):
     return None
 
 
-def heartbeat(name):
-    """Touch <data>/<name>.heartbeat (content: epoch). Never raises."""
+def heartbeat(name, note=""):
+    """Touch <data>/<name>.heartbeat (content: epoch, then an optional note such as "waiting for the main session").
+    Never raises."""
     try:
         os.makedirs(data_dir(), exist_ok=True)
         with open(dpath(name + ".heartbeat"), "w") as f:
-            f.write(str(int(now())))
+            f.write(str(int(now())) + ((" " + note) if note else ""))
     except Exception:
         pass
+
+
+def heartbeat_note(path):
+    """The note after the epoch in a heartbeat file ("" when there is none or the file is missing)."""
+    try:
+        with open(path) as f:
+            parts = f.read().strip().split(None, 1)
+        return parts[1] if len(parts) > 1 else ""
+    except OSError:
+        return ""
 
 
 def heartbeat_age(path):

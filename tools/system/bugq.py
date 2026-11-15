@@ -35,6 +35,7 @@ import common as C
 QUEUE = "bugqueue.jsonl"
 PRIO_W = {"critical": 5, "high": 3, "normal": 2, "medium": 2, "low": 1}
 DEPLOY_EVERY = 3 * 3600
+WAITING_NOTE = "waiting for the main session"   # heartbeat note after a wake exit (watchdog reads it)
 
 
 def qpath():
@@ -354,6 +355,8 @@ def cmd_watch(a):
         r = wake_reasons(a.lead_min, a.urgent_gap_min * 60)
         if r:
             mark_woken(r)
+            # the watch exits on purpose: its heartbeat says so, so the watchdog does not count it as dead
+            C.heartbeat("bugq-watch", note=WAITING_NOTE)
             print("BUGQ WAKE at %s: %s" % (C.iso(), ", ".join(sorted(set(k for k, _, _ in r)))))
             for k, t, _ in r:
                 print(" - %s: %s" % (k, t))

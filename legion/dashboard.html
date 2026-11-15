@@ -284,6 +284,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
     </div>
     <div class="card sec"><h2>Bug queue <small id="bqNote"></small></h2><div id="bugq"><div class="empty">loading...</div></div></div>
     <div class="card sec"><h2>Deploys <small id="depNote"></small></h2><div id="deploys"><div class="empty">loading...</div></div></div>
+    <div class="card sec"><h2>Watchdog and the 30-minute report <small id="wdNote"></small></h2><div id="wd"><div class="empty">loading...</div></div></div>
     <div class="sub2 sec">
       <div class="card"><h2>Engine runtime</h2><div class="kvs" id="runtime" style="grid-template-columns:auto 1fr"><span>Legion</span><span id="uptime">–</span><span>runtime</span><span id="rt">–</span></div></div>
       <div class="card"><h2>Logs</h2><div id="sysLogs"><div class="empty">loading...</div></div></div>
@@ -1272,7 +1273,7 @@ function renderSystem() {
   const ms = meterState();
   if (!S) {
     const msg = `<div class="empty">${statusMissing()}</div>`;
-    for (const id of ['containers', 'loops', 'bugq', 'deploys', 'dashsrv']) $(id).innerHTML = msg;
+    for (const id of ['containers', 'loops', 'bugq', 'deploys', 'dashsrv', 'wd']) $(id).innerHTML = msg;
     $('kpisSys').innerHTML = kpi('Legion engine', SRC.engine ? '<span class="st-up">up</span>' : '<span class="st-down">down</span>', 'the only source without the dashboard server') +
       kpi('Meter', `<span class="st-${ms.cls}" style="font-size:18px">${esc(ms.txt)}</span>`, '');
     renderPM(null, M.list); return;
@@ -1294,7 +1295,7 @@ function renderSystem() {
   // scripts and loops
   $('loops').innerHTML = '<table><thead><tr><th>script</th><th>state</th><th>last heartbeat</th><th>file</th></tr></thead><tbody>' +
     S.loops.map(l => `<tr><td><b>${esc(l.label)}</b> <span style="color:var(--muted)">${esc(l.script || '')}</span></td>` +
-      `<td><span class="st-${l.up ? 'up' : 'down'}">${l.up ? 'up' : l.state === 'missing' ? 'no heartbeat' : 'down'}</span></td>` +
+      `<td><span class="st-${l.state === 'waiting' ? 'warn' : l.up ? 'up' : 'down'}">${l.state === 'waiting' ? 'waiting for the main session' : l.up ? 'up' : l.state === 'missing' ? 'no heartbeat' : 'down'}</span></td>` +
       `<td>${l.last ? clock(l.last) + ' · ' + agoE(l.last) : '<span style="color:var(--muted)">never written</span>'}</td><td style="color:var(--muted)">${esc(l.file)}</td></tr>`).join('') + '</tbody></table>';
   renderPM(S.dispatcher, M.list);
   // bug queue
@@ -1335,7 +1336,28 @@ function renderSystem() {
     row('meter history file', mf.available ? `written ${agoE(mf.file_t)}` : esc(mf.why)) +
     row('last league report', rp.league ? `${esc(rp.league.file)} · ${agoE(rp.league.t)}` : 'none') +
     row("Ayla's status.json", ay.status_t ? `written ${agoE(ay.status_t)}` : 'no file') +
-    row('system agents, 30-minute reports', '<span class="gap">not available: no script records them</span>');
+    row('system agents, 30-minute reports', S.watchdog && S.watchdog.last_report ? `written ${agoE(S.watchdog.last_report.t)} · see Watchdog above` : '<span class="gap">no report yet: tools/system/watchdog.py writes one every 30 minutes</span>');
+  renderWatchdog(S);
+}
+// tools/system/watchdog.py: the live state of every script and container, and the newest 30-minute record
+function renderWatchdog(S) {
+  const w = S.watchdog || {};
+  if (!w.available) { $('wdNote').textContent = ''; $('wd').innerHTML = '<div class="empty">The watchdog has not written anything yet: start tools/system/watchdog.py.</div>'; return; }
+  const src = w.status || w.last_report || {}, last = w.last_report || {}, sm = src.summary || {};
+  const stateTxt = {ok: 'up', waiting: 'waiting for the main session', down: 'down', stale: 'down', missing: 'missing', held: 'held (stack on hold)', off: 'off (stack not started)', unknown: 'unknown'};
+  const cls = {ok: 'up', waiting: 'warn', held: 'warn', off: 'unk', unknown: 'unk'};
+  $('wdNote').textContent = w.report_age_s != null ? `30-minute report written ${ageTxt(w.report_age_s)} ago` : 'no 30-minute report yet';
+  const alarm = w.alarm ? `<div class="st-down" style="margin-bottom:6px"><b>Alarm:</b> ${esc(w.alarm)}</div>` : '';
+  const line = `<div style="margin-bottom:6px"><b>${fmt(sm.agents_ok || 0)}</b> of ${(src.agents || []).length} scripts up · <b>${fmt(sm.containers_up || 0)}</b> of ${(src.containers || []).length} containers up` +
+    (sm.agents_waiting ? ` · ${sm.agents_waiting} waiting for the main session` : '') + ` · queue ${fmt(sm.queue_open || 0)} open, ${fmt(sm.queue_unassigned || 0)} unassigned</div>`;
+  const rows = (src.agents || []).map(a => `<tr><td><b>${esc(a.label)}</b></td><td><span class="st-${cls[a.state] || 'down'}">${esc(stateTxt[a.state] || a.state)}</span></td>` +
+    `<td>${a.last ? clock(a.last) + ' · ' + agoE(a.last) : '<span style="color:var(--muted)">never written</span>'}</td><td class="wrapc" style="color:var(--muted)">${esc(a.action || a.note || '')}</td></tr>`).join('');
+  const crows = (src.containers || []).map(c => `<tr><td><b>${esc(c.key)}</b></td><td><span class="st-${cls[c.state] || 'down'}">${esc(stateTxt[c.state] || c.state)}</span></td>` +
+    `<td style="color:var(--muted)">container${c.detail ? ' · ' + esc(c.detail) : ''}</td><td class="wrapc" style="color:var(--muted)">${esc(c.action || '')}</td></tr>`).join('');
+  const filed = (src.filed || []).length ? `<div style="margin-top:6px;color:var(--text-2)">filed in the last pass: ${(src.filed || []).map(f => esc(f.text)).join(' · ')}</div>` : '';
+  const hist = last.iso ? `<div style="margin-top:6px;color:var(--muted)">last 30-minute record: ${esc(last.iso)} (${(last.agents || []).length} scripts, ${(last.containers || []).length} containers)</div>` : '';
+  $('wd').innerHTML = alarm + line + '<div class="tbl"><table><thead><tr><th>script or container</th><th>state</th><th>last heartbeat / detail</th><th>action</th></tr></thead><tbody>' +
+    rows + crows + '</tbody></table></div>' + filed + hist;
 }
 // every agent: what each mind last posted, joined with the dispatcher's role table
 function renderPM(ds, pm) {

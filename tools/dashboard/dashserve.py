@@ -261,10 +261,16 @@ def loops(now):
             a = C.heartbeat_age(C.dpath(fn))
             if a is not None and (age is None or a < age):
                 age, used = a, fn
-        state = "missing" if age is None else ("ok" if age <= stale else "stale")
+        note = C.heartbeat_note(C.dpath(used)) if used else ""
+        if age is None:
+            state = "missing"
+        elif bugq.WAITING_NOTE in note:   # the bug queue watch exits on purpose after a wake: waiting, not dead
+            state = "waiting"
+        else:
+            state = "ok" if age <= stale else "stale"
         rows.append({"key": key, "label": label, "file": used or files[0], "age_s": None if age is None else int(age),
                      "last": None if age is None else int(now - age), "stale_after_s": stale, "state": state,
-                     "script": script, "up": state == "ok"})
+                     "note": note, "script": script, "up": state in ("ok", "waiting")})
     # heartbeat files nobody listed here: shown as they are, so a new script appears without a dashboard change
     for p in sorted(glob.glob(C.dpath("*.heartbeat"))):
         fn = os.path.basename(p)
@@ -276,6 +282,22 @@ def loops(now):
         rows.append({"key": fn[:-10], "label": fn[:-10], "file": fn, "age_s": int(age), "last": int(now - age),
                      "stale_after_s": 300, "state": "ok" if age <= 300 else "stale", "script": "", "up": age <= 300})
     return rows
+
+
+def watchdog_block(now):
+    """tools/system/watchdog.py: its live status (every pass) and the newest 30-minute record. A missing record is
+    an alarm here (Constitution 3.8)."""
+    status = read_json(C.dpath("watchdog.status.json"))
+    recs = tail_jsonl(C.dpath("watchdog-reports.jsonl"), 300_000)
+    last = recs[-1] if recs else None
+    age = None if not last or not isinstance(last.get("t"), (int, float)) else int(now - last["t"])
+    alarm = None
+    if last is None:
+        alarm = "no 30-minute report on record yet"
+    elif age is not None and age > 35 * 60:
+        alarm = "30-minute report missing: the newest is %d min old" % (age // 60)
+    return {"available": status is not None or last is not None, "status": status, "last_report": last,
+            "report_age_s": age, "report_every_s": 1800, "alarm": alarm}
 
 
 def markers():
@@ -628,7 +650,7 @@ def build_status(engine, watch, started):
         "containers": containers, "docker": {"asked": docker_why == "", "why": docker_why},
         "loops": lp, "markers": markers(),
         "bugq": bug_queue(now), "deploy": deploys(), "dispatcher": dispatcher(now),
-        "meter": meter_file(now), "reports": reports(), "ayla": ayla_file(now),
+        "meter": meter_file(now), "reports": reports(), "ayla": ayla_file(now), "watchdog": watchdog_block(now),
     }
     st["summary"] = {"containers_up": sum(1 for c in containers if c["up"]), "containers": len(containers),
                      "loops_up": sum(1 for l in lp if l["up"]), "loops": len(lp)}

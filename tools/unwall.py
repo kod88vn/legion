@@ -14,6 +14,8 @@ a blocked save point moves to the nearest walkable cell.
   python tools/unwall.py --loop     # every 30 s (run in the background)
 """
 import collections, os, struct, subprocess, sys, tempfile, time, zlib
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'system'))
+import common as C  # noqa: E402  (heartbeat file for the watchdog)
 
 WSL = ['wsl', '-d', 'Ubuntu-24.04', '--']
 CACHE = os.path.join(tempfile.gettempdir(), 'unwall_mapcache')
@@ -109,6 +111,8 @@ def main():
         print(time.strftime('%H:%M:%S'), f"{n} offline bot chars {'to fix' if dry else 'fixed'}", flush=True)
         if not loop:
             break
+        if not dry:
+            C.heartbeat('unwall')
         time.sleep(30)
 
 
