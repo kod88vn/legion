@@ -251,12 +251,14 @@ def main():
                     "item_rate multipliers, maps); affordable = shop price <= %d z per band level, or a drop <= %d levels above "
                     "the band top at %.1f %% or more. Source: the item, refine, mob and spawn tables of the running server."
                     % (ga.MAX_ALTS, ga.GEAR_LV_BUDGET, ga.FARM_LV_GAP, ga.FARM_RATE_PCT),
-            "refine": "target +7 for every refineable piece, +8 for weapon grades 2 and 5 (+7 for grades 1, 3, 4). Cost = the "
-                      "cheapest material per level that cannot break the piece (zeny + NPC-shop price of the material), "
-                      "weighed by its chance; break_risk_pct is what remains when a breaking material is the only one. Estimate.",
+            "refine": "target +7 for every refineable piece, +8 for weapon grades 2 and 5 (+7 for grades 1, 3, 4). cost_z = fee_z "
+                      "(NPC refine zeny) + ore_z (materials). The ore is priced at the NPC shop price where a shop sells it, else "
+                      "the item db Buy value; HD_ and Enriched_ ores take their base ore's Buy as a floor (their own Buy is 20, "
+                      "not a price). A material with no price is listed in unpriced and left out. Cheapest safe material per "
+                      "level, weighted by its chance; break_risk_pct is the chance of losing the piece. Estimate.",
             "cards": "one-time bound: a card goes in at insert_at, the highest refine level the band pays for (budget %d z per "
                      "band level). Tier from the non-MVP monster drops: popular (3+ monsters at %.1f %% or more), uncommon "
-                     "(%.1f %%+, usable at any band), rare (the rest). Rare cards only at band tops of 60+ with the full refine affordable, else "
+                     "(%.1f %%+, usable at any band; this threshold is the fixer's estimate, not an owner rule), rare (the rest). Rare cards only at band tops of 60+ with the full refine affordable, else "
                      "the popular fallback in the same slot." % (ga.REFINE_LV_BUDGET, ga.POPULAR_PCT, ga.UNCOMMON_PCT),
             "stats_keys": pl.STATS,
         },

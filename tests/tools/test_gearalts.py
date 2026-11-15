@@ -42,8 +42,10 @@ def _mini_catalog():
     cat.refine = {"Weapon": {1: weapon}, "Armor": {1: armor}}
     phracon = {"Id": 1010, "AegisName": "Phracon", "Name": "Phracon", "Type": "Etc", "Buy": 200}
     cat.items = {1010: phracon}
-    cat.by_aegis = {"Phracon": phracon, "HD_Oridecon": {"Id": 984, "AegisName": "HD_Oridecon", "Buy": 0},
-                    "HD_Elunium": {"Id": 985, "AegisName": "HD_Elunium", "Buy": 0}}
+    oridecon = {"Id": 984, "AegisName": "Oridecon", "Name": "Oridecon", "Type": "Etc", "Buy": 1100}
+    cat.by_aegis = {"Phracon": phracon, "Oridecon": oridecon,
+                    "HD_Oridecon": {"Id": 9840, "AegisName": "HD_Oridecon", "Buy": 20},
+                    "HD_Elunium": {"Id": 9850, "AegisName": "HD_Elunium", "Buy": 20}}
     cat.shops = {1010: [("prontera", "Ore Dealer", 200)]}
     cat.mobs = {}
     cat.drops = {}
@@ -73,9 +75,33 @@ class RefineRuleTests(unittest.TestCase):
         self.assertEqual(plan["steps"][6]["material"], "Phracon")
         self.assertEqual(plan["steps"][7]["material"], "HD_Oridecon")
         self.assertEqual(plan["break_risk_pct"], 0.0)
-        # +1..+7 at 250z each (50 refine zeny + Phracon 200), +8 at 20,000z over a 60 % chance
-        self.assertEqual(plan["cost_z"], 1750 + 33333)
-        self.assertIn("HD_Oridecon", plan["unpriced"])   # not sold by an NPC shop: its price is left out
+        # fee: +1..+7 at 50z, +8 at 20,000z over a 60 % chance; ore: Phracon 200 (NPC shop) x7, then the HD_Oridecon
+        # floor (base Oridecon Buy 1100) over the 60 % chance; the HD item's own Buy of 20 is not used
+        self.assertEqual(plan["fee_z"], 350 + round(20000 / 0.6))
+        self.assertEqual(plan["ore_z"], 1400 + round(1100 / 0.6))
+        self.assertEqual(plan["cost_z"], plan["fee_z"] + plan["ore_z"])
+        self.assertTrue(plan["materials"]["HD_Oridecon"]["source"].startswith("item_db_buy of the base ore"))
+        self.assertEqual(plan["unpriced"], [])
+
+    def test_plus_seven_weapon_costs_more_than_the_fee_alone(self):
+        # review ee67f75: the ore is part of the cost (Phracon +7: 7 x (50z fee + 200z ore), fee alone is 350z)
+        cat = _mini_catalog()
+        item = {"Id": 1702, "Type": "Weapon", "WeaponLevel": 1, "Refineable": True}
+        plan = ga.refine_plan(cat, item, 7)
+        self.assertEqual(plan["fee_z"], 350)
+        self.assertEqual(plan["ore_z"], 1400)
+        self.assertGreater(plan["cost_z"], plan["fee_z"])
+
+    def test_event_copies_are_never_droppers(self):
+        # review ee67f75: E_ copies (level 0 or a level of their own) are not droppers, so they cannot make a tier
+        cat = _mini_catalog()
+        cat.mobs = {5001: {"Id": 5001, "AegisName": "E_TEST_MANTIS", "Name": "Mantis", "Level": 0},
+                    5002: {"Id": 5002, "AegisName": "E_TEST_LUTE", "Name": "Lute", "Level": 25},
+                    5003: {"Id": 5003, "AegisName": "TEST_MOB", "Name": "Real", "Level": 25}}
+        cat.drops = {"Event_Only": [(5001, 10000, False), (5002, 10000, False)], "Real_Drop": [(5003, 100, False)]}
+        self.assertEqual(cat.drop_list({"Id": 1, "AegisName": "Event_Only", "Type": "Card"}), [])
+        self.assertEqual(cat.card_tier({"Id": 1, "AegisName": "Event_Only", "Type": "Card"}), "rare")
+        self.assertEqual([d[1] for d in cat.drop_list({"Id": 2, "AegisName": "Real_Drop", "Type": "Card"})], [5003])
 
     def test_a_piece_that_only_breaks_reports_the_risk(self):
         cat = _mini_catalog()
@@ -92,8 +118,15 @@ class RefineRuleTests(unittest.TestCase):
         plan = ga.refine_plan(cat, item, 8)
         cum = ga.cumulative_costs(plan)
         self.assertEqual(cum[0], 0)
-        self.assertEqual(cum[-1], plan["cost_z"])
+        # per-step costs are rounded to whole zeny, so the sums may differ by one zeny per level
+        self.assertLessEqual(abs(cum[-1] - plan["cost_z"]), len(plan["steps"]))
         self.assertEqual(len(cum), 9)
+
+    def test_the_ore_source_is_recorded(self):
+        cat = _mini_catalog()
+        item = {"Id": 1702, "Type": "Weapon", "WeaponLevel": 1, "Refineable": True}
+        plan = ga.refine_plan(cat, item, 7)
+        self.assertEqual(plan["materials"]["Phracon"], {"z": 200, "source": "npc_shop"})
 
 
 class CardTierTests(unittest.TestCase):
@@ -200,6 +233,45 @@ class ShapeTests(unittest.TestCase):
                         # a card goes in at the highest refine the band pays for: the full refine is over budget
                         self.assertGreater(c["refine_cost_z"], budget, where)
                     self.assertIn("rule", c, where)
+
+    def test_refine_cost_is_fee_plus_ore_and_ore_is_priced(self):
+        # review ee67f75: the ore is in the cost; an unpriced material is listed, never silently zero
+        for bid, b in self.ms.items():
+            for r in b["ranges"]:
+                for slot, g in r["gear"].items():
+                    for p in [g["best"]] + g["alternatives"]:
+                        rf = p.get("refine")
+                        if rf is None:
+                            continue
+                        where = (bid, r["range"], slot, p["id"])
+                        self.assertEqual(rf["cost_z"], rf["fee_z"] + rf["ore_z"], where)
+                        if not rf.get("unpriced") and rf["target"] >= 7:
+                            self.assertGreater(rf["ore_z"], 0, where)
+                        for name, m in rf["materials"].items():
+                            self.assertTrue(m["source"], where)
+                            if m["z"] is None:
+                                self.assertIn(name, rf.get("unpriced", []), where)
+
+    def test_drops_in_the_tables_are_real_monsters(self):
+        # review ee67f75: no level-0 or event (E_) monster is shown as a dropper
+        for bid, b in self.ms.items():
+            for r in b["ranges"]:
+                for slot, g in r["gear"].items():
+                    for p in [g["best"]] + g["alternatives"]:
+                        for d in p["source"]["drops"]:
+                            self.assertGreater(d["lv"] or 0, 0, (bid, r["range"], p["id"], d["mob"]))
+                for c in r["cards"]:
+                    for d in c["source"]["drops"]:
+                        self.assertGreater(d["lv"] or 0, 0, (bid, c["id"], d["mob"]))
+
+    def test_uncommon_tier_is_labelled_an_estimate(self):
+        # review ee67f75: the uncommon threshold is the fixer's estimate, not an owner rule
+        for bid, b in self.ms.items():
+            for r in b["ranges"]:
+                for c in r["cards"]:
+                    if c["tier"] == "uncommon":
+                        self.assertIn("estimate", c["rule"], (bid, c["id"]))
+        self.assertIn("estimate", _load(MILESTONES)["assumptions"]["cards"])
 
     def test_export_carries_the_gear_plan_of_every_band(self):
         by = {b["id"]: b for b in self.ex["builds"]}

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-15 | build audit fixes (F2-F9, F19): class-wearable gear only, shield clear with two-hander, bard/dancer instrument or whip, cards fit band, card text from scripts",
+ "updated": "2026-11-15 | build audit fixes (F2-F9, F19): class-wearable gear only, shield clear with two-hander, bard/dancer instrument or whip, cards fit band (real droppers only), card text from scripts",
  "format": "keys = builds.go plan ids; bands by base level (may overlap); lists weakest first; ids = rAthena re item ids; card prio 1-3",
  "builds": {
   "hunter": {

@@ -1544,7 +1544,7 @@ const bdPiece = p => {
   if (src.how === 'shop' && src.shop) how = `shop ${esc(src.shop.map)} ${esc(src.shop.npc)} ${fmt(src.shop.price_z)}z`;
   else if (src.how === 'drop') how = src.drops.map(d => `${esc(d.mob)} (lv ${esc(d.lv)}, ${esc(d.rate_pct)}%${d.maps.length ? ', ' + d.maps.map(esc).join('/') : ''})`).join('; ');
   else how = esc(src.note || 'no source in the server data');
-  const rf = p.refine ? ` · refine +${esc(p.refine.target)} about ${fmt(p.refine.cost_z)}z${p.refine.break_risk_pct ? ', break risk ' + esc(p.refine.break_risk_pct) + '%' : ''}` : '';
+  const rf = p.refine ? ` · refine +${esc(p.refine.target)} about ${fmt(p.refine.cost_z)}z (fee ${fmt(p.refine.fee_z)} + ore ${fmt(p.refine.ore_z)})${p.refine.break_risk_pct ? ', break risk ' + esc(p.refine.break_risk_pct) + '%' : ''}` : '';
   return `<b>${esc(p.name)}</b> <span style="color:var(--muted)">(${esc(p.tier)}; ${how}${rf})</span>`;
 };
 const bdPlanGear = plan => !plan ? '<span class="bd-gap">gap: no gear plan in the design draft</span>' :
@@ -1571,10 +1571,14 @@ function bdCard(b, live) {
     const sk = m.skills.status === 'draft'
       ? `${m.skills.items.map(s => `${esc(s.name)} ${s.lv}`).join(' · ') || '–'}${bdTag('draft')}<div class="bd-gap">unspent ${esc(m.skills.unspent)}, source ${esc(m.skills.source)}</div>`
       : `<span class="bd-gap">gap: ${esc(m.skills.note)}</span>`;
+    return `<tr><td>${esc(m.range)}</td><td>${gear}</td><td>${m.cards.map(c => esc(c.name)).join(', ') || '–'}</td><td>${st}</td><td>${sk}</td></tr>`;
+  }).join('');
+  // EC40/EC41 (additive): per band, the gear alternatives and the card plan (refine, insert level, status)
+  const msPlan = b.milestones.map(m => {
     const alts = m.gear_plan ? Object.entries(m.gear_plan).filter(([, g]) => g.alternatives.length).map(([s, g]) =>
       `<div class="bd-gap">${esc(s)}: ${g.alternatives.map(a => esc(a.name) + ' (' + esc(a.tier) + ')').join(', ')}</div>`).join('') : '';
     const cp = m.card_plan && m.card_plan.length ? `<div class="bd-gap">${m.card_plan.map(c => esc(c.name) + ' ' + esc(c.status)).join(', ')}</div>` : '';
-    return `<tr><td>${esc(m.range)}</td><td>${gear}${alts}</td><td>${m.cards.map(c => esc(c.name)).join(', ') || '–'}${cp}</td><td>${st}</td><td>${sk}</td></tr>`;
+    return `<div class="bd-part"><b>${esc(m.range)}</b>${alts}${cp}</div>`;
   }).join('');
   return `<div class="card sec bd-card" id="bd-${esc(b.id)}">
     <h2>${esc(b.name)} <small>${esc(b.class.line)} · plan <code>${esc(b.id)}</code>${b.base ? ' · variant of ' + esc(b.base) : ''}</small></h2>
@@ -1597,6 +1601,7 @@ function bdCard(b, live) {
         <div class="bd-part"><b>Stat steps (in order):</b>${steps || ' –'}</div>
         <div class="bd-part"><b>Skill steps (in order):</b>${sks || ' –'}</div>
         <div class="bd-part"><b>Weapon route, highest equipped now:</b> ${gearSteps || '–'}</div>
+        <div class="bd-part"><b>Gear alternatives and card plan by band (EC40, EC41):</b>${msPlan}</div>
         <div class="bd-part"><b>Milestones by level range (gear bands of the engine's table):</b>
           <div class="tbl"><table><thead><tr><th>Levels</th><th>Gear</th><th>Cards</th><th>Stats</th><th>Skills</th></tr></thead><tbody>${ms}</tbody></table></div></div>
       </div>

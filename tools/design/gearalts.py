@@ -16,8 +16,9 @@ Rules encoded here (the Legion's own, see docs/rules/economy.md EC40-EC43):
   * tier: "affordable" = bought at or below the gear budget of the band (GEAR_LV_BUDGET z per level of the band's top),
     or dropped by a monster at most 10 levels above the band's top with a rate of at least 0.5 %; "fallback" = the rest.
   * Refine targets: weapons +7 (grade 1), +8 (grade 2), +7 (grades 3-4), +8 (grade 5); every other refineable piece +7.
-    The cost is the cheapest material per refine level, weighed by its chance; a level whose material breaks the item on a
-    failure costs more (restart), and the chance of losing the piece is reported as break_risk. Estimate only.
+    The cost is the cheapest material per refine level, weighed by its chance: fee_z (NPC refine zeny) + ore_z (the
+    material's price: NPC shop, else item db Buy; HD_/Enriched_ use the base ore's Buy as a floor). A level whose material
+    breaks the item on a failure costs more (restart); break_risk_pct is the chance of losing the piece. Estimate only.
   * Cards are one-time bound: a card goes in only once its gear reaches the refine level in "insert_at". Tiers come from
     the monster drops at the server's rates (non-MVP drops): popular = 3+ monsters at 0.5 % or more; uncommon = any
     non-MVP drop at 0.1 % or more; rare = the rest. Popular and uncommon cards are used at any band: insert_at is the
@@ -176,13 +177,18 @@ class Catalog:
             suffix = ""
         return self.rates.get("item_rate_%s%s" % (kind, suffix), 100) / 100.0
 
+    @staticmethod
+    def is_dropper(mob):
+        """a real monster: event copies (E_ prefix, level 0) never count as droppers (review ee67f75)"""
+        return bool(mob) and (mob.get("Level") or 0) > 0 and not str(mob.get("AegisName", "")).startswith("E_")
+
     def drop_list(self, item):
         """[(rate pct at the server's rates, mob id, mvp_only)] for an item, best first"""
         out = []
         it = self.items.get(item["Id"], item)
         for mob_id, rate, mvp_only in self.drops.get(it["AegisName"], []):
             m = self.mobs.get(mob_id)
-            if not m:
+            if not self.is_dropper(m):
                 continue
             eff = min(10000.0, rate * self.mult(it, m, mvp_only))
             out.append((round(eff / 100.0, 3), mob_id, mvp_only))
@@ -216,6 +222,26 @@ class Catalog:
             drops = []   # a shop piece is bought; its drops are not listed (smaller file)
         return {"how": how, "shop": shop, "drops": drops}
 
+    def material_price(self, name):
+        """(zeny, source) of a refine material. The NPC shop price when a shop sells it; else the item db Buy value; the
+        HD_ and Enriched_ variants carry Buy 20 in the item db (not a price), so they take the base ore's Buy as a floor.
+        (None, reason) when no price is known: that part of the cost is left out and reported as unpriced."""
+        mat = self.by_aegis.get(name)
+        if mat is None:
+            return None, "not in the item database"
+        p = self.npc_price(mat)
+        if p is not None:
+            return p, "npc_shop"
+        for pre in ("HD_", "Enriched_"):
+            if name.startswith(pre):
+                base = self.by_aegis.get(name[len(pre):])
+                if base and base.get("Buy", 0) > 0:
+                    return base["Buy"], "item_db_buy of the base ore (floor: %s Buy is not a price)" % pre.rstrip("_")
+                return None, "unpriced"
+        if mat.get("Buy", 0) > 0:
+            return mat["Buy"], "item_db_buy"
+        return None, "unpriced"
+
     def npc_price(self, item):
         """the cheapest NPC shop price of an item, or None when no shop sells it (the Buy field of the item database is
         not a shop price for materials such as HD_Elunium, so it is not used)"""
@@ -238,41 +264,48 @@ def refine_target(item):
 
 
 def refine_plan(cat, item, target):
-    """cost and risk to refine a piece from +0 to target. Per level: the material with the lowest expected zeny (price +
-    material, over the chance); a material that breaks the piece on a failure is weighed by the restart it forces."""
+    """cost and risk to refine a piece from +0 to target. Per level: the material with the lowest expected cost (the
+    zeny fee of the chance plus the material's price, over the chance); a material that breaks the piece on a failure
+    is weighed by the restart it forces. cost_z = fee_z (NPC refine fee) + ore_z (materials, see Catalog.material_price)."""
     if target is None:
         return None
     group = "Weapon" if item.get("Type") == "Weapon" else "Armor"
     tab = cat.refine.get(group, {}).get(grade_of(item))
     if not tab:
         return None
-    total, survive, steps, unpriced = 0.0, 1.0, [], set()
+    fee_t, ore_t, survive, steps, unpriced, mats = 0.0, 0.0, 1.0, [], set(), {}
     for lv in range(1, target + 1):
         opts = tab.get(lv)
         if not opts:
             return None
         best = None
         for o in opts:
-            mat = cat.by_aegis.get(o["material"])
-            mp = cat.npc_price(mat) if mat else None
-            if mp is None:
-                unpriced.add(o["material"])   # not sold by an NPC shop: its cost is left out (zeny only)
-                mp = 0
-            attempt = o["price"] + mp
+            mp, src = cat.material_price(o["material"])
+            ore = mp or 0
             rate = max(o["rate"], 1) / 10000.0
-            exp_cost = attempt / rate * (1.0 / rate if o["break"] else 1.0)
-            key = (1 if o["break"] else 0, exp_cost)   # a material that cannot break the piece always wins
+            mult = (1.0 / rate) if o["break"] else 1.0
+            exp_fee = o["price"] / rate * mult
+            exp_ore = ore / rate * mult
+            key = (1 if o["break"] else 0, exp_fee + exp_ore)   # a material that cannot break the piece always wins
             if best is None or key < best[0]:
-                best = (key, exp_cost, o, attempt)
-        _, exp_cost, o, attempt = best
+                best = (key, o, ore, src, exp_fee, exp_ore)
+        _, o, ore, src, exp_fee, exp_ore = best
         rate = max(o["rate"], 1) / 10000.0
-        total += exp_cost
+        if o["material"] not in mats:
+            mats[o["material"]] = {"z": ore if src != "unpriced" and ore else None, "source": src}
+        if mats[o["material"]]["z"] is None:
+            unpriced.add(o["material"])   # no price known: the ore part is left out, and reported
+        fee_t += exp_fee
+        ore_t += exp_ore
         if o["break"]:
             survive *= rate
         steps.append({"level": lv, "material": o["material"], "rate_pct": round(o["rate"] / 100.0, 2),
-                      "attempt_z": attempt, "exp_z": int(round(exp_cost)), "breaks": bool(o["break"])})
-    return {"target": target, "cost_z": int(round(total)), "break_risk_pct": round((1 - survive) * 100.0, 1),
-            "steps": steps, "unpriced": sorted(unpriced)}
+                      "fee_z": o["price"], "ore_z": ore, "exp_z": int(round(exp_fee + exp_ore)),
+                      "breaks": bool(o["break"])})
+    fee, ore = int(round(fee_t)), int(round(ore_t))
+    return {"target": target, "cost_z": fee + ore, "fee_z": fee, "ore_z": ore,
+            "break_risk_pct": round((1 - survive) * 100.0, 1), "steps": steps, "unpriced": sorted(unpriced),
+            "materials": mats}
 
 
 def cumulative_costs(plan):
@@ -314,7 +347,8 @@ def piece(cat, item, tier, why, band_max, job_keys=None):
         "kind": "weapon" if item.get("Type") == "Weapon" else "armor", "grade": grade_of(item),
         "level_min": item.get("EquipLevelMin", 0), "source": src,
         "price_z": src["shop"]["price_z"] if src["shop"] else None,
-        "refine": ({"target": tgt, "cost_z": plan["cost_z"], "break_risk_pct": plan["break_risk_pct"],
+        "refine": ({"target": tgt, "cost_z": plan["cost_z"], "fee_z": plan["fee_z"], "ore_z": plan["ore_z"],
+                    "break_risk_pct": plan["break_risk_pct"], "materials": plan["materials"],
                     **({"unpriced": plan["unpriced"]} if plan["unpriced"] else {})} if plan else None),
         "slots": item.get("Slots", 0),
         "_plan": plan,
@@ -435,7 +469,8 @@ def _card_rule(tier, band_max, refinable, full):
     if tier == "popular":
         return "popular: usable at any band; goes in at the refine level the band can pay for"
     if tier == "uncommon":
-        return "uncommon: usable at any band; goes in at the refine level the band can pay for"
+        return ("uncommon (tier threshold is the fixer's estimate, not an owner rule): usable at any band; goes in at the "
+                "refine level the band can pay for")
     if band_max < 60:
         return "rare: end-game bands only (top 60+); fallback until then"
     return "rare: end-game band with the full refine affordable; else fallback"
