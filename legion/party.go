@@ -713,6 +713,7 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 	}
 	support := b.isHealer() // skillbuff.go: Acolyte/Priest line only, never Monks/Champions
 	human := p.Human != ""
+	b.buffAsk(p, members, now) // priestbuff.go PT29: ask the priest for missing buffs
 	// regroup first: a member far from the leader only fights what is hitting it and otherwise walks back to the
 	// leader (they used to keep "defending" / "taking aggro" 60-70 cells away while the leader waited)
 	// (also while a walk is in progress: with "!moving" in this test a far member that was walking fell through to the
@@ -880,6 +881,9 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 				b.setState("resting for SP")
 				return true
 			}
+		}
+		if b.activeBuffs(p, members, lead, now) { // priestbuff.go PT29: requests first, tank > melee > others
+			return true
 		}
 		for _, buff := range []int{alBlessing, alIncAgi} {
 			si := b.skills[buff]

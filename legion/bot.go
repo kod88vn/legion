@@ -608,6 +608,7 @@ func (b *Bot) handle(pk []byte) {
 	b.traceRecv(op, pk, now)
 	b.auditRecv(op, pk, now) // skillaudit.go: skill answers and the can-act delay
 	b.healRecv(op, pk)       // heal.go
+	b.buffRecv(op, pk, now)  // priestbuff.go PT29
 	switch op {
 	case 0x0087: // own walk accepted: tick, movedata
 		x0, y0, x1, y1 := decodeMove(pk[6:12])
@@ -1167,6 +1168,7 @@ func (b *Bot) handle(pk []byte) {
 		if len(pk) > 8 {
 			b.event("party", "", cstr(pk[8:]))
 			friendHeard(b, cstr(pk[8:]), false) // friends.go
+			b.buffAskHeard(cstr(pk[8:]), now)   // priestbuff.go PT29: a party mate asks the priest for buffs
 			if b.pin != nil {
 				txt := cstr(pk[8:])
 				go func() { rallyHeard(partyOf(b), txt) }()                 // the human called a rally (rally.go)

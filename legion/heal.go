@@ -310,6 +310,9 @@ func (b *Bot) buffRenewAt(lv int, now time.Time) time.Time {
 
 // buffOK: the priest may cast this buff now - one buff per buffGap, and SP stays at/over priestReadySP after it.
 func (b *Bot) buffOK(si *SkillInfo, now time.Time) bool {
+	if tune().PriestActiveBuffs {
+		return b.activeBuffOK(si, now) // priestbuff.go PT29
+	}
 	if si == nil || si.Lv == 0 || b.MaxSP <= 0 || now.Before(b.buffAt["buffgap"]) {
 		return false
 	}
