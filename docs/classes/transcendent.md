@@ -2,10 +2,17 @@
 
 General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 
-Transcendent classes (the server cap; 2026-11-14)
+**Not available on this server (ST01 / G10, owner 2026-11-15: "change the server to not allow any rebirth").**
+No character can be reborn: the Valkyrie rebirth NPC, the Book of Ymir (1,285,000z) and the Valkyrie room warps are
+unloaded (`rathena/npc-custom/scripts_custom.conf`, `npc/jobs/valkyrie.txt`), and the Legion's class script no longer
+rebirths a 99/50 2nd job (`rathena/npc-custom/legion.txt`). No bot plans or seeks a transcendent class: every build ends
+at its 2nd job (`legion/builds.go`, `planForClass`). The section below is the data for characters that were reborn
+before ST01: they keep their class and their trans skills (`legion/transplans.go`). Nothing here is a new target.
+
+Transcendent classes (the server cap; 2026-11-14, rebirth removed 2026-11-15)
 - CL12 (see ST01, G10, settings.md). The transcendent 2nd job is the last class on the server, for everyone. The 3rd-job, Expanded Super Novice
   and 4th-job quest NPCs are unloaded (`rathena/npc-custom/scripts_custom.conf`, `docs/handover/builds.md` (6f4)). Never plan or advise 3rd jobs. (2026-11-14)
-- **Path:** 2nd job at base 99 / job 50 with 1,285,000z -> rebirth (High Novice, base 1, 100 status points; legion.txt
+- **Path (closed 2026-11-15; kept for characters reborn before):** 2nd job at base 99 / job 50 with 1,285,000z -> rebirth (High Novice, base 1, 100 status points; legion.txt
   stands in for the Sage Castle / Valkyrie quest at the stock price) -> High 1st job at job 10 -> trans 2nd job at
   job 40 (same branch). Trans caps: base 99, job 70 (69 skill points: ~20 more than the 2nd job, for trans skills).
 - **Stats:** the same plan as the 2nd job, from scratch (stat cap stays 99).

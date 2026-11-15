@@ -41,6 +41,20 @@ func init() {
 	add(famThief, 6, 12, 17, 4007, 4013, 4018, 4059, 4065, 4072, 4079, 4254, 4260)
 }
 
+// baseLevelCap: the base level a 2nd-job character levels to. The server has no rebirth (ST01 / G10, 2026-11-15), so
+// nothing above 99 exists for it.
+const baseLevelCap = 99
+
+// levelGoalTarget: the base level a level goal aims at. A 2nd-job character never aims at 100 (a 99 bot keeps its job
+// and gear goals instead; pickFarmGoal still takes the gear and card goals first). Already-reborn classes (High Novice
+// 4001 .. transcendent 2nd 4021, kept for characters reborn before ST01) keep lv+step.
+func levelGoalTarget(class, lv, step int) int {
+	if class >= 4001 && class <= 4022 {
+		return lv + step
+	}
+	return min(lv+step, baseLevelCap)
+}
+
 func family(class int) int {
 	if f, ok := familyOf[class]; ok {
 		return f

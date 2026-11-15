@@ -1,11 +1,11 @@
 //===== Legion: class progression for bot characters =========================
 //= Applies only to Legion accounts (2100001-2199999). Promotes characters along
 //= the class tree when they reach the levels a player needs for the job-change
-//= quests, up to the server cap (transcendent 2nd job; owner 2026-11-14: "cap server at trans class"):
-//=   Novice -> 1st job (job 10) -> 2nd job (job 40) -> rebirth at 99/50 (High Novice, base/job 1)
-//=   High Novice -> High 1st (job 10) -> transcendent 2nd (job 40) -> STOP (never 3rd / 4th jobs)
-//= Char vars: legion_branch (0/1: which 2nd job), legion_first / legion_second
-//= (remembered at rebirth so the transcendent path matches).
+//= quests, up to the server cap: the 2nd job (ST01 / G10, owner 2026-11-15: no rebirth on this server).
+//=   Novice -> 1st job (job 10) -> 2nd job (job 40) -> STOP (no High Novice, no rebirth, no 3rd / 4th jobs)
+//= Already reborn characters (High Novice, High 1st, transcendent 2nd) keep the progression below, so they finish
+//= their path: High Novice -> High 1st (job 10) -> transcendent 2nd (job 40) -> STOP.
+//= Char vars: legion_branch (0/1: which 2nd job), legion_first / legion_second (set at the old rebirth).
 //============================================================================
 -	script	LegionProgress	-1,{
 	end;
@@ -67,20 +67,10 @@ OnPCBaseLvUpEvent:
 		if (!.@second) .@second = callfunc("F_LegionSecond", .@c - Job_Swordman_High + 1, legion_branch, Sex);
 		callsub S_Change, .@second + Job_Novice_High, 1; // rare: announce the transcendent class
 	}
-	// second job at 99/50 -> rebirth, at the stock price: the Sage Castle librarian in Juno takes 1,285,000z for the
-	// Book of Ymir (npc/jobs/valkyrie.txt). Until the character has saved that much it stays a 99/50 2nd job.
-	// (The stock Valkyrie also wants an empty inventory, which a player meets by storing everything and taking it
-	// back afterwards; standing in for that trip, the script skips it.)
-	if (.@fam && .@c > Job_Thief && .@c < Job_Novice_High && BaseLevel >= 99 && JobLevel >= 50 && Zeny >= 1285000) {
-		Zeny -= 1285000;
-		legion_first = .@fam;
-		legion_second = .@c;
-		jobchange Job_Novice_High;
-		resetlvl 1;
-		end;
-	}
-	// Server cap (owner 2026-11-14: "cap server at trans class"): the transcendent 2nd job is the last class. No 3rd,
-	// expanded-3rd or 4th job change exists here, and their stock quest NPCs are unloaded (npc-custom/scripts_custom.conf).
+	// No rebirth on this server (ST01 / G10, owner 2026-11-15): a 2nd job stays a 2nd job at 99/50. The Book of Ymir
+	// and the Valkyrie rebirth NPC are unloaded (npc-custom/scripts_custom.conf, npc/jobs/valkyrie.txt), and the
+	// rebirth jump that used to sit here is gone. Characters reborn before that keep their class (above).
+	// No 3rd, expanded-3rd or 4th job change exists here either (their stock quest NPCs are unloaded too).
 	end;
 
 // Assassin plan skill order (numeric ids): Basic Skill 9; Thief: Double Attack 10, Improve Dodge 10, Steal 1,

@@ -1,16 +1,16 @@
 package main
 
-// Transcendent skill plans (owner 2026-11-14: "cap server at trans class").
+// Transcendent skill plans. ST01 / G10 (owner 2026-11-15: "change the server to not allow any rebirth"): the server has
+// no rebirth, so no bot plans or seeks a transcendent class. A 2nd-job bot's plan ends at its 2nd job (builds.go).
 //
-// Progression ends at the transcendent 2nd job: Novice -> 1st -> 2nd -> rebirth at 99/50 (High Novice, base 1;
-// rathena/npc-custom/legion.txt, at the stock 1,285,000z Book of Ymir price) -> High 1st -> trans 2nd -> STOP.
-// 3rd/4th jobs don't exist on this server (their job-change NPCs are unloaded: npc-custom/scripts_custom.conf).
+// The trans skills below are kept only for characters reborn before ST01: planSkill applies them to a transcendent
+// 2nd job (isTransSecond, 4008..4021) and to nothing else. Rebirth itself is unloaded
+// (rathena/npc-custom/scripts_custom.conf, npc/jobs/valkyrie.txt); the Legion's class script no longer rebirths.
 //
-// A trans character relearns its build from scratch after rebirth: the High 1st job follows Build.Skills like the
-// 1st job did; once it is a trans 2nd job, transSkills[plan] comes first (the 2nd-job core again, then the trans
-// skills with their prerequisites), then the rest of Build.Skills. A trans 2nd job has 69 skill points (job 70)
-// instead of 49, i.e. ~20 points for the trans skills. Build.Skills itself is unchanged, so no 1st/2nd-job
-// character's plan moves (no wrong-build deletions: tools/wrongbuilds.py reads Build.Skills/Legacy only).
+// A reborn character relearns its build after its rebirth: the High 1st job follows Build.Skills like the 1st job did;
+// once it is a trans 2nd job, transSkills[plan] comes first (the 2nd-job core again, then the trans skills with their
+// prerequisites), then the rest of Build.Skills. A trans 2nd job has 69 skill points (job 70) instead of 49.
+// Build.Skills itself is unchanged, so no 1st/2nd-job character's plan moves (tools/wrongbuilds.py reads Build.Skills/Legacy).
 // Skills that need a quest (Whitesmith Cart Boost/Termination need Cart Revolution + Change Cart from the merchant
 // skill quest) simply stay unlearnable until then: the planner skips goals the server doesn't offer.
 var transSkills = map[string][]SkillGoal{
