@@ -119,7 +119,8 @@ my $lastExit = 0;
 my ($sellTrigSaved, $sellTrigUntil) = (0, 0); # sell-run loop guard
 my $errandStart = 0; # her sell/buy errand (party town run) started
 my $townWaitAt = 0;
-my $meetArrAt = 0; # when she reached the Kafra for the regroup after a town run # passing through town: waiting for a friend behind since
+my $meetArrAt = 0; # when she reached the Kafra for the regroup after a town run
+my $regroupDoneAt = 0; # when that regroup ended (no new town wait for 5 min: she sets out with the priest) # passing through town: waiting for a friend behind since
 my ($meetRouteAt, $meetSaid) = (0, 0); # after a town run: walking to the town's Kafra, announced once
 my $errandEnd = 0;  # when her last sell/buy errand finished
 
@@ -1768,13 +1769,13 @@ my %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
 my $gmOff = -10;
 our $forceRepick = 0;
 my $gmDiedStepAt = 0;
-sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 4, repick => $forceRepick ? 1 : 0}); close $f } }
+sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 5, repick => $forceRepick ? 1 : 0}); close $f } }
 # no step file yet: create it now (-10) with the owner's re-pick pending; a pending re-pick survives further reloads
 eval {
 	if (open(my $f, '<', 'logs/ayla_step.json')) {
 		local $/; my $d = JSON::PP->new->decode(<$f>); close $f;
 		$gmOff = $d->{off} if $d && defined $d->{off} && ($d->{v} || 0) >= 2;
-		$forceRepick = 1 if $d && ($d->{repick} || ($d->{v} || 0) < 4); # v3: a false "crowded" sent her to gef_fild03 - re-pick nearest
+		$forceRepick = 1 if $d && ($d->{repick} || ($d->{v} || 0) < 5); # v4: a false STUCK dropped pay_dun02 - re-pick nearest (PLAN_RESTORE)
 	} else { $forceRepick = 1; step_save() }
 };
 sub gm_kill { $gmKills++ }
@@ -1925,6 +1926,11 @@ sub crowd_move {
 # plugin itself last left in lockMap (updated after every tick and every partylead command); anything else is outside.
 our $lmSet; # undef until the first check (then a lockMap from config.txt is checked too)
 our %droppedUntil; # map -> until when it is off (STUCK: its route keeps failing)
+# 07:29 a STUCK while she held at the Payon Kafra dropped pay_dun02 (her good farm map): undone on this load
+if ($droppedUntil{pay_dun02}) {
+	delete $droppedUntil{pay_dun02};
+	eval { message "[watchdog] PLAN_RESTORE pay_dun02 (dropped by a false STUCK while holding for the party)\n", 'system' };
+}
 sub map_dropped {
 	my $m = shift || '';
 	return '' unless $droppedUntil{$m};
@@ -2275,7 +2281,9 @@ sub watchdog_tick {
 	# stuck on one cell while a rally / route to another map keeps failing ("Cannot calculate a route from izlude
 	# (24,98)", live 2026-11-15): after 3 min the plugin cancels the rally itself, drops the goto and flies to her save
 	# point (Butterfly Wing); the same destination failing twice is skipped for 2 h (unless the mind ordered it)
-	if (($rally && $here ne $rally->{town} || AI::inQueue('route', 'move')) && !AI::inQueue('attack', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal')
+	# (live 07:29: "STUCK payon 179,107 ... -> DROP_MAP pay_dun02" while she held at the Kafra for the party)
+	my $waitingNow = $holding || $rally || $depart || pk_waiting() || (is_townmap($here) && time - ($errandEnd || 0) < 300);
+	if (!$waitingNow && AI::inQueue('route', 'move') && !AI::inQueue('attack', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal')
 		&& !$char->{sitting} && !own_rest() && !$char->{dead} && !pk_waiting() && $now - $wdStuckSince > 180) { # holding for the party is no STUCK
 		my $dest = $rally ? ($rally->{thenGoto} || $rally->{dest} || $rally->{town}) : ($gotoMap || $config{lockMap} || '');
 		wd_report('STUCK', $here, "$here $pos for " . int(($now - $wdStuckSince) / 60) . " min, route to " . ($dest || '?') . " fails" . ($rally ? " (rally $rally->{town})" : ''),
@@ -3409,7 +3417,7 @@ sub tick {
 			my ($k) = sort { blockDistance($char->{pos_to}, {x => $a->[0], y => $a->[1]}) <=> blockDistance($char->{pos_to}, {x => $b->[0], y => $b->[1]}) } @{$KAFRA{$here}};
 			# the regroup after a town run ends 60 s after she reached the Kafra (owner: every regroup wait <= 60 s)
 			if (blockDistance($char->{pos_to}, {x => $k->[0], y => $k->[1]}) <= 5) { $meetArrAt ||= time } else { $meetArrAt = 0 }
-			if ($meetArrAt && time - $meetArrAt > 60) { $errandEnd = 0; $meetArrAt = 0; message "[partylead] town run regroup: 60 s at the Kafra - going on\n", 'system' }
+			if ($meetArrAt && time - $meetArrAt > 60) { $errandEnd = 0; $meetArrAt = 0; $regroupDoneAt = time; restore() if $holding; message "[partylead] town run regroup: 60 s at the Kafra - going on with the priest\n", 'system' }
 			if (blockDistance($char->{pos_to}, {x => $k->[0], y => $k->[1]}) > 5) {
 				$meetRouteAt = time;
 				Commands::run('stand') if $char->{sitting};
@@ -3424,7 +3432,7 @@ sub tick {
 			if ($holding) { restore(); }
 			return;
 		}
-		if (time - $errandEnd > 600) {
+		if (time - $errandEnd > 600 && time - $regroupDoneAt > 300) { # not right after the 60 s regroup at the Kafra
 			# passing through town: no shopping wait, but she doesn't run ahead either - with a friend more than 20 cells
 			# behind (or still on the previous map) she stops until it's close again (3 min max per stop). QA: she
 			# crossed Payon 100 cells ahead of the party.
