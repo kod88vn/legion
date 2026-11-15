@@ -42,7 +42,7 @@ import dbsnap  # noqa: E402
 import offline  # noqa: E402
 
 PAGE = os.path.join(REPO, "legion", "dashboard.html")
-WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO", "Ubuntu-24.04")
+WSL_DISTRO = C.WSL_DISTRO   # one config for WSL (common.py, LEGION_WSL_DISTRO)
 ENGINE = "http://127.0.0.1:8090"
 CACHE_DIR = os.environ.get("DASH_CACHE") or os.path.join(REPO, "tools", ".state", "dashcache")
 ENGINE_TIMEOUT = 8

@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 """watchdog.py - plain code, no AI (Constitution 3.8, 3.9). Keeps the system loop alive and says what is alive.
 
-  python tools/system/watchdog.py              a pass every 30 s, forever (run it in the background)
-  python tools/system/watchdog.py --once       one pass, then exit
+  python tools/system/watchdog.py              a pass every 30 s, forever (tools/system/watchdog-keep.cmd runs it)
+  python tools/system/watchdog.py --once       one pass, then exit (no lock: manual use)
   python tools/system/watchdog.py --dry-run    print what a pass would do; restarts nothing, files nothing, writes nothing
 
-Every pass it reads every heartbeat (legion/data/<name>.heartbeat: sentinel, partycheck, dispatcher, aylalog, bugq watch,
-unwall, keeper, dashboard), the containers (docker, asked the same way the dashboard server asks), and the stack markers.
-- A heartbeat that is missing or older than its limit is an OUTAGE. It is filed to the bug queue at once (priority
-  outage, key watchdog:<name>) and the item is closed when the heartbeat is back.
+Every pass it reads every heartbeat (legion/data/<name>.heartbeat), the containers (docker, asked the same way the
+dashboard server asks), the stack markers, the meter file and the last deploy, and then:
+- A heartbeat that is missing or older than its limit is an OUTAGE, filed to the bug queue at once (priority outage,
+  key watchdog:<name>), and closed when the heartbeat is back.
+- The bug queue watch is NEVER started here: it exits on purpose after each wake, and a detached copy would swallow the
+  main session's next wake. Its outage is only filed.
+- Before any restart the old process is confirmed dead: its single-instance lock (legion/data/<name>.lock) must be
+  stale, and no process of that script may be running. If either says alive, nothing is started and the outage says
+  "stuck, investigate".
 - It restarts what is down only when the owner has switched the stack on (legion/data/stack.up) and has not put it on
-  hold (stack.hold). The dashboard is the exception: it is always on (DB06). A restart is throttled to one per 10 min per
-  item; rathena at most once an hour (G16). Containers are started with `docker start` only, never `compose up`
-  (G15). Ayla's container is started here too; keeper.sh owns her restarts as well.
-- The bug queue watch exits on purpose after a wake and writes the note "waiting for the main session": that is
-  waiting, not dead. Waiting for more than an hour is filed as a queue item.
-- Every 30 minutes it appends one summary record of every agent's and container's state to
-  legion/data/watchdog-reports.jsonl. A missing report is an alarm (the dashboard shows it).
-- Its live state is legion/data/watchdog.status.json, its own heartbeat legion/data/watchdog.heartbeat.
+  hold (stack.hold). The dashboard is the exception: always on (DB06). After a hold ends, scripts get GRACE seconds
+  before they count as down. At most one restart per pass; a restart is throttled to one per 10 min per item (rathena
+  once an hour, G16). A failed start is not counted against the throttle. Containers use `docker start` only (G15).
+- Every 30 minutes it appends one summary record (every agent's and container's state, the meter state, the last deploy
+  with its keep/revert verdict) to legion/data/watchdog-reports.jsonl. A missing report is an alarm on the dashboard.
+- Its live state is legion/data/watchdog.status.json, its own heartbeat legion/data/watchdog.heartbeat. If it dies, the
+  keep loop (tools/system/watchdog-keep.cmd) files that as an outage and starts it again.
 Standard library only; runs on Windows Python and on python3 in WSL. LEGION_DATA moves the data dir (tests).
 """
 import argparse
@@ -29,7 +33,6 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.join(HERE, "..", "dashboard"))
 import common as C  # noqa: E402
 import bugq  # noqa: E402
 
@@ -38,17 +41,20 @@ REPORT_EVERY = 1800      # the 30-minute summary record
 RESTART_GAP = 600        # one restart per item per 10 min
 RATHENA_GAP = 3600       # G16: rathena at most once an hour
 WAIT_ALARM = 3600        # the bug queue watch waiting this long for the main session is filed
+GRACE = 600              # after a hold ends (or the stack is started again), scripts get this long to write heartbeats
+METER_FRESH = 600        # the meter file written within this many seconds = reading
 STATE_FILE = "watchdog.state.json"
 STATUS_FILE = "watchdog.status.json"
 REPORTS_FILE = "watchdog-reports.jsonl"
 RESTART_LOG = "watchdog-restarts.log"
-WAITING = "waiting"
-LOCK_FILE = "watchdog.lock"  # one loop at a time: refreshed each pass; a lock older than LOCK_STALE is taken over
+LOCK_FILE = "watchdog.lock"  # one loop at a time: refreshed each pass; older than LOCK_STALE = dead
 LOCK_STALE = 90
-EXIT_LOCKED = 3              # another live watchdog holds the lock (tools/system/watchdog-keep.cmd exits on it)
+EXIT_LOCKED = 3              # another live watchdog holds the lock
+WAITING = "waiting"
 
-# the loop's scripts. "cmd" is the script (relative to the repo root) and its arguments, started with this python
-# (or with bash under WSL for keeper.sh). hb: heartbeat file names, the first that exists wins. stale: seconds.
+# The loop's scripts. cmd: the script (relative to the repo root) and its arguments, started with this python (or with
+# bash under WSL for keeper.sh). hb: heartbeat file names, the first that exists wins. stale: seconds. lock: the
+# script's own single-instance lock (legion/data/<lock>), fresh = alive. never_start: the watchdog files the outage only.
 AGENTS = [
     {"key": "sentinel", "label": "Sentinel", "hb": ["sentinel.heartbeat"], "stale": 300,
      "cmd": ["tools/sentinel.py"]},
@@ -60,11 +66,11 @@ AGENTS = [
     {"key": "aylalog", "label": "Ayla log watcher", "hb": ["aylalog.heartbeat"], "stale": 300,
      "cmd": ["tools/system/aylalog.py"]},
     {"key": "bugq-watch", "label": "Bug queue watch", "hb": ["bugq-watch.heartbeat"], "stale": 300,
-     "cmd": ["tools/system/bugq.py", "watch"], "waits": True},
+     "cmd": ["tools/system/bugq.py", "watch"], "waits": True, "never_start": True},
     {"key": "unwall", "label": "Unwall loop", "hb": ["unwall.heartbeat"], "stale": 600,
-     "cmd": ["tools/unwall.py", "--loop"]},
+     "cmd": ["tools/unwall.py", "--loop"], "lock": "unwall.lock", "lock_stale": 300},
     {"key": "keeper", "label": "Ayla keeper", "hb": ["keeper.heartbeat"], "stale": 300,
-     "cmd": ["tools/rogui/keeper.sh"], "bash": True},
+     "cmd": ["tools/rogui/keeper.sh"], "bash": True, "lock": "keeper.lock", "lock_stale": 150},
     {"key": "dashboard", "label": "Dashboard server", "hb": ["dashboard.heartbeat"], "stale": 120,
      "cmd": ["tools/dashboard/dashserve.py"], "always": True},
 ]
@@ -90,15 +96,22 @@ def docker_ps():
 
 def docker_prefix():
     if os.name == "nt":
-        import dashserve
-        return ["wsl.exe", "-d", dashserve.WSL_DISTRO, "--", "docker"]
+        return ["wsl.exe", "-d", C.WSL_DISTRO, "--", "docker"]
     return ["docker"]
 
 
+def _pgrep_pattern(script):
+    """pgrep -f pattern that does not match the grep/shell running it: "keeper.sh" -> "[k]eeper.sh"."""
+    base = os.path.basename(script)
+    return "[%s]%s" % (base[0], base[1:])
+
+
 class Ops:
-    """starts scripts and containers. Tests replace this object; the dry run never calls it."""
+    """starts scripts and containers, and checks processes. Tests replace this object; the dry run never calls it."""
 
     def start_agent(self, a):
+        if a.get("never_start"):
+            raise RuntimeError("the watchdog never starts %s" % a["key"])
         log = None
         try:
             os.makedirs(C.data_dir(), exist_ok=True)
@@ -110,7 +123,7 @@ class Ops:
         script = os.path.join(C.ROOT, a["cmd"][0])
         if a.get("bash"):
             if os.name == "nt":
-                argv = ["wsl.exe", "-d", "Ubuntu-24.04", "--", "bash", "-c",
+                argv = ["wsl.exe", "-d", C.WSL_DISTRO, "--", "bash", "-c",
                         "nohup bash %s >/dev/null 2>&1 &" % wsl_path(script)]
             else:
                 argv = ["bash", script]
@@ -127,13 +140,32 @@ class Ops:
             if log:
                 log.close()
 
+    def process_running(self, a):
+        """True when a process of this script is running (Windows: python processes by command line; WSL: pgrep).
+        If the check itself fails, the caller treats the process as alive: no second copy is started."""
+        if not a.get("cmd"):
+            return False
+        base = os.path.basename(a["cmd"][0])
+        if a.get("bash"):
+            argv = ["wsl.exe", "-d", C.WSL_DISTRO, "--", "pgrep", "-f", _pgrep_pattern(a["cmd"][0])] if os.name == "nt" \
+                else ["pgrep", "-f", _pgrep_pattern(a["cmd"][0])]
+            return subprocess.run(argv, capture_output=True, timeout=60).returncode == 0
+        if os.name == "nt":
+            ps = ("@(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -like "
+                  "'*%s*' }).Count" % base)
+            out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True,
+                                 timeout=60).stdout.strip()
+            return out.isdigit() and int(out) > 0
+        return subprocess.run(["pgrep", "-f", _pgrep_pattern(a["cmd"][0])], capture_output=True).returncode == 0
+
     def docker_start(self, name):
         subprocess.run(docker_prefix() + ["start", name], capture_output=True, timeout=120)
 
 
-# ----------------------------------------------------------------- state
+# ----------------------------------------------------------------- state and files
 def load_state():
-    base = {"restarts": {}, "open": {}, "waiting_filed": False, "last_report": None}
+    base = {"restarts": {}, "open": {}, "waiting_filed": False, "last_report": None, "was_running": None,
+            "resumed_at": None}
     try:
         with open(C.dpath(STATE_FILE), encoding="utf-8") as f:
             st = json.load(f)
@@ -174,6 +206,91 @@ def queue_counts(queue):
     return {"open": len(live), "unassigned": len(unassigned)}
 
 
+def last_json_line(path):
+    """the last JSON object of a (possibly large) .jsonl file, or None"""
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as f:
+            f.seek(max(0, size - 65536))
+            lines = f.read().decode("utf-8", "replace").splitlines()
+        for line in reversed(lines):
+            try:
+                o = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(o, dict):
+                return o
+    except OSError:
+        pass
+    return None
+
+
+def meter_state(now):
+    """Is the meter reading? The meter file is written by the engine; reading = written within METER_FRESH."""
+    age = C.marker_age("meter.jsonl")
+    if age is None:
+        return {"state": "blind", "last_write_age_s": None, "last_row_t": None, "why": "no meter history file"}
+    last = last_json_line(C.dpath("meter.jsonl")) or {}
+    state = "reading" if age <= METER_FRESH else "blind"
+    return {"state": state, "last_write_age_s": int(age), "last_row_t": last.get("t"),
+            "why": "" if state == "reading" else "meter file not written for %d min" % (age // 60)}
+
+
+def deploy_records():
+    """(deploy records, verdict lines) from deploys.jsonl. A kind "verdict" line is the keep/revert record of a past
+    deploy, not a deploy: deploylog, league, the puppet dispatcher, the bug queue and the dashboard skip it the same way."""
+    all_recs = C.read_jsonl(C.dpath("deploys.jsonl"))
+    recs = [r for r in all_recs if r.get("kind") != "verdict" and C.to_epoch(r.get("epoch", r.get("t")))]
+    verdicts = [r for r in all_recs if r.get("kind") == "verdict"]
+    return recs, verdicts
+
+
+def deploy_state(now):
+    """The last deploy and its keep/revert verdict. The verdict is the newest verdict line for that deploy (written by
+    league.py, kind "verdict"); until one exists it is computed the same way (league.compare) and nothing is written."""
+    recs, verdicts = deploy_records()
+    if not recs:
+        return {"available": False, "why": "no deploy record"}
+
+    def ep(r):
+        return C.to_epoch(r.get("epoch", r.get("t"))) or 0.0
+    last = max(recs, key=ep)
+    tag, dep_epoch = last.get("tag"), ep(last)
+    fixes = last.get("fixes") or next((r.get("fixes") for r in recs if r.get("tag") == tag and r.get("fixes")), []) or []
+    out = {"available": True, "tag": tag, "epoch": int(dep_epoch), "age_s": int(now - dep_epoch),
+           "services": last.get("services"), "critical": bool(last.get("critical")), "fixes": len(fixes)}
+    vs = [v for v in verdicts if v.get("tag") == tag and abs((C.to_epoch(v.get("deploy_epoch")) or 0) - dep_epoch) < 1]
+    if vs:
+        v = max(vs, key=lambda x: C.to_epoch(x.get("t")) or 0)
+        out.update({"verdict": v.get("verdict"), "verdict_t": v.get("t"), "partial": bool(v.get("partial")),
+                    "verdict_source": "deploys.jsonl verdict line", "items": len(v.get("items") or [])})
+        return out
+    dep = {"tag": tag, "epoch": dep_epoch, "services": last.get("services"), "critical": last.get("critical"),
+           "fixes": fixes}
+    try:
+        import league
+        res = league.compare(dep, C.read_jsonl(C.dpath("meter.jsonl")), 3.0, now)
+    except Exception as e:
+        out.update({"verdict": "not decided (comparison failed: %s)" % str(e)[:100], "verdict_source": "none"})
+        return out
+    counts = {}
+    for r in res:
+        k = str(r[6]).split(" ")[0]
+        counts[k] = counts.get(k, 0) + 1
+    revert = [str(r[0].get("text", ""))[:120] for r in res if str(r[6]).startswith("REVERT")]
+    if not fixes:
+        verdict = "no fix list on the deploy record"
+    elif revert:
+        verdict = "REVERT candidates: %d" % len(revert)
+    elif res and all(str(r[6]).startswith("KEEP") for r in res):
+        verdict = "KEPT"
+    else:
+        verdict = "NOT DECIDED yet (no data, or inconclusive)"
+    out.update({"verdicts": counts, "revert_candidates": revert, "verdict": verdict,
+                "verdict_source": "computed now, no verdict line written yet"})
+    return out
+
+
 # ----------------------------------------------------------------- one pass
 class Pass:
     def __init__(self, now, ops, dry, st, queue):
@@ -181,7 +298,17 @@ class Pass:
         self.live = {i for i, e in queue.items() if str(e.get("status", "open")).lower() in ("open", "assigned", "")}
         self.stack_up = os.path.exists(C.dpath("stack.up"))
         self.hold = os.path.exists(C.dpath("stack.hold"))
+        self.running = self.stack_up and not self.hold
+        # the stack was not running and now is: give the scripts GRACE seconds to write their heartbeats
+        if self.running and st.get("was_running") is False:
+            self.resumed = now
+        else:
+            self.resumed = st.get("resumed_at")
+        self.restarted = False
         self.filed, self.actions = [], []
+
+    def in_grace(self):
+        return self.resumed is not None and self.now - self.resumed < GRACE
 
     def file(self, key, text, priority="outage", evidence=""):
         """one open queue item per key: while it is still open, a repeat files nothing new"""
@@ -207,17 +334,34 @@ class Pass:
         if last is not None and self.now - last < gap:
             self.actions.append({"key": key, "action": "restart throttled"})
             return "restart throttled"
+        if self.restarted:
+            self.actions.append({"key": key, "action": "restart deferred: one restart per pass"})
+            return "restart deferred"
+        self.restarted = True
         if self.dry:
             self.actions.append({"key": key, "action": "would restart " + what})
             return "would restart"
         try:
             fn()
-            act = "restarted " + what
-        except Exception as e:
-            act = "restart failed: %s" % str(e)[:120]
+        except Exception as e:   # a failed start is not counted against the throttle
+            act = "restart failed (not counted): %s" % str(e)[:120]
+            self.actions.append({"key": key, "action": act})
+            return act
         self.st["restarts"][key] = self.now
-        self.actions.append({"key": key, "action": act})
-        return act
+        self.actions.append({"key": key, "action": "restarted " + what})
+        return "restarted " + what
+
+    def alive(self, a):
+        """True when the old copy may still be running: its lock is fresh, or a process of the script runs"""
+        lk = a.get("lock")
+        if lk:
+            age = C.marker_age(lk)
+            if age is not None and age <= a.get("lock_stale", 300):
+                return True
+        try:
+            return bool(self.ops.process_running(a))
+        except Exception:
+            return True   # cannot confirm the old process is dead: do not start a second copy
 
     def agent(self, a):
         key = a["key"]
@@ -253,8 +397,23 @@ class Pass:
             if self.hold:
                 row["state"] = "held"
                 return row
+            if self.in_grace():
+                row["state"] = "starting"
+                row["action"] = "grace after the hold ended"
+                return row
         row["state"] = state if state == "missing" else "down"
         what = "no heartbeat file" if state == "missing" else "heartbeat %d min old" % (age // 60)
+        if a.get("never_start"):
+            self.file(key, "OUTAGE: %s is down (%s); the watchdog does not start it: the main session restarts it"
+                      % (a["label"], what), evidence="heartbeat file %s" % used)
+            row["action"] = "not started by the watchdog (a detached copy would swallow the wake)"
+            return row
+        if self.alive(a):
+            row["state"] = "stuck"
+            self.file(key, "OUTAGE: %s heartbeat %s but its process is still running: not started again, investigate"
+                      % (a["label"], what), evidence="heartbeat file %s" % used)
+            row["action"] = "not started: the old process is still running"
+            return row
         self.file(key, "OUTAGE: %s is down (%s)" % (a["label"], what), evidence="heartbeat file %s" % used)
         row["action"] = self.restart(key, a["label"], lambda: self.ops.start_agent(a))
         return row
@@ -279,6 +438,10 @@ class Pass:
             return row
         if self.hold:
             row["state"] = "held"
+            return row
+        if self.in_grace():
+            row["state"] = "starting"
+            row["action"] = "grace after the hold ended"
             return row
         row["state"] = "missing" if cstate == "missing" else "down"
         self.file(key, "OUTAGE: container %s is %s" % (name, cstate))
@@ -306,17 +469,20 @@ def run_pass(now, ops, dry=False, containers="auto", queue=None):
     crows = [p.container(n, containers) for n in CONTAINERS]
     counts = {"agents_ok": sum(r["state"] == "ok" for r in rows),
               "agents_waiting": sum(r["state"] == WAITING for r in rows),
-              "agents_down": sum(r["state"] in ("down", "missing") for r in rows),
+              "agents_down": sum(r["state"] in ("down", "missing", "stuck") for r in rows),
               "containers_up": sum(r["state"] == "ok" for r in crows), "containers": len(crows),
               "dashboard_down": any(r["key"] == "dashboard" and r["state"] in ("down", "missing") for r in rows)}
     counts.update({"queue_" + k: v for k, v in queue_counts(queue).items()})
     last = st.get("last_report")
     due = last is None or now - last >= REPORT_EVERY
     rec = {"t": int(now), "iso": C.iso(now), "stack": {"up": p.stack_up, "hold": p.hold}, "summary": counts,
+           "meter": meter_state(now), "deploy": deploy_state(now),
            "agents": rows, "containers": crows, "filed": p.filed, "actions": p.actions}
     out = {"status": rec, "report_due": due, "filed": p.filed, "actions": p.actions}
     if dry:
         return out
+    st["was_running"] = p.running
+    st["resumed_at"] = p.resumed
     if due:
         try:
             C.append_jsonl(C.dpath(REPORTS_FILE), rec)
@@ -330,29 +496,14 @@ def run_pass(now, ops, dry=False, containers="auto", queue=None):
 
 
 def take_lock(now=None):
-    """Single copy (the loop only): True when this process now holds legion/data/watchdog.lock, False when a lock
-    refreshed within LOCK_STALE seconds belongs to another loop. A stale lock (a crashed loop) is taken over."""
-    p = C.dpath(LOCK_FILE)
-    age = C.marker_age(LOCK_FILE)
-    if age is not None and age <= LOCK_STALE:
-        return False
-    try:
-        os.makedirs(C.data_dir(), exist_ok=True)
-        with open(p, "w", encoding="utf-8") as f:
-            f.write("pid %d %s\n" % (os.getpid(), C.iso(now)))
-    except OSError:
-        return False
-    touch_lock(now)
-    return True
+    """Single copy (the loop only): True when this process holds legion/data/watchdog.lock, False when a lock refreshed
+    within LOCK_STALE seconds belongs to another loop. A stale lock (a crashed loop) is taken over."""
+    return C.take_lock(LOCK_FILE, LOCK_STALE)
 
 
 def touch_lock(now=None):
-    """refresh the lock's time so the loop stays the owner (never raises)"""
-    t = C.now() if now is None else now
-    try:
-        os.utime(C.dpath(LOCK_FILE), (t, t))
-    except OSError:
-        pass
+    """refresh the lock's time; False when the lock now belongs to another loop (this one must exit)"""
+    return C.refresh_lock(LOCK_FILE)
 
 
 def main(argv=None):
@@ -361,12 +512,16 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="print what a pass would do; change nothing")
     ap.add_argument("--interval", type=float, default=INTERVAL)
     a = ap.parse_args(argv)
-    if not (a.once or a.dry_run) and not take_lock():
+    loop = not (a.once or a.dry_run)
+    if loop and not take_lock():
         print("another watchdog holds %s (refreshed within %d s); not starting" % (LOCK_FILE, LOCK_STALE),
               file=sys.stderr, flush=True)
         return EXIT_LOCKED
     ops = Ops()
     while True:
+        if loop and not touch_lock():
+            print("watchdog lock taken by another loop; exiting", file=sys.stderr, flush=True)
+            return EXIT_LOCKED
         try:
             res = run_pass(C.now(), ops, dry=a.dry_run)
             if a.dry_run or a.once:
@@ -374,10 +529,9 @@ def main(argv=None):
                                   "summary": res["status"]["summary"]}, ensure_ascii=False, indent=1))
             if not a.dry_run:
                 C.heartbeat("watchdog")
-                touch_lock()
         except Exception as e:  # never die: the next pass tries again
             print("watchdog pass failed: %r" % (e,), file=sys.stderr, flush=True)
-        if a.once or a.dry_run:
+        if not loop:
             return 0
         time.sleep(a.interval)
 

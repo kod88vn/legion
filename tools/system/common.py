@@ -117,6 +117,56 @@ def heartbeat_age(path):
         return max(0.0, age_m)
 
 
+WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO") or "Ubuntu-24.04"   # the one WSL setting (dashboard, watchdog)
+
+
+def lock_owner(name):
+    """pid written in legion/data/<name> by the lock holder, or None"""
+    try:
+        with open(dpath(name), encoding="utf-8") as f:
+            return int(f.read().split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def take_lock(name, stale, pid=None):
+    """Single instance. Creates legion/data/<name> exclusively (O_EXCL) holding "<pid> <epoch>". A lock refreshed
+    within `stale` seconds belongs to a live holder: False. An older lock (a crashed holder) is replaced."""
+    p = dpath(name)
+    age = marker_age(name)
+    if age is not None and age <= stale:
+        return False
+    try:
+        os.makedirs(data_dir(), exist_ok=True)
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+        fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except OSError:
+        return False
+    with os.fdopen(fd, "w") as f:
+        f.write("%d %d\n" % (os.getpid() if pid is None else pid, int(now())))
+    t = now()
+    try:
+        os.utime(p, (t, t))   # the lock's time is the (fakeable) clock, like every later refresh
+    except OSError:
+        pass
+    return True
+
+
+def refresh_lock(name, pid=None):
+    """The holder keeps its lock's time current. False when the lock belongs to someone else now: the holder must exit."""
+    if lock_owner(name) != (os.getpid() if pid is None else pid):
+        return False
+    t = now()
+    try:
+        os.utime(dpath(name), (t, t))
+    except OSError:
+        return False
+    return True
+
+
 def marker_age(name):
     try:
         return now() - os.path.getmtime(dpath(name))

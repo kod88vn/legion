@@ -15,7 +15,22 @@ a blocked save point moves to the nearest walkable cell.
 """
 import collections, os, struct, subprocess, sys, tempfile, time, zlib
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'system'))
-import common as C  # noqa: E402  (heartbeat file for the watchdog)
+import common as C  # noqa: E402  (heartbeat and single-instance lock for the watchdog)
+
+UNWALL_LOCK = 'unwall.lock'     # legion/data/unwall.lock: one loop at a time; refreshed by beat()
+UNWALL_LOCK_STALE = 300
+LOOP_LOCK = False               # True only in --loop mode, after the lock is taken
+
+
+def beat():
+    """Heartbeat and lock refresh. Called during the long steps (map loads, each row), not only at the end of a pass.
+    A loop whose lock was taken by another copy exits."""
+    if not LOOP_LOCK:
+        return
+    if not C.refresh_lock(UNWALL_LOCK):
+        print('unwall: lock taken by another copy; exiting', flush=True)
+        sys.exit(0)
+    C.heartbeat('unwall')
 
 WSL = ['wsl', '-d', 'Ubuntu-24.04', '--']
 CACHE = os.path.join(tempfile.gettempdir(), 'unwall_mapcache')
@@ -33,9 +48,11 @@ def load_maps():
     os.makedirs(os.path.join(CACHE, 're'), exist_ok=True)
     wcache = subprocess.run(WSL + ['wslpath', '-a', CACHE.replace('\\', '/')], capture_output=True, text=True).stdout.strip()
     for f in ('map_cache.dat', 're/map_cache.dat'):
+        beat()
         subprocess.run(WSL + ['docker', 'cp', 'ro-rathena:/rathena/db/' + f, wcache + '/' + f], check=True)
     maps = {}
     for f in ('map_cache.dat', os.path.join('re', 'map_cache.dat')):  # Renewal cache on top, like the server
+        beat()
         d = open(os.path.join(CACHE, f), 'rb').read()
         n, p = struct.unpack_from('<H', d, 4)[0], 8
         for _ in range(n):
@@ -77,11 +94,13 @@ def nearest(m, x, y, anchor=None, r=12):
 
 
 def one_pass(maps, dry):
+    beat()
     rows = sql("select char_id,name,last_map,last_x,last_y,save_map,save_x,save_y from `char` "
                "where online=0 and account_id between 2100001 and 2199999 and "
                "account_id not in (select account_id from `char` where online=1);")
     fixed = 0
     for cid, name, lm, lx, ly, sm, sx, sy in rows:
+        beat()
         lx, ly, sx, sy = int(lx), int(ly), int(sx), int(sy)
         sets = []
         if sm in maps and not walk(maps[sm], sx, sy):
@@ -104,7 +123,13 @@ def one_pass(maps, dry):
 
 
 def main():
+    global LOOP_LOCK
     dry, loop = '--dry' in sys.argv, '--loop' in sys.argv
+    if loop:
+        if not C.take_lock(UNWALL_LOCK, UNWALL_LOCK_STALE):
+            print('unwall: another copy holds legion/data/unwall.lock; not starting', flush=True)
+            return
+        LOOP_LOCK = True
     maps = load_maps()
     while True:
         n = one_pass(maps, dry)
@@ -112,7 +137,7 @@ def main():
         if not loop:
             break
         if not dry:
-            C.heartbeat('unwall')
+            beat()
         time.sleep(30)
 
 

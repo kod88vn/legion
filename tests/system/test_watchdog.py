@@ -14,6 +14,7 @@ from contextlib import redirect_stderr, redirect_stdout
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "tools", "system"))
 sys.path.insert(0, os.path.join(REPO, "tools", "dashboard"))
+sys.path.insert(0, os.path.join(REPO, "tools"))
 
 T0 = 1_800_000_000.0
 ALL = ["sentinel", "partycheck", "dispatcher", "aylalog", "bugq-watch", "unwall", "keeper", "dashboard"]
@@ -25,14 +26,23 @@ OK_CONTAINERS = {n: ("running", "Up 3 hours") for n in
 
 
 class FakeOps:
-    def __init__(self):
+    """records every start. running: keys whose process "runs" (process_running). fail: keys whose start raises."""
+    def __init__(self, running=(), fail=()):
         self.started, self.docker = [], []
+        self.running, self.fail = set(running), set(fail)
 
     def start_agent(self, a):
+        if a["key"] in self.fail:
+            raise OSError("fake start failure")
         self.started.append(a["key"])
 
     def docker_start(self, name):
         self.docker.append(name)
+
+    def process_running(self, a):
+        if a["key"] == "__check_fails__":
+            raise OSError("ps unavailable")
+        return a["key"] in self.running
 
 
 class Env(unittest.TestCase):
@@ -182,13 +192,22 @@ class TestWatchdogPass(Env):
         self.assertEqual(len(items), 1)
         self.assertNotIn("bugq-watch", ops.started)
 
-    def test_dead_bugq_watch_without_note_is_restarted(self):
+    def test_swallowed_wake_bugq_watch_is_never_started(self):
+        """a detached bugq watch would swallow the main session's next wake: the watchdog files the outage only"""
         self.stack(up=True)
         self.beat_all(age=10, skip=("bugq-watch",))
         self.put("bugq-watch.heartbeat", str(int(T0 - 900)), age=900)
         ops = FakeOps()
-        self.run_at(T0, ops)
-        self.assertIn("bugq-watch", ops.started)
+        res = self.run_at(T0, ops)
+        self.assertNotIn("bugq-watch", ops.started)
+        row = [a for a in res["status"]["agents"] if a["key"] == "bugq-watch"][0]
+        self.assertEqual(row["state"], "down")
+        self.assertIn("not started by the watchdog", row["action"])
+        outs = [r for r in self.queue_rows() if r.get("key") == "watchdog:bugq-watch"]
+        self.assertEqual(len(outs), 1)
+        import watchdog
+        with self.assertRaises(RuntimeError):
+            watchdog.Ops().start_agent(watchdog.AGENTS[4])
 
     def test_container_exited_restarts_and_rathena_hourly_only(self):
         self.stack(up=True)
@@ -399,7 +418,9 @@ class TestSingleCopy(Env):
         with open(path, encoding="utf-8", newline="") as f:
             txt = f.read()
         self.assertIn(r"python tools\system\watchdog.py", txt)
-        self.assertIn(r'if errorlevel 3 if "%first%"=="1"', txt)   # exits on a live lock at the first start
+        self.assertIn(r'if "%rc%"=="3" if "%first%"=="1"', txt)    # exits on a live lock at the first start
+        self.assertIn("watchdog:self", txt)                         # the watchdog's own death is filed by the keep loop
+        self.assertIn("bugq.py add", txt)
         self.assertIn("exit /b 0", txt)
         self.assertIn("timeout /t 3 /nobreak", txt)                      # restart 3 s after any exit
         self.assertIn("goto loop", txt)
