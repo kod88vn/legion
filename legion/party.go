@@ -842,7 +842,7 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 		var worst *pubState
 		for _, s := range members {
 			if s.Online && s.Map == b.MapName && s.HPFrac < healOthersBelow &&
-				dist(b.X, b.Y, s.X, s.Y) <= 9 && (worst == nil || s.HPFrac < worst.HPFrac) {
+				healReachable(maps[b.MapName], b.X, b.Y, s.X, s.Y, healRange) && (worst == nil || s.HPFrac < worst.HPFrac) {
 				ss := s
 				worst = &ss
 			}

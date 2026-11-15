@@ -580,7 +580,7 @@ func chatterParty() {
 	case roleTank:
 		line = pick("pulling", "got it", "stay behind me", "on me", "next one", "careful, 2 coming", "hp low, heal pls")
 	case roleSupport:
-		line = pick("healing", "sp low, need a sec", "bless up", "dont run off guys", "inc agi on u", "sitting for sp")
+		line = supportLine(s.b) // healreach.go: "healing" only right after a heal the server confirmed
 	case roleRanged:
 		line = pick("on it", "nice pull", "kiting this one", "sp low", "that one's mine lol", "good exp here")
 	default:
