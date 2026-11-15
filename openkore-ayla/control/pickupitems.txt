@@ -11,3 +11,499 @@
 all 1
 # jellopy 0
 # fluff 0
+# Ayla's loot filter (2026-11-15, owner: town runs every ~25 min with a bag of cave junk): NPC junk that sells for
+# under 5z per 0.1 weight and under 150z each is left on the ground (generated from rAthena item_db_etc.yml).
+# Cards, equipment, potions/herbs, ores, gems and everything with a good zeny/weight ratio are still picked up.
+(Limited) Purified Eluminium 0
+(Limited) Token of Ziegfried 0
+(Limited)High Density Bradium 0
+(Limited)High Density Kalunium 0
+6.13 Ticket 0
+6.18 Ticket 0
+6.22 Ticket 0
+AGI Stone (Upper) 0
+ASPD Stone (Upper) 0
+ATK Stone (Middle) 0
+Abundance 0
+Acol Book Basic 0
+Acol Book Misc 0
+Acol Book Practice 0
+Acolyte Soul 0
+Acorn 0
+Air Cleaner Box 0
+Animal Poop 0
+Animal Skin 0
+Archer Book Basic 0
+Archer Book Misc 0
+Archer Book Practice 0
+Archer Soul 0
+Author's Autograph 0
+Author's Memo 0
+Auto Battle Capsule 0
+Baba Yaga's Secret Medicine 0
+Bad Canned Food 0
+Bag Of Selling Goods 0
+Barren Trunk 0
+Basic Adventure 0
+Bean Bag 0
+Bee Sting 0
+Big Luk Bookmark 0
+Bill of Birds 0
+Black Marble 0
+Blood Beginner 0
+Bloody Letter 0
+Blue Aura Effect (Middle) 0
+Bobbin Of Goddess 0
+Bok Choy 0
+Box 0
+Bradium Box 0
+Brazil National Flag 0
+Brazilian Flag 0
+Brick 0
+Bright Fire Lights 0
+Broken Apple Juice 0
+Broken Banana Juice 0
+Broken Carrot Juice 0
+Broken Grape Juice 0
+Broken Horn 0
+Broken Magic Stone 0
+Broken Thermometer 0
+Bubble Gum Token 0
+Butterfly Hair Decoration 0
+Buy Market Permit 0
+Cactus Needle 0
+Candle TW 0
+Cash Hair Coupon 0
+Casting Stone (Garment) 0
+Celebration Document 0
+Cendrawasih Feather 0
+Champion Badge 0
+Champion Stone (Lower) 0
+Champion Stone (Middle) 0
+Champion Stone (Upper) 0
+Charcoal 0
+Charleston Parts 0
+Chivalry Emblem 0
+Christmas Cookie 0
+Chrysalis 0
+Circle Step 0
+Clam Shell 0
+Clean Water 0
+Clover 0
+Clown Gypsy Stone (Lower) 0
+Clown Gypsy Stone (Middle) 0
+Clown Gypsy Stone (Upper) 0
+Coagulated Spell 0
+Cold Core 0
+Comodo Festival Ticket 0
+Comodo Leather 0
+Condensed Magic Blood 0
+Contaminated Magic 0
+Corn 0
+Costumes Exchange Coupons 0
+Countermagic Crystal 0
+Crab Shell 0
+Cracked Diamond 0
+Create Monster Scroll 0
+Creator Stone (Lower) 0
+Creator Stone (Middle) 0
+Creator Stone (Upper) 0
+Critical Stone (Bottom) 0
+Critical Stone (Garment) 0
+Critical Stone (Middle) 0
+Critical Stone (Upper) 0
+Crushed Can 0
+Crushed Can Iron Plate 0
+Crystal of Darkness 0
+DEX Stone (Upper) 0
+Decayed Nail 0
+Dehumidifiers 0
+Detoxify Stone (Lower) 0
+Device Capsule 0
+Device Creation Guide 0
+Divx Player Raffle Ticket 0
+Double Attack Stone (Garment) 0
+Dragonball Yellow 0
+Dried Flower 0
+E Token Of Siegfried 0
+Electric Effect (Middle) 0
+Electric Effect (Upper) 0
+Embryo 0
+Emperium 0
+Emperium G 0
+Empty Test Tube 0
+Engagement Ring 0
+Evil Mind 0
+Experience Stone (Middle) 0
+Experience Stone (Upper) 0
+Experimental Dong Memory Record 0
+Exploding Effect (Middle) 0
+F Token Of Siegfried 0
+FLEE Stone (Lower) 0
+Face Paint 0
+Failed Engine 0
+Feather 0
+Feather of Birds 0
+February Sweets 0
+Festival Ticket 0
+Field Shovel 0
+Fine-grained Trunk 0
+Fish With Blue Back 0
+Fluff 0
+Foolishness of the Blind 0
+Fortune Horn 0
+Fragments Of Gigan 0
+Fragments Valkyrie Power 0
+Free Ticket for Peco Ride 0
+Fresh Grapes 0
+Fresh Water 0
+Frilldora's Fiery Nape 0
+Game Ticket 0
+Garlet 0
+Genetic Stone (Garment) 0
+Ghost Effect (Middle) 0
+Girl's Bouquet 0
+Gold Coin 0
+Gold Paper 0
+Golem's Fiery Stone Tooth 0
+Grasshopper's Leg 0
+Gravity Safety Device 0
+Gray Shard 0
+Greed Stone (Lower) 0
+Green Apple 0
+Green Floor (Bottom) 0
+Green Maiden's Cake 0
+Grilled Rice Cake 0
+Guard's First Proof 0
+Guard's Fourth Proof 0
+Guard's Second Proof 0
+Guard's Third Proof 0
+Gulaman 0
+Gun Book Basic 0
+Gun Book Misc 0
+Gun Book Practice 0
+HIT Stone (Lower) 0
+HP Absorption Stone (Garment) 0
+HP Absorption Stone (Upper) 0
+HPAbsorb Stone (Garment) 0
+HPAbsorb Stone (Upper) 0
+Hammer of Blacksmith 0
+Hand of God 0
+Hand-made Kitty Doll 0
+Hari 0
+Heal Stone (Bottom) 0
+Health Stone (Lower) 0
+Heart 0
+Heart of Queen Fox 0
+Hedgehog Picks 0
+Heroic Stone 0
+High Strength Adhesive 0
+High Wizard Stone (Lower) 0
+High Wizard Stone (Middle) 0
+High Wizard Stone (Upper) 0
+Holier Threads 0
+Holy Amulet 0
+Holy Threads 0
+Honor Proof Exchange List 0
+Huge Metal Scrap 0
+Human's Cookbook 0
+INT Stone (Upper) 0
+IPOD Coupon 0
+Identify Stone (Bottom) 0
+Incense 0
+Increase Stamina Study 0
+Indonesia 0
+Inorganic Pumpkin 0
+Invasion Plan 0
+Iron 0
+Japan Book1 0
+Japan Book2 0
+Jellopy 0
+Jewel of Destruction 0
+Jitterbug's Tooth 0
+Jubilee 0
+Kafra Ticket 0
+Kaong 0
+Ke-60 0
+Kemerdekaan 0
+Key of Clock Tower 0
+Key of Underground 0
+Krathong 0
+Kyrie Stone (Lower) 0
+LUK Stone (Upper) 0
+Langka 0
+Leather Rabbit 0
+Leche Flan 0
+Legendary Fur 0
+Legendary Mane 0
+Lesser Agimat 0
+Letter Moon Cake 0
+Lettered Moon Snack 01 0
+Lettered Moon Snack 02 0
+Lettered Moon Snack 03 0
+Lettered Moon Snack 04 0
+Lettered Moon Snack 05 0
+Lex Aeterna Stone (Middle) 0
+Loki's Whispers 0
+Lope's Clue 0
+Lord Knight Stone (Lower) 0
+Lord Knight Stone (Middle) 0
+Lord Knight Stone (Upper) 0
+Love Flower 0
+Lucky Candy 0
+Lucky Cookie 0
+Lucky Lollipop 0
+MATK Stone (Middle) 0
+MVP Monster Scroll 0
+MVP Voucher 0
+Macapuno 0
+Mage Book Basic 0
+Mage Book Misc 0
+Mage Book Practice 0
+Mage Soul 0
+Magic Gourd Bottle 0
+Magic Stone 0
+Magic Stone (Lower) 0
+Magnificent Dish 0
+Mammi's Photo Album 0
+Manuscript Paper 0
+Masque of Tutankhamen 0
+Mastersmith Stone (Lower) 0
+Mastersmith Stone (Middle) 0
+Mastersmith Stone (Upper) 0
+Meat Veg Skewer 0
+Mechanic Stone (Garment) 0
+Medicine Bowl 0
+Mer Book Basic 0
+Mer Book Misc 0
+Mer Book Practice 0
+Merchant Soul 0
+Midgard Coin 0
+Miniboss Voucher 0
+Minor Casting Stone (Garment) 0
+Mithril 0
+Mix Cook Book 0
+Monster Blood 0
+Monster Crystal 0
+Monster Ticket 0
+Monster Voucher 0
+Month Viewing Ticket 0
+Morning Dew 0
+Mother's Nightmare 0
+Moving Black Material 0
+Mug 0
+Mushroom Spore 0
+Mysterious Medal 0
+Mystery Egg 0
+Neck of Demon Dragon 0
+Necklace of Oblivion 0
+Necklace of Wisdom 0
+New Insurance 0
+Niflheim Express Ticket 0
+Ninja Book Basic 0
+Ninja Book Misc 0
+Ninja Book Practice 0
+Nitrogen Acid 0
+Note of Geologist 0
+Old Crown 0
+Old Fuel 0
+Old Hilt 0
+Old Magicbook 0
+Old Photo Album 0
+Old Pill 0
+Old Ring 0
+Orange Gooey Mushroom 0
+Orange Net Mushroom 0
+Organic Pumpkin 0
+Pass 0
+Pellet 0
+Perfume 0
+Pet Snow Bunny Exchange Ticket 0
+Pet Tikbalang Exchange Ticket 0
+Phracon 0
+Piece of Cogwheel 0
+Pink Glow Effect (Middle) 0
+Plant Neutrient 0
+Pointed Scale 0
+Powder of Butterfly 0
+Premium Ticket 0
+Prize Medal 0
+Questioned Parts 0
+RO Luk Bookmark 0
+RWC Necklace 0
+RWC Voucher Items 0
+Racy Spice 0
+Rainbow Shell 0
+Range Stone (Middle) 0
+Ranger Stone (Garment) 0
+Rat Tail 0
+Raw Crystal Stone 0
+Raw Crystal Stone Fragment 0
+Raw Crystal Stone Mass 0
+Red Chile 0
+Red Eye 0
+Reload Stone (Lower) 0
+Reload Stone (Middle) 0
+Reload Stone (Upper) 0
+Republik 0
+Resurrection Stone(Lower) 0
+Rice Pouch 0
+Ripe Watermelon 0
+Rok Star Badge 0
+Rope 0
+Rune Knight Stone (Garment) 0
+Rune Magic Powder 0
+Rusty Bracalet 0
+SN Book Basic 0
+SN Book Misc 0
+SN Book Practice 0
+SP Absorption Stone (Garment) 0
+SPAbsorb Stone (Garment) 0
+SPAbsorb Stone (Upper) 0
+STR Stone (Upper) 0
+Safe to 6 Equipment Certificate 0
+Sago 0
+Sandpaper 0
+Santa Bag 0
+Scholar Stone (Lower) 0
+Scholar Stone (Middle) 0
+Scholar Stone (Upper) 0
+Sealed Box 0
+Selamat 0
+Sesame Bag 0
+Shadow Chaser Stone (Garment) 0
+Shadow Effect (Middle) 0
+Shell 0
+Shining Cendrawasih Feather 0
+Shoot 0
+Shrink Effect (Bottom) 0
+Shrink Effect (Middle) 0
+Silicone Shell 0
+Silk Handkerchief of Zhi Nu 0
+Single Cell 0
+Sky Fortress Key 0
+Slotting Advertisement 0
+Snail's Shell 0
+Snake Bookmark 0
+Snake Scale 0
+Sniper Stone (Lower) 0
+Sniper Stone (Middle) 0
+Sniper Stone (Upper) 0
+Soccer Ball 0
+Soccer Shoes 0
+Solid Trunk 0
+Sonia's Letter 0
+Sorcerer Stone (Garment) 0
+Soul 0
+Special Cogwheel 0
+Special Gold 0
+Special Shield 0
+Special Sword 0
+Splendid Supply Kit 0
+Spring Stanza1 0
+Spring Stanza10 0
+Spring Stanza11 0
+Spring Stanza12 0
+Spring Stanza13 0
+Spring Stanza14 0
+Spring Stanza15 0
+Spring Stanza16 0
+Spring Stanza17 0
+Spring Stanza18 0
+Spring Stanza19 0
+Spring Stanza2 0
+Spring Stanza20 0
+Spring Stanza21 0
+Spring Stanza22 0
+Spring Stanza23 0
+Spring Stanza3 0
+Spring Stanza4 0
+Spring Stanza5 0
+Spring Stanza6 0
+Spring Stanza7 0
+Spring Stanza8 0
+Spring Stanza9 0
+Stalker Stone (Lower) 0
+Stalker Stone (Middle) 0
+Stalker Stone (Upper) 0
+Star Crystal 0
+Star Shape Mushroom 0
+Steal Stone (Bottom) 0
+Stem 0
+Sticky Mucus 0
+Sticky Webfoot 0
+Stone Of Blessing 0
+Strong Vine 0
+Sulphur 0
+Summer Festival Ticket 0
+Summoning Stone 0
+Sura Stone (Garment) 0
+Surface Paint 0
+Suspicious Melon 0
+Sweet Bananas 0
+Sweet Beans 0
+Sweet and Sour Melon 0
+Sweetie Skin 0
+Swordman Book Basic 0
+Swordman Book Practice 0
+Swordman Soul 0
+Swrodman Book Misc 0
+Symbol of Fox 0
+TK Book Basic 0
+TK Book Misc 0
+TK Book Practice 0
+Talon 0
+Teleport Stone (Bottom) 0
+Temporal Crystal 0
+Tentacle 0
+Thai Perfume 0
+The Sign 0
+Thief Book Basic 0
+Thief Book Misc 0
+Thief Book Practice 0
+Thief Soul 0
+Ticket Of Identification 0
+Token Of Siegfried 0
+Tooth of Bat 0
+Torn Document 0
+Traditional Sweets 0
+Training Notice 0
+Transparent Plate 0
+Treasure Box 0
+Tree Root 0
+Trunk 0
+Twinkle Effect (Upper) 0
+Ube Jam 0
+Undelivered Gift 0
+Unknown Liquid Bottle 0
+Urn 0
+VIT Stone (Upper) 0
+Variable Casting Stone (Bottom) 0
+Variable Casting Stone (Garment) 0
+Variable Casting Stone (Middle) 0
+Variable Casting Stone (Upper) 0
+Vita500 Lid 0
+Vital Drink CB 0
+Wanderer Minstrel Stone (Garment) 0
+Warlock Stone (Garment) 0
+Water Field Effect (Lower) 0
+Well Ripened Berry 0
+White Body Effect (Middle) 0
+Whole Barbecue 0
+Wii Raffle Ticket 0
+Will Master 0
+Witch's Medal 0
+Wolf Claw 0
+Wood 0
+Wooden Axe 0
+Wooden Block 0
+Worm Peeling 0
+Worn-Out Belt 0
+Wrapping Paper 0
+Yaga's Magic Book 0
+Yaga's Pestle 0
+Yellow Jewel 0
+Young Twig 0
+Yuebing 0
+event 0
+iPod nano Raffle Ticket 0
