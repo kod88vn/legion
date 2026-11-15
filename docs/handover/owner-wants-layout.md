@@ -10,7 +10,7 @@
   a build plan, levelling strategy and equipment path to 99. 10 ambitious guild leaders found guilds and recruit.
   Parties use tank/ranged/priest roles, bait-and-carry, even EXP share. Bots prefer farming, open shops for surplus,
   and must **run away from danger**.
-- **Ayla's core test party** must **always be online**: Ayla (owner's account) + Zendancer84, Echobunny, Zen.fox, xXRinfangXx (Hunter), Silent rogue (Alchemist), vex_x18 (Crusader, from the next deploy) (6h).
+- **Ayla's core test party** must **always be online**: Ayla (owner's account) + Zendancer84, Echobunny, Zen.fox, xXRinfangXx (Hunter), LilLilyblade (Monk; replaced the Alchemist Silent rogue 2026-11-14, AY11), vex_x18 (Crusader) (6h).
   Lessons from this party get built back into all bots. The owner **watches Ayla live** in a client window.
 - A **dashboard** to see the world, talk to the minds, and see guild and party data.
 
@@ -23,7 +23,7 @@
 - **Don't remove information from the dashboard**; add, don't replace.
 - **If something keeps failing, stop retrying and investigate** (find the root cause, don't loop).
 - **Re-seeds must never touch human characters**: delete only by bot account range 2100001-2199999, never by char_id
-  range (the owner's character "kitty" was lost once and recreated). Keep the core party: `seed -keep "Zendancer84,Echobunny,Zen.fox,xXRinfangXx,Silent rogue,vex_x18"`.
+  range (the owner's character "kitty" was lost once and recreated). Keep the core party: `seed -keep "Zendancer84,Echobunny,Zen.fox,xXRinfangXx,LilLilyblade,vex_x18,Silent rogue"` (Silent rogue left the party 2026-11-14 but stays in Starveil, AY11).
 - Don't bypass anti-cheat / EAC, don't use pirated client downloads, don't unpack protected executables.
 - Ask before outward-facing or hard-to-reverse actions (installing external tools, deleting data).
 

@@ -11,6 +11,12 @@
   tank next to Echobunny's two-hand Knight; needs the next main + core deploy). LEGION_CORE in `.env`, the compose
   defaults, `data/human-parties.json`, wrongbuilds.py PARTY, sentinel.py CORE, progress_report.py all list the six.
   lfg_human.go turns are generic over members. Zen.fox (in-game party leader) invites new friends.
+- Roster change AY11 (2026-11-14, `legion/humanpartyroster.go`): the Monk **LilLilyblade** (lg2064, Monk lv81/38, plan
+  `monk` AGI/STR combo, Heal 3, Increase AGI 10, Blessing 6, Triple Attack/Chain Combo/Combo Finish; Starveil) replaced
+  Silent rogue. `data/human-parties.json` holds `members` plus `alumni` (characters that left on the owner's order):
+  an alumnus still in the human's in-game party says goodbye in party chat and leaves it (both instances), and never
+  leaves the human's guild (friends.go). A new member still in an old bot party says bye there and leaves it (core),
+  then Zen.fox invites it. Silent rogue now runs in the main instance (`legion`) like any bot, still in Starveil.
 - No Emperium (`guild_emperium_check: no`). Ayla founds it: `ayla.sh guild-create Starveil`. statusout.pl writes
   `guild` + `job_id` to status.json; Legion keeps the name in `data/human-guild.json`.
 - Invitations by account id: plugin `openkore-ayla/plugins/cmdfile/guildrecruit.pl`, console `ginvite <aid> [name]`
