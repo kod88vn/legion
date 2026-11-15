@@ -179,6 +179,13 @@ func enqueueChatJobAt(s ChatJobSpec, now time.Time) string {
 	chatJobs.Lock()
 	wait := chatJobsOn() && !chatJobs.agentSeen.IsZero() && now.Sub(chatJobs.agentSeen) <= chatAgentFresh &&
 		len(chatJobs.open) < chatJobsMaxOpen && !chatJobByCode(s.Kind) // chatjobs_wait.go: PR38 kinds the code says itself
+	if wait && s.Kind == ChatKindAsk && chatJobDedupeOn() && chatAskOpenLocked(j) {
+		// the same ask (same channel, same item) is already waiting for an answer: one ask is enough (bug queue
+		// b1794750152316-420: 40 queued asks for 4 items, all from guild speakers)
+		chatJobs.counts["ask dropped: same ask waiting"]++
+		chatJobs.Unlock()
+		return ""
+	}
 	chatJobs.nextID++
 	j.ID = fmt.Sprintf("%s%d", chatJobPrefix(), chatJobs.nextID)
 	if !wait {
@@ -201,6 +208,30 @@ func enqueueChatJobAt(s ChatJobSpec, now time.Time) string {
 		chatJobs.loop.Do(func() { go chatJobsLoop() })
 	}
 	return j.ID
+}
+
+func chatJobDedupeOn() bool { return tune().ChatJobDedupeOn }
+
+// chatAskKey: what makes two asks the same ask: the item (facts item_id, else the #trade line, else the template text).
+func chatAskKey(j *ChatJob) string {
+	k := strings.ToLower(strings.TrimSpace(j.Template))
+	if id, ok := j.Facts["item_id"]; ok {
+		k = fmt.Sprint(id)
+	} else if l, ok := j.Facts["line"].(string); ok {
+		k = strings.ToLower(strings.TrimSpace(l))
+	}
+	return j.Channel + "|" + j.To + "|" + k
+}
+
+// chatAskOpenLocked (chatJobs.mu held): an ask with the same key is still waiting for its answer.
+func chatAskOpenLocked(j *ChatJob) bool {
+	key := chatAskKey(j)
+	for _, o := range chatJobs.open {
+		if o.Kind == ChatKindAsk && chatAskKey(o) == key {
+			return true
+		}
+	}
+	return false
 }
 
 // chatWhyTemplate (chatJobs.mu held): why a job went straight to its template (for the counters).

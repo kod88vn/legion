@@ -299,6 +299,8 @@ type Tuning struct {
 	// chatjobs_wait.go: a listed job's grace, and the kinds the code says by itself (comma list)
 	ChatJobListedGraceSec int    `json:"chat_job_listed_grace_sec"`
 	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
+	// chatjobs.go: an ask for an item already waiting in the same channel is not queued twice (default on)
+	ChatJobDedupeOn bool `json:"chat_job_dedupe_on"`
 	// party / guild get first refusal on a want for this long in all (split over the buyer's kin stages), then anyone
 	ExchangeFirstRefusalSec int  `json:"exchange_first_refusal_sec"`
 	// convo.go ambient talk (default on: an older tuning.json without the keys keeps these defaults)
@@ -346,7 +348,7 @@ var defaultTuning = Tuning{
 	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ExchangeFirstRefusalSec: 40, ChatJobWaitMinSec: 45, ChatJobWaitMaxSec: 90,
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
 	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
-	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept",
+	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept", ChatJobDedupeOn: true,
 	AmbientTalkOn: true, AmbientTalkDiv: 150, AmbientTalkMaxPerMin: 3,
 	IdleErrandWaitSec: 45, IdleErrandWeightPct: 35, IdleErrandSlots: 85, IdleErrandCooldownMin: 10,
 }
