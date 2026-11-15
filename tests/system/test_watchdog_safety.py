@@ -542,10 +542,16 @@ class TestKeeperLockAndExitCodes(W.Env):
             raw = f.read()
         self.assertEqual(raw.count(b"\n"), raw.count(b"\r\n"))         # CRLF throughout: cmd needs it
         txt = raw.decode("ascii").replace("\r\n", "\n")
-        self.assertIn("if errorlevel 3 (echo dashboard: another copy", txt)
-        self.assertIn("exit /b 0)", txt)
-        after = txt.split("if errorlevel 3", 1)[1]
-        self.assertLess(after.index("exit /b 0"), after.index("timeout /t 3"))   # stop, not sleep and retry
+        head, tail = txt.split("if errorlevel 3 (", 1)
+        block, rest = tail.split("\n)\n", 1)
+        # on exit 3 the loop stops only when the port really listens; otherwise it falls through to the 3 s retry
+        self.assertIn('findstr /R /C:"127\\.0\\.0\\.1:8099 .*LISTENING"', block)
+        self.assertIn("exit /b 0", block)
+        self.assertLess(block.index("findstr"), block.index("exit /b 0"))
+        self.assertIn("timeout /t 3 /nobreak", rest)
+        self.assertIn("goto loop", rest)
+        self.assertNotIn("exit /b 0", rest)
+        self.assertNotIn("exit /b 0", head.split(":loop", 1)[1].split("python tools")[1])   # no stop before the run
 
     def test_unwall_and_keeper_refusals_exit_3_in_text(self):
         with open(os.path.join(REPO, "tools", "rogui", "keeper.sh"), encoding="utf-8") as f:
@@ -606,6 +612,41 @@ class TestKeeperLockAndExitCodes(W.Env):
         r = bash_lib('keeper_take_lock && echo TOOK || echo REFUSED', {"KEEPER_LOCK": bash_path(lock)})
         self.assertIn("REFUSED", r.stdout, r.stderr)
         self.assertTrue(os.path.exists(lock))
+
+
+class TestKeeperTermPromptly(W.Env):
+    """item 2: keeper.sh waits on its sleeps with `sleep N & wait $!`, so a TERM is acted on at once (not after the
+    foreground sleep ends), and the lock is still released"""
+
+    def test_keeper_sh_sleeps_are_interruptible(self):
+        import re
+        with open(os.path.join(REPO, "tools", "rogui", "keeper.sh"), encoding="utf-8") as f:
+            sh = f.read()
+        self.assertEqual(len(re.findall(r"\bsleep \d+ & wait \$!", sh)), 3)
+        self.assertIsNone(re.search(r"\bsleep \d+(?! & wait)\b", sh))   # no bare foreground sleep left
+
+    def test_term_during_a_long_wait_exits_at_once_and_releases(self):
+        if not have_bash():
+            self.skipTest("no bash here")
+        import time
+        lock = os.path.join(self.d, "keeper.lock")
+        script_win = os.path.join(REPO, "tools", "rogui", "keeper-lock.sh")
+        bash = _SETUP["found"][0]
+        # the keeper's own shape: take the lock, then wait on a long sleep; a subshell sends TERM to the keeper after 1 s
+        cmd = ('. "%s"; keeper_take_lock; (sleep 1; kill -TERM $$) & sleep 6 & wait $!; echo AFTER'
+               % bash_path(script_win))
+        out = os.path.join(self.d, "term.out")
+        env = dict(os.environ, KEEPER_LOCK=bash_path(lock))
+        t0 = time.time()
+        with open(out, "w") as fo:
+            p = subprocess.Popen([bash, "-c", cmd], env=env, stdout=fo, stderr=subprocess.STDOUT)
+            rc = p.wait(timeout=60)
+        elapsed = time.time() - t0
+        self.assertLess(elapsed, 5, "TERM must end the wait at once, not after the 6 s sleep")
+        self.assertEqual(rc, 143)
+        with open(out) as fo:
+            self.assertNotIn("AFTER", fo.read())                    # the trap ended the shell: nothing after the wait ran
+        self.assertFalse(os.path.exists(lock))                      # and the lock was released
 
 
 class TestUnwall(W.Env):

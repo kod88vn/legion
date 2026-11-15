@@ -23,7 +23,7 @@ while true; do
   if [ -e "$HOLD" ]; then
     beat "idle: stack.hold present"
     [ "${held:-0}" = 1 ] || { log "stack.hold present: keeper idle until it is removed"; held=1; }
-    strikes=0; restarts=0; sleep 20; continue
+    strikes=0; restarts=0; sleep 20 & wait $!; continue
   fi
   held=0
   beat "running"
@@ -31,7 +31,7 @@ while true; do
     log "ro-openkore-ayla not running -> starting it"
     docker compose up -d --no-deps openkore-ayla >/dev/null 2>&1   # --no-deps (G15): never recreate rathena or the db
     beat "started ayla"
-    sleep 60; continue
+    sleep 60 & wait $!; continue
   fi
   # the server's own online flag (OpenKore's status title is not printed while she sits idle -> false alarms)
   if [ "$(docker exec ro-db mariadb -N -uragnarok -pragnarok ragnarok -e 'SELECT online FROM `char` WHERE char_id=150010' 2>/dev/null)" = "1" ]; then
@@ -48,5 +48,5 @@ while true; do
     fi
     strikes=0
   fi
-  sleep 20
+  sleep 20 & wait $!
 done
