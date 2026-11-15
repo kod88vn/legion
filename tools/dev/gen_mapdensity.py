@@ -6,6 +6,11 @@ STOCK sum per map; the plugin multiplies by mob_count_rate / 100 at load (the ra
 
 usage: python tools/dev/gen_mapdensity.py <rathena npc dir> [out file] [rate]
   <rathena npc dir>  the copy of rathena's npc/ tree (e.g. npc/re/mobs and npc/mobs), read only
+
+The local copy lives at tools/dev/rathena-npc/ (git-ignored; the main checkout holds it there). To regenerate, copy
+rathena's npc/ tree from the rathena source (the rdata stage of legion/Dockerfile) to that path, then run:
+  python tools/dev/gen_mapdensity.py tools/dev/rathena-npc openkore-ayla/control/mapdensity.txt 400
+Note: the committed table was built from a smaller copy (102 monster files); a fresh copy can differ by a few maps.
 """
 import os
 import re
