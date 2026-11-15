@@ -198,6 +198,61 @@ def answer(path):
     return None
 
 
+# Owner token the fake engine expects on POST/DELETE /api/ayla/overrides (the real one is legion/data/owner.token).
+OWNER_TOKEN = "fake-owner-token-0123456789abcdef"
+# farm maps the fake fair gate refuses without confirm=true (answers 409 with warnings, as aylaoverride.go does)
+GATE_FAIL_MAPS = {"moc_fild12"}
+SPOT_MAPS = [("pay_fild08", 10, 18, 40), ("prt_fild08", 20, 30, 35), ("moc_fild12", 40, 52, 22)]
+
+
+def spots(level):
+    return [{"Map": m, "MinLv": lo, "MaxLv": hi, "Mobs": n, "AggroDanger": 0}
+            for m, lo, hi, n in SPOT_MAPS if lo <= level + 2 and hi >= level - 12]
+
+
+def ov_view(rows, now):
+    active = [r for r in rows if r["active"]]
+    kinds = ["farm_map", "guild_dir", "party_order", "town_run", "rally"]
+    return {"now": iso(now), "precedence": "owner > puppet > default", "kinds": kinds,
+            "owner": {k: next((r for r in active if r["kind"] == k), None) for k in kinds},
+            "overrides": rows[::-1],
+            "puppet": {"starveil_guild": {"guild": "guild01", "name": "Starveil", "active": [], "leader_set": [],
+                                          "autopilot": [{"kind": "farm", "value": "pay_fild08"}]},
+                       "orders": {"owner": [], "helper": []}}}
+
+
+def ov_post(rows, body, now):
+    """the store's Set in miniature: kind check, a gate check for farm_map, and the one-active-per-kind rule"""
+    kind, value = body.get("kind", ""), str(body.get("value", "")).strip().lower()
+    if kind not in ("farm_map", "guild_dir", "party_order", "town_run", "rally"):
+        return 400, {"error": "kind must be one of farm_map, guild_dir, party_order, town_run, rally"}
+    if not value:
+        return 400, {"error": "value is required"}
+    hours = float(body.get("hours") or 24)
+    if not 0 < hours <= 720:
+        return 400, {"error": "hours must be above 0 and at most 720"}
+    if kind == "farm_map" and value in GATE_FAIL_MAPS and not body.get("confirm"):
+        warn = ["fair gate: 31%% of the monsters are fair for base level %s (need 60%%)" % body.get("base_lv", 0)]
+        return 409, {"error": "gate warnings: confirm=true stores anyway", "warnings": warn, "stored": False}
+    for r in rows:
+        if r["kind"] == kind and r["active"]:
+            r.update(active=False, end_reason="replaced")
+    row = {"id": "ov%d" % (len(rows) + 1), "kind": kind, "value": value, "set_by": "owner", "set_at": iso(now),
+           "expires_at": iso(now + hours * 3600), "note": body.get("note", ""), "active": True}
+    rows.append(row)
+    return 200, row
+
+
+def ov_delete(rows, oid, now):
+    for r in rows:
+        if r["id"] == oid:
+            if not r["active"]:
+                return 409, {"error": "override already ended", "override": r}
+            r.update(active=False, end_reason="clear", cleared_at=iso(now))
+            return 200, r
+    return 404, {"error": "no override %s" % oid}
+
+
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -210,13 +265,54 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def ov_rows(self):
+        if not hasattr(self.server, "overrides"):
+            self.server.overrides = []
+        return self.server.overrides
+
+    def owner_ok(self):
+        return self.headers.get("X-Owner-Token") == OWNER_TOKEN
+
     def do_GET(self):
+        route, _, q = self.path.partition("?")
+        if route == "/api/ayla/overrides":
+            view = ov_view(self.ov_rows(), time.time())
+            if getattr(self.server, "flags", None) is not None:   # a test may give the flags field (fix/ayla-hookin)
+                view["flags"] = self.server.flags
+            return self.reply(200, view)
+        if route == "/api/spots":
+            lv = int((q.split("level=")[1].split("&")[0]) or 0) if "level=" in q else 0
+            return self.reply(200, spots(lv))
         obj = answer(self.path)
         self.reply(200 if obj is not None else 404, obj if obj is not None else {"error": "not in the sample"})
 
+    def note_write(self):
+        """every write the engine receives, for the tests: a refused write must never show up here"""
+        self.server.__dict__.setdefault("writes", []).append(self.path)
+
     def do_POST(self):
-        self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        self.note_write()
+        raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        if self.path.partition("?")[0] == "/api/ayla/overrides":
+            if not self.owner_ok():
+                return self.reply(403, {"error": "owner token required: X-Owner-Token header"})
+            try:
+                body = json.loads(raw or b"{}")
+            except ValueError:
+                return self.reply(400, {"error": "bad json"})
+            code, obj = ov_post(self.ov_rows(), body, time.time())
+            return self.reply(code, obj)
         self.reply(200, {"id": 99, "ok": True})
+
+    def do_DELETE(self):
+        self.note_write()
+        route = self.path.partition("?")[0]
+        if route.startswith("/api/ayla/overrides/"):
+            if not self.owner_ok():
+                return self.reply(403, {"error": "owner token required: X-Owner-Token header"})
+            code, obj = ov_delete(self.ov_rows(), route.rsplit("/", 1)[1], time.time())
+            return self.reply(code, obj)
+        self.reply(404, {"error": "no such route"})
 
 
 def sample_data(d, now=None, alive=True):

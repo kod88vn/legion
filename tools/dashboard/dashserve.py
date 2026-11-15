@@ -6,6 +6,7 @@
   GET  /  (also /dashboard)   the page, read from legion/dashboard.html on every request (no engine deploy needed)
   GET  /status                what is up and what is down, from sources that do not need the engine: container
                               state, heartbeat files, bug queue, deploy log, dispatcher log, markers
+  POST, DELETE /api/ayla/overrides   the owner tool's writes (AY25); only these carry the owner token, added here
   *    /api/...               forwarded to the engine. When the engine does not answer, a GET gets the last good
                               answer (header X-Dash-Stale: <age in seconds>), or 503 {"down": true} if there is none.
 
@@ -414,7 +415,10 @@ def ayla_file(now):
 
 
 # ----------------------------------------------------------------- engine proxy
-OVERRIDE_ROUTE = re.compile(r"^/api/ayla/overrides(/[^?]*)?(\?.*)?$")
+OVERRIDE_ROUTE = re.compile(r"^/api/ayla/overrides(/[A-Za-z0-9_-]+)?(\?[A-Za-z0-9_=&.-]*)?$")
+# write paths (POST, DELETE) never carry these: no traversal, no double slash, no percent escapes, no backslash
+BAD_WRITE_PATH = ("..", "//", "%", "\\")
+LOCAL_HOSTS = ("127.0.0.1", "localhost")
 
 
 def owner_token_path():
@@ -425,7 +429,7 @@ def owner_token_path():
 def owner_headers(method, path):
     """Extra headers for one engine call. Only the owner tool's override writes (POST/DELETE on
     /api/ayla/overrides) get X-Owner-Token; every other route, GET included, is sent without it."""
-    if method not in ("POST", "DELETE") or not OVERRIDE_ROUTE.match(path or ""):
+    if method not in ("POST", "DELETE") or not OVERRIDE_ROUTE.fullmatch(path or ""):
         return {}
     try:
         with open(owner_token_path(), encoding="utf-8") as f:
@@ -681,6 +685,59 @@ def build_status(engine, watch, started):
     return st
 
 
+# ----------------------------------------------------------------- owner orders awaiting a decision (AY25, DB10)
+# legion/data/ayla_override_requests.jsonl is written by tools/puppet/orders.py (fix/ayla-watcher): request rows
+# {"kind":"order"|"request","id","t" (epoch s),"text", optional "value" and "hours"}, and status rows
+# {"kind":"status","id","status":"confirmed"|"declined","by"}. This module reads it and appends status rows; the file is
+# append-only, so the two writers never clash. A pending order older than REQ_LIFETIME_S drops out of the list.
+REQ_LIFETIME_S = 24 * 3600
+REQ_LIST = "/api/ayla/requests"
+REQ_STATUS = re.compile(r"^/api/ayla/requests/([A-Za-z0-9_-]{1,80})/status$")
+REQ_LOCK = threading.Lock()
+
+
+def requests_path():
+    return C.dpath("ayla_override_requests.jsonl")
+
+
+def pending_requests(now=None):
+    """Owner orders with no status row yet and not older than REQ_LIFETIME_S (the last 400 kB of the file)."""
+    now = time.time() if now is None else now
+    asked, answered = {}, set()
+    for r in tail_jsonl(requests_path(), 400_000):
+        rid = str(r.get("id") or "")
+        if not rid:
+            continue
+        if r.get("kind") == "status" and r.get("status") in ("confirmed", "declined"):
+            answered.add(rid)
+        elif r.get("kind") in ("order", "request"):
+            asked[rid] = r
+    out = []
+    for rid, r in asked.items():
+        t = r.get("t")
+        if rid in answered or not isinstance(t, (int, float)) or not (now - REQ_LIFETIME_S <= t <= now + 300):
+            continue
+        row = {"id": rid, "t": t, "text": str(r.get("text") or "")[:400]}
+        if r.get("value") is not None:
+            row["value"] = str(r.get("value"))[:200]
+        if isinstance(r.get("hours"), (int, float)):
+            row["hours"] = r["hours"]
+        out.append(row)
+    return sorted(out, key=lambda x: x["t"])
+
+
+def append_request_status(rid, status):
+    """Append a status row for a pending order; None when no pending order has that id (answered or expired)."""
+    with REQ_LOCK:
+        if rid not in {r["id"] for r in pending_requests()}:
+            return None
+        row = {"kind": "status", "id": rid, "status": status, "by": "owner", "t": round(time.time(), 3)}
+        os.makedirs(os.path.dirname(requests_path()), exist_ok=True)
+        with open(requests_path(), "a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+        return row
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "dashserve/1"
     protocol_version = "HTTP/1.1"
@@ -738,16 +795,86 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(500, {"error": "builds export unreadable (run tools/dashboard/buildexport.py): %s" % e})
         if route == "/favicon.ico":
             return self.send(204, "image/x-icon", b"")
+        if route == REQ_LIST:   # owner orders awaiting a decision: read here, so it answers with the engine down
+            try:
+                return self.send_json(200, {"requests": pending_requests(), "lifetime_h": REQ_LIFETIME_S // 3600})
+            except OSError as e:
+                return self.send_json(500, {"error": "requests file unreadable: %s" % e})
         if route.startswith("/api/"):
             return self.proxy("GET")
         self.send(404, "text/plain; charset=utf-8", b"not found")
 
     do_HEAD = do_GET
 
+    def write_refusal(self):
+        """Why a write (POST or DELETE, any route) must be refused, as (code, text), or None. Review of 74908d1: the
+        owner token must not be usable from another site (CSRF) or through a rebound host name (DNS rebinding), and
+        a write path must not reach the engine altered (traversal, double slash, escapes)."""
+        port = self.server.server_address[1]
+        if any(b in self.path for b in BAD_WRITE_PATH):
+            return 400, "write path refused"
+        allowed = ["http://%s:%d" % (h, port) for h in LOCAL_HOSTS]
+        host = (self.headers.get("Host") or "").lower()
+        if host not in ["%s:%d" % (h, port) for h in LOCAL_HOSTS]:
+            return 403, "host must be a localhost name of this dashboard"
+        origin = self.headers.get("Origin")
+        if origin is not None:
+            if origin not in allowed:
+                return 403, "origin is not this dashboard"
+        else:
+            ref = self.headers.get("Referer") or ""
+            if not any(ref == o or ref.startswith(o + "/") for o in allowed):
+                return 403, "a write needs this dashboard's Origin or Referer"
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            return 403, "a write must be application/json"
+        return None
+
+    def refuse_write(self, code, why):
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > 0:
+            self.rfile.read(min(n, 1 << 20))   # drain the body so the connection stays in step
+        self.close_connection = True
+        return self.send_json(code, {"error": why, "refused": True})
+
+    def request_status(self, rid):
+        """POST /api/ayla/requests/{id}/status {"status":"confirmed"|"declined"}: appends the status row (guarded)."""
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > 4096:
+            return self.refuse_write(413, "too large")
+        try:
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except ValueError:
+            return self.send_json(400, {"error": "bad json"})
+        st = body.get("status") if isinstance(body, dict) else None
+        if st not in ("confirmed", "declined"):
+            return self.send_json(400, {"error": "status must be confirmed or declined"})
+        try:
+            row = append_request_status(rid, st)
+        except OSError as e:
+            return self.send_json(500, {"error": "request not recorded: %s" % e})
+        if row is None:
+            return self.send_json(404, {"error": "no pending owner order with that id"})
+        return self.send_json(200, row)
+
     def do_POST(self):
+        bad = self.write_refusal()
+        if bad:
+            return self.refuse_write(*bad)
+        m = REQ_STATUS.match(self.path)
+        if m:
+            return self.request_status(m.group(1))
         if not self.path.startswith("/api/"):
             return self.send(404, "text/plain; charset=utf-8", b"not found")
         self.proxy("POST")
+
+    def do_DELETE(self):   # the owner tool clears an override: DELETE /api/ayla/overrides/{id} (AY25)
+        bad = self.write_refusal()
+        if bad:
+            return self.refuse_write(*bad)
+        if not OVERRIDE_ROUTE.fullmatch(self.path):   # only the override route is ever deleted through here
+            return self.send(404, "text/plain; charset=utf-8", b"not found")
+        self.proxy("DELETE")
 
     def proxy(self, method):
         body = None
