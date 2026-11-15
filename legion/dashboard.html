@@ -1319,7 +1319,7 @@ function renderSystem() {
     $('deploys').innerHTML = `<div class="kvs" style="grid-template-columns:auto 1fr;justify-items:start"><span>when</span><span style="text-align:left">${clock(L.t)} · ${agoE(L.t)}</span>` +
       `<span>image</span><span style="text-align:left">${esc(L.tag || '?')} · ${esc(Array.isArray(L.services) ? L.services.join(', ') : L.services || '')}${L.critical ? ' · critical: ' + esc(L.reason || L.critical) : ''}</span>` +
       `<span>what it changed</span><span style="text-align:left;white-space:normal">${fixes(L).length ? fixes(L).join('<br>') : '<span style="color:var(--muted)">no fix list on the record</span>'}</span>` +
-      `<span>kept or reverted</span><span style="text-align:left">${L.verdict ? esc(L.verdict) : '<span class="gap">not recorded: no script writes the verdict of the before/after comparison</span>'}</span></div>` +
+      `<span>kept or reverted</span><span style="text-align:left">${L.verdict ? esc(L.verdict) : '<span class="gap">not recorded yet: the deploy flow writes it before the next deploy, after the 3-hour windows</span>'}</span></div>` +
       `<details id="depMore"${wasOpen ? ' open' : ''} style="margin-top:8px"><summary style="cursor:pointer;color:var(--text-2);font-size:13px">The last ${dp.recent.length} deploys</summary><div class="tbl"><table><thead><tr><th>when</th><th>image</th><th>services</th><th>critical</th><th>fixes</th></tr></thead><tbody>` +
       dp.recent.map(r => `<tr><td>${clock(r.t)}</td><td>${esc(r.tag || '')}</td><td>${esc(Array.isArray(r.services) ? r.services.join(', ') : r.services || '')}</td><td>${r.critical ? esc(r.reason || 'yes') : ''}</td><td class="wrapc">${fixes(r).join(' · ')}</td></tr>`).join('') + '</tbody></table></div></details>';
   }

@@ -33,6 +33,10 @@ def render(meter, neo, now_s):
     L = ["# League report %s" % now_s, ""]
     L.append("Par = p75 of the cohort. Prize = (par - mean) x n. Score = n x mean relative gap over kills/min and zeny/h.")
     L.append("")
+    if srv["n"] is not None and srv["n"] == 0:
+        L.append("**Warning: no bot counted in this window (n=0).** A bot counts after 25% of the window online; "
+                 "right after an engine restart without a meter snapshot (meter_state.json.gz) the window is empty.")
+        L.append("")
     if srv["kpm"]["mean"] is not None or srv["zph"]["mean"] is not None:
         L.append("Server: kills/min mean %s, zeny/h mean %s, farming share %s, deaths/h %s" % (
             f(srv["kpm"]["mean"]), f(srv["zph"]["mean"], 0),
@@ -77,8 +81,10 @@ def neo_section(neo, cs):
     if isinstance(neo, dict) and isinstance(neo.get("party"), list):  # engine shape: ayla, party[], starveil[], summaries
         a = neo.get("ayla") or {}
         aw = (a.get("windows") or {}).get(neo.get("window") or "1h") or {}
-        if aw:
-            entries.append(("Ayla (purse z/h, OpenKore)", {"zph": aw.get("zph_purse"), "par_zph": aw.get("par_zph")}))
+        in_party = any(isinstance(x, dict) and x.get("instance") == "openkore" for x in neo.get("party") or [])
+        if aw and not in_party:  # an older engine: Ayla only in the header (newer: her own row in party[])
+            entries.append(("Ayla (purse z/h, OpenKore)", {"zph": aw.get("zph_purse"), "par_zph": aw.get("par_zph"),
+                                                           "kpm": aw.get("kpm"), "par_kpm": aw.get("par_kpm")}))
         for grp in ("party", "starveil"):
             for x in neo.get(grp) or []:
                 if isinstance(x, dict):
@@ -120,7 +126,7 @@ def neo_section(neo, cs):
 # ------------------------------------------------------------------ deploy comparison
 def last_deploy():
     recs = C.read_jsonl(C.dpath("deploys.jsonl"))
-    recs = [r for r in recs if C.to_epoch(r.get("epoch", r.get("t")))]
+    recs = [r for r in recs if r.get("kind") != "verdict" and C.to_epoch(r.get("epoch", r.get("t")))]
     if not recs:
         return None
     last = max(recs, key=lambda r: C.to_epoch(r.get("epoch", r.get("t"))))
@@ -192,6 +198,41 @@ def render_compare(dep, res, window_h):
     return "\n".join(L) + "\n"
 
 
+def verdict_record(dep, res, now_t, window_h=3.0):
+    """The keep/revert record for deploys.jsonl: kind "verdict", keyed by the deploy's tag and epoch (deploylog and the
+    dashboard skip it as a deploy). `verdict` is the summary the dashboard shows; `items` has each fix's numbers."""
+    counts, items = {}, []
+    for fx, metric, sub, b, a, pct, v in res:
+        k = "NO DATA" if v.startswith("NO DATA") else v.split(" ")[0]
+        counts[k] = counts.get(k, 0) + 1
+        items.append({"text": str(fx.get("text", "")), "metric": metric, "cohort": sub, "before": b, "after": a,
+                      "change_pct": None if pct is None else round(pct, 2), "verdict": v})
+    summary = ", ".join("%s %d" % (k, counts[k]) for k in ("KEEP", "REVERT", "INCONCLUSIVE", "NO DATA") if k in counts)
+    partial = now_t < dep["epoch"] + window_h * 3600
+    return {"kind": "verdict", "t": C.iso(now_t), "tag": dep.get("tag", "?"),
+            "deploy_epoch": dep["epoch"], "partial": partial, "window_h": window_h,
+            "verdict": (summary or "no fixes") + (" (partial window)" if partial else ""), "items": items}
+
+
+def record_verdict(dep=None, window_h=3.0, now_t=None):
+    """Writes the keep/revert verdict of the last deploy to legion/data/deploys.jsonl (Constitution 3.6, 3.9). Called
+    by the deploy flow (deploylog.record) before the next deploy is recorded, and by --compare-deploy. A final verdict
+    (complete window) is written once per deploy; a partial one is written only if none exists yet. -> record or None."""
+    now_t = C.now() if now_t is None else now_t
+    dep = dep or last_deploy()
+    if not dep:
+        return None
+    path = C.dpath("deploys.jsonl")
+    done = [r for r in C.read_jsonl(path) if r.get("kind") == "verdict" and r.get("tag") == dep.get("tag")
+            and abs((C.to_epoch(r.get("deploy_epoch")) or 0) - dep["epoch"]) < 1]
+    if any(not r.get("partial") for r in done) or (done and now_t < dep["epoch"] + window_h * 3600):
+        return None
+    res = compare(dep, C.read_jsonl(C.dpath("meter.jsonl")), window_h, now_t)
+    rec = verdict_record(dep, res, now_t, window_h)
+    C.append_jsonl(path, rec)
+    return rec
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base", default=os.environ.get("LEGION_API", "http://127.0.0.1:8090"))
@@ -211,6 +252,8 @@ def main(argv=None):
         res = compare(dep, C.read_jsonl(C.dpath("meter.jsonl")), a.window_h)
         text = render_compare(dep, res, a.window_h)
         name = "deploy-compare-%s.md" % stamp
+        rec = record_verdict(dep, a.window_h)
+        print("verdict recorded in deploys.jsonl: %s" % rec["verdict"] if rec else "verdict already recorded (final)")
     else:
         def load(path, url):
             if path:

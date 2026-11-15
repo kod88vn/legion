@@ -62,10 +62,25 @@ var levelBook = struct {
 	m map[string]*lvEntry // char name -> entry
 }{m: map[string]*lvEntry{}}
 
-func levelBookPath() string { return filepath.Join(*dataDir, "levels.json") }
+// levelBookPath: the main instance writes levels.json. The core instance (legion-core: Ayla's party) has its own
+// process and map, so it writes levels.core.json, which the main instance merges in every minute (mergeLevelBook).
+// Before this the core's characters, Ayla's party and Ayla herself were never in levels.json.
+func levelBookPath() string { return filepath.Join(*dataDir, levelBookFile()) }
+
+func levelBookFile() string {
+	if coreInstance() {
+		return "levels.core.json"
+	}
+	return "levels.json"
+}
 
 func loadLevelBook() {
-	raw, err := os.ReadFile(levelBookPath())
+	loadLevelBookFile(levelBookPath())
+	mergeLevelBook(filepath.Join(*dataDir, "levels.core.json"))
+}
+
+func loadLevelBookFile(path string) {
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return
 	}
@@ -77,6 +92,46 @@ func loadLevelBook() {
 		}
 		levelBook.Unlock()
 	}
+}
+
+// mergeLevelBook: another instance's file; for a character in both, the newer sighting (Seen) wins.
+func mergeLevelBook(path string) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var m map[string]*lvEntry
+	if json.Unmarshal(raw, &m) != nil {
+		return
+	}
+	levelBook.Lock()
+	defer levelBook.Unlock()
+	for k, v := range m {
+		if v == nil {
+			continue
+		}
+		if cur := levelBook.m[k]; cur == nil || v.Seen > cur.Seen {
+			levelBook.m[k] = v
+		}
+	}
+}
+
+// aylaLevelEntry: Ayla is an OpenKore character, not a Legion bot; her level comes from status.json (humanstats.go).
+func aylaLevelEntry(now int64) *lvEntry {
+	raw, err := os.ReadFile(humanStatusPath())
+	if err != nil {
+		return nil
+	}
+	var s humanStatus
+	if json.Unmarshal(raw, &s) != nil || s.Name == "" || s.BaseLevel <= 0 {
+		return nil
+	}
+	seen := s.TS
+	if seen <= 0 {
+		seen = now
+	}
+	return &lvEntry{Name: s.Name, Player: "Ayla", Class: className(s.JobID), Level: s.BaseLevel, Job: s.JobLevel,
+		Guild: s.Guild, Seen: seen}
 }
 
 func updateLevelBook(bots []*Bot, save bool) {
@@ -92,6 +147,11 @@ func updateLevelBook(bots []*Bot, save bool) {
 		}
 		b.mu.Unlock()
 	}
+	if e := aylaLevelEntry(now); e != nil {
+		levelBook.Lock()
+		levelBook.m[e.Name] = e
+		levelBook.Unlock()
+	}
 	if !save {
 		return
 	}
@@ -99,10 +159,7 @@ func updateLevelBook(bots []*Bot, save bool) {
 	raw, err := json.Marshal(levelBook.m)
 	levelBook.Unlock()
 	if err == nil {
-		tmp := levelBookPath() + ".tmp"
-		if os.WriteFile(tmp, raw, 0644) == nil {
-			os.Rename(tmp, levelBookPath())
-		}
+		writeFileAtomic(levelBookPath(), raw) // fsynced temp + rename
 	}
 }
 
@@ -643,15 +700,18 @@ func leaderSummary(bots []*Bot) map[string]leaderStatus {
 
 // registerGuildLeaders: /api/leaderboard, /api/guild-leaders (main instance; called from registerGuilds).
 func registerGuildLeaders(mux *http.ServeMux, bots []*Bot) {
+	go func() { // the level book: every minute, saved every 5 (both instances; the core's file is merged by main)
+		n := 0
+		for range time.Tick(time.Minute) {
+			n++
+			if !coreInstance() {
+				mergeLevelBook(filepath.Join(*dataDir, "levels.core.json"))
+			}
+			updateLevelBook(bots, n%5 == 0)
+		}
+	}()
 	if !coreInstance() {
 		loadLevelBook()
-		go func() {
-			n := 0
-			for range time.Tick(time.Minute) {
-				n++
-				updateLevelBook(bots, n%5 == 0)
-			}
-		}()
 		stop := make(chan struct{}) // lives as long as the process
 		go leaderPartyManager(bots, stop)
 	}

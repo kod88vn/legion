@@ -124,6 +124,7 @@ func (b *Bot) meterLogin(now time.Time) {
 	c := &b.meter
 	if n := b.charName(); n != c.char {
 		c.reset(n, now)
+		meterRestoreInto(c, n, now) // meterpersist.go: the counters this character had before an engine restart
 	}
 	c.lastTick = time.Time{}
 	c.lastZeny, c.zenyOK = b.Zeny, true

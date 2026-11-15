@@ -241,6 +241,8 @@ def what_to_assign(limit=8):
 def last_deploy_epoch():
     best = None
     for d in C.read_jsonl(C.dpath("deploys.jsonl")):
+        if d.get("kind") == "verdict":  # keep/revert line (league.py), not a deploy
+            continue
         t = C.to_epoch(d.get("epoch", d.get("t")))
         if t and (best is None or t > best):
             best = t

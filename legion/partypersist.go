@@ -162,9 +162,22 @@ func snapshotBotParties() []savedParty {
 }
 
 // writeFileAtomic writes via a temp file + rename, so a crash never leaves half a file.
+// The temp file is fsynced before the rename, so a power loss does not leave an empty file under the real name.
 func writeFileAtomic(path string, data []byte) error {
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0644); err != nil {
+	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
 		return err
 	}
 	return os.Rename(tmp, path)

@@ -298,6 +298,8 @@ def last_deploy(data=None):
             for line in f:
                 try:
                     r = json.loads(line)
+                    if r.get("kind") == "verdict":  # keep/revert line (league.py), not a deploy
+                        continue
                     t = float(r.get("epoch") or 0)
                 except (ValueError, TypeError, AttributeError):
                     continue

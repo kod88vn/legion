@@ -13,7 +13,10 @@ package main
 
 import (
 	_ "embed"
+	"encoding/json"
+	"log"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -83,12 +86,33 @@ func registerDashboard(mux *http.ServeMux, bots []*Bot, start time.Time) {
 	mux.HandleFunc("/api/overview", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, dash.overview(bots))
 	})
+	if !coreInstance() { // the overview on disk, so the Legion panels show it while the engine is down
+		go func() {
+			for range time.Tick(dashOverviewEvery) {
+				dash.saveOverview(bots)
+			}
+		}()
+	}
 	mux.HandleFunc("/api/overview/history", func(w http.ResponseWriter, r *http.Request) {
 		dash.mu.Lock()
 		out := append([]historyPoint{}, dash.history...)
 		dash.mu.Unlock()
 		writeJSON(w, map[string]interface{}{"interval_s": 60, "points": out})
 	})
+}
+
+// dashOverviewEvery: how often <data>/overview.json is rewritten (the engine's /api/overview, same content).
+const dashOverviewEvery = time.Minute
+
+// saveOverview writes the overview as /api/overview returns it (atomic). Offline the dashboard serves this file.
+func (d *dashCollector) saveOverview(bots []*Bot) {
+	raw, err := json.Marshal(d.overview(bots))
+	if err != nil {
+		return
+	}
+	if err := writeFileAtomic(filepath.Join(*dataDir, "overview.json"), raw); err != nil {
+		log.Printf("overview: save: %v", err)
+	}
 }
 
 func (d *dashCollector) bucket(min int64) *minuteBucket {

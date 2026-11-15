@@ -33,7 +33,10 @@ type humanExtras struct {
 	JobExpPct     float64     `json:"job_exp_pct"`
 	ExpH          int64       `json:"exp_h"`
 	JobExpH       int64       `json:"job_exp_h"`
-	KPM           float64     `json:"kpm"`
+	KPM           float64     `json:"kpm"`         // statusout.pl: kills/min over 10 min, counted from her exp gains
+	KPMOwn        float64     `json:"kpm_own"`     // statusout.pl: own killing blows/min (target_died hook)
+	Kills         int64       `json:"kills"`       // statusout.pl: exp-gain kill count since kills_since (meterapi.go)
+	KillsSince    int64       `json:"kills_since"` // start of that count (a new OpenKore process starts a new count)
 	MeterMin      float64     `json:"meter_min"`
 	DeathsToday   int         `json:"deaths_today"`
 	OKStart       int64       `json:"ok_start"`

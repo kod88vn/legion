@@ -37,9 +37,10 @@ type meterTuning struct {
 	MinOnlinePct int  `json:"meter_min_online_pct"` // a bot counts in a window's cohort with >= this % of the window online (25)
 	PeriodSec    int  `json:"meter_period_sec"`     // aggregation period (15)
 	HistoryOff   bool `json:"meter_history_off"`    // true: no meter.jsonl rows
+	PersistSec   int  `json:"meter_persist_sec"`    // counters snapshot (meter_state*.json.gz) every this many s (300)
 }
 
-var meterTuningDefault = meterTuning{FairLvGap: 15, MinOnlinePct: 25, PeriodSec: 15}
+var meterTuningDefault = meterTuning{FairLvGap: 15, MinOnlinePct: 25, PeriodSec: 15, PersistSec: 300}
 
 var meterTuneCur atomic.Pointer[meterTuning]
 
@@ -66,6 +67,9 @@ func meterLoadTuning() {
 	}
 	if t.PeriodSec < 5 {
 		t.PeriodSec = meterTuningDefault.PeriodSec
+	}
+	if t.PersistSec < 60 { // a snapshot at least every minute is a write-load bug, not a setting
+		t.PersistSec = meterTuningDefault.PersistSec
 	}
 	meterTuneCur.Store(&t)
 }
@@ -199,14 +203,25 @@ func (e errStatus) Error() string { return "status " + strconv.Itoa(int(e)) }
 
 // ---------------------------------------------------------------- Ayla (OpenKore, status.json)
 
-// meterAyla: Ayla is played by OpenKore, not by the engine; status.json gives her purse, level, map, HP and whether
-// she sits, every ~3 s. The meter samples it each round. Kills and loot are not in the file.
+// meterAyla: Ayla is played by OpenKore, not by the engine; status.json gives her purse, level, map, HP, whether she
+// sits and (statusout.pl) a running kill count from her exp gains (kills, kills_since), every ~3 s. The meter samples
+// it each round. Loot value is not in the file.
 type aylaSample struct {
 	t      time.Time
 	zeny   int
 	bucket string // hunting, town, resting, dead
 	lv     int
 	online bool
+	kills  int64 // statusout.pl running count since ksince (0 = an older plugin without it)
+	ksince int64
+}
+
+// aylaKillDelta: kills between two samples; none when the count restarted (a new OpenKore process) or went back.
+func aylaKillDelta(p, c aylaSample) int64 {
+	if c.ksince != p.ksince || c.ksince == 0 || c.kills < p.kills {
+		return 0
+	}
+	return c.kills - p.kills
 }
 
 var meterAylaS struct {
@@ -218,7 +233,8 @@ var meterAylaS struct {
 type aylaWin struct {
 	Min    float64            `json:"min"`
 	ZDelta int64              `json:"zeny_delta"` // purse change over the online time
-	Sec    map[string]float64 `json:"-"`
+	Kills  int64              `json:"kills"`      // kills from her exp gains over the online time
+	Sec    map[string]float64 `json:"sec"`
 }
 
 func meterAylaSample(now time.Time) {
@@ -241,7 +257,7 @@ func meterAylaSample(now time.Time) {
 		bk = "resting"
 	}
 	a := &meterAylaS
-	sm := aylaSample{t: now, zeny: s.Zeny, bucket: bk, lv: s.BaseLevel, online: online}
+	sm := aylaSample{t: now, zeny: s.Zeny, bucket: bk, lv: s.BaseLevel, online: online, kills: s.Kills, ksince: s.KillsSince}
 	if n := len(a.samples); n > 0 {
 		p := a.samples[n-1]
 		if dt := now.Sub(p.t); online && p.online && dt <= 60*time.Second {
@@ -250,6 +266,7 @@ func meterAylaSample(now time.Time) {
 			}
 			a.sess.Min += dt.Minutes()
 			a.sess.ZDelta += int64(s.Zeny - p.zeny)
+			a.sess.Kills += aylaKillDelta(p, sm)
 			a.sess.Sec[p.bucket] += dt.Seconds()
 		}
 	}
@@ -264,8 +281,11 @@ func meterAylaSample(now time.Time) {
 
 // aylaWindow: the purse change and time over the last d (from the samples).
 func aylaWindow(now time.Time, d time.Duration) aylaWin {
+	return aylaWindowOf(meterAylaS.samples, now, d)
+}
+
+func aylaWindowOf(ss []aylaSample, now time.Time, d time.Duration) aylaWin {
 	w := aylaWin{Sec: map[string]float64{}}
-	ss := meterAylaS.samples
 	for i := 1; i < len(ss); i++ {
 		p, c := ss[i-1], ss[i]
 		if now.Sub(c.t) > d {
@@ -274,6 +294,7 @@ func aylaWindow(now time.Time, d time.Duration) aylaWin {
 		if dt := c.t.Sub(p.t); c.online && p.online && dt <= 60*time.Second {
 			w.Min += dt.Minutes()
 			w.ZDelta += int64(c.zeny - p.zeny)
+			w.Kills += aylaKillDelta(p, c)
 			w.Sec[p.bucket] += dt.Seconds()
 		}
 	}
@@ -302,12 +323,19 @@ type aylaView struct {
 	Zeny    int                   `json:"zeny"`
 	Guild   string                `json:"guild"`
 	Cohort  string                `json:"cohort"`
+	ExpH    int64                 `json:"exp_h"`      // statusout.pl: base exp per hour over its last 10 min
+	JobExpH int64                 `json:"job_exp_h"`  // statusout.pl: job exp per hour over its last 10 min
+	KPM10   float64               `json:"kpm_plugin"` // statusout.pl's own 10-min kills/min (exp gains)
+	Kills   int64                 `json:"kills"`      // statusout.pl running count since its OpenKore start
 	Windows map[string]aylaWinOut `json:"windows"`
 	Note    string                `json:"note"`
 }
 
 type aylaWinOut struct {
 	Min      float64            `json:"min"`
+	Counted  bool               `json:"counted"` // enough online time in the window (the bots' rule)
+	Kills    int64              `json:"kills"`   // kills from her exp gains (her own and the party's she shares exp in)
+	KPM      float64            `json:"kpm"`
 	ZPHPurse float64            `json:"zph_purse"` // purse change per hour (not loot value: see note)
 	ParZPH   float64            `json:"par_zph"`
 	ParKPM   float64            `json:"par_kpm"`
@@ -341,13 +369,20 @@ func meterBuild(rows []*meterRow, now time.Time) *meterView {
 	if s := meterAylaS.last; s != nil {
 		a := &aylaView{Name: s.Name, Online: s.Online && now.Sub(time.Unix(s.TS, 0)) <= 30*time.Second, Lv: s.BaseLevel,
 			Class: className(s.JobID), Map: s.Map, Zeny: s.Zeny, Guild: s.Guild, Windows: map[string]aylaWinOut{},
-			Note: "OpenKore character: purse change and status only; kills and loot value are not observable from status.json"}
+			ExpH: s.ExpH, JobExpH: s.JobExpH, KPM10: s.KPM, Kills: s.Kills,
+			Note: "OpenKore character: kills counted from her exp gains (statusout.pl: her kills and the party kills she shares exp in), purse change per hour; loot value is not observable from status.json"}
+		if s.KillsSince == 0 {
+			a.Note = "OpenKore character: purse change and status only; statusout.pl without the kill count (reload it) - kills not observable"
+		}
 		a.Cohort = meterCohortKey(meterLineName(s.JobID), s.BaseLevel, "", 1)
 		ws := [mwN]aylaWin{aylaWindow(now, 10*time.Minute), aylaWindow(now, time.Hour), meterAylaS.sess}
 		for w := 0; w < mwN; w++ {
-			o := aylaWinOut{Min: math.Round(ws[w].Min*10) / 10, Shares: map[string]float64{}}
+			o := aylaWinOut{Min: math.Round(ws[w].Min*10) / 10, Kills: ws[w].Kills, Shares: map[string]float64{}}
+			mm := meterMinMinutes(ws[mwSess].Min)
+			o.Counted = ws[w].Min > 0 && ws[w].Min >= mm[w] && s.KillsSince != 0
 			if ws[w].Min > 0 {
 				o.ZPHPurse = math.Round(float64(ws[w].ZDelta) / ws[w].Min * 60)
+				o.KPM = round3(float64(ws[w].Kills) / ws[w].Min)
 				for k, sec := range ws[w].Sec {
 					o.Shares[k] = round3(sec / 60 / ws[w].Min)
 				}
@@ -368,6 +403,8 @@ func meterLoop(bots []*Bot) {
 	meterLoadTuning()
 	lastTune := time.Now()
 	lastHour := time.Now().Unix() / 3600
+	lastSave := time.Now()
+	lastBots := time.Now()
 	for {
 		now := time.Now()
 		if now.Sub(lastTune) >= time.Minute {
@@ -400,6 +437,14 @@ func meterLoop(bots []*Bot) {
 			}
 			v := meterBuild(rows, now)
 			meterCur.Store(v)
+			if now.Sub(lastSave) >= time.Duration(meterTune().PersistSec)*time.Second {
+				lastSave = now
+				meterPersist(bots, now) // meterpersist.go: counters survive a restart
+			}
+			if now.Sub(lastBots) >= meterBotsEvery && !coreInstance() {
+				lastBots = now
+				meterWriteBots(v, now) // the per-bot numbers on disk (below)
+			}
 			if h := now.Unix() / 3600; h != lastHour {
 				lastHour = h
 				if !coreInstance() && !meterTune().HistoryOff {
@@ -408,6 +453,40 @@ func meterLoop(bots []*Bot) {
 			}
 		}()
 		time.Sleep(time.Duration(meterTune().PeriodSec) * time.Second)
+	}
+}
+
+// meterBotsEvery: how often the per-bot file is rewritten (about 7,800 rows, a few MB).
+const meterBotsEvery = 5 * time.Minute
+
+// meterBotsFile: <data>/meter_bots.json, the per-bot meter (kills/min, zeny/h, deaths/h, time shares) of every bot that
+// has been online in the last hour, plus Ayla's own row. The Players tab and the leaderboard read it while the engine
+// is down (meter.jsonl keeps only cohort, server and neo rows). Written by the main instance only; the rows are the
+// published view, so they include the core instance's bots.
+type meterBotsFile struct {
+	T      int64         `json:"t"`
+	Window string        `json:"window"`
+	Total  int           `json:"total"`
+	Bots   []meterBotOut `json:"bots"`
+	Ayla   *meterBotOut  `json:"ayla,omitempty"`
+}
+
+func meterWriteBots(v *meterView, now time.Time) {
+	w := mw60
+	f := meterBotsFile{T: now.Unix(), Window: meterWinNames[w], Bots: []meterBotOut{}}
+	for _, r := range v.Rows {
+		if r.Win[w].Min > 0 {
+			f.Bots = append(f.Bots, v.botOut(r, w, true))
+		}
+	}
+	f.Total = len(f.Bots)
+	f.Ayla = aylaBotOut(v.Ayla, meterWinNames[w])
+	raw, err := json.Marshal(f)
+	if err != nil {
+		return
+	}
+	if err := writeFileAtomic(filepath.Join(*dataDir, "meter_bots.json"), raw); err != nil {
+		log.Printf("meter: bots file: %v", err)
 	}
 }
 
@@ -583,10 +662,30 @@ func meterNeo(v *meterView, w int) neoOut {
 			out.Guild = append(out.Guild, v.botOut(r, w, false))
 		}
 	}
+	if r := aylaBotOut(v.Ayla, meterWinNames[w]); r != nil { // Ayla herself: her row counts in the party summary
+		out.Members = append(out.Members, *r)
+	}
 	sort.Slice(out.Members, func(i, j int) bool { return out.Members[i].Name < out.Members[j].Name })
 	sort.Slice(out.Guild, func(i, j int) bool { return out.Guild[i].ZPH > out.Guild[j].ZPH })
 	out.Party, out.Starveil = neoSum(out.Members), neoSum(out.Guild)
 	return out
+}
+
+// aylaBotOut: Ayla's window as a party row (instance "openkore"): kpm from her exp-gain kill count, z/h = purse change
+// per hour (OpenKore has no loot value), par from her cohort. nil without status.json.
+func aylaBotOut(a *aylaView, win string) *meterBotOut {
+	if a == nil {
+		return nil
+	}
+	aw, ok := a.Windows[win]
+	if !ok {
+		return nil
+	}
+	o := &meterBotOut{Name: a.Name, Class: a.Class, Lv: a.Lv, Cohort: a.Cohort, Instance: "openkore", Online: a.Online,
+		Map: a.Map, Guild: a.Guild, Min: aw.Min, Counted: aw.Counted, KPM: aw.KPM, KPMAll: aw.KPM, ZPH: aw.ZPHPurse,
+		ZPHOwn: aw.ZPHPurse, ParKPM: aw.ParKPM, ParZPH: aw.ParZPH, Shares: aw.Shares}
+	o.GapKPM, o.GapZPH = round3(aw.ParKPM-aw.KPM), math.Round(aw.ParZPH-aw.ZPHPurse)
+	return o
 }
 
 // ---------------------------------------------------------------- HTTP
