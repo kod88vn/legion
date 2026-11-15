@@ -48,7 +48,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
   under the same ID, and a row in `coverage.md`; a new hard gate also gets a G ID in `gates.md` and the core. A new rule that
   replaces an old one edits the old line. (2026-11-14)
 - PR01. Rules are short plain lines with an ID and a date. They never repeat the owner's prompt. (2026-11-14)
-- PR45. Haiku agents implement (code, config, builds, routine checks); a Sonnet agent reviews each change before it is merged or loaded. The main session's model is the owner's choice. (2026-11-15)
+- PR45. See Constitution Article 4. The main session's model is the owner's choice. (2026-11-15, moved into the constitution 2026-11-15)
 - PR44. Every change is verified live as soon as it is made, and committed as soon as it is verified. Nothing waits on a later session or the owner when an agent can check it now (for example a fresh-session test via a headless `claude -p`). (2026-11-15)
 - PR43. Every reply of the main session ends with its pending tasks: each task still running or waiting, who has it, and what it waits on. (2026-11-15)
 - PR42. Nothing is written twice. A rule, fact or instruction lives in one place and everything else points to it; every agent reads the constitution first and exactly once, and no prompt, brief, skill, rule or reply restates it. (2026-11-15)

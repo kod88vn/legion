@@ -1941,6 +1941,11 @@ Resolved by newest owner word per PR41; see coverage.md.
 "are you building using haiku? I forgot to tell you use Haiku to implement and Sonnet to review"
 ```
 
+## Constitution Article 4 (2026-11-15)
+```text
+"that should be appended in the constitution, section development."
+```
+
 ## PT35
 ```text
 "yeah, wider band for party"

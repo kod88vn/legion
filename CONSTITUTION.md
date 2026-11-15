@@ -123,3 +123,10 @@ If it cannot say, the loop is broken.
 
 3.10 A broken loop comes first. When a stage of the loop is down or blind, repairing it comes before every other
 fix, except getting Ayla back online.
+
+## Article 4. Development
+
+4.1 Haiku agents implement: code, configuration, builds and routine checks.
+
+4.2 A Sonnet agent reviews every change before it is merged or loaded. A change without a review is not merged or
+loaded.
