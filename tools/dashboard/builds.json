@@ -1,6 +1,6 @@
 {
- "generated": "2026-11-15T18:17:21",
- "generated_epoch": 1794784641,
+ "generated": "2026-11-15T18:51:23",
+ "generated_epoch": 1794786683,
  "sources": {
   "builds": "legion/builds.go",
   "gear": "legion/data/buildgear.json",
@@ -5559,9 +5559,14 @@
         "id": 62,
         "name": "Bowling Bash",
         "lv": 10
+       },
+       {
+        "id": 55,
+        "name": "Spear Mastery",
+        "lv": 1
        }
       ],
-      "unspent": 1,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.knight.ranges[48-99].skills"
      }
     }
@@ -5583,7 +5588,7 @@
      },
      "stat_points_spare_at_99": 1,
      "stat_goals_unreached": [],
-     "skill_points_listed": 87,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -5764,6 +5769,11 @@
       "lv": 10
      },
      {
+      "id": 55,
+      "name": "Spear Mastery",
+      "lv": 1
+     },
+     {
       "id": 60,
       "name": "Twohand Quicken",
       "lv": 10
@@ -5908,6 +5918,11 @@
       "id": 62,
       "name": "Bowling Bash",
       "lv": 10
+     },
+     {
+      "id": 55,
+      "name": "Spear Mastery",
+      "lv": 1
      }
     ],
     "gear": [
@@ -6077,7 +6092,7 @@
      "lines": [
       {
        "text": "main tank or melee DPS: holds the boss (Provoke), Two-Hand Quicken + Bowling Bash on the adds, Endure vs knock-back.",
-       "source": "docs/classes/swordman.md:31"
+       "source": "docs/classes/swordman.md:27"
       }
      ],
      "note": ""
@@ -9233,7 +9248,7 @@
        {
         "id": 6,
         "name": "Provoke",
-        "lv": 5
+        "lv": 6
        },
        {
         "id": 8,
@@ -9266,7 +9281,7 @@
         "lv": 4
        }
       ],
-      "unspent": 1,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.crusader.ranges[14-50].skills"
      }
     },
@@ -11081,7 +11096,7 @@
        {
         "id": 6,
         "name": "Provoke",
-        "lv": 5
+        "lv": 6
        },
        {
         "id": 8,
@@ -11121,7 +11136,7 @@
        {
         "id": 249,
         "name": "Guard",
-        "lv": 5
+        "lv": 7
        },
        {
         "id": 250,
@@ -11149,7 +11164,7 @@
         "lv": 1
        }
       ],
-      "unspent": 3,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.crusader.ranges[27-99].skills"
      }
     }
@@ -11171,7 +11186,7 @@
      },
      "stat_points_spare_at_99": 4,
      "stat_goals_unreached": [],
-     "skill_points_listed": 85,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -11228,7 +11243,7 @@
      {
       "id": 6,
       "name": "Provoke",
-      "lv": 5
+      "lv": 6
      },
      {
       "id": 7,
@@ -11258,7 +11273,7 @@
      {
       "id": 249,
       "name": "Guard",
-      "lv": 5
+      "lv": 7
      },
      {
       "id": 250,
@@ -11419,6 +11434,21 @@
       "id": 255,
       "name": "Sacrifice",
       "lv": 1
+     },
+     {
+      "id": 6,
+      "name": "Provoke",
+      "lv": 6
+     },
+     {
+      "id": 249,
+      "name": "Guard",
+      "lv": 6
+     },
+     {
+      "id": 249,
+      "name": "Guard",
+      "lv": 7
      }
     ],
     "gear": [],
@@ -11489,7 +11519,7 @@
      "lines": [
       {
        "text": "main tank with a shield; holy damage vs undead/demons.",
-       "source": "docs/classes/swordman.md:37"
+       "source": "docs/classes/swordman.md:33"
       },
       {
        "text": "engine role: tank / bait (Swordman line: tank (partyRole))",
@@ -11507,7 +11537,7 @@
      "lines": [
       {
        "text": "main tank: Auto Guard + Reflect Shield, Holy Cross / Grand Cross vs undead/demon bosses, Devotion on the priest.",
-       "source": "docs/classes/swordman.md:51"
+       "source": "docs/classes/swordman.md:43"
       }
      ],
      "note": ""
@@ -11529,7 +11559,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"crusader\"]",
-    "docs": "docs/classes/swordman.md:36"
+    "docs": "docs/classes/swordman.md:32"
    }
   },
   {
@@ -16397,7 +16427,7 @@
      "lines": [
       {
        "text": "use (aoe.go `aoecast`, runs first in fight()): Solo: no boss/swarm, Fire Wall vs a walker",
-       "source": "docs/classes/mage.md:26"
+       "source": "docs/classes/mage.md:20"
       }
      ],
      "note": ""
@@ -16425,7 +16455,7 @@
      "lines": [
       {
        "text": "AoE / burst caster: Storm Gust and Lord of Vermilion on the adds, Jupitel/bolts on the boss from max range; Safety Wall / Quagmire when the boss closes in.",
-       "source": "docs/classes/mage.md:44"
+       "source": "docs/classes/mage.md:38"
       }
      ],
      "note": ""
@@ -20976,12 +21006,12 @@
        {
         "id": 283,
         "name": "Endow Quake",
-        "lv": 1
+        "lv": 5
        },
        {
         "id": 90,
         "name": "Earth Spike",
-        "lv": 3
+        "lv": 5
        },
        {
         "id": 91,
@@ -20991,7 +21021,7 @@
        {
         "id": 275,
         "name": "Cast Cancel",
-        "lv": 1
+        "lv": 3
        },
        {
         "id": 278,
@@ -21014,7 +21044,7 @@
         "lv": 5
        }
       ],
-      "unspent": 8,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.sage.ranges[60-99].skills"
      }
     }
@@ -21036,7 +21066,7 @@
      },
      "stat_points_spare_at_99": 40,
      "stat_goals_unreached": [],
-     "skill_points_listed": 80,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -21129,7 +21159,7 @@
      {
       "id": 90,
       "name": "Earth Spike",
-      "lv": 3
+      "lv": 5
      },
      {
       "id": 91,
@@ -21144,7 +21174,7 @@
      {
       "id": 275,
       "name": "Cast Cancel",
-      "lv": 1
+      "lv": 3
      },
      {
       "id": 276,
@@ -21164,7 +21194,7 @@
      {
       "id": 283,
       "name": "Endow Quake",
-      "lv": 1
+      "lv": 5
      },
      {
       "id": 289,
@@ -21317,6 +21347,46 @@
       "id": 289,
       "name": "Dispell",
       "lv": 5
+     },
+     {
+      "id": 283,
+      "name": "Endow Quake",
+      "lv": 2
+     },
+     {
+      "id": 283,
+      "name": "Endow Quake",
+      "lv": 3
+     },
+     {
+      "id": 283,
+      "name": "Endow Quake",
+      "lv": 4
+     },
+     {
+      "id": 283,
+      "name": "Endow Quake",
+      "lv": 5
+     },
+     {
+      "id": 90,
+      "name": "Earth Spike",
+      "lv": 4
+     },
+     {
+      "id": 90,
+      "name": "Earth Spike",
+      "lv": 5
+     },
+     {
+      "id": 275,
+      "name": "Cast Cancel",
+      "lv": 2
+     },
+     {
+      "id": 275,
+      "name": "Cast Cancel",
+      "lv": 3
      }
     ],
     "gear": [],
@@ -21374,7 +21444,7 @@
      "lines": [
       {
        "text": "caster support: bolts with Free Cast on the move, Heaven's Drive on adds, endows for the melee.",
-       "source": "docs/classes/mage.md:50"
+       "source": "docs/classes/mage.md:44"
       },
       {
        "text": "engine role: ranged (Archer / Mage line: ranged (partyRole))",
@@ -21392,7 +21462,7 @@
      "lines": [
       {
        "text": "bolts with Free Cast, Heaven's Drive on adds, Dispell on buffed bosses, endow (Flame Launcher / Frost Weapon) for the melee.",
-       "source": "docs/classes/mage.md:66"
+       "source": "docs/classes/mage.md:53"
       }
      ],
      "note": ""
@@ -21414,7 +21484,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"sage\"]",
-    "docs": "docs/classes/mage.md:49"
+    "docs": "docs/classes/mage.md:43"
    }
   },
   {
@@ -26530,9 +26600,29 @@
         "id": 128,
         "name": "Steel Crow",
         "lv": 10
+       },
+       {
+        "id": 115,
+        "name": "Skid Trap",
+        "lv": 5
+       },
+       {
+        "id": 116,
+        "name": "Land Mine",
+        "lv": 5
+       },
+       {
+        "id": 117,
+        "name": "Ankle Snare",
+        "lv": 5
+       },
+       {
+        "id": 118,
+        "name": "Shockwave Trap",
+        "lv": 2
        }
       ],
-      "unspent": 17,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.hunter.ranges[33-99].skills"
      }
     }
@@ -26554,7 +26644,7 @@
      },
      "stat_points_spare_at_99": 38,
      "stat_goals_unreached": [],
-     "skill_points_listed": 71,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -26622,6 +26712,26 @@
       "id": 47,
       "name": "Arrow Shower",
       "lv": 10
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 5
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 5
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 5
+     },
+     {
+      "id": 118,
+      "name": "Shockwave Trap",
+      "lv": 2
      },
      {
       "id": 126,
@@ -26745,6 +26855,91 @@
       "id": 128,
       "name": "Steel Crow",
       "lv": 10
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 1
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 2
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 3
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 4
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 5
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 1
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 2
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 3
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 4
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 5
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 1
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 2
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 3
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 4
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 5
+     },
+     {
+      "id": 118,
+      "name": "Shockwave Trap",
+      "lv": 1
+     },
+     {
+      "id": 118,
+      "name": "Shockwave Trap",
+      "lv": 2
      }
     ],
     "gear": [],
@@ -26825,7 +27020,7 @@
      "lines": [
       {
        "text": "ranged DPS: Double Strafe on the boss with element arrows, Arrow Shower on the adds, falcon procs. when the target or a monster that hit it in the last 2 s stands within 2 cells, the archer steps 4-6 cells straight away (any free direction when blocked) and shoots again; Ankle Snare on the chaser's cell when it carries a Trap (1065). Not with 3+ monsters on it (escape logic), not while a party tank holds the monster. Guild farmers (economy agent) come from these solo DS Hunters.",
-       "source": "docs/classes/archer.md:31"
+       "source": "docs/classes/archer.md:27"
       }
      ],
      "note": ""
@@ -30079,10 +30274,10 @@
        {
         "id": 45,
         "name": "Improve Concentration",
-        "lv": 5
+        "lv": 9
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.bard.ranges[18-40].skills"
      }
     },
@@ -31976,7 +32171,7 @@
        {
         "id": 45,
         "name": "Improve Concentration",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 304,
@@ -31986,7 +32181,7 @@
        {
         "id": 315,
         "name": "Music Lessons",
-        "lv": 1
+        "lv": 5
        },
        {
         "id": 317,
@@ -32014,7 +32209,7 @@
         "lv": 10
        }
       ],
-      "unspent": 8,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.bard.ranges[33-99].skills"
      }
     }
@@ -32036,7 +32231,7 @@
      },
      "stat_points_spare_at_99": 19,
      "stat_goals_unreached": [],
-     "skill_points_listed": 80,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -32093,7 +32288,7 @@
      {
       "id": 45,
       "name": "Improve Concentration",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 46,
@@ -32108,7 +32303,7 @@
      {
       "id": 315,
       "name": "Music Lessons",
-      "lv": 1
+      "lv": 5
      },
      {
       "id": 317,
@@ -32241,6 +32436,46 @@
       "id": 322,
       "name": "Song of Lutie",
       "lv": 10
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 6
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 7
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 8
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 9
+     },
+     {
+      "id": 315,
+      "name": "Music Lessons",
+      "lv": 2
+     },
+     {
+      "id": 315,
+      "name": "Music Lessons",
+      "lv": 3
+     },
+     {
+      "id": 315,
+      "name": "Music Lessons",
+      "lv": 4
+     },
+     {
+      "id": 315,
+      "name": "Music Lessons",
+      "lv": 5
      }
     ],
     "gear": [],
@@ -32287,7 +32522,7 @@
      "lines": [
       {
        "text": "party role: solo, a Double Strafe archer",
-       "source": "docs/classes/archer.md:46"
+       "source": "docs/classes/archer.md:44"
       }
      ],
      "note": ""
@@ -32297,7 +32532,7 @@
      "lines": [
       {
        "text": "solo, a Double Strafe archer; in a party, a support singer.",
-       "source": "docs/classes/archer.md:46"
+       "source": "docs/classes/archer.md:44"
       },
       {
        "text": "engine role: ranged (Archer / Mage line: ranged (partyRole))",
@@ -32315,7 +32550,7 @@
      "lines": [
       {
        "text": "support songs (Bragi for the casters/priest, Assassin Cross for the melee, Apple of Idun when hurt).",
-       "source": "docs/classes/archer.md:65"
+       "source": "docs/classes/archer.md:59"
       }
      ],
      "note": ""
@@ -32337,7 +32572,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"bard\"]",
-    "docs": "docs/classes/archer.md:45"
+    "docs": "docs/classes/archer.md:43"
    }
   },
   {
@@ -35569,10 +35804,10 @@
        {
         "id": 45,
         "name": "Improve Concentration",
-        "lv": 5
+        "lv": 9
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.dancer.ranges[18-40].skills"
      }
     },
@@ -37451,7 +37686,7 @@
        {
         "id": 45,
         "name": "Improve Concentration",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 304,
@@ -37461,7 +37696,7 @@
        {
         "id": 323,
         "name": "Dance Lessons",
-        "lv": 1
+        "lv": 5
        },
        {
         "id": 325,
@@ -37489,7 +37724,7 @@
         "lv": 10
        }
       ],
-      "unspent": 8,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.dancer.ranges[33-99].skills"
      }
     }
@@ -37511,7 +37746,7 @@
      },
      "stat_points_spare_at_99": 19,
      "stat_goals_unreached": [],
-     "skill_points_listed": 80,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -37568,7 +37803,7 @@
      {
       "id": 45,
       "name": "Improve Concentration",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 46,
@@ -37583,7 +37818,7 @@
      {
       "id": 323,
       "name": "Dance Lessons",
-      "lv": 1
+      "lv": 5
      },
      {
       "id": 325,
@@ -37716,6 +37951,46 @@
       "id": 330,
       "name": "Gypsy's Kiss",
       "lv": 10
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 6
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 7
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 8
+     },
+     {
+      "id": 45,
+      "name": "Improve Concentration",
+      "lv": 9
+     },
+     {
+      "id": 323,
+      "name": "Dance Lessons",
+      "lv": 2
+     },
+     {
+      "id": 323,
+      "name": "Dance Lessons",
+      "lv": 3
+     },
+     {
+      "id": 323,
+      "name": "Dance Lessons",
+      "lv": 4
+     },
+     {
+      "id": 323,
+      "name": "Dance Lessons",
+      "lv": 5
      }
     ],
     "gear": [],
@@ -37816,7 +38091,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"dancer\"]",
-    "docs": "docs/classes/archer.md:68"
+    "docs": "docs/classes/archer.md:62"
    }
   },
   {
@@ -43043,11 +43318,11 @@
      "lines": [
       {
        "text": "use: solo keeps 20% SP, a party healer 50%",
-       "source": "docs/classes/acolyte.md:25"
+       "source": "docs/classes/acolyte.md:20"
       },
       {
        "text": "use: solo support Acolyte casts Blessing and Increase AGI on itself",
-       "source": "docs/classes/acolyte.md:25"
+       "source": "docs/classes/acolyte.md:20"
       }
      ],
      "note": ""
@@ -43075,7 +43350,7 @@
      "lines": [
       {
        "text": "healer: Heal the tank first, Kyrie on the tank, Blessing/Increase AGI on all; never fight; Lex Aeterna before big hits; the party retreats if the priest dies.",
-       "source": "docs/classes/acolyte.md:38"
+       "source": "docs/classes/acolyte.md:33"
       }
      ],
      "note": ""
@@ -46174,7 +46449,7 @@
        {
         "id": 5,
         "name": "Bash",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 6,
@@ -46212,7 +46487,7 @@
         "lv": 9
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.knight_spear.ranges[33-60].skills"
      }
     },
@@ -47988,7 +48263,7 @@
        {
         "id": 5,
         "name": "Bash",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 6,
@@ -48033,7 +48308,7 @@
        {
         "id": 58,
         "name": "Spear Stab",
-        "lv": 5
+        "lv": 8
        },
        {
         "id": 64,
@@ -48046,7 +48321,7 @@
         "lv": 5
        }
       ],
-      "unspent": 7,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.knight_spear.ranges[48-99].skills"
      }
     }
@@ -48068,7 +48343,7 @@
      },
      "stat_points_spare_at_99": 8,
      "stat_goals_unreached": [],
-     "skill_points_listed": 81,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -48120,7 +48395,7 @@
      {
       "id": 5,
       "name": "Bash",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 6,
@@ -48155,7 +48430,7 @@
      {
       "id": 58,
       "name": "Spear Stab",
-      "lv": 5
+      "lv": 8
      },
      {
       "id": 59,
@@ -48289,6 +48564,41 @@
       "id": 59,
       "name": "Spear Boomerang",
       "lv": 5
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 6
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 7
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 8
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 9
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 6
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 7
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 8
      }
     ],
     "gear": [],
@@ -48390,7 +48700,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"knight_spear\"]",
-    "docs": "docs/classes/swordman.md:55"
+    "docs": "docs/classes/swordman.md:47"
    }
   },
   {
@@ -51524,7 +51834,7 @@
        {
         "id": 6,
         "name": "Provoke",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 8,
@@ -51542,7 +51852,7 @@
         "lv": 10
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.crusader_gc.ranges[14-50].skills"
      }
     },
@@ -53357,7 +53667,7 @@
        {
         "id": 6,
         "name": "Provoke",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 8,
@@ -53382,7 +53692,7 @@
        {
         "id": 249,
         "name": "Guard",
-        "lv": 5
+        "lv": 7
        },
        {
         "id": 250,
@@ -53410,7 +53720,7 @@
         "lv": 1
        }
       ],
-      "unspent": 6,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.crusader_gc.ranges[27-99].skills"
      }
     }
@@ -53432,7 +53742,7 @@
      },
      "stat_points_spare_at_99": 0,
      "stat_goals_unreached": [],
-     "skill_points_listed": 82,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -53485,7 +53795,7 @@
      {
       "id": 6,
       "name": "Provoke",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 8,
@@ -53500,7 +53810,7 @@
      {
       "id": 249,
       "name": "Guard",
-      "lv": 5
+      "lv": 7
      },
      {
       "id": 250,
@@ -53640,6 +53950,36 @@
       "id": 255,
       "name": "Sacrifice",
       "lv": 1
+     },
+     {
+      "id": 6,
+      "name": "Provoke",
+      "lv": 6
+     },
+     {
+      "id": 6,
+      "name": "Provoke",
+      "lv": 7
+     },
+     {
+      "id": 6,
+      "name": "Provoke",
+      "lv": 8
+     },
+     {
+      "id": 6,
+      "name": "Provoke",
+      "lv": 9
+     },
+     {
+      "id": 249,
+      "name": "Guard",
+      "lv": 6
+     },
+     {
+      "id": 249,
+      "name": "Guard",
+      "lv": 7
      }
     ],
     "gear": [],
@@ -53750,7 +54090,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"crusader_gc\"]",
-    "docs": "docs/classes/swordman.md:61"
+    "docs": "docs/classes/swordman.md:55"
    }
   },
   {
@@ -58870,7 +59210,7 @@
        {
         "id": 115,
         "name": "Skid Trap",
-        "lv": 1
+        "lv": 4
        },
        {
         "id": 117,
@@ -58883,7 +59223,7 @@
         "lv": 5
        }
       ],
-      "unspent": 3,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.hunter_blitz.ranges[33-99].skills"
      }
     }
@@ -58905,7 +59245,7 @@
      },
      "stat_points_spare_at_99": 44,
      "stat_goals_unreached": [],
-     "skill_points_listed": 85,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -58981,7 +59321,7 @@
      {
       "id": 115,
       "name": "Skid Trap",
-      "lv": 1
+      "lv": 4
      },
      {
       "id": 116,
@@ -59144,6 +59484,21 @@
       "id": 116,
       "name": "Land Mine",
       "lv": 5
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 2
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 3
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 4
      }
     ],
     "gear": [],
@@ -59246,7 +59601,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"hunter_blitz\"]",
-    "docs": "docs/classes/archer.md:40"
+    "docs": "docs/classes/archer.md:36"
    }
   },
   {
@@ -64530,7 +64885,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"priest_me\"]",
-    "docs": "docs/classes/acolyte.md:43"
+    "docs": "docs/classes/acolyte.md:38"
    }
   },
   {
@@ -67556,7 +67911,7 @@
        {
         "id": 28,
         "name": "Heal",
-        "lv": 3
+        "lv": 9
        },
        {
         "id": 22,
@@ -67576,7 +67931,7 @@
        {
         "id": 259,
         "name": "Iron Fists",
-        "lv": 5
+        "lv": 6
        },
        {
         "id": 261,
@@ -67629,7 +67984,7 @@
         "lv": 5
        }
       ],
-      "unspent": 7,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.monk.ranges[12-99].skills"
      }
     }
@@ -67651,7 +68006,7 @@
      },
      "stat_points_spare_at_99": 9,
      "stat_goals_unreached": [],
-     "skill_points_listed": 81,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -67708,7 +68063,7 @@
      {
       "id": 28,
       "name": "Heal",
-      "lv": 3
+      "lv": 9
      },
      {
       "id": 29,
@@ -67718,7 +68073,7 @@
      {
       "id": 259,
       "name": "Iron Fists",
-      "lv": 5
+      "lv": 6
      },
      {
       "id": 261,
@@ -67902,14 +68257,49 @@
       "id": 271,
       "name": "Asura Strike",
       "lv": 5
+     },
+     {
+      "id": 28,
+      "name": "Heal",
+      "lv": 4
+     },
+     {
+      "id": 28,
+      "name": "Heal",
+      "lv": 5
+     },
+     {
+      "id": 28,
+      "name": "Heal",
+      "lv": 6
+     },
+     {
+      "id": 28,
+      "name": "Heal",
+      "lv": 7
+     },
+     {
+      "id": 28,
+      "name": "Heal",
+      "lv": 8
+     },
+     {
+      "id": 28,
+      "name": "Heal",
+      "lv": 9
+     },
+     {
+      "id": 259,
+      "name": "Iron Fists",
+      "lv": 6
      }
     ],
     "gear": [],
     "routes": {
      "weapons": [
       "Club",
-      "Mace",
       "Waghnak",
+      "Mace",
       "Knuckle Dusters",
       "Studded Knuckles",
       "Fist"
@@ -67934,8 +68324,8 @@
     },
     "weapon_ids": [
      1501,
-     1504,
      1801,
+     1504,
      1803,
      1805,
      1807
@@ -67961,7 +68351,7 @@
      "lines": [
       {
        "text": "melee DPS / off-tank.",
-       "source": "docs/classes/acolyte.md:50"
+       "source": "docs/classes/acolyte.md:47"
       },
       {
        "text": "engine role: tank / bait (Monk / Champion: frontline (partyRole case 15, 4016))",
@@ -67979,7 +68369,7 @@
      "lines": [
       {
        "text": "tank/DPS: Triple Attack -> Chain Combo -> Combo Finish; Asura Strike burst later.",
-       "source": "docs/classes/acolyte.md:71"
+       "source": "docs/classes/acolyte.md:62"
       }
      ],
      "note": ""
@@ -68001,7 +68391,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"monk\"]",
-    "docs": "docs/classes/acolyte.md:49"
+    "docs": "docs/classes/acolyte.md:46"
    }
   },
   {
@@ -72683,9 +73073,14 @@
         "id": 109,
         "name": "Skin Tempering",
         "lv": 5
+       },
+       {
+        "id": 94,
+        "name": "Iron Tempering",
+        "lv": 4
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.blacksmith.ranges[30-99].skills"
      }
     }
@@ -72707,7 +73102,7 @@
      },
      "stat_points_spare_at_99": 11,
      "stat_goals_unreached": [],
-     "skill_points_listed": 84,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -72784,6 +73179,11 @@
       "id": 42,
       "name": "Mammonite",
       "lv": 10
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 4
      },
      {
       "id": 105,
@@ -72995,6 +73395,26 @@
       "id": 39,
       "name": "Pushcart",
       "lv": 10
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 1
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 2
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 3
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 4
      }
     ],
     "gear": [],
@@ -73076,7 +73496,7 @@
      "lines": [
       {
        "text": "melee DPS: Adrenaline Rush (party ASPD), Over Thrust, Hammer Fall stuns the adds.",
-       "source": "docs/classes/merchant.md:24"
+       "source": "docs/classes/merchant.md:20"
       }
      ],
      "note": ""
@@ -76128,7 +76548,7 @@
        {
         "id": 36,
         "name": "Enlarge Weight Limit",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 39,
@@ -76211,7 +76631,7 @@
         "lv": 5
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.alchemist.ranges[16-99].skills"
      }
     }
@@ -76233,7 +76653,7 @@
      },
      "stat_points_spare_at_99": 4,
      "stat_goals_unreached": [],
-     "skill_points_listed": 84,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -76280,7 +76700,7 @@
      {
       "id": 36,
       "name": "Enlarge Weight Limit",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 37,
@@ -76514,6 +76934,26 @@
       "id": 230,
       "name": "Acid Terror",
       "lv": 5
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 6
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 7
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 8
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 9
      }
     ],
     "gear": [],
@@ -76575,7 +77015,7 @@
      "lines": [
       {
        "text": "support / DPS; the guild's potion brewer.",
-       "source": "docs/classes/merchant.md:35"
+       "source": "docs/classes/merchant.md:30"
       },
       {
        "text": "engine role: melee damage (Merchant line: melee damage (partyRole))",
@@ -76593,7 +77033,7 @@
      "lines": [
       {
        "text": "support: potions for the party (Potion Pitcher), Acid Terror on the boss.",
-       "source": "docs/classes/merchant.md:48"
+       "source": "docs/classes/merchant.md:40"
       }
      ],
      "note": ""
@@ -76615,7 +77055,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"alchemist\"]",
-    "docs": "docs/classes/merchant.md:34"
+    "docs": "docs/classes/merchant.md:29"
    }
   },
   {
@@ -81464,13 +81904,13 @@
        "AGI": 80,
        "VIT": 40,
        "INT": 1,
-       "DEX": 35,
+       "DEX": 40,
        "LUK": 40
       },
       "points": {
        "available": 1273,
-       "used": 1242,
-       "spare": 31
+       "used": 1267,
+       "spare": 6
       },
       "source": "draft: legion/data/buildmilestones.json builds.assassin.ranges[33-99].stats"
      },
@@ -81521,7 +81961,7 @@
        {
         "id": 135,
         "name": "Cloaking",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 137,
@@ -81544,7 +81984,7 @@
         "lv": 5
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.assassin.ranges[33-99].skills"
      }
     }
@@ -81554,19 +81994,19 @@
     "note": "draft for owner review",
     "warnings": [],
     "figures": {
-     "stat_points_goals_cost": 1242,
+     "stat_points_goals_cost": 1267,
      "stat_points_at_99": 1273,
      "stats_at_99": {
       "STR": 80,
       "AGI": 80,
       "VIT": 40,
       "INT": 1,
-      "DEX": 35,
+      "DEX": 40,
       "LUK": 40
      },
-     "stat_points_spare_at_99": 31,
+     "stat_points_spare_at_99": 6,
      "stat_goals_unreached": [],
-     "skill_points_listed": 84,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -81583,7 +82023,7 @@
    "end": {
     "gear": {
      "slots": {
-      "weapon": "Katar",
+      "weapon": "Jamadhar",
       "armor": "Chain Mail"
      },
      "cards": [],
@@ -81606,7 +82046,7 @@
      },
      {
       "stat": "DEX",
-      "value": 35
+      "value": 40
      },
      {
       "stat": "LUK",
@@ -81652,7 +82092,7 @@
      {
       "id": 135,
       "name": "Cloaking",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 136,
@@ -81737,6 +82177,9 @@
      },
      {
       "label": "VIT 40"
+     },
+     {
+      "label": "DEX 40"
      }
     ],
     "skills": [
@@ -81819,6 +82262,26 @@
       "id": 140,
       "name": "Venom Dust",
       "lv": 5
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 6
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 7
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 8
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 9
      }
     ],
     "gear": [],
@@ -81827,8 +82290,8 @@
       "Knife",
       "Main Gauche",
       "Jur",
-      "Jamadhar",
-      "Katar"
+      "Katar",
+      "Jamadhar"
      ],
      "armors": [
       "Cotton Shirt",
@@ -81856,8 +82319,8 @@
      1201,
      1207,
      1250,
-     1254,
-     1252
+     1252,
+     1254
     ]
    },
    "playstyle": {
@@ -81898,7 +82361,7 @@
      "lines": [
       {
        "text": "melee DPS / evasion off-tank: Sonic Blow on the boss, dodge with high FLEE.",
-       "source": "docs/classes/thief.md:22"
+       "source": "docs/classes/thief.md:19"
       }
      ],
      "note": ""
@@ -85564,7 +86027,7 @@
      "lines": [
       {
        "text": "evasion \"dodge tank\" / melee DPS.",
-       "source": "docs/classes/thief.md:48"
+       "source": "docs/classes/thief.md:43"
       },
       {
        "text": "engine role: tank / bait (Thief line with AGI >= 2 x STR or AGI >= 30: evasion tank (partyRole))",
@@ -85582,7 +86045,7 @@
      "lines": [
       {
        "text": "melee DPS / evasion off-tank: Back Stab, strip skills later.",
-       "source": "docs/classes/thief.md:57"
+       "source": "docs/classes/thief.md:49"
       }
      ],
      "note": ""
@@ -85604,7 +86067,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"rogue\"]",
-    "docs": "docs/classes/thief.md:47"
+    "docs": "docs/classes/thief.md:42"
    }
   },
   {
@@ -88507,12 +88970,12 @@
        {
         "id": 14,
         "name": "Cold Bolt",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 20,
         "name": "Lightning Bolt",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 10,
@@ -88575,7 +89038,7 @@
         "lv": 3
        }
       ],
-      "unspent": 10,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.sage_support.ranges[25-65].skills"
      }
     },
@@ -90142,12 +90605,12 @@
        {
         "id": 14,
         "name": "Cold Bolt",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 20,
         "name": "Lightning Bolt",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 10,
@@ -90182,12 +90645,12 @@
        {
         "id": 283,
         "name": "Endow Quake",
-        "lv": 3
+        "lv": 5
        },
        {
         "id": 280,
         "name": "Endow Blaze",
-        "lv": 2
+        "lv": 3
        },
        {
         "id": 281,
@@ -90245,7 +90708,7 @@
         "lv": 5
        }
       ],
-      "unspent": 13,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.sage_support.ranges[60-99].skills"
      }
     }
@@ -90267,7 +90730,7 @@
      },
      "stat_points_spare_at_99": 40,
      "stat_goals_unreached": [],
-     "skill_points_listed": 75,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -90320,7 +90783,7 @@
      {
       "id": 14,
       "name": "Cold Bolt",
-      "lv": 5
+      "lv": 10
      },
      {
       "id": 15,
@@ -90345,7 +90808,7 @@
      {
       "id": 20,
       "name": "Lightning Bolt",
-      "lv": 5
+      "lv": 10
      },
      {
       "id": 90,
@@ -90375,7 +90838,7 @@
      {
       "id": 280,
       "name": "Endow Blaze",
-      "lv": 2
+      "lv": 3
      },
      {
       "id": 281,
@@ -90390,7 +90853,7 @@
      {
       "id": 283,
       "name": "Endow Quake",
-      "lv": 3
+      "lv": 5
      },
      {
       "id": 285,
@@ -90575,6 +91038,71 @@
       "id": 91,
       "name": "Heaven's Drive",
       "lv": 5
+     },
+     {
+      "id": 14,
+      "name": "Cold Bolt",
+      "lv": 6
+     },
+     {
+      "id": 14,
+      "name": "Cold Bolt",
+      "lv": 7
+     },
+     {
+      "id": 14,
+      "name": "Cold Bolt",
+      "lv": 8
+     },
+     {
+      "id": 14,
+      "name": "Cold Bolt",
+      "lv": 9
+     },
+     {
+      "id": 14,
+      "name": "Cold Bolt",
+      "lv": 10
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 6
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 7
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 8
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 9
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 10
+     },
+     {
+      "id": 283,
+      "name": "Endow Quake",
+      "lv": 4
+     },
+     {
+      "id": 283,
+      "name": "Endow Quake",
+      "lv": 5
+     },
+     {
+      "id": 280,
+      "name": "Endow Blaze",
+      "lv": 3
      }
     ],
     "gear": [],
@@ -90672,7 +91200,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"sage_support\"]",
-    "docs": "docs/classes/mage.md:69"
+    "docs": "docs/classes/mage.md:56"
    }
   },
   {
@@ -94136,8 +94664,8 @@
     "routes": {
      "weapons": [
       "Club",
-      "Mace",
       "Waghnak",
+      "Mace",
       "Knuckle Dusters",
       "Studded Knuckles",
       "Fist"
@@ -94162,8 +94690,8 @@
     },
     "weapon_ids": [
      1501,
-     1504,
      1801,
+     1504,
      1803,
      1805,
      1807
@@ -94229,7 +94757,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"monk_asura\"]",
-    "docs": "docs/classes/acolyte.md:73"
+    "docs": "docs/classes/acolyte.md:64"
    }
   },
   {
@@ -97399,7 +97927,7 @@
        {
         "id": 36,
         "name": "Enlarge Weight Limit",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 39,
@@ -97482,7 +98010,7 @@
         "lv": 5
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.alchemist_battle.ranges[16-99].skills"
      }
     }
@@ -97504,7 +98032,7 @@
      },
      "stat_points_spare_at_99": 13,
      "stat_goals_unreached": [],
-     "skill_points_listed": 84,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -97551,7 +98079,7 @@
      {
       "id": 36,
       "name": "Enlarge Weight Limit",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 37,
@@ -97788,6 +98316,26 @@
       "id": 228,
       "name": "Prepare Potion",
       "lv": 10
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 6
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 7
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 8
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 9
      }
     ],
     "gear": [],
@@ -97889,7 +98437,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"alchemist_battle\"]",
-    "docs": "docs/classes/merchant.md:50"
+    "docs": "docs/classes/merchant.md:42"
    }
   },
   {
@@ -100756,7 +101304,7 @@
        {
         "id": 36,
         "name": "Enlarge Weight Limit",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 39,
@@ -100839,7 +101387,7 @@
         "lv": 10
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.alchemist_potion.ranges[16-99].skills"
      }
     }
@@ -100861,7 +101409,7 @@
      },
      "stat_points_spare_at_99": 17,
      "stat_goals_unreached": [],
-     "skill_points_listed": 84,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -100912,7 +101460,7 @@
      {
       "id": 36,
       "name": "Enlarge Weight Limit",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 37,
@@ -101157,6 +101705,26 @@
       "id": 226,
       "name": "Axe Mastery",
       "lv": 10
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 6
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 7
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 8
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 9
      }
     ],
     "gear": [],
@@ -101258,7 +101826,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"alchemist_potion\"]",
-    "docs": "docs/classes/merchant.md:57"
+    "docs": "docs/classes/merchant.md:48"
    }
   },
   {
@@ -104383,7 +104951,7 @@
        {
         "id": 36,
         "name": "Enlarge Weight Limit",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 39,
@@ -104436,7 +105004,7 @@
         "lv": 9
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.blacksmith_mace.ranges[14-60].skills"
      }
     },
@@ -106176,7 +106744,7 @@
        {
         "id": 36,
         "name": "Enlarge Weight Limit",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 39,
@@ -106252,9 +106820,19 @@
         "id": 108,
         "name": "Weapon Repair",
         "lv": 1
+       },
+       {
+        "id": 94,
+        "name": "Iron Tempering",
+        "lv": 5
+       },
+       {
+        "id": 95,
+        "name": "Steel Tempering",
+        "lv": 2
        }
       ],
-      "unspent": 11,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.blacksmith_mace.ranges[27-99].skills"
      }
     }
@@ -106276,7 +106854,7 @@
      },
      "stat_points_spare_at_99": 32,
      "stat_goals_unreached": [],
-     "skill_points_listed": 77,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -106323,7 +106901,7 @@
      {
       "id": 36,
       "name": "Enlarge Weight Limit",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 37,
@@ -106349,6 +106927,16 @@
       "id": 42,
       "name": "Mammonite",
       "lv": 10
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 5
+     },
+     {
+      "id": 95,
+      "name": "Steel Tempering",
+      "lv": 2
      },
      {
       "id": 105,
@@ -106537,6 +107125,61 @@
       "id": 108,
       "name": "Weapon Repair",
       "lv": 1
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 6
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 7
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 8
+     },
+     {
+      "id": 36,
+      "name": "Enlarge Weight Limit",
+      "lv": 9
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 1
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 2
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 3
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 4
+     },
+     {
+      "id": 94,
+      "name": "Iron Tempering",
+      "lv": 5
+     },
+     {
+      "id": 95,
+      "name": "Steel Tempering",
+      "lv": 1
+     },
+     {
+      "id": 95,
+      "name": "Steel Tempering",
+      "lv": 2
      }
     ],
     "gear": [],
@@ -106642,7 +107285,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"blacksmith_mace\"]",
-    "docs": "docs/classes/merchant.md:26"
+    "docs": "docs/classes/merchant.md:22"
    }
   },
   {
@@ -111621,7 +112264,7 @@
        {
         "id": 135,
         "name": "Cloaking",
-        "lv": 2
+        "lv": 6
        },
        {
         "id": 137,
@@ -111639,7 +112282,7 @@
         "lv": 3
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.assassin_sonic.ranges[33-99].skills"
      }
     }
@@ -111661,7 +112304,7 @@
      },
      "stat_points_spare_at_99": 14,
      "stat_goals_unreached": [],
-     "skill_points_listed": 84,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -111678,7 +112321,7 @@
    "end": {
     "gear": {
      "slots": {
-      "weapon": "Katar",
+      "weapon": "Jamadhar",
       "armor": "Chain Mail"
      },
      "cards": [],
@@ -111748,7 +112391,7 @@
      {
       "id": 135,
       "name": "Cloaking",
-      "lv": 2
+      "lv": 6
      },
      {
       "id": 136,
@@ -111907,6 +112550,26 @@
       "id": 139,
       "name": "Poison React",
       "lv": 3
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 3
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 4
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 5
+     },
+     {
+      "id": 135,
+      "name": "Cloaking",
+      "lv": 6
      }
     ],
     "gear": [],
@@ -111915,8 +112578,8 @@
       "Knife",
       "Main Gauche",
       "Jur",
-      "Jamadhar",
-      "Katar"
+      "Katar",
+      "Jamadhar"
      ],
      "armors": [
       "Cotton Shirt",
@@ -111944,8 +112607,8 @@
      1201,
      1207,
      1250,
-     1254,
-     1252
+     1252,
+     1254
     ]
    },
    "playstyle": {
@@ -112008,7 +112671,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"assassin_sonic\"]",
-    "docs": "docs/classes/thief.md:31"
+    "docs": "docs/classes/thief.md:28"
    }
   },
   {
@@ -117453,7 +118116,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"assassin_dagger\"]",
-    "docs": "docs/classes/thief.md:39"
+    "docs": "docs/classes/thief.md:35"
    }
   },
   {
@@ -120674,12 +121337,12 @@
        {
         "id": 50,
         "name": "Steal",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 51,
         "name": "Hiding",
-        "lv": 3
+        "lv": 4
        },
        {
         "id": 52,
@@ -120700,9 +121363,29 @@
         "id": 46,
         "name": "Double Strafe",
         "lv": 10
+       },
+       {
+        "id": 149,
+        "name": "Sand Attack",
+        "lv": 1
+       },
+       {
+        "id": 150,
+        "name": "Back Slide",
+        "lv": 1
+       },
+       {
+        "id": 151,
+        "name": "Find Stone",
+        "lv": 1
+       },
+       {
+        "id": 152,
+        "name": "Stone Fling",
+        "lv": 1
        }
       ],
-      "unspent": 10,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.rogue_bow.ranges[24-60].skills"
      }
     },
@@ -122493,12 +123176,12 @@
        {
         "id": 50,
         "name": "Steal",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 51,
         "name": "Hiding",
-        "lv": 3
+        "lv": 4
        },
        {
         "id": 52,
@@ -122528,7 +123211,7 @@
        {
         "id": 211,
         "name": "Mug",
-        "lv": 4
+        "lv": 8
        },
        {
         "id": 213,
@@ -122539,9 +123222,34 @@
         "id": 124,
         "name": "Remove Trap",
         "lv": 1
+       },
+       {
+        "id": 149,
+        "name": "Sand Attack",
+        "lv": 1
+       },
+       {
+        "id": 150,
+        "name": "Back Slide",
+        "lv": 1
+       },
+       {
+        "id": 151,
+        "name": "Find Stone",
+        "lv": 1
+       },
+       {
+        "id": 152,
+        "name": "Stone Fling",
+        "lv": 1
+       },
+       {
+        "id": 218,
+        "name": "Divest Helm",
+        "lv": 5
        }
       ],
-      "unspent": 19,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.rogue_bow.ranges[45-99].skills"
      }
     }
@@ -122563,7 +123271,7 @@
      },
      "stat_points_spare_at_99": 3,
      "stat_goals_unreached": [],
-     "skill_points_listed": 69,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -122625,12 +123333,12 @@
      {
       "id": 50,
       "name": "Steal",
-      "lv": 5
+      "lv": 10
      },
      {
       "id": 51,
       "name": "Hiding",
-      "lv": 3
+      "lv": 4
      },
      {
       "id": 52,
@@ -122648,6 +123356,26 @@
       "lv": 1
      },
      {
+      "id": 149,
+      "name": "Sand Attack",
+      "lv": 1
+     },
+     {
+      "id": 150,
+      "name": "Back Slide",
+      "lv": 1
+     },
+     {
+      "id": 151,
+      "name": "Find Stone",
+      "lv": 1
+     },
+     {
+      "id": 152,
+      "name": "Stone Fling",
+      "lv": 1
+     },
+     {
       "id": 210,
       "name": "Gank",
       "lv": 10
@@ -122655,11 +123383,16 @@
      {
       "id": 211,
       "name": "Mug",
-      "lv": 4
+      "lv": 8
      },
      {
       "id": 213,
       "name": "Stalk",
+      "lv": 5
+     },
+     {
+      "id": 218,
+      "name": "Divest Helm",
       "lv": 5
      }
     ],
@@ -122779,13 +123512,108 @@
       "id": 124,
       "name": "Remove Trap",
       "lv": 1
+     },
+     {
+      "id": 50,
+      "name": "Steal",
+      "lv": 6
+     },
+     {
+      "id": 50,
+      "name": "Steal",
+      "lv": 7
+     },
+     {
+      "id": 50,
+      "name": "Steal",
+      "lv": 8
+     },
+     {
+      "id": 50,
+      "name": "Steal",
+      "lv": 9
+     },
+     {
+      "id": 50,
+      "name": "Steal",
+      "lv": 10
+     },
+     {
+      "id": 149,
+      "name": "Sand Attack",
+      "lv": 1
+     },
+     {
+      "id": 150,
+      "name": "Back Slide",
+      "lv": 1
+     },
+     {
+      "id": 151,
+      "name": "Find Stone",
+      "lv": 1
+     },
+     {
+      "id": 152,
+      "name": "Stone Fling",
+      "lv": 1
+     },
+     {
+      "id": 51,
+      "name": "Hiding",
+      "lv": 4
+     },
+     {
+      "id": 218,
+      "name": "Divest Helm",
+      "lv": 1
+     },
+     {
+      "id": 218,
+      "name": "Divest Helm",
+      "lv": 2
+     },
+     {
+      "id": 218,
+      "name": "Divest Helm",
+      "lv": 3
+     },
+     {
+      "id": 218,
+      "name": "Divest Helm",
+      "lv": 4
+     },
+     {
+      "id": 218,
+      "name": "Divest Helm",
+      "lv": 5
+     },
+     {
+      "id": 211,
+      "name": "Mug",
+      "lv": 5
+     },
+     {
+      "id": 211,
+      "name": "Mug",
+      "lv": 6
+     },
+     {
+      "id": 211,
+      "name": "Mug",
+      "lv": 7
+     },
+     {
+      "id": 211,
+      "name": "Mug",
+      "lv": 8
      }
     ],
     "gear": [],
     "routes": {
      "weapons": [
-      "Knife",
       "Bow",
+      "Knife",
       "Composite Bow",
       "Great Bow",
       "Cross Bow",
@@ -122815,8 +123643,8 @@
      ]
     },
     "weapon_ids": [
-     1201,
      1701,
+     1201,
      1704,
      1707,
      1710,
@@ -122884,7 +123712,7 @@
    },
    "source": {
     "builds": "legion/builds.go builds[\"rogue_bow\"]",
-    "docs": "docs/classes/thief.md:59"
+    "docs": "docs/classes/thief.md:51"
    }
   },
   {
@@ -126024,7 +126852,7 @@
        {
         "id": 5,
         "name": "Bash",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 6,
@@ -126062,7 +126890,7 @@
         "lv": 9
        }
       ],
-      "unspent": 4,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.knight_pierce.ranges[33-60].skills"
      }
     },
@@ -127877,7 +128705,7 @@
        {
         "id": 5,
         "name": "Bash",
-        "lv": 5
+        "lv": 9
        },
        {
         "id": 6,
@@ -127927,7 +128755,7 @@
        {
         "id": 58,
         "name": "Spear Stab",
-        "lv": 3
+        "lv": 8
        },
        {
         "id": 57,
@@ -127935,7 +128763,7 @@
         "lv": 10
        }
       ],
-      "unspent": 9,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.knight_pierce.ranges[48-99].skills"
      }
     }
@@ -127957,7 +128785,7 @@
      },
      "stat_points_spare_at_99": 3,
      "stat_goals_unreached": [],
-     "skill_points_listed": 79,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -128009,7 +128837,7 @@
      {
       "id": 5,
       "name": "Bash",
-      "lv": 5
+      "lv": 9
      },
      {
       "id": 6,
@@ -128044,7 +128872,7 @@
      {
       "id": 58,
       "name": "Spear Stab",
-      "lv": 3
+      "lv": 8
      },
      {
       "id": 59,
@@ -128184,6 +129012,51 @@
       "id": 57,
       "name": "Brandish Spear",
       "lv": 10
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 6
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 7
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 8
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 9
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 4
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 5
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 6
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 7
+     },
+     {
+      "id": 58,
+      "name": "Spear Stab",
+      "lv": 8
      }
     ],
     "gear": [],
@@ -131370,12 +132243,12 @@
        {
         "id": 5,
         "name": "Bash",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 6,
         "name": "Provoke",
-        "lv": 5
+        "lv": 6
        },
        {
         "id": 8,
@@ -131413,7 +132286,7 @@
         "lv": 4
        }
       ],
-      "unspent": 6,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.crusader_spear.ranges[33-60].skills"
      }
     },
@@ -133202,12 +134075,12 @@
        {
         "id": 5,
         "name": "Bash",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 6,
         "name": "Provoke",
-        "lv": 5
+        "lv": 6
        },
        {
         "id": 8,
@@ -133242,7 +134115,7 @@
        {
         "id": 258,
         "name": "Spear Quicken",
-        "lv": 5
+        "lv": 8
        },
        {
         "id": 248,
@@ -133260,7 +134133,7 @@
         "lv": 5
        }
       ],
-      "unspent": 9,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.crusader_spear.ranges[48-99].skills"
      }
     }
@@ -133282,7 +134155,7 @@
      },
      "stat_points_spare_at_99": 32,
      "stat_goals_unreached": [],
-     "skill_points_listed": 79,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -133334,12 +134207,12 @@
      {
       "id": 5,
       "name": "Bash",
-      "lv": 5
+      "lv": 10
      },
      {
       "id": 6,
       "name": "Provoke",
-      "lv": 5
+      "lv": 6
      },
      {
       "id": 7,
@@ -133384,7 +134257,7 @@
      {
       "id": 258,
       "name": "Spear Quicken",
-      "lv": 5
+      "lv": 8
      }
     ],
     "role": "tank"
@@ -133506,6 +134379,51 @@
       "id": 254,
       "name": "Grand Cross",
       "lv": 5
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 6
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 7
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 8
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 9
+     },
+     {
+      "id": 5,
+      "name": "Bash",
+      "lv": 10
+     },
+     {
+      "id": 6,
+      "name": "Provoke",
+      "lv": 6
+     },
+     {
+      "id": 258,
+      "name": "Spear Quicken",
+      "lv": 6
+     },
+     {
+      "id": 258,
+      "name": "Spear Quicken",
+      "lv": 7
+     },
+     {
+      "id": 258,
+      "name": "Spear Quicken",
+      "lv": 8
      }
     ],
     "gear": [],
@@ -136458,7 +137376,7 @@
        {
         "id": 18,
         "name": "Fire Wall",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 10,
@@ -136468,7 +137386,7 @@
        {
         "id": 21,
         "name": "Thunderstorm",
-        "lv": 1
+        "lv": 2
        },
        {
         "id": 20,
@@ -136506,7 +137424,7 @@
         "lv": 8
        }
       ],
-      "unspent": 6,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.wizard_fire.ranges[25-65].skills"
      }
     },
@@ -138053,7 +138971,7 @@
        {
         "id": 18,
         "name": "Fire Wall",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 10,
@@ -138063,7 +138981,7 @@
        {
         "id": 21,
         "name": "Thunderstorm",
-        "lv": 1
+        "lv": 2
        },
        {
         "id": 20,
@@ -138083,7 +139001,7 @@
        {
         "id": 81,
         "name": "Sightrasher",
-        "lv": 2
+        "lv": 10
        },
        {
         "id": 83,
@@ -138093,7 +139011,7 @@
        {
         "id": 84,
         "name": "Jupitel Thunder",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 85,
@@ -138103,7 +139021,7 @@
        {
         "id": 90,
         "name": "Earth Spike",
-        "lv": 3
+        "lv": 4
        },
        {
         "id": 91,
@@ -138111,7 +139029,7 @@
         "lv": 5
        }
       ],
-      "unspent": 20,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.wizard_fire.ranges[60-99].skills"
      }
     }
@@ -138133,7 +139051,7 @@
      },
      "stat_points_spare_at_99": 40,
      "stat_goals_unreached": [],
-     "skill_points_listed": 68,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -138196,7 +139114,7 @@
      {
       "id": 18,
       "name": "Fire Wall",
-      "lv": 5
+      "lv": 10
      },
      {
       "id": 19,
@@ -138211,12 +139129,12 @@
      {
       "id": 21,
       "name": "Thunderstorm",
-      "lv": 1
+      "lv": 2
      },
      {
       "id": 81,
       "name": "Sightrasher",
-      "lv": 2
+      "lv": 10
      },
      {
       "id": 83,
@@ -138226,7 +139144,7 @@
      {
       "id": 84,
       "name": "Jupitel Thunder",
-      "lv": 5
+      "lv": 10
      },
      {
       "id": 85,
@@ -138236,7 +139154,7 @@
      {
       "id": 90,
       "name": "Earth Spike",
-      "lv": 3
+      "lv": 4
      },
      {
       "id": 91,
@@ -138364,6 +139282,106 @@
       "id": 91,
       "name": "Heaven's Drive",
       "lv": 5
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 6
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 7
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 8
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 9
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 10
+     },
+     {
+      "id": 21,
+      "name": "Thunderstorm",
+      "lv": 2
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 3
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 4
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 5
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 6
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 7
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 8
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 9
+     },
+     {
+      "id": 81,
+      "name": "Sightrasher",
+      "lv": 10
+     },
+     {
+      "id": 84,
+      "name": "Jupitel Thunder",
+      "lv": 6
+     },
+     {
+      "id": 84,
+      "name": "Jupitel Thunder",
+      "lv": 7
+     },
+     {
+      "id": 84,
+      "name": "Jupitel Thunder",
+      "lv": 8
+     },
+     {
+      "id": 84,
+      "name": "Jupitel Thunder",
+      "lv": 9
+     },
+     {
+      "id": 84,
+      "name": "Jupitel Thunder",
+      "lv": 10
+     },
+     {
+      "id": 90,
+      "name": "Earth Spike",
+      "lv": 4
      }
     ],
     "gear": [],
@@ -141315,12 +142333,12 @@
        {
         "id": 20,
         "name": "Lightning Bolt",
-        "lv": 4
+        "lv": 10
        },
        {
         "id": 11,
         "name": "Napalm Beat",
-        "lv": 1
+        "lv": 2
        },
        {
         "id": 16,
@@ -141353,7 +142371,7 @@
         "lv": 10
        }
       ],
-      "unspent": 7,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.wizard_frost.ranges[25-65].skills"
      }
     },
@@ -142900,12 +143918,12 @@
        {
         "id": 20,
         "name": "Lightning Bolt",
-        "lv": 4
+        "lv": 10
        },
        {
         "id": 11,
         "name": "Napalm Beat",
-        "lv": 1
+        "lv": 2
        },
        {
         "id": 16,
@@ -142945,7 +143963,7 @@
        {
         "id": 90,
         "name": "Earth Spike",
-        "lv": 3
+        "lv": 4
        },
        {
         "id": 87,
@@ -142953,7 +143971,7 @@
         "lv": 10
        }
       ],
-      "unspent": 8,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.wizard_frost.ranges[60-99].skills"
      }
     }
@@ -142975,7 +143993,7 @@
      },
      "stat_points_spare_at_99": 40,
      "stat_goals_unreached": [],
-     "skill_points_listed": 80,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -143018,7 +144036,7 @@
      {
       "id": 11,
       "name": "Napalm Beat",
-      "lv": 1
+      "lv": 2
      },
      {
       "id": 14,
@@ -143043,7 +144061,7 @@
      {
       "id": 20,
       "name": "Lightning Bolt",
-      "lv": 4
+      "lv": 10
      },
      {
       "id": 21,
@@ -143073,7 +144091,7 @@
      {
       "id": 90,
       "name": "Earth Spike",
-      "lv": 3
+      "lv": 4
      },
      {
       "id": 91,
@@ -143201,6 +144219,46 @@
       "id": 87,
       "name": "Ice Wall",
       "lv": 10
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 5
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 6
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 7
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 8
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 9
+     },
+     {
+      "id": 20,
+      "name": "Lightning Bolt",
+      "lv": 10
+     },
+     {
+      "id": 11,
+      "name": "Napalm Beat",
+      "lv": 2
+     },
+     {
+      "id": 90,
+      "name": "Earth Spike",
+      "lv": 4
      }
     ],
     "gear": [],
@@ -147768,7 +148826,7 @@
        {
         "id": 17,
         "name": "Fire Ball",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 274,
@@ -147789,9 +148847,19 @@
         "id": 279,
         "name": "Hindsight",
         "lv": 5
+       },
+       {
+        "id": 18,
+        "name": "Fire Wall",
+        "lv": 10
+       },
+       {
+        "id": 9,
+        "name": "Increase SP Recovery",
+        "lv": 8
        }
       ],
-      "unspent": 23,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.sage_hindsight.ranges[60-99].skills"
      }
     }
@@ -147813,7 +148881,7 @@
      },
      "stat_points_spare_at_99": 3,
      "stat_goals_unreached": [],
-     "skill_points_listed": 65,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -147858,6 +148926,11 @@
     ],
     "skills": [
      {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 8
+     },
+     {
       "id": 10,
       "name": "Sight",
       "lv": 1
@@ -147885,7 +148958,12 @@
      {
       "id": 17,
       "name": "Fire Ball",
-      "lv": 5
+      "lv": 10
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 10
      },
      {
       "id": 19,
@@ -148040,6 +149118,121 @@
       "id": 279,
       "name": "Hindsight",
       "lv": 5
+     },
+     {
+      "id": 17,
+      "name": "Fire Ball",
+      "lv": 6
+     },
+     {
+      "id": 17,
+      "name": "Fire Ball",
+      "lv": 7
+     },
+     {
+      "id": 17,
+      "name": "Fire Ball",
+      "lv": 8
+     },
+     {
+      "id": 17,
+      "name": "Fire Ball",
+      "lv": 9
+     },
+     {
+      "id": 17,
+      "name": "Fire Ball",
+      "lv": 10
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 1
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 2
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 3
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 4
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 5
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 6
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 7
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 8
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 9
+     },
+     {
+      "id": 18,
+      "name": "Fire Wall",
+      "lv": 10
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 1
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 2
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 3
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 4
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 5
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 6
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 7
+     },
+     {
+      "id": 9,
+      "name": "Increase SP Recovery",
+      "lv": 8
      }
     ],
     "gear": [],
@@ -153262,15 +154455,20 @@
        {
         "id": 115,
         "name": "Skid Trap",
-        "lv": 1
+        "lv": 5
        },
        {
         "id": 117,
         "name": "Ankle Snare",
-        "lv": 3
+        "lv": 5
+       },
+       {
+        "id": 116,
+        "name": "Land Mine",
+        "lv": 2
        }
       ],
-      "unspent": 8,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.hunter_agi.ranges[33-99].skills"
      }
     }
@@ -153292,7 +154490,7 @@
      },
      "stat_points_spare_at_99": 22,
      "stat_goals_unreached": [],
-     "skill_points_listed": 80,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -153364,12 +154562,17 @@
      {
       "id": 115,
       "name": "Skid Trap",
-      "lv": 1
+      "lv": 5
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 2
      },
      {
       "id": 117,
       "name": "Ankle Snare",
-      "lv": 3
+      "lv": 5
      },
      {
       "id": 126,
@@ -153520,6 +154723,46 @@
       "id": 117,
       "name": "Ankle Snare",
       "lv": 3
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 2
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 3
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 4
+     },
+     {
+      "id": 115,
+      "name": "Skid Trap",
+      "lv": 5
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 4
+     },
+     {
+      "id": 117,
+      "name": "Ankle Snare",
+      "lv": 5
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 1
+     },
+     {
+      "id": 116,
+      "name": "Land Mine",
+      "lv": 2
      }
     ],
     "gear": [],
@@ -159073,12 +160316,12 @@
        {
         "id": 73,
         "name": "Kyrie Eleison",
-        "lv": 5
+        "lv": 10
        },
        {
         "id": 74,
         "name": "Magnificat",
-        "lv": 3
+        "lv": 4
        },
        {
         "id": 24,
@@ -159096,7 +160339,7 @@
         "lv": 1
        }
       ],
-      "unspent": 6,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.priest_battle.ranges[55-99].skills"
      }
     }
@@ -159118,7 +160361,7 @@
      },
      "stat_points_spare_at_99": 3,
      "stat_goals_unreached": [],
-     "skill_points_listed": 82,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -159215,12 +160458,12 @@
      {
       "id": 73,
       "name": "Kyrie Eleison",
-      "lv": 5
+      "lv": 10
      },
      {
       "id": 74,
       "name": "Magnificat",
-      "lv": 3
+      "lv": 4
      },
      {
       "id": 76,
@@ -159370,6 +160613,36 @@
       "id": 28,
       "name": "Heal",
       "lv": 10
+     },
+     {
+      "id": 73,
+      "name": "Kyrie Eleison",
+      "lv": 6
+     },
+     {
+      "id": 73,
+      "name": "Kyrie Eleison",
+      "lv": 7
+     },
+     {
+      "id": 73,
+      "name": "Kyrie Eleison",
+      "lv": 8
+     },
+     {
+      "id": 73,
+      "name": "Kyrie Eleison",
+      "lv": 9
+     },
+     {
+      "id": 73,
+      "name": "Kyrie Eleison",
+      "lv": 10
+     },
+     {
+      "id": 74,
+      "name": "Magnificat",
+      "lv": 4
      }
     ],
     "gear": [],
@@ -164636,15 +165909,35 @@
        {
         "id": 317,
         "name": "Unchained Serenade",
-        "lv": 3
+        "lv": 5
        },
        {
         "id": 320,
         "name": "Impressive Riff",
         "lv": 10
+       },
+       {
+        "id": 1010,
+        "name": "Pang Voice",
+        "lv": 1
+       },
+       {
+        "id": 311,
+        "name": "Classical Pluck",
+        "lv": 1
+       },
+       {
+        "id": 308,
+        "name": "Down Tempo",
+        "lv": 1
+       },
+       {
+        "id": 318,
+        "name": "Unbarring Octave",
+        "lv": 3
        }
       ],
-      "unspent": 8,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.bard_arrow.ranges[33-99].skills"
      }
     }
@@ -164666,7 +165959,7 @@
      },
      "stat_points_spare_at_99": 47,
      "stat_goals_unreached": [],
-     "skill_points_listed": 80,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -164746,6 +166039,16 @@
       "lv": 1
      },
      {
+      "id": 308,
+      "name": "Down Tempo",
+      "lv": 1
+     },
+     {
+      "id": 311,
+      "name": "Classical Pluck",
+      "lv": 1
+     },
+     {
       "id": 315,
       "name": "Music Lessons",
       "lv": 10
@@ -164758,12 +166061,22 @@
      {
       "id": 317,
       "name": "Unchained Serenade",
+      "lv": 5
+     },
+     {
+      "id": 318,
+      "name": "Unbarring Octave",
       "lv": 3
      },
      {
       "id": 320,
       "name": "Impressive Riff",
       "lv": 10
+     },
+     {
+      "id": 1010,
+      "name": "Pang Voice",
+      "lv": 1
      }
     ],
     "role": "ranged"
@@ -164881,6 +166194,46 @@
       "id": 320,
       "name": "Impressive Riff",
       "lv": 10
+     },
+     {
+      "id": 317,
+      "name": "Unchained Serenade",
+      "lv": 4
+     },
+     {
+      "id": 317,
+      "name": "Unchained Serenade",
+      "lv": 5
+     },
+     {
+      "id": 1010,
+      "name": "Pang Voice",
+      "lv": 1
+     },
+     {
+      "id": 311,
+      "name": "Classical Pluck",
+      "lv": 1
+     },
+     {
+      "id": 308,
+      "name": "Down Tempo",
+      "lv": 1
+     },
+     {
+      "id": 318,
+      "name": "Unbarring Octave",
+      "lv": 1
+     },
+     {
+      "id": 318,
+      "name": "Unbarring Octave",
+      "lv": 2
+     },
+     {
+      "id": 318,
+      "name": "Unbarring Octave",
+      "lv": 3
      }
     ],
     "gear": [],
@@ -170130,15 +171483,30 @@
        {
         "id": 325,
         "name": "Hip Shaker",
-        "lv": 3
+        "lv": 5
        },
        {
         "id": 327,
         "name": "Focus Ballet",
         "lv": 10
+       },
+       {
+        "id": 306,
+        "name": "Lullaby",
+        "lv": 1
+       },
+       {
+        "id": 312,
+        "name": "Power Chord",
+        "lv": 1
+       },
+       {
+        "id": 326,
+        "name": "Dazzler",
+        "lv": 4
        }
       ],
-      "unspent": 8,
+      "unspent": 0,
       "source": "draft: legion/data/buildmilestones.json builds.dancer_arrow.ranges[33-99].skills"
      }
     }
@@ -170160,7 +171528,7 @@
      },
      "stat_points_spare_at_99": 47,
      "stat_goals_unreached": [],
-     "skill_points_listed": 80,
+     "skill_points_listed": 88,
      "skill_points_reachable": 88,
      "skills_unreached_at_99": []
     },
@@ -170240,6 +171608,16 @@
       "lv": 1
      },
      {
+      "id": 306,
+      "name": "Lullaby",
+      "lv": 1
+     },
+     {
+      "id": 312,
+      "name": "Power Chord",
+      "lv": 1
+     },
+     {
       "id": 323,
       "name": "Dance Lessons",
       "lv": 10
@@ -170252,7 +171630,12 @@
      {
       "id": 325,
       "name": "Hip Shaker",
-      "lv": 3
+      "lv": 5
+     },
+     {
+      "id": 326,
+      "name": "Dazzler",
+      "lv": 4
      },
      {
       "id": 327,
@@ -170375,6 +171758,46 @@
       "id": 327,
       "name": "Focus Ballet",
       "lv": 10
+     },
+     {
+      "id": 325,
+      "name": "Hip Shaker",
+      "lv": 4
+     },
+     {
+      "id": 325,
+      "name": "Hip Shaker",
+      "lv": 5
+     },
+     {
+      "id": 306,
+      "name": "Lullaby",
+      "lv": 1
+     },
+     {
+      "id": 312,
+      "name": "Power Chord",
+      "lv": 1
+     },
+     {
+      "id": 326,
+      "name": "Dazzler",
+      "lv": 1
+     },
+     {
+      "id": 326,
+      "name": "Dazzler",
+      "lv": 2
+     },
+     {
+      "id": 326,
+      "name": "Dazzler",
+      "lv": 3
+     },
+     {
+      "id": 326,
+      "name": "Dazzler",
+      "lv": 4
      }
     ],
     "gear": [],
@@ -183177,8 +184600,8 @@
     "routes": {
      "weapons": [
       "Club",
-      "Mace",
       "Waghnak",
+      "Mace",
       "Knuckle Dusters",
       "Studded Knuckles",
       "Fist"
@@ -183203,8 +184626,8 @@
     },
     "weapon_ids": [
      1501,
-     1504,
      1801,
+     1504,
      1803,
      1805,
      1807
@@ -183276,8 +184699,8 @@
  ],
  "gaps": [],
  "name_sources": {
-  "items": null,
-  "skills": null,
+  "items": "openkore-ayla\\logs\\items_lut.tsv",
+  "skills": "tools\\.state\\dbsnap\\skills.tsv",
   "items_fallback": "client itemInfo.lua",
   "skills_fallback": "tools/measure/rd/skill_db.yml"
  },

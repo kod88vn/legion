@@ -9,14 +9,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   briefly (PT23). (2026-11-14)
 - Every class uses AoE on crowds: Arrow Shower on the central monster (`all.md`, CL01).
 
-### Hunter: "DEX/AGI Bow Hunter" (plan `hunter`, end goal Sniper)
+### Hunter: "DEX/AGI Bow Hunter" (plan `hunter`, end goal Hunter)
 - **Party role:** ranged DPS from 9 cells.
-- **Stats:** DEX 20, AGI 10 -> DEX 40, AGI 20, VIT 10, LUK 10 -> DEX 60, AGI 40, LUK 20, VIT 20 -> DEX 80, AGI 60,
-  LUK 30 -> DEX 99, AGI 75, VIT 30, LUK 40.
-- **Skills (order):** Archer: Double Strafe 10, Owl's Eye 3, Vulture's Eye 10, Improve Concentration 10, Arrow Shower 5,
-  Owl's Eye 4 | Hunter: Beast Bane 1, Falconry Mastery 1, Blitz Beat 5, Steel Crow 10, Beast Bane 10, Arrow Shower 10,
-  Owl's Eye 10, then traps (Skid Trap 1, Ankle Snare 3, Land Mine 5, Flasher, Freezing Trap, Sandman, Blast Mine,
-  Shockwave Trap, Claymore Trap 5) last - there is no trap AI.
+- **Stats:** DEX 20, AGI 10, DEX 40, AGI 20, VIT 10, LUK 10, DEX 60, AGI 40, LUK 20, VIT 20, DEX 80, AGI 60, LUK 30, DEX 99, AGI 75, VIT 30, VIT 40.
+- **Skills (order):** Double Strafe 10, Owl's Eye 10, Vulture's Eye 10, Improve Concentration 5, Arrow Shower 10, Beast Bane 10, Falconry Mastery 1, Blitz Beat 5, Steel Crow 10, Skid Trap 1, Skid Trap 2, Skid Trap 3, Skid Trap 4, Skid Trap 5, Land Mine 1, Land Mine 2, Land Mine 3, Land Mine 4, Land Mine 5, Ankle Snare 1, Ankle Snare 2, Ankle Snare 3, Ankle Snare 4, Ankle Snare 5, Shockwave Trap 1, Shockwave Trap 2.
 - **Use:** Double Strafe on one monster; Arrow Shower (ground, 3x3, 5x5 from lv6) on 3+ grouped, aimed at the centre;
   Improve Concentration is a key self-buff, cast at the highest level that leaves > 30% SP (key floor; Double Strafe keeps its cost back while it is
   due - run 5 traces: 2 Hunters cast 54 Double Strafes and 0 Improve Concentration in 5 min); the falcon's Blitz Beat.
@@ -38,18 +34,16 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   the 50% weight line; "no arrows" outranks "out of potions").
 
 ### Variant: "DEX/INT Blitz Hunter" (plan `hunter_blitz`, Base hunter)
+- **Stats:** DEX 20, INT 10, DEX 40, VIT 20, INT 25, AGI 10, DEX 60, INT 40, LUK 20, DEX 80, INT 55, DEX 99, INT 70, VIT 30, VIT 50.
+- **Skills (order):** Double Strafe 10, Owl's Eye 3, Vulture's Eye 10, Improve Concentration 10, Arrow Shower 5, Owl's Eye 4, Beast Bane 1, Falconry Mastery 1, Blitz Beat 5, Steel Crow 10, Beast Bane 10, Arrow Shower 10, Owl's Eye 10, Skid Trap 1, Ankle Snare 3, Land Mine 5, Skid Trap 2, Skid Trap 3, Skid Trap 4.
 - DEX/INT (DEX 99, INT 70, LUK 20, VIT 30): Renewal Blitz Beat scales with INT/DEX. Archer basics | Beast Bane 1,
   Falconry 1, Blitz Beat 5, Steel Crow 10, Beast Bane 10, Arrow Shower 10, Owl's Eye 10, then traps. Bow route, caster
   extras (headgear/garment). Needs the falcon (legion.txt rental).
 
-### Bard: "DEX/INT Bard" (plan `bard`, male, end goal Clown)
+### Bard: "DEX/INT Bard" (plan `bard`, male, end goal Bard)
 - **Party role:** solo, a Double Strafe archer; in a party, a support singer.
-- **Stats:** DEX 20, AGI 10 -> DEX 40, AGI 25, VIT 15 -> DEX 60, AGI 40, VIT 25, INT 20 -> DEX 80, AGI 55, VIT 40,
-  INT 40 -> DEX 99.
-- **Skills (order):** Archer basics (Double Strafe 10, Owl's Eye, Vulture's Eye 10, Improve Concentration 10, Arrow
-  Shower 5, Owl's Eye 10) | Bard: Amp (Adaptation) 1, Encore 1, Music Lessons 1, Unchained Serenade (Dissonance) 3,
-  Magic Strings (A Poem of Bragi) 10, Impressive Riff (Assassin Cross of Sunset) 10, Perfect Tablature (A Whistle) 10,
-  Song of Lutie (Apple of Idun) 10, Music Lessons 10, Melody Strike (Musical Strike) 5.
+- **Stats:** DEX 20, AGI 10, VIT 15, DEX 40, AGI 25, DEX 60, AGI 40, VIT 25, INT 20, DEX 80, AGI 55, VIT 40, INT 40, DEX 99, INT 60.
+- **Skills (order):** Double Strafe 10, Owl's Eye 10, Vulture's Eye 10, Improve Concentration 5, Amp 1, Music Lessons 1, Unchained Serenade 3, Perfect Tablature 10, Impressive Riff 10, Magic Strings 10, Song of Lutie 10, Improve Concentration 6, Improve Concentration 7, Improve Concentration 8, Improve Concentration 9, Music Lessons 2, Music Lessons 3, Music Lessons 4, Music Lessons 5.
 - **Use (song.go, build review run 3):** in a party, with a song learned, the instrument/whip outranks the bow
   (itemScore 200+) and stays in hand; solo the bow wins. While the party fights (leader within 8 cells, SP >= 30% and
   >= 60) it plays: Apple of Idun if a member is under 60% HP, Bragi if the party has a caster/healer, else Assassin
@@ -65,11 +59,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Boss role:** support songs (Bragi for the casters/priest, Assassin Cross for the melee, Apple of Idun when hurt).
 - DB 2026-11-14: 26 Bards avg lv59 but job 18-29 - only Moon.fang has a song (Bragi 2).
 
-### Dancer: "DEX/INT Dancer" (plan `dancer`, female, end goal Gypsy)
+### Dancer: "DEX/INT Dancer" (plan `dancer`, female, end goal Dancer)
+- **Stats:** DEX 20, AGI 10, VIT 15, DEX 40, AGI 25, DEX 60, AGI 40, VIT 25, INT 20, DEX 80, AGI 55, VIT 40, INT 40, DEX 99, INT 60.
 - **Party role / stats:** as the Bard.
-- **Skills (order):** Archer basics | Dancer: Amp 1, Encore 1, Dance Lessons 1, Hip Shaker (Ugly Dance) 3, Gypsy's Kiss
-  (Service for You) 10, Focus Ballet (Humming) 10, Slow Grace (Please Don't Forget Me) 10, Lady Luck (Fortune's Kiss)
-  10, Dance Lessons 10, Slinging Arrow (Throw Arrow) 5.
+- **Skills (order):** Double Strafe 10, Owl's Eye 10, Vulture's Eye 10, Improve Concentration 5, Amp 1, Dance Lessons 1, Hip Shaker 3, Focus Ballet 10, Slow Grace 10, Lady Luck 10, Gypsy's Kiss 10, Improve Concentration 6, Improve Concentration 7, Improve Concentration 8, Improve Concentration 9, Dance Lessons 2, Dance Lessons 3, Dance Lessons 4, Dance Lessons 5.
 - **Use:** dances with a whip in hand in a party (song.go): Please Don't Forget Me on 3+ monsters near it, Service for
   You with a caster/healer, else Humming, Fortune's Kiss; Throw Arrow (whip + arrows) while dancing; solo the bow build.
 - **Gear:** the Archer bow route; Rope (2,500z, Prontera) for dances, bought on an errand. **Boss role:** support
@@ -84,13 +77,13 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 ### Build milestones and playstyle (rebalanced 2026-11-15)
 - Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every build of this line are in `legion/data/buildmilestones.json` (`hunter`, `bard`, `dancer`, `hunter_blitz`, `hunter_agi`, `bard_arrow`, `dancer_arrow`, `hunter_trap`). Gear is by band in `buildgear.json` (curated) and with its alternatives, refine and card plan in the same file as the stats (EC40-EC43); the party role stays in code.
 - Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:
-  - `hunter` (DEX/AGI Bow Hunter): stat goals 1,235 before (budget 1,273), skill points 95 before (budget 88), not reached before: Blast Mine 0/1; Shockwave Trap 0/1; Claymore Trap 0/5; now stat goals 1,235 (spare 38), skill points 71, ends AGI 75, VIT 40, DEX 99, LUK 30, not reached now: none.
-  - `bard` (DEX/INT Bard): stat goals 1,126 before (budget 1,273), skill points 105 before (budget 88), not reached before: Music Lessons 1/10; Song of Lutie 7/10; Melody Strike 0/5; now stat goals 1,254 (spare 19), skill points 80, ends AGI 55, VIT 40, INT 60, DEX 99, not reached now: none.
-  - `dancer` (DEX/INT Dancer): stat goals 1,126 before (budget 1,273), skill points 105 before (budget 88), not reached before: Dance Lessons 1/10; Lady Luck 7/10; Slinging Arrow 0/5; now stat goals 1,254 (spare 19), skill points 80, ends AGI 55, VIT 40, INT 60, DEX 99, not reached now: none.
-  - `hunter_blitz` (DEX/INT Blitz Hunter): stat goals 1,121 before (budget 1,273), skill points 85 before (budget 88), not reached before: none; now stat goals 1,229 (spare 44), skill points 85, ends AGI 10, VIT 50, INT 70, DEX 99, LUK 20, not reached now: none.
-  - `hunter_agi` (AGI/DEX Auto-Attack Hunter): stat goals 1,143 before (budget 1,273), skill points 80 before (budget 88), not reached before: none; now stat goals 1,251 (spare 22), skill points 80, ends AGI 90, VIT 50, DEX 85, LUK 20, not reached now: none.
-  - `bard_arrow` (DEX/AGI Arrow Bard): stat goals 1,118 before (budget 1,273), skill points 80 before (budget 88), not reached before: none; now stat goals 1,226 (spare 47), skill points 80, ends AGI 75, VIT 50, DEX 99, LUK 10, not reached now: none.
-  - `dancer_arrow` (DEX/AGI Arrow Dancer): stat goals 1,118 before (budget 1,273), skill points 80 before (budget 88), not reached before: none; now stat goals 1,226 (spare 47), skill points 80, ends AGI 75, VIT 50, DEX 99, LUK 10, not reached now: none.
+  - `hunter` (DEX/AGI Bow Hunter): stat goals 1,235 before (budget 1,273), skill points 95 before (budget 88), not reached before: Blast Mine 0/1; Shockwave Trap 0/1; Claymore Trap 0/5; now stat goals 1,235 (spare 38), skill points 88, ends AGI 75, VIT 40, DEX 99, LUK 30, not reached now: none.
+  - `bard` (DEX/INT Bard): stat goals 1,126 before (budget 1,273), skill points 105 before (budget 88), not reached before: Music Lessons 1/10; Song of Lutie 7/10; Melody Strike 0/5; now stat goals 1,254 (spare 19), skill points 88, ends AGI 55, VIT 40, INT 60, DEX 99, not reached now: none.
+  - `dancer` (DEX/INT Dancer): stat goals 1,126 before (budget 1,273), skill points 105 before (budget 88), not reached before: Dance Lessons 1/10; Lady Luck 7/10; Slinging Arrow 0/5; now stat goals 1,254 (spare 19), skill points 88, ends AGI 55, VIT 40, INT 60, DEX 99, not reached now: none.
+  - `hunter_blitz` (DEX/INT Blitz Hunter): stat goals 1,121 before (budget 1,273), skill points 85 before (budget 88), not reached before: none; now stat goals 1,229 (spare 44), skill points 88, ends AGI 10, VIT 50, INT 70, DEX 99, LUK 20, not reached now: none.
+  - `hunter_agi` (AGI/DEX Auto-Attack Hunter): stat goals 1,143 before (budget 1,273), skill points 80 before (budget 88), not reached before: none; now stat goals 1,251 (spare 22), skill points 88, ends AGI 90, VIT 50, DEX 85, LUK 20, not reached now: none.
+  - `bard_arrow` (DEX/AGI Arrow Bard): stat goals 1,118 before (budget 1,273), skill points 80 before (budget 88), not reached before: none; now stat goals 1,226 (spare 47), skill points 88, ends AGI 75, VIT 50, DEX 99, LUK 10, not reached now: none.
+  - `dancer_arrow` (DEX/AGI Arrow Dancer): stat goals 1,118 before (budget 1,273), skill points 80 before (budget 88), not reached before: none; now stat goals 1,226 (spare 47), skill points 88, ends AGI 75, VIT 50, DEX 99, LUK 10, not reached now: none.
   - `hunter_trap` (DEX/INT Trapper Hunter): stat goals 1,146 before (budget 1,273), skill points 88 before (budget 88), not reached before: none; now stat goals 1,230 (spare 43), skill points 88, ends AGI 25, VIT 50, INT 70, DEX 99, not reached now: none.
 - Gear and cards at each build's end band (`legion/data/buildmilestones.json`, the Builds tab shows every band):
   - `hunter` gear at the end band 33-99 (EC40): weapon Hunter Bow (3 alternatives), shield Bradium Shield (3 alternatives), armor Tights (3 alternatives), headgear Apple of Archer (3 alternatives), garment Siege Manteau (3 alternatives), shoes Boots (3 alternatives), accessory Glove (3 alternatives); cards (EC41): 12 usable now, 6 at the refine target, 0 fallback.

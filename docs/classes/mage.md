@@ -13,16 +13,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - CL08. A party with a Wizard plays around it: tank and melee lure and gather monsters into a tight group in the Wizard's range,
   the Wizard drops its AoE on the centre, the others pick off survivors. Applies to every such party, Ayla's included. (2026-11-14)
 
-### Wizard: "INT/DEX Wizard" (plan `wizard`, end goal High Wizard)
+### Wizard: "INT/DEX Wizard" (plan `wizard`, end goal Wizard)
 - **Party role:** ranged AoE damage; clears grouped monsters the tank gathers.
-- **Stats:** INT 20, DEX 15, VIT 10 -> INT 40, DEX 30, VIT 20 -> INT 60, DEX 50, VIT 35 -> INT 80, DEX 65, VIT 50 ->
-  INT 99, DEX 80, VIT 60.
-- **Skills (order):** Mage: Fire Bolt 5, Lightning Bolt 5 (prerequisites and early single target), Fire Ball 5,
-  Thunderstorm 5, Sight 1, Fire Wall 5 (kiting), Cold Bolt 5, Frost Diver 1, Napalm Beat 1, Stone Curse 1 (Wizard
-  prerequisites); a Mage's remaining points fill Thunderstorm / Fire Bolt / Lightning Bolt to 10 | Wizard: Jupitel
-  Thunder 3, Storm Gust 10 (run 6: moved up), Earth Spike 3, Heaven's Drive 5, Jupitel Thunder 5, Lord of Vermilion 10, Sightrasher 2,
-  Meteor Storm 10, Quagmire 3, then bolts / Fire Ball / Jupitel / Fire Wall to 10. Legacy bolt plan (Fire Bolt 10, Cold
-  Bolt 10, Lightning Bolt 10 ...) stays valid; its new points go to the first unmet goals = area spells.
+- **Stats:** INT 20, DEX 15, VIT 10, INT 40, DEX 30, VIT 20, INT 60, DEX 50, VIT 35, INT 80, DEX 65, VIT 50, INT 99, DEX 70, VIT 60.
+- **Skills (order):** Fire Bolt 5, Fire Ball 5, Lightning Bolt 4, Thunderstorm 5, Sight 1, Fire Wall 5, Napalm Beat 1, Frost Diver 1, Stone Curse 1, Fire Bolt 10, Cold Bolt 10, Lightning Bolt 10, Jupitel Thunder 5, Storm Gust 10, Earth Spike 3, Heaven's Drive 5, Lord of Vermilion 10, Sightrasher 2, Meteor Storm 4.
 - **Use (aoe.go `aoeCast`, runs first in fight()):** (2026-11-14 fix) every walkable cell in range 9 in line of sight is
   scored by the monsters the spell's area covers (element-weighted; resisted spells skipped, Fire on Undead), the best
   cell wins; 3+ monsters (2+ with a strong one: boss/champion, our level+, 15k+ HP); partymates (bots + the human)
@@ -46,17 +40,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Do:** AoE whenever 3+ monsters are grouped, stay behind the tank, carry SP potions. **Don't:** fight on a Knife (a
   mage line with no class weapon counts as `bowless()` and may call a party run after 6 min); melee.
 
-### Sage: "INT/DEX Battle Sage" (plan `sage`, end goal Professor)
+### Sage: "INT/DEX Battle Sage" (plan `sage`, end goal Sage)
 - **Party role:** caster support: bolts with Free Cast on the move, Heaven's Drive on adds, endows for the melee.
-- **Stats:** same as the Wizard (INT 99, DEX ~80, VIT 50-60).
-- **Skills (order):** run 6 (rule CL06, Mages are AoE builds; QA 13:10: Sage-plan Mages lv40-50 had bolts 10/10/10
-  and no area spell until job ~40): Fire Bolt 5, Cold Bolt 5, Lightning Bolt 5, Napalm Beat 1, Frost Diver 1, Stone
-  Curse 1, Sight 1, Fire Ball 5, Thunderstorm 5, bolts to 10, Fire Wall 5 (49 points; Support and Hindsight Sages too,
-  the Hindsight Sage keeps bolts 10 first, then Fire Ball / Thunderstorm before Napalm 4 / Soul Strike 3). The old
-  bolts-first order is in `Legacy`: those Mages put their next points into Fire Ball / Thunderstorm | Sage (build review run 3, 2026-11-14): Study (Advanced Book) 5, Endow Quake 1 (prerequisite), Earth
-  Spike 5, Heaven's Drive 5, Cast Cancel 1, Free Cast 4, Magic Rod 1, Spell Breaker 5, Study 10, Free Cast 10, Endow
-  Blaze / Tsunami / Tornado 2, Dispell 5. **Auto Spell (Hindsight) is left out** - it is for melee Sages; existing
-  Sages that took it are fine (2nd-job skills aren't wrong-build checked; old order in `Legacy`).
+- **Stats:** INT 20, DEX 15, VIT 10, INT 40, DEX 30, VIT 20, INT 60, DEX 50, VIT 35, INT 80, DEX 65, VIT 50, INT 99, DEX 70, VIT 60.
+- **Skills (order):** Fire Bolt 10, Cold Bolt 5, Lightning Bolt 5, Sight 1, Stone Curse 1, Napalm Beat 1, Frost Diver 1, Fire Ball 5, Thunderstorm 5, Fire Wall 5, Study 10, Endow Quake 1, Earth Spike 3, Heaven's Drive 5, Cast Cancel 1, Free Cast 10, Magic Rod 1, Spell Breaker 5, Dispell 5, Endow Quake 2, Endow Quake 3, Endow Quake 4, Endow Quake 5, Earth Spike 4, Earth Spike 5, Cast Cancel 2, Cast Cancel 3.
 - **Use:** Heaven's Drive / Fire Ball on 3+ grouped (aoe.go covers the whole Mage family); bolts on single targets,
   the counter element the character has learned (skills.go `boltFor`: Fire monster -> Cold Bolt, Water -> Lightning
   Bolt, Wind -> Earth Spike, else Fire Bolt; level capped at the learned level). Endows need their elemental stones
@@ -67,10 +54,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   Weapon) for the melee.
 
 ### Variant: "Support Sage" (plan `sage_support`, Base sage; run 4, 2026-11-14)
-- **Stats:** INT 99, DEX 70, VIT 70 (INT/DEX/VIT steps; tougher than the battle Sage).
-- **Skills:** Mage part as the battle Sage (bolts 10) | Sage: Study 5, Endow Quake 1, Earth Spike 3, Heaven's Drive 3,
-  Cast Cancel 1, Free Cast 4, Magic Rod 1, Spell Breaker 3, Dispell 5, Endow Blaze / Tsunami / Tornado 2, Volcano 3,
-  Deluge 3, Whirlwind 3, Magnetic Earth 1, Study 10, Endow Quake 3.
+- **Stats:** INT 20, DEX 15, VIT 15, INT 40, DEX 30, VIT 30, INT 60, DEX 45, VIT 45, INT 80, DEX 60, VIT 60, INT 99, DEX 70.
+- **Skills (order):** Fire Bolt 10, Cold Bolt 5, Lightning Bolt 5, Sight 1, Stone Curse 1, Napalm Beat 1, Frost Diver 1, Fire Ball 5, Study 10, Endow Quake 3, Endow Blaze 2, Endow Tsunami 2, Endow Tornado 2, Volcano 3, Deluge 3, Whirlwind 3, Magnetic Earth 1, Magic Rod 1, Spell Breaker 3, Dispell 5, Earth Spike 3, Heaven's Drive 5, Cold Bolt 6, Cold Bolt 7, Cold Bolt 8, Cold Bolt 9, Cold Bolt 10, Lightning Bolt 6, Lightning Bolt 7, Lightning Bolt 8, Lightning Bolt 9, Lightning Bolt 10, Endow Quake 4, Endow Quake 5, Endow Blaze 3.
 - **Use:** fights with bolts / Earth Spike / Heaven's Drive like the battle Sage (aoe.go, boltFor). The support skills
   have **no AI yet**: endows need elemental stones, Volcano / Deluge / Whirlwind a Blue Gemstone each, Dispell a Yellow
   Gemstone, Magnetic Earth both (open item).
@@ -81,11 +66,11 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every build of this line are in `legion/data/buildmilestones.json` (`wizard`, `sage`, `sage_support`, `wizard_fire`, `wizard_frost`, `sage_hindsight`). Gear is by band in `buildgear.json` (curated) and with its alternatives, refine and card plan in the same file as the stats (EC40-EC43); the party role stays in code.
 - Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:
   - `wizard` (INT/DEX Wizard): stat goals 1,322 before (budget 1,273), skill points 117 before (budget 88), not reached before: VIT 60; Fire Bolt 6/10; Lightning Bolt 5/10; Fire Ball 5/10; Fire Wall 5/10; Cold Bolt 5/10; Jupitel Thunder 5/10; now stat goals 1,233 (spare 40), skill points 88, ends VIT 60, INT 99, DEX 70, not reached now: none.
-  - `sage` (INT/DEX Battle Sage): stat goals 1,322 before (budget 1,273), skill points 98 before (budget 88), not reached before: VIT 60; Endow Blaze 1/2; Endow Tsunami 0/2; Endow Tornado 0/2; Dispell 0/5; now stat goals 1,233 (spare 40), skill points 80, ends VIT 60, INT 99, DEX 70, not reached now: none.
-  - `sage_support` (Support Sage): stat goals 1,312 before (budget 1,273), skill points 98 before (budget 88), not reached before: VIT 70; Study 5/10; Endow Quake 1/3; Whirlwind 1/3; Magnetic Earth 0/1; now stat goals 1,233 (spare 40), skill points 75, ends VIT 60, INT 99, DEX 70, not reached now: none.
-  - `wizard_fire` (INT/DEX Fire Wizard): stat goals 1,336 before (budget 1,273), skill points 92 before (budget 88), not reached before: VIT 55; Lightning Bolt 6/10; now stat goals 1,233 (spare 40), skill points 68, ends VIT 60, INT 99, DEX 70, not reached now: none.
-  - `wizard_frost` (INT/DEX Frost Wizard): stat goals 1,322 before (budget 1,273), skill points 83 before (budget 88), not reached before: VIT 60; now stat goals 1,233 (spare 40), skill points 80, ends VIT 60, INT 99, DEX 70, not reached now: none.
-  - `sage_hindsight` (INT/AGI Hindsight Sage): stat goals 1,221 before (budget 1,273), skill points 94 before (budget 88), not reached before: Free Cast 9/10; Magic Rod 0/1; Spell Breaker 0/3; Dispell 0/1; now stat goals 1,270 (spare 3), skill points 65, ends AGI 60, VIT 40, INT 90, DEX 70, not reached now: none.
+  - `sage` (INT/DEX Battle Sage): stat goals 1,322 before (budget 1,273), skill points 98 before (budget 88), not reached before: VIT 60; Endow Blaze 1/2; Endow Tsunami 0/2; Endow Tornado 0/2; Dispell 0/5; now stat goals 1,233 (spare 40), skill points 88, ends VIT 60, INT 99, DEX 70, not reached now: none.
+  - `sage_support` (Support Sage): stat goals 1,312 before (budget 1,273), skill points 98 before (budget 88), not reached before: VIT 70; Study 5/10; Endow Quake 1/3; Whirlwind 1/3; Magnetic Earth 0/1; now stat goals 1,233 (spare 40), skill points 88, ends VIT 60, INT 99, DEX 70, not reached now: none.
+  - `wizard_fire` (INT/DEX Fire Wizard): stat goals 1,336 before (budget 1,273), skill points 92 before (budget 88), not reached before: VIT 55; Lightning Bolt 6/10; now stat goals 1,233 (spare 40), skill points 88, ends VIT 60, INT 99, DEX 70, not reached now: none.
+  - `wizard_frost` (INT/DEX Frost Wizard): stat goals 1,322 before (budget 1,273), skill points 83 before (budget 88), not reached before: VIT 60; now stat goals 1,233 (spare 40), skill points 88, ends VIT 60, INT 99, DEX 70, not reached now: none.
+  - `sage_hindsight` (INT/AGI Hindsight Sage): stat goals 1,221 before (budget 1,273), skill points 94 before (budget 88), not reached before: Free Cast 9/10; Magic Rod 0/1; Spell Breaker 0/3; Dispell 0/1; now stat goals 1,270 (spare 3), skill points 88, ends AGI 60, VIT 40, INT 90, DEX 70, not reached now: none.
 - Gear and cards at each build's end band (`legion/data/buildmilestones.json`, the Builds tab shows every band):
   - `wizard` gear at the end band 60-99 (EC40): weapon Survivor's Rod (Dex) (3 alternatives), shield Guard (3 alternatives), armor Mage Coat (3 alternatives), headgear Circlet (3 alternatives), garment Muffler (3 alternatives), shoes Shoes (3 alternatives), accessory Earring (3 alternatives); cards (EC41): 7 usable now, 2 at the refine target, 0 fallback.
   - `sage` gear at the end band 60-99 (EC40): weapon Survivor's Rod (Dex) (3 alternatives), shield Guard (3 alternatives), armor Mage Coat (3 alternatives), headgear Circlet (3 alternatives), garment Muffler (3 alternatives), shoes Shoes (3 alternatives), accessory Earring (3 alternatives); cards (EC41): 7 usable now, 2 at the refine target, 0 fallback.

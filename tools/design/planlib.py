@@ -3,6 +3,9 @@ Used by tools/design/gen_milestones.py (generator) and tests/test_buildmilestone
 import re, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+SERVER_DB = ROOT / "tests" / "tools" / "fixtures" / "server"   # committed copies of rathena db/re (rule G23)
+CHANGE2 = 40        # the engine changes to the 2nd job at job level 40 (legion.txt)
+NOVICE_POINTS = 9   # Basic Skill (job 10 gives 9 points)
 STATS = ["STR", "AGI", "VIT", "INT", "DEX", "LUK"]
 STAT_IDX = {"stSTR": 0, "stAGI": 1, "stVIT": 2, "stINT": 3, "stDEX": 4, "stLUK": 5}
 
@@ -59,8 +62,14 @@ SECOND_JOB = {7: "Knight", 8: "Priest", 9: "Wizard", 10: "Blacksmith", 11: "Hunt
               15: "Monk", 16: "Sage", 17: "Rogue", 18: "Alchemist", 19: "Bard", 20: "Dancer"}
 
 
+def server_tree(db=None):
+    """Tree of the committed server fixtures (default tests/tools/fixtures/server)."""
+    d = pathlib.Path(db or SERVER_DB)
+    return Tree(d / "skill_tree.yml", d / "skill_db.yml", d / "job_exp.yml")
+
+
 class Tree:
-    """Skill tree of the live server (db/re/skill_tree.yml + skill_db.yml + job_exp.yml), passed as file paths."""
+    """Skill tree of the server (db/re/skill_tree.yml + skill_db.yml + job_exp.yml), passed as file paths."""
 
     def __init__(self, tree_yml, skill_db_yml, job_exp_yml):
         import yaml
@@ -95,18 +104,25 @@ class Tree:
         return res
 
 
-def job_points(base_level, cap2, change2=40):
+def job_points(base_level, cap2, change2=CHANGE2):
     """(novice, first, second) skill points the character has at a base level (assumed pace: Novice job 10 by base 10,
-    first job 40 at base 40, then second job level = base - 39; the engine changes job at job level 10 / 40)."""
-    nov = min(9, max(0, base_level - 1))
+    first job 40 at base 40, then second job level = base - 39; the engine changes job at job level 10 / 40). The job
+    level resets at each job change, so each stage's points count from 1 again."""
+    nov = min(NOVICE_POINTS, max(0, base_level - 1))
     if base_level <= 10:
         first = 0
     elif base_level >= change2:
-        first = 39
+        first = change2 - 1
     else:
-        first = round(39 * (base_level - 10) / (change2 - 10))
+        first = round((change2 - 1) * (base_level - 10) / (change2 - 10))
     second = 0 if base_level <= change2 else max(0, min(cap2 - 1, base_level - change2))
     return nov, first, second
+
+
+def skill_lock(change2=CHANGE2):
+    """Spent skill points needed before any 2nd-job skill can be learned: player_skillup_limit (pc.cpp
+    pc_calc_skilltree_normalize_job_sub) keeps the 2nd class locked while (spent - 9 Novice) < change_level_2nd - 1."""
+    return NOVICE_POINTS + (change2 - 1)
 
 
 def sim_stats(goals, level):
@@ -123,16 +139,21 @@ def sim_stats(goals, level):
     return st, pts
 
 
-def sim_skills(plan, tree, level, noviceSkills=((1, 9),)):
-    """Skill levels reached at a base level when the engine follows the ordered goals (planSkill): the first goal
-    that still needs points and that the server lets it raise (class stage, prerequisites, max level)."""
+def sim_skills(plan, tree, level, noviceSkills=((1, 9),), log=None):
+    """Skill levels reached at a base level when the engine follows the ordered goals (builds.go planSkill): the first
+    goal that still needs points and that the server lets it raise. The points are one pool (the job levels of every
+    stage add to it); a 2nd-job skill is refused until the spent points reach skill_lock() (player_skillup_limit), so
+    the 2nd-job goals wait while the Novice and 1st-job points are spent. Returns (levels, unspent points).
+    log, if a list, gets (skill name, stage, spent before the point) for every point taken."""
     job2 = SECOND_JOB[plan["cls"]]
     st = tree.stage_tree(job2)
     cap2 = tree.maxjob.get(job2, 50)
     nov, first, second = job_points(level, cap2)
-    pools = {0: nov, 1: first, 2: second}
+    avail = nov + first + second
+    lock = skill_lock()
     lv = {}
-    changed2 = level > 40
+    spent = [0]
+    changed2 = level > CHANGE2
 
     def can(name, want):
         info = st.get(name)
@@ -141,36 +162,24 @@ def sim_skills(plan, tree, level, noviceSkills=((1, 9),)):
         stage, mx, reqs = info
         if lv.get(name, 0) >= min(mx, want):
             return False
-        if stage == 2 and not changed2:
+        if stage == 2 and (not changed2 or spent[0] < lock):
             return False
         for rn, rl in reqs:
             if lv.get(rn, 0) < rl:
                 return False
-        if stage == 0:
-            return pools[0] > 0
-        if stage == 1:
-            return pools[1] > 0 or pools[2] > 0
-        return pools[2] > 0
+        return spent[0] < avail
 
-    def take(name):
-        stage = st[name][0]
-        if stage == 0:
-            pools[0] -= 1
-        elif stage == 1:
-            k = 1 if pools[1] > 0 else 2
-            pools[k] -= 1
-        else:
-            pools[2] -= 1
-        lv[name] = lv.get(name, 0) + 1
-
-    goals = [(1, 9)] + [tuple(g) for g in plan["skills"]]
+    goals = [tuple(g) for g in noviceSkills] + [tuple(g) for g in plan["skills"]]
     progressed = True
     while progressed:
         progressed = False
         for sid, want in goals:
             name = tree.id2name.get(sid)
             if name and can(name, want):
-                take(name)
+                if log is not None:
+                    log.append((name, st[name][0], spent[0]))
+                lv[name] = lv.get(name, 0) + 1
+                spent[0] += 1
                 progressed = True
                 break  # the engine always restarts from the first unmet goal
-    return lv, pools
+    return lv, avail - spent[0]

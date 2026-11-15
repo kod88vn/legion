@@ -3185,9 +3185,14 @@
        "id": 62,
        "name": "Bowling Bash",
        "lv": 10
+      },
+      {
+       "id": 55,
+       "name": "Spear Mastery",
+       "lv": 1
       }
      ],
-     "skill_points_unspent": 1,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -4947,7 +4952,7 @@
     },
     "stat_points_spare_at_99": 1,
     "stat_goals_unreached": [],
-    "skill_points_listed": 87,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -6450,7 +6455,7 @@
       {
        "id": 6,
        "name": "Provoke",
-       "lv": 5
+       "lv": 6
       },
       {
        "id": 8,
@@ -6483,7 +6488,7 @@
        "lv": 4
       }
      ],
-     "skill_points_unspent": 1,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -8119,7 +8124,7 @@
       {
        "id": 6,
        "name": "Provoke",
-       "lv": 5
+       "lv": 6
       },
       {
        "id": 8,
@@ -8159,7 +8164,7 @@
       {
        "id": 249,
        "name": "Guard",
-       "lv": 5
+       "lv": 7
       },
       {
        "id": 250,
@@ -8187,7 +8192,7 @@
        "lv": 1
       }
      ],
-     "skill_points_unspent": 3,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -9970,7 +9975,7 @@
     },
     "stat_points_spare_at_99": 4,
     "stat_goals_unreached": [],
-    "skill_points_listed": 85,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -17467,12 +17472,12 @@
       {
        "id": 283,
        "name": "Endow Quake",
-       "lv": 1
+       "lv": 5
       },
       {
        "id": 90,
        "name": "Earth Spike",
-       "lv": 3
+       "lv": 5
       },
       {
        "id": 91,
@@ -17482,7 +17487,7 @@
       {
        "id": 275,
        "name": "Cast Cancel",
-       "lv": 1
+       "lv": 3
       },
       {
        "id": 278,
@@ -17505,7 +17510,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 8,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -19015,7 +19020,7 @@
     },
     "stat_points_spare_at_99": 40,
     "stat_goals_unreached": [],
-    "skill_points_listed": 80,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -22292,9 +22297,29 @@
        "id": 128,
        "name": "Steel Crow",
        "lv": 10
+      },
+      {
+       "id": 115,
+       "name": "Skid Trap",
+       "lv": 5
+      },
+      {
+       "id": 116,
+       "name": "Land Mine",
+       "lv": 5
+      },
+      {
+       "id": 117,
+       "name": "Ankle Snare",
+       "lv": 5
+      },
+      {
+       "id": 118,
+       "name": "Shockwave Trap",
+       "lv": 2
       }
      ],
-     "skill_points_unspent": 17,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -24106,7 +24131,7 @@
     },
     "stat_points_spare_at_99": 38,
     "stat_goals_unreached": [],
-    "skill_points_listed": 71,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -25622,10 +25647,10 @@
       {
        "id": 45,
        "name": "Improve Concentration",
-       "lv": 5
+       "lv": 9
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -27356,7 +27381,7 @@
       {
        "id": 45,
        "name": "Improve Concentration",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 304,
@@ -27366,7 +27391,7 @@
       {
        "id": 315,
        "name": "Music Lessons",
-       "lv": 1
+       "lv": 5
       },
       {
        "id": 317,
@@ -27394,7 +27419,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 8,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -29246,7 +29271,7 @@
     },
     "stat_points_spare_at_99": 19,
     "stat_goals_unreached": [],
-    "skill_points_listed": 80,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -30762,10 +30787,10 @@
       {
        "id": 45,
        "name": "Improve Concentration",
-       "lv": 5
+       "lv": 9
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -32496,7 +32521,7 @@
       {
        "id": 45,
        "name": "Improve Concentration",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 304,
@@ -32506,7 +32531,7 @@
       {
        "id": 323,
        "name": "Dance Lessons",
-       "lv": 1
+       "lv": 5
       },
       {
        "id": 325,
@@ -32534,7 +32559,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 8,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -34371,7 +34396,7 @@
     },
     "stat_points_spare_at_99": 19,
     "stat_goals_unreached": [],
-    "skill_points_listed": 80,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -40706,7 +40731,7 @@
       {
        "id": 5,
        "name": "Bash",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 6,
@@ -40744,7 +40769,7 @@
        "lv": 9
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -42332,7 +42357,7 @@
       {
        "id": 5,
        "name": "Bash",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 6,
@@ -42377,7 +42402,7 @@
       {
        "id": 58,
        "name": "Spear Stab",
-       "lv": 5
+       "lv": 8
       },
       {
        "id": 64,
@@ -42390,7 +42415,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 7,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -44139,7 +44164,7 @@
     },
     "stat_points_spare_at_99": 8,
     "stat_goals_unreached": [],
-    "skill_points_listed": 81,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -45642,7 +45667,7 @@
       {
        "id": 6,
        "name": "Provoke",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 8,
@@ -45660,7 +45685,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -47296,7 +47321,7 @@
       {
        "id": 6,
        "name": "Provoke",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 8,
@@ -47321,7 +47346,7 @@
       {
        "id": 249,
        "name": "Guard",
-       "lv": 5
+       "lv": 7
       },
       {
        "id": 250,
@@ -47349,7 +47374,7 @@
        "lv": 1
       }
      ],
-     "skill_points_unspent": 6,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -49132,7 +49157,7 @@
     },
     "stat_points_spare_at_99": 0,
     "stat_goals_unreached": [],
-    "skill_points_listed": 82,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -52413,7 +52438,7 @@
       {
        "id": 115,
        "name": "Skid Trap",
-       "lv": 1
+       "lv": 4
       },
       {
        "id": 117,
@@ -52426,7 +52451,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 3,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -54238,7 +54263,7 @@
     },
     "stat_points_spare_at_99": 44,
     "stat_goals_unreached": [],
-    "skill_points_listed": 85,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -60479,7 +60504,7 @@
       {
        "id": 28,
        "name": "Heal",
-       "lv": 3
+       "lv": 9
       },
       {
        "id": 22,
@@ -60499,7 +60524,7 @@
       {
        "id": 259,
        "name": "Iron Fists",
-       "lv": 5
+       "lv": 6
       },
       {
        "id": 261,
@@ -60552,7 +60577,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 7,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -62177,7 +62202,7 @@
     },
     "stat_points_spare_at_99": 9,
     "stat_goals_unreached": [],
-    "skill_points_listed": 81,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -65191,9 +65216,14 @@
        "id": 109,
        "name": "Skin Tempering",
        "lv": 5
+      },
+      {
+       "id": 94,
+       "name": "Iron Tempering",
+       "lv": 4
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -66834,7 +66864,7 @@
     },
     "stat_points_spare_at_99": 11,
     "stat_goals_unreached": [],
-    "skill_points_listed": 84,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -68225,7 +68255,7 @@
       {
        "id": 36,
        "name": "Enlarge Weight Limit",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 39,
@@ -68308,7 +68338,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -69941,7 +69971,7 @@
     },
     "stat_points_spare_at_99": 4,
     "stat_goals_unreached": [],
-    "skill_points_listed": 84,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -73060,12 +73090,12 @@
       "AGI": 80,
       "VIT": 40,
       "INT": 1,
-      "DEX": 35,
+      "DEX": 40,
       "LUK": 40
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1242,
-     "stat_points_spare": 31,
+     "stat_points_used": 1267,
+     "stat_points_spare": 6,
      "skills": [
       {
        "id": 48,
@@ -73110,7 +73140,7 @@
       {
        "id": 135,
        "name": "Cloaking",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 137,
@@ -73133,7 +73163,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -74831,19 +74861,19 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1242,
+    "stat_points_goals_cost": 1267,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 80,
      "AGI": 80,
      "VIT": 40,
      "INT": 1,
-     "DEX": 35,
+     "DEX": 40,
      "LUK": 40
     },
-    "stat_points_spare_at_99": 31,
+    "stat_points_spare_at_99": 6,
     "stat_goals_unreached": [],
-    "skill_points_listed": 84,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -79564,12 +79594,12 @@
       {
        "id": 14,
        "name": "Cold Bolt",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 20,
        "name": "Lightning Bolt",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 10,
@@ -79632,7 +79662,7 @@
        "lv": 3
       }
      ],
-     "skill_points_unspent": 10,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -81108,12 +81138,12 @@
       {
        "id": 14,
        "name": "Cold Bolt",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 20,
        "name": "Lightning Bolt",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 10,
@@ -81148,12 +81178,12 @@
       {
        "id": 283,
        "name": "Endow Quake",
-       "lv": 3
+       "lv": 5
       },
       {
        "id": 280,
        "name": "Endow Blaze",
-       "lv": 2
+       "lv": 3
       },
       {
        "id": 281,
@@ -81211,7 +81241,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 13,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -82746,7 +82776,7 @@
     },
     "stat_points_spare_at_99": 40,
     "stat_goals_unreached": [],
-    "skill_points_listed": 75,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -87372,7 +87402,7 @@
       {
        "id": 36,
        "name": "Enlarge Weight Limit",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 39,
@@ -87455,7 +87485,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -89159,7 +89189,7 @@
     },
     "stat_points_spare_at_99": 13,
     "stat_goals_unreached": [],
-    "skill_points_listed": 84,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -90511,7 +90541,7 @@
       {
        "id": 36,
        "name": "Enlarge Weight Limit",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 39,
@@ -90594,7 +90624,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -92103,7 +92133,7 @@
     },
     "stat_points_spare_at_99": 17,
     "stat_goals_unreached": [],
-    "skill_points_listed": 84,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -93602,7 +93632,7 @@
       {
        "id": 36,
        "name": "Enlarge Weight Limit",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 39,
@@ -93655,7 +93685,7 @@
        "lv": 9
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -95281,7 +95311,7 @@
       {
        "id": 36,
        "name": "Enlarge Weight Limit",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 39,
@@ -95357,9 +95387,19 @@
        "id": 108,
        "name": "Weapon Repair",
        "lv": 1
+      },
+      {
+       "id": 94,
+       "name": "Iron Tempering",
+       "lv": 5
+      },
+      {
+       "id": 95,
+       "name": "Steel Tempering",
+       "lv": 2
       }
      ],
-     "skill_points_unspent": 11,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -97072,7 +97112,7 @@
     },
     "stat_points_spare_at_99": 32,
     "stat_goals_unreached": [],
-    "skill_points_listed": 77,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -100280,7 +100320,7 @@
       {
        "id": 135,
        "name": "Cloaking",
-       "lv": 2
+       "lv": 6
       },
       {
        "id": 137,
@@ -100298,7 +100338,7 @@
        "lv": 3
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -102042,7 +102082,7 @@
     },
     "stat_points_spare_at_99": 14,
     "stat_goals_unreached": [],
-    "skill_points_listed": 84,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -108635,12 +108675,12 @@
       {
        "id": 50,
        "name": "Steal",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 51,
        "name": "Hiding",
-       "lv": 3
+       "lv": 4
       },
       {
        "id": 52,
@@ -108661,9 +108701,29 @@
        "id": 46,
        "name": "Double Strafe",
        "lv": 10
+      },
+      {
+       "id": 149,
+       "name": "Sand Attack",
+       "lv": 1
+      },
+      {
+       "id": 150,
+       "name": "Back Slide",
+       "lv": 1
+      },
+      {
+       "id": 151,
+       "name": "Find Stone",
+       "lv": 1
+      },
+      {
+       "id": 152,
+       "name": "Stone Fling",
+       "lv": 1
       }
      ],
-     "skill_points_unspent": 10,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -110333,12 +110393,12 @@
       {
        "id": 50,
        "name": "Steal",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 51,
        "name": "Hiding",
-       "lv": 3
+       "lv": 4
       },
       {
        "id": 52,
@@ -110368,7 +110428,7 @@
       {
        "id": 211,
        "name": "Mug",
-       "lv": 4
+       "lv": 8
       },
       {
        "id": 213,
@@ -110379,9 +110439,34 @@
        "id": 124,
        "name": "Remove Trap",
        "lv": 1
+      },
+      {
+       "id": 149,
+       "name": "Sand Attack",
+       "lv": 1
+      },
+      {
+       "id": 150,
+       "name": "Back Slide",
+       "lv": 1
+      },
+      {
+       "id": 151,
+       "name": "Find Stone",
+       "lv": 1
+      },
+      {
+       "id": 152,
+       "name": "Stone Fling",
+       "lv": 1
+      },
+      {
+       "id": 218,
+       "name": "Divest Helm",
+       "lv": 5
       }
      ],
-     "skill_points_unspent": 19,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -112140,7 +112225,7 @@
     },
     "stat_points_spare_at_99": 3,
     "stat_goals_unreached": [],
-    "skill_points_listed": 69,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -113653,7 +113738,7 @@
       {
        "id": 5,
        "name": "Bash",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 6,
@@ -113691,7 +113776,7 @@
        "lv": 9
       }
      ],
-     "skill_points_unspent": 4,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -115318,7 +115403,7 @@
       {
        "id": 5,
        "name": "Bash",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 6,
@@ -115368,7 +115453,7 @@
       {
        "id": 58,
        "name": "Spear Stab",
-       "lv": 3
+       "lv": 8
       },
       {
        "id": 57,
@@ -115376,7 +115461,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 9,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -117164,7 +117249,7 @@
     },
     "stat_points_spare_at_99": 3,
     "stat_goals_unreached": [],
-    "skill_points_listed": 79,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -118652,12 +118737,12 @@
       {
        "id": 5,
        "name": "Bash",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 6,
        "name": "Provoke",
-       "lv": 5
+       "lv": 6
       },
       {
        "id": 8,
@@ -118695,7 +118780,7 @@
        "lv": 4
       }
      ],
-     "skill_points_unspent": 6,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -120287,12 +120372,12 @@
       {
        "id": 5,
        "name": "Bash",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 6,
        "name": "Provoke",
-       "lv": 5
+       "lv": 6
       },
       {
        "id": 8,
@@ -120327,7 +120412,7 @@
       {
        "id": 258,
        "name": "Spear Quicken",
-       "lv": 5
+       "lv": 8
       },
       {
        "id": 248,
@@ -120345,7 +120430,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 9,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -122107,7 +122192,7 @@
     },
     "stat_points_spare_at_99": 32,
     "stat_goals_unreached": [],
-    "skill_points_listed": 79,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -123524,7 +123609,7 @@
       {
        "id": 18,
        "name": "Fire Wall",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 10,
@@ -123534,7 +123619,7 @@
       {
        "id": 21,
        "name": "Thunderstorm",
-       "lv": 1
+       "lv": 2
       },
       {
        "id": 20,
@@ -123572,7 +123657,7 @@
        "lv": 8
       }
      ],
-     "skill_points_unspent": 6,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -125014,7 +125099,7 @@
       {
        "id": 18,
        "name": "Fire Wall",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 10,
@@ -125024,7 +125109,7 @@
       {
        "id": 21,
        "name": "Thunderstorm",
-       "lv": 1
+       "lv": 2
       },
       {
        "id": 20,
@@ -125044,7 +125129,7 @@
       {
        "id": 81,
        "name": "Sightrasher",
-       "lv": 2
+       "lv": 10
       },
       {
        "id": 83,
@@ -125054,7 +125139,7 @@
       {
        "id": 84,
        "name": "Jupitel Thunder",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 85,
@@ -125064,7 +125149,7 @@
       {
        "id": 90,
        "name": "Earth Spike",
-       "lv": 3
+       "lv": 4
       },
       {
        "id": 91,
@@ -125072,7 +125157,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 20,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -126582,7 +126667,7 @@
     },
     "stat_points_spare_at_99": 40,
     "stat_goals_unreached": [],
-    "skill_points_listed": 68,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -128004,12 +128089,12 @@
       {
        "id": 20,
        "name": "Lightning Bolt",
-       "lv": 4
+       "lv": 10
       },
       {
        "id": 11,
        "name": "Napalm Beat",
-       "lv": 1
+       "lv": 2
       },
       {
        "id": 16,
@@ -128042,7 +128127,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 7,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -129484,12 +129569,12 @@
       {
        "id": 20,
        "name": "Lightning Bolt",
-       "lv": 4
+       "lv": 10
       },
       {
        "id": 11,
        "name": "Napalm Beat",
-       "lv": 1
+       "lv": 2
       },
       {
        "id": 16,
@@ -129529,7 +129614,7 @@
       {
        "id": 90,
        "name": "Earth Spike",
-       "lv": 3
+       "lv": 4
       },
       {
        "id": 87,
@@ -129537,7 +129622,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 8,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -131047,7 +131132,7 @@
     },
     "stat_points_spare_at_99": 40,
     "stat_goals_unreached": [],
-    "skill_points_listed": 80,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -133978,7 +134063,7 @@
       {
        "id": 17,
        "name": "Fire Ball",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 274,
@@ -133999,9 +134084,19 @@
        "id": 279,
        "name": "Hindsight",
        "lv": 5
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 10
+      },
+      {
+       "id": 9,
+       "name": "Increase SP Recovery",
+       "lv": 8
       }
      ],
-     "skill_points_unspent": 23,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -135513,7 +135608,7 @@
     },
     "stat_points_spare_at_99": 3,
     "stat_goals_unreached": [],
-    "skill_points_listed": 65,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -138799,15 +138894,20 @@
       {
        "id": 115,
        "name": "Skid Trap",
-       "lv": 1
+       "lv": 5
       },
       {
        "id": 117,
        "name": "Ankle Snare",
-       "lv": 3
+       "lv": 5
+      },
+      {
+       "id": 116,
+       "name": "Land Mine",
+       "lv": 2
       }
      ],
-     "skill_points_unspent": 8,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -140619,7 +140719,7 @@
     },
     "stat_points_spare_at_99": 22,
     "stat_goals_unreached": [],
-    "skill_points_listed": 80,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -144124,12 +144224,12 @@
       {
        "id": 73,
        "name": "Kyrie Eleison",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 74,
        "name": "Magnificat",
-       "lv": 3
+       "lv": 4
       },
       {
        "id": 24,
@@ -144147,7 +144247,7 @@
        "lv": 1
       }
      ],
-     "skill_points_unspent": 6,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -146066,7 +146166,7 @@
     },
     "stat_points_spare_at_99": 3,
     "stat_goals_unreached": [],
-    "skill_points_listed": 82,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -149351,15 +149451,35 @@
       {
        "id": 317,
        "name": "Unchained Serenade",
-       "lv": 3
+       "lv": 5
       },
       {
        "id": 320,
        "name": "Impressive Riff",
        "lv": 10
+      },
+      {
+       "id": 1010,
+       "name": "Pang Voice",
+       "lv": 1
+      },
+      {
+       "id": 311,
+       "name": "Classical Pluck",
+       "lv": 1
+      },
+      {
+       "id": 308,
+       "name": "Down Tempo",
+       "lv": 1
+      },
+      {
+       "id": 318,
+       "name": "Unbarring Octave",
+       "lv": 3
       }
      ],
-     "skill_points_unspent": 8,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -151211,7 +151331,7 @@
     },
     "stat_points_spare_at_99": 47,
     "stat_goals_unreached": [],
-    "skill_points_listed": 80,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -154496,15 +154616,30 @@
       {
        "id": 325,
        "name": "Hip Shaker",
-       "lv": 3
+       "lv": 5
       },
       {
        "id": 327,
        "name": "Focus Ballet",
        "lv": 10
+      },
+      {
+       "id": 306,
+       "name": "Lullaby",
+       "lv": 1
+      },
+      {
+       "id": 312,
+       "name": "Power Chord",
+       "lv": 1
+      },
+      {
+       "id": 326,
+       "name": "Dazzler",
+       "lv": 4
       }
      ],
-     "skill_points_unspent": 8,
+     "skill_points_unspent": 0,
      "gear": {
       "weapon": {
        "best": {
@@ -156341,7 +156476,7 @@
     },
     "stat_points_spare_at_99": 47,
     "stat_goals_unreached": [],
-    "skill_points_listed": 80,
+    "skill_points_listed": 88,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },

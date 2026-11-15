@@ -129,6 +129,10 @@ class ExportTests(unittest.TestCase):
             figs = json.load(f)["builds"]["knight"]["plan_check"]
         self.assertEqual(knight["figures"], figs)
         self.assertEqual(knight["warnings"], buildexport.plan_warnings(figs))
+        # knight after the 2026-11-15 rebalance: its stat goals (1272 points) and skill goals are all reached at 99
+        self.assertEqual(knight["figures"]["stat_goals_unreached"], [])
+        for w in knight["warnings"]:
+            self.assertNotIn("never reached", w)
         # a build whose plan reaches every goal has no unreached-goal warning
         for w in by["hunter_blitz"]["plan_check"]["warnings"]:
             self.assertNotIn("never reached", w)

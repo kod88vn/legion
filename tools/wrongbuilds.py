@@ -67,17 +67,25 @@ def parse_plans(src):
 plans, VENDOR_FIRST = parse_plans(src)
 assert sum(p["base"] == k for k, p in plans.items()) == 13, plans.keys()
 
-# ---- 1st-job skill trees (Renewal): id -> (max, {prereq: lv})
-TREE = {
-    1: {2: (10, {}), 3: (10, {2: 1}), 4: (10, {}), 5: (10, {}), 6: (10, {}), 7: (10, {5: 5}), 8: (10, {6: 5})},
-    2: {9: (10, {}), 10: (1, {}), 11: (10, {}), 12: (10, {11: 7, 13: 5}), 13: (10, {11: 4}), 14: (10, {}), 15: (10, {14: 5}),
-        16: (10, {}), 17: (10, {19: 4}), 18: (10, {10: 1, 17: 5}), 19: (10, {}), 20: (10, {}), 21: (10, {20: 4})},
-    3: {43: (10, {}), 44: (10, {43: 3}), 45: (10, {44: 1}), 46: (10, {}), 47: (10, {46: 5})},
-    4: {22: (10, {}), 23: (10, {22: 3}), 24: (1, {}), 25: (1, {27: 4}), 26: (2, {24: 1}), 27: (4, {26: 2}), 28: (10, {}),
-        29: (10, {28: 3}), 30: (10, {29: 1}), 31: (1, {24: 1}), 32: (10, {23: 3}), 33: (10, {22: 3}), 34: (10, {22: 5}), 35: (1, {28: 2})},
-    5: {36: (10, {}), 37: (10, {36: 3}), 38: (10, {37: 3}), 39: (10, {36: 5}), 40: (1, {}), 41: (10, {39: 3}), 42: (10, {})},
-    6: {48: (10, {}), 49: (10, {}), 50: (10, {}), 51: (10, {50: 5}), 52: (10, {}), 53: (1, {52: 3})},
-}
+# ---- 1st-job skill trees (Renewal), read from the server's skill_tree.yml / skill_db.yml (committed fixtures, the
+# same tables as tools/design/planlib.py): id -> (max, {prereq id: lv}). Holy Water (31) has no prerequisite on the server.
+sys.path.insert(0, os.path.join(SRV, 'tools', 'design'))
+import planlib as _pl  # noqa: E402
+
+
+def _first_job_trees():
+    t = _pl.server_tree()
+    out = {}
+    for cls, job in _pl.FIRST_JOB.items():
+        tab = {}
+        for name, node in t.own(job).items():
+            req = {t.name2id[r['Name']]: r['Level'] for r in (node.get('Requires') or [])}
+            tab[t.name2id[name]] = (node['MaxLevel'], req)
+        out[cls] = tab
+    return out
+
+
+TREE = _first_job_trees()
 PRIO = {1: [5, 2, 3, 7], 2: [19, 14, 20, 9, 13], 3: [46, 43, 44], 4: [28, 34, 29, 22, 23, 25, 54, 66, 67],
         5: [42, 36, 37, 39, 41], 6: [48, 49, 50]}
 CORE = {0: 'Novice', 1: 'Swordman', 2: 'Mage', 3: 'Archer', 4: 'Acolyte', 5: 'Merchant', 6: 'Thief'}

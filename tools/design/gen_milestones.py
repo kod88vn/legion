@@ -39,7 +39,9 @@ FIRST_FILE = {"Swordman": "swordman", "Mage": "mage", "Archer": "archer", "Acoly
 
 
 def write_lf(path, text):
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
+    """Writes text with the line ending the file already has (CRLF if it had CRLF, else LF)."""
+    crlf = os.path.exists(path) and b"\r\n" in pathlib.Path(path).read_bytes()
+    with open(path, "w", encoding="utf-8", newline="\r\n" if crlf else "\n") as f:
         f.write(text)
 
 
@@ -169,14 +171,83 @@ def replace_section(path, heading_prefix, new_heading, body):
     write_lf(path, text[:i] + new_heading + "\n" + body + tail)
 
 
+def plan_bullets(path, group, plans, tree, desc):
+    """Rewrites, in each plan's section of a class file (the header names it as (plan `id`...)): the end goal in the
+    header (the plan's 2nd job, ST01 / G10: no transcendent end goal) and the "Stats:" and "Skills (order):" bullets,
+    which are the plan's goals in builds.go order (any older Skills label is replaced; a section with a Stats bullet
+    and no Skills bullet gets one). The prose of the rest of the section is kept."""
+    lines = open(path, encoding="utf-8").read().split("\n")
+    out = []
+    cur = None
+    stats_at = None  # index in out of the Stats bullet of the current plan section
+    header_at = None  # index in out of the current section's header
+    has_skills = False
+
+    def skills_line(plan):
+        st = tree.stage_tree(pl.SECOND_JOB[plan["cls"]])
+        parts = []
+        for sid, lv in plan["skills"]:
+            n = tree.id2name[sid]
+            parts.append(f"{desc[n]} {min(lv, st[n][1])}")
+        return f"- **Skills (order):** {', '.join(parts)}."
+
+    def stats_line(plan):
+        return "- **Stats:** " + ", ".join(f"{pl.STATS[s]} {v}" for s, v in plan["stats"]) + "."
+
+    def close():
+        # a plan section gets both bullets: a missing Stats bullet goes under the header, a missing Skills one under Stats
+        nonlocal stats_at
+        if cur is None:
+            return
+        if stats_at is None:
+            out.insert(header_at + 1, stats_line(cur))
+            stats_at = header_at + 1
+        if not has_skills:
+            out.insert(stats_at + 1, skills_line(cur))
+
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        if ln.startswith("### ") or ln.startswith("## "):
+            close()
+            m = re.search(r"\(plan `([a-z_]+)`", ln)
+            cur = plans[m.group(1)] if m and m.group(1) in group else None
+            stats_at, has_skills = None, False
+            if cur is not None:
+                ln = re.sub(r"end goal [^)]*\)", f"end goal {pl.SECOND_JOB[cur['cls']]})", ln)
+            out.append(ln)
+            header_at = len(out) - 1
+            i += 1
+            continue
+        if cur is not None and ln.startswith("- **Stats:**"):
+            out.append("- **Stats:** " + ", ".join(f"{pl.STATS[s]} {v}" for s, v in cur["stats"]) + ".")
+            stats_at = len(out) - 1
+            i += 1
+            while i < len(lines) and lines[i].startswith("  "):
+                i += 1  # the old continuation lines of the bullet
+            continue
+        if cur is not None and ln.startswith("- **Skills"):
+            out.append(skills_line(cur))
+            has_skills = True
+            i += 1
+            while i < len(lines) and lines[i].startswith("  "):
+                i += 1
+            continue
+        out.append(ln)
+        i += 1
+    close()
+    write_lf(path, "\n".join(out))
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--db-dir")
+    ap.add_argument("--db-dir", help="server tables (default: tests/tools/fixtures/server, committed copies)")
+    ap.add_argument("--fetch", action="store_true", help="read the tables from ro-rathena first (read-only, dev only)")
     ap.add_argument("--playstyle-src")
     ap.add_argument("--no-prose", action="store_true", help="only the JSON (docs untouched)")
     a = ap.parse_args()
-    db = a.db_dir
-    if not db:
+    db = a.db_dir or str(pl.SERVER_DB)
+    if a.fetch:
         db = tempfile.mkdtemp(prefix="skilltree_")
         fetch_db(db)
     tree = pl.Tree(f"{db}/skill_tree.yml", f"{db}/skill_db.yml", f"{db}/job_exp.yml")
@@ -203,7 +274,7 @@ def main():
         for band in g["bands"]:
             lo, hi = band["min"], band["max"]
             stats, spare = pl.sim_stats(plan["stats"], hi)
-            lv, pools = pl.sim_skills(plan, tree, hi)
+            lv, unspent = pl.sim_skills(plan, tree, hi)
             skills = []
             for sid, _ in plan["skills"]:
                 n = tree.id2name[sid]
@@ -217,7 +288,7 @@ def main():
                 "stat_points_used": pl.spent(stats),
                 "stat_points_spare": spare,
                 "skills": skills,
-                "skill_points_unspent": sum(pools.values()),
+                "skill_points_unspent": unspent,
             })
         gear_rows = ga.build_gear(cat, ga.job_keys_for(job2, pl.FIRST_JOB[plan["first"]]), g["bands"])
         for rng, gr in zip(ranges, gear_rows):
@@ -278,6 +349,7 @@ def main():
         path = DOCS / f"{fname}.md"
         replace_section(path, HEAD_PROSE, HEAD_PROSE + " (rebalanced 2026-11-15)",
                         class_body(sorted(group, key=lambda b: list(plans).index(b)), old_checks, new_checks, plans, builds))
+        plan_bullets(path, group, plans, tree, desc)
         print("prose", path)
     replace_section(DOCS / "all.md", HEAD_ALL, HEAD_ALL + " (rebalanced 2026-11-15; EC39)", all_body(old_checks, new_checks))
     print("prose", DOCS / "all.md")
