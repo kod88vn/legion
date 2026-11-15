@@ -42,7 +42,14 @@ const restoreWait = 10 * time.Minute // how long a restored party waits for its 
 // ownsBotParties: this instance saves and restores data/parties.json (not the core instance, see instances.go).
 func ownsBotParties() bool { return !coreInstance() }
 
-func botPartyFile() string { return filepath.Join(*dataDir, "parties.json") }
+// botPartyFile: the main instance's bot parties. The core instance keeps only its engine parties (engineparty.go) in
+// parties_engine.json: parties_core.json is the core's gear-pool file (gearpersist.go).
+func botPartyFile() string {
+	if coreInstance() {
+		return filepath.Join(*dataDir, "parties_engine.json")
+	}
+	return filepath.Join(*dataDir, "parties.json")
+}
 
 // cleanPartyName keeps what rAthena's char_name_letters allows (letters, digits, spaces).
 func cleanPartyName(s string) string {
@@ -75,6 +82,7 @@ func botPartyName(leader string) string {
 
 type savedParty struct {
 	Name       string     `json:"name"`
+	Engine     bool       `json:"engine,omitempty"` // engineparty.go: bot-led party with a human's bot as Leader
 	Leader     string     `json:"leader"`
 	Members    []string   `json:"members"` // character names, leader first
 	Map        string     `json:"map"`
@@ -122,8 +130,11 @@ func snapshotBotParties() []savedParty {
 		if p.Human != "" || p.Leader == nil || len(p.Members) < 2 {
 			continue
 		}
+		if coreInstance() && !p.Engine { // the core instance saves its engine parties only
+			continue
+		}
 		s := savedParty{Name: p.Name, Leader: charOf(p.Leader), Map: p.Map, Checkpoint: p.Checkpoint, Formed: p.Formed,
-			Rally: p.Rally, Need: p.Need, Purpose: p.Purpose, Anchor: p.Anchor}
+			Rally: p.Rally, Need: p.Need, Purpose: p.Purpose, Anchor: p.Anchor, Engine: p.Engine}
 		for _, m := range p.Members {
 			s.Members = append(s.Members, charOf(m))
 		}
@@ -344,7 +355,7 @@ func isRestoring(p *Party) bool {
 
 // restoreBotParties registers the saved bot parties (members still offline); restoreTick brings them back.
 func restoreBotParties(bots []*Bot) {
-	if !ownsBotParties() {
+	if !persistsBotParties() {
 		return
 	}
 	saved, src, err := loadPartiesForRestore(botPartyFile())
@@ -370,7 +381,7 @@ func restoreBotParties(bots []*Bot) {
 	n := 0
 	for _, s := range saved {
 		lead := byChar[strings.ToLower(s.Leader)]
-		if lead == nil || s.Map == "" {
+		if lead == nil || (s.Map == "" && !s.Engine) || (coreInstance() && !s.Engine) { // an engine party may still have no map
 			continue
 		}
 		r := &partyRestore{chars: map[*Bot]string{lead: s.Leader}, deadline: now.Add(restoreWait), armed: map[*Bot]bool{}}
@@ -385,7 +396,7 @@ func restoreBotParties(bots []*Bot) {
 			continue
 		}
 		p := &Party{Name: s.Name, Leader: lead, Members: members, Map: s.Map, Formed: s.Formed, Checkpoint: s.Checkpoint,
-			Rally: s.Rally, Restored: now, Need: s.Need, Purpose: s.Purpose, Anchor: s.Anchor}
+			Rally: s.Rally, Restored: now, Need: s.Need, Purpose: s.Purpose, Anchor: s.Anchor, Engine: s.Engine}
 		if p.Checkpoint == "" {
 			p.Checkpoint = nearestTown(p.Map)
 		}
@@ -679,7 +690,7 @@ func syncBotParty(p *Party, st *partySync, chars map[*Bot]string, now time.Time)
 
 // botPartyKeeper: restores saved parties, keeps in-game parties in step with the engine's, saves the file.
 func botPartyKeeper(bots []*Bot, stop <-chan struct{}) {
-	if ownsBotParties() {
+	if persistsBotParties() {
 		go partySaver(stop)
 	}
 	t := time.NewTicker(10 * time.Second)

@@ -223,6 +223,9 @@ type Tuning struct {
 	// guildduty.go (redesign G): guild_duty_on switches on guild blocks, warnings, kicks and the kicked bots' search
 	// (default off; the ledger, rank, wealth and relations run regardless)
 	GuildDutyOn        bool `json:"guild_duty_on"`
+	// engineparty.go (AY24, ayla-switch): comma-separated human names whose party runs bot-led on the engine, the human's
+	// own bot as Leader through formPartyOpt (default empty: every human-led party stays as it is)
+	EngineParties string `json:"engine_parties"`
 	GuildDutyMinPerDay int  `json:"guild_duty_min_per_day"` // minutes a member owes per played day (never more than half its time online)
 	GuildDutyWarnDays  int  `json:"guild_duty_warn_days"`   // short days before the warning (divided by the guild's strictness)
 	GuildDutyKickDays  int  `json:"guild_duty_kick_days"`   // short days after the warning before the kick (same)

@@ -80,6 +80,7 @@ type Party struct {
 	Map        string
 	Formed     time.Time
 	Human      string // human-led party: the real player the members follow
+	Engine     bool   // ayla-switch (AY24): a bot-led party with its human's bot as Leader (engineparty.go); saved by the core instance
 	ShareSet   bool   // even exp share requested (human-led parties)
 	Checkpoint string // regroup town: nearest town to where the party hunts
 	// town runs are a party event (owner: "They should all do town run together ... apply the fix to other parties

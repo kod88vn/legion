@@ -10,6 +10,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -377,7 +378,29 @@ func loadPersonas(path string) ([]*Persona, error) {
 	}
 	var ps []*Persona
 	err = json.Unmarshal(b, &ps)
+	fillLoginSecrets(filepath.Dir(path), ps)
 	return ps, err
+}
+
+// loginSecretsFile: passwords kept out of the tracked personas.json (ayla-switch: Ayla's login comes from her OpenKore
+// config through the migration, which writes here; the file is git-ignored).
+func loginSecretsFile(dir string) string { return filepath.Join(dir, "logins.local.json") }
+
+// fillLoginSecrets: a persona without a password in the file gets the one in logins.local.json (keyed by account id).
+func fillLoginSecrets(dir string, ps []*Persona) {
+	raw, err := os.ReadFile(loginSecretsFile(dir))
+	if err != nil {
+		return
+	}
+	var secrets map[string]string
+	if json.Unmarshal(raw, &secrets) != nil {
+		return
+	}
+	for _, p := range ps {
+		if p.Password == "" {
+			p.Password = secrets[strconv.Itoa(p.AccountID)]
+		}
+	}
 }
 
 // ---------------------------------------------------------------- DB seeding
@@ -487,7 +510,9 @@ func seedSQL(ps []*Persona, r *rand.Rand) string {
 	b.WriteString("ALTER TABLE `char` AUTO_INCREMENT = 200100;\n")
 	b.WriteString("DELETE FROM login WHERE account_id BETWEEN 2100001 AND 2199999" + keepSQL + ";\n")
 	for _, p := range ps {
-		if seedKeep[p.AccountID] {
+		// G06: only Legion's own accounts are seeded (a persona outside the bot range, e.g. Ayla's 2000000, is never
+		// inserted or deleted by a re-seed; the DELETEs above are range-bound too)
+		if p.AccountID < 2100001 || p.AccountID > 2199999 || seedKeep[p.AccountID] {
 			continue
 		}
 		// everyone starts as a Novice, so in a beginner town that's connected to the rest of the world by road
