@@ -225,6 +225,29 @@ const aylaZenyFloor = 10000
 
 func isAyla(name string) bool { return strings.EqualFold(strings.TrimSpace(name), aylaName) }
 
+// aylaSpendOK (G12): may Ayla's own bot send `amount` zeny (a mail gift, a trade price, a gear gift) and keep the floor?
+// Checked on her side of every send, not only when a human names her. Every other character is not limited here.
+func aylaSpendOK(name string, zeny, amount int) bool {
+	if !isAyla(name) {
+		return true
+	}
+	return amount > 0 && zeny-amount >= aylaZenyFloor
+}
+
+// zenyPayOK (G12, strict): may this bot hand `price` zeny to another player in a trade? It must have it and, for Ayla,
+// keep the floor: paying a player is sending zeny away, so Ayla's deals stop under 10,000z.
+func (b *Bot) zenyPayOK(price int) bool {
+	return b.Zeny >= price && aylaSpendOK(b.charName(), b.Zeny, price)
+}
+
+// aylaGiftCap (G12): the most zeny a bot may hand out of its purse: for Ayla, what is left above the floor.
+func aylaGiftCap(name string, zeny, gift int) int {
+	if !isAyla(name) {
+		return gift
+	}
+	return max(0, min(gift, zeny-aylaZenyFloor))
+}
+
 // aylaQuoteOK: may this price be quoted to the human `name`? Gifts always; Ayla only if she keeps the floor.
 func aylaQuoteOK(name string, zenyKnown bool, zeny, price int) bool {
 	if price <= 0 || !isAyla(name) {

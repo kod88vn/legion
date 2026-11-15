@@ -68,7 +68,8 @@ func (b *Bot) mailBusy() bool {
 
 // mailZeny starts mailing amount to a character (b.mu held). False if it can't start now.
 func (b *Bot) mailZeny(to string, amount int, title, body string, onDone func(ok bool, note string)) bool {
-	if b.mailBusy() || amount <= 0 || b.Zeny < mailCost(amount) || to == "" || to == b.charName() || b.tradeFrom != "" {
+	if b.mailBusy() || amount <= 0 || b.Zeny < mailCost(amount) || to == "" || to == b.charName() || b.tradeFrom != "" ||
+		!aylaSpendOK(b.charName(), b.Zeny, mailCost(amount)) { // G12: Ayla's own mail never takes her under 10,000z
 		return false
 	}
 	if len(title) > 30 {
