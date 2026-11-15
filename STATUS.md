@@ -102,3 +102,5 @@ start anything.
 - Live engine image: ro-legion:deploy-20261115-004609. Waiting for the 3-hour gate (03:32): batch/regular-0515 (chat-guild-api, restore-behaviour, system-layer, leader-talk, idle-errands engine). Held by PR40: fix/savepoints ea10c2a (conservative maps for all bot parties) until confirmed on Ayla's party.
 - Running loops: sentinel, partycheck, dispatcher (Ayla on Haiku, owner orders via tools/rogui/tell-ayla.cmd), unwall, bugq watch, aylalog.py. Main session watches via tools/system/aylawatch.sh (5-min snapshot) and a log Monitor.
 - Owner decision pending: @partyspy needs rathena chat logging + one rathena restart.
+
+- Next regular batch (after the 03:34 one, gate ~06:35): fix/market-stall a5ce919 (vending pitch leak, stuck carts, double-promised stock).
