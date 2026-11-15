@@ -769,9 +769,8 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 				if d <= b.collectWaitD-5 {
 					b.collectWaitAt, b.collectWaitD = now, d // approaching: keep waiting
 				}
-				if b.farmNear(6, "while "+lead.Name+" comes to get me", now) { // owner rule: farm while waiting
-					return true
-				}
+				// PT32b (2026-11-15): a member behind its leader does not farm while it waits for the collect - it
+				// holds still and lets the leader come (no fighting while more than 20 cells behind)
 				b.target = 0
 				b.setState("waiting for " + lead.Name + " (coming to get me)")
 				return true
