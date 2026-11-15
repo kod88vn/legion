@@ -68,6 +68,7 @@ Guild direction and duty (tools/legionctl_guild.py)
                                  guild-direction-clear <guildNN> [--id ID]   (kinds: stock gear carry level supply wealth)
   guild-duty [guildNN] [--all]   standings, today's minutes, blocks, kicked bots; guild-pardon / guild-kick <guildNN> <char>
   guild-rank [--hours N]         rank and wealth + trend;  guild-relations   rival..ally table
+  guild-say <guildNN> <text...>  guild chat in the leader's voice (say <guildNN> <text> does the same)
 Minds bus (the owner watches these on the dashboard and can send orders)
   orders <mind>                  owner's unread messages to this mind (marks them read); "(no new orders)" if none
   think <mind> <text...> [--kind thought|decision|action|summary] [--status "short status line"]
@@ -508,6 +509,8 @@ def main(argv):
             heard = ", ".join(hb[:6]) + (f" (+{m.get('heard_count', len(hb)) - 6} more)" if m.get("heard_count", len(hb)) > 6 else "")
             print(f"[{m['kind']}] {m.get('t', '')} {m['from']} ({tag}, {m['map']}): {m['text']}   -> heard by: {heard}")
 
+    elif cmd == "say" and args and legionctl_guild.is_guild_id(args[0]):  # say <guildNN>: the guild line
+        legionctl_guild.guild_cmd("guild-say", args, call, out, opt, q)
     elif cmd == "say":
         out(call(f"/api/bots/{q(args[0])}/say", {"text": " ".join(args[1:])}))
     elif cmd == "whisper":

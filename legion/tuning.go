@@ -91,8 +91,11 @@ package main
 //   exchange_gifts_per_hour   3    free / discounted hand-overs per giver per hour (then market price)
 //   exchange_ask_stage_sec    180  a want is asked in party chat, then guild chat, then #trade, this long per stage
 //   chat_jobs_on              false social lines wait for a chat agent's words (only while one polls /api/chat-jobs)
-//   chat_job_wait_min_sec     20   how long a chat job waits for the agent (random between min and max)
-//   chat_job_wait_max_sec     40
+//   chat_job_wait_min_sec     45   how long a chat job waits for the agent (random between min and max)
+//   chat_job_wait_max_sec     90
+//   chat_job_listed_grace_sec 45   a job listed by the agent (GET /api/chat-jobs) gets at least this long from the listing
+//                                  (capped 3 min after it was queued); 0 = off (chatjobs_wait.go)
+//   chat_job_code_kinds       thanks,accept  kinds the code says at once without waiting for the agent (PR38)
 
 import (
 	"encoding/json"
@@ -234,6 +237,9 @@ type Tuning struct {
 	ChatJobsOn           bool `json:"chat_jobs_on"`
 	ChatJobWaitMinSec    int  `json:"chat_job_wait_min_sec"`
 	ChatJobWaitMaxSec    int  `json:"chat_job_wait_max_sec"`
+	// chatjobs_wait.go: a listed job's grace, and the kinds the code says by itself (comma list)
+	ChatJobListedGraceSec int    `json:"chat_job_listed_grace_sec"`
+	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -259,7 +265,8 @@ var defaultTuning = Tuning{
 	ChatGlobalTrade: 0.45, ChatGlobalLFP: 0.80, ChatLocalReply: 0.6, ChatPartyReply: 0.5, ChatPartyHuman: 0.3,
 	ChatGuildLeader: 0.5, ChatReactBase: 0.25, ChatReactChattiness: 0.5, ChatReactJobChange: 0.25, ChatReactDeath: 0.3,
 	LfgGlobalPerMin: 6,
-	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
+	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 45, ChatJobWaitMaxSec: 90,
+	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept",
 }
 
 var curTuning atomic.Value // *Tuning

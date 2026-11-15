@@ -138,7 +138,7 @@ DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-
 
 
 # the watcher only observes and files: no words, prices, directions or chat jobs in the world either
-DENIED_WATCHER = ["say", "whisper", "party-say", "shop", "remember", "chat-jobs", "chat-intent", "guild-direction-set",
+DENIED_WATCHER = ["say", "whisper", "party-say", "guild-say", "shop", "remember", "chat-jobs", "chat-intent", "guild-direction-set",
                   "guild-direction-clear", "guild-pardon", "leader", "boss-check"]
 
 

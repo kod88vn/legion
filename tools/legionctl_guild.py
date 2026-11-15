@@ -9,10 +9,20 @@
   guild-kick <guildNN> <char> [--why TEXT]   queue an expel (exemptions and pacing still hold)
   guild-rank [--hours N]                     rank and wealth now + trend
   guild-relations                            relations between guilds (-1 rival .. +1 ally)
+  guild-say <guildNN> <text...>              a line in guild chat, said by the guild's leader (also: say <guildNN> ...)
 """
 
+import re
+
 COMMANDS = ("guild-direction", "guild-direction-set", "guild-direction-clear", "guild-duty", "guild-pardon",
-            "guild-kick", "guild-rank", "guild-relations")
+            "guild-kick", "guild-rank", "guild-relations", "guild-say")
+
+GUILD_ID = re.compile(r"^guild\d{2}$", re.I)
+
+
+def is_guild_id(s):
+    """'guild04' and the like: a guild, not a character (say <guildNN> means the guild line)"""
+    return bool(GUILD_ID.match(s or ""))
 
 
 def _dir_line(d):
@@ -128,3 +138,9 @@ def guild_cmd(cmd, args, call, out, opt, q):
         if not r["relations"]:
             print("(all neutral)")
         print(r["scale"])
+
+    elif cmd == "guild-say":
+        if len(args) < 2 or not " ".join(args[1:]).strip():
+            raise SystemExit("usage: guild-say <guildNN> <text...>")
+        leader = call(f"/api/guild-leaders/{q(args[0])}")["leader"]["name"]
+        out(call(f"/api/bots/{q(leader)}/guild-chat", {"text": " ".join(args[1:])}))

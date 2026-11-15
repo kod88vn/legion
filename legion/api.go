@@ -262,6 +262,13 @@ func serveAPI(addr string, bots []*Bot) {
 			msg := b.charName() + " : " + body.Text
 			go b.send(newPkt(0x0108).u16(0).str(msg, len(msg)+1).varlen())
 			b.event("said-party", b.charName(), body.Text)
+		case "guild-chat": // the guild line (legionctl guild-say / say <guildNN>: the leader speaks in guild chat)
+			t, err := chatLineOK(body.Text) // chatjobs.go: one short line, never a hint at the system (G18)
+			if err != nil {
+				http.Error(w, err.Error(), 400)
+				return
+			}
+			go b.guildSay(t)
 		case "shop": // {"text": "shop title", "markup": 1.5} - reopens the shop with the new title
 			var sb struct {
 				Text   string  `json:"text"`
