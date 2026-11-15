@@ -1201,10 +1201,13 @@ sub mob_target {
 sub crowd_check {
 	my $here = shift;
 	$lastFightAt = time if AI::inQueue('attack') || $char->{sitting} || is_townmap($here) || $here ne ($huntMap || '');
-	return if time - $lastFightAt < 60 || time - $crowdSaidAt < 300;
+	# crowded = on that map, nothing to fight for 5+ min with 6+ other players around her (live 06:03: "pay_dun02 is
+	# crowded" sent her across the world while she stood at its entrance on pay_dun01)
+	return if time - $lastFightAt < 300 || time - $crowdSaidAt < 300;
 	my $n = 0;
 	foreach my $p (@{$playersList ? $playersList->getItems() : []}) { $n++ unless $char->{party}{users}{$p->{ID}} }
 	$crowdSaidAt = time;
+	return if $n < 6; # nothing to fight but no crowd: the sweep / own map choice handles a thin map
 	my $line = sprintf("map too crowded: nothing to fight for %ds on %s, %d other players in sight - pick another map", time - $lastFightAt, $here, $n);
 	message "[partylead] $line
 ", 'system';
@@ -1597,7 +1600,8 @@ sub trivial_transit {
 sub route_aor { return trivial_transit() ? 0 : 2 }
 
 my %crowdedAt; # map -> when it was too crowded to farm (skipped for an hour)
-my $gmRecheck = 0; # gear maps: the measured step changed - fit_tick re-checks at once
+my $gmRecheck = 0;
+my %routeFailAt; # map -> until when its route counts as failing (STUCK twice): skipped like a crowded map # gear maps: the measured step changed - fit_tick re-checks at once
 my ($turnAt, $turnMap, $turnWho) = (0, '', '');
 sub party_turn {
 	return ($turnMap, $turnWho) if time - $turnAt < 60;
@@ -1756,13 +1760,13 @@ my %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
 my $gmOff = -10;
 our $forceRepick = 0;
 my $gmDiedStepAt = 0;
-sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 3, repick => $forceRepick ? 1 : 0}); close $f } }
+sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 4, repick => $forceRepick ? 1 : 0}); close $f } }
 # no step file yet: create it now (-10) with the owner's re-pick pending; a pending re-pick survives further reloads
 eval {
 	if (open(my $f, '<', 'logs/ayla_step.json')) {
 		local $/; my $d = JSON::PP->new->decode(<$f>); close $f;
 		$gmOff = $d->{off} if $d && defined $d->{off} && ($d->{v} || 0) >= 2;
-		$forceRepick = 1 if $d && ($d->{repick} || ($d->{v} || 0) < 3); # v2 re-picked into the gear-turn map: again
+		$forceRepick = 1 if $d && ($d->{repick} || ($d->{v} || 0) < 4); # v3: a false "crowded" sent her to gef_fild03 - re-pick nearest
 	} else { $forceRepick = 1; step_save() }
 };
 sub gm_kill { $gmKills++ }
@@ -1839,7 +1843,10 @@ sub map_fits {
 sub level_map {
 	my $plv = shift;
 	my $heal = party_has_healer();
-	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) && route_unsafe($r->[2], $plv) eq '' };
+	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) && !(time < ($routeFailAt{$r->[2]} || 0)) && route_unsafe($r->[2], $plv) eq '' };
+	# (2) nearest first: a fitting map of the area she is in / heading to (the same Kafra town) before a far one
+	my $area = town_of_map(plan_map() || $homeMap || ($field ? $field->baseName : ''));
+	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && $r->[3] == $heal && town_of_map($r->[2]) eq $area }
 	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && $r->[3] == $heal }
 	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && !$r->[3] } # no healer row: a field
 	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) }
@@ -1936,7 +1943,8 @@ sub plan_reason {
 	return "$d deaths on $c in 30 min" if $d >= 2;
 	return "no kills on $c for 20 min" if $field && $field->baseName eq $c && $plan->{expAt} && time - $plan->{expAt} > 1200;
 	return "$c can't be reached (dropped)" if $droppedUntil{$c} && time < $droppedUntil{$c};
-	return "$c is crowded" if $crowdedAt{$c} && time - $crowdedAt{$c} < 3600;
+	return "$c is crowded" if $crowdedAt{$c} && time - $crowdedAt{$c} < 3600 && $crowdedAt{$c} <= time;
+	return "the route to $c keeps failing" if time < ($routeFailAt{$c} || 0);
 	my $v = route_unsafe($c);
 	return "the way to $c crosses $v" if $v ne '';
 	return '';
@@ -2098,13 +2106,16 @@ sub force_repick {
 	my @fr0 = online_friends();
 	return if @fr0 && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr0) && time - $fitLoadAt < 300;
 	$forceRepick = 0;
+	my $old = plan_map() || $homeMap || ($config{lockMap} || '-');
+	my @keep = ($plan, $homeMap, $homeAt, $homeBy);
+	($plan, $homeMap, $homeAt, $homeBy) = (undef, '', 0, 'auto'); # the area preference starts from where she is
 	my ($m, $why) = choose_map();
+	($plan, $homeMap, $homeAt, $homeBy) = @keep;
 	if (defined $m && $m ne '') {
-		my $old = plan_map() || $homeMap || ($config{lockMap} || '-');
-		wd_report('PLAN_CHANGE', $old, "$old -> $m: owner: party too weak ($why)", 'new plan on arrival');
+		wd_report('PLAN_CHANGE', $old, "$old -> $m: re-pick, the nearest fitting map ($why)", 'new plan on arrival');
 		$plan = undef; plan_save();
 		($homeMap, $homeAt, $homeBy) = ('', 0, 'auto');
-		auto_goto($m, "owner: party too weak; $why") if $old ne $m;
+		auto_goto($m, "re-pick, the nearest fitting map; $why") if $old ne $m;
 	} else { $forceRepick = 1 } # nothing chosen yet: try again next tick
 	step_save();
 }
@@ -2227,7 +2238,7 @@ sub watchdog_tick {
 	# (24,98)", live 2026-11-15): after 3 min the plugin cancels the rally itself, drops the goto and flies to her save
 	# point (Butterfly Wing); the same destination failing twice is skipped for 2 h (unless the mind ordered it)
 	if (($rally && $here ne $rally->{town} || AI::inQueue('route', 'move')) && !AI::inQueue('attack', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal')
-		&& !$char->{sitting} && !own_rest() && !$char->{dead} && $now - $wdStuckSince > 180) {
+		&& !$char->{sitting} && !own_rest() && !$char->{dead} && !pk_waiting() && $now - $wdStuckSince > 180) { # holding for the party is no STUCK
 		my $dest = $rally ? ($rally->{thenGoto} || $rally->{dest} || $rally->{town}) : ($gotoMap || $config{lockMap} || '');
 		wd_report('STUCK', $here, "$here $pos for " . int(($now - $wdStuckSince) / 60) . " min, route to " . ($dest || '?') . " fails" . ($rally ? " (rally $rally->{town})" : ''),
 			($rally ? 'rally cancelled, ' : '') . 'respawn to ' . ($config{saveMap} || 'the save point'));
@@ -2236,7 +2247,7 @@ sub watchdog_tick {
 		# once, whoever set it, and she falls back to her own gear-rated choice
 		my $sameTown = is_townmap($here) && ($config{saveMap} || '') eq $here;
 		if ($dest ne '' && !is_townmap($dest) && ($sameTown || ++$wdStuckN{$dest} >= 2 || $droppedUntil{$dest})) { drop_map($dest, $sameTown ? "route from $here fails and a respawn lands in $here again" : "route fails again"); $wdStuckN{$dest} = 0 }
-		elsif ($dest ne '' && ++$wdStuckN{$dest} >= 2 && !mind_fresh()) { $crowdedAt{$dest} = $now + 3600; $wdStuckN{$dest} = 0 }
+		elsif ($dest ne '' && ++$wdStuckN{$dest} >= 2 && !mind_fresh()) { $routeFailAt{$dest} = $now + 3600; $wdStuckN{$dest} = 0 }
 		if ($rally) { end_rally("can't find a way there", 0); $rally = undef }
 		$depart = undef; $gotoMap = ''; $holding = 0;
 		AI::clear('route', 'move');
@@ -2437,6 +2448,7 @@ our %WAIT_FIELDS = (geffen => ['gef_fild13', 'gef_fild07'], prontera => ['prt_fi
 sub wait_fields_for { return 0 } # owner 2026-11-14: rally / departure waits hold at the meeting point (no field trips)
 my %pk = (waitAt => 0, sayAt => 0, logAt => 0, goName => '', routeAt => 0, crossSaid => '', wf => undef);
 my @crossWings; # [time, map]
+sub pk_waiting { return $pk{waitAt} ? 1 : 0 }
 sub pk_lmhold { return $pk{lmHold} || '' }
 sub cross_danger { my $m = shift || ''; return $CROSS_DANGER{$m} && transit_fit_lv() < $CROSS_DANGER{$m} + 10 ? 1 : 0 }
 # her current map route: (destination map, the next map on the way)
