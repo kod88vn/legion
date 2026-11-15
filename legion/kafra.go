@@ -88,6 +88,7 @@ type kafraTrip struct {
 	Started time.Time
 	At      time.Time
 	NPC     uint32
+	Goal    string // the map this teleport is a hop toward (kafrachain.go: hops of one trip)
 }
 
 // kafraMinSaving(): teleport only if it saves at least this many map changes (tune().KafraMinSaving, tuning.go)
@@ -161,7 +162,7 @@ func (b *Bot) kafraPlan(goal string, now time.Time) *kafraTrip {
 		}
 		return nil
 	}
-	return &kafraTrip{Dest: *best, Spot: sp, Town: town, Stage: "walk", Started: now, At: now}
+	return &kafraTrip{Dest: *best, Spot: sp, Town: town, Stage: "walk", Started: now, At: now, Goal: goal}
 }
 
 // kafraSaving (b.mu held): the map changes a Kafra teleport must save. On the way back from a town trip (started in
@@ -448,7 +449,7 @@ func (b *Bot) kafraVia(goal string, now time.Time) (string, bool) {
 	}
 	// only to a KNOWN save point (together.go knownSave): a wing on a guessed one (the home town after a restart)
 	// landed guild05's leader in the wrong town (QA 11:46: "via prontera", landed near Payon)
-	if st, known := b.knownSave(); known && st != "" && len(kafraDests[st]) > 0 && b.countItem(itemButterflyWing) >= 2 { // keep the last for escapes
+	if st, known := b.knownSave(); known && st != "" && len(kafraDests[st]) > 0 && b.travelWingOK(here, now) { // keep the last for escapes (travelwing.go: not for a party member far from its party)
 		c := 1 + b.kafraTeleCost(st, goal)
 		w := kafraOverheadCells + b.kafraTeleCells(st, goal)
 		// the wing must clearly beat walking to the nearest Kafra town (kafra_min_save_sec), and never fly back to
@@ -546,6 +547,7 @@ type kafraHop struct {
 	At       time.Time
 	From, To string // the Kafra town left, the map landed on
 	ForTrip  bool   // taken on a town run (the way home from it is a real need)
+	Goal     string // the map the hop was toward (kafrachain.go: the next hop of the same trip)
 }
 
 // noteKafraHop (b.mu held, 0x0091 before MapName changes): the map change that ends a Kafra teleport trip.
@@ -554,7 +556,7 @@ func (b *Bot) noteKafraHop(newMap string, now time.Time) {
 	if k == nil || k.Save || k.Cart || newMap == "" || newMap == k.Town || b.MapName != k.Town {
 		return
 	}
-	b.kafraLast = kafraHop{At: now, From: k.Town, To: newMap, ForTrip: b.trip != nil}
+	b.kafraLast = kafraHop{At: now, From: k.Town, To: newMap, ForTrip: b.trip != nil, Goal: k.Goal}
 	hops := b.kafraHops[:0]
 	for _, t := range b.kafraHops {
 		if now.Sub(t) < time.Hour {
@@ -596,7 +598,7 @@ func (b *Bot) kafraCapExempt(now time.Time) bool {
 	}
 	p := partyOf(b)
 	if p == nil || p.Human != "" {
-		return false
+		return b.humanLeaderLeg() // healerstick.go: on the way to the human leader, her Kafra legs are ours too
 	}
 	parties.Lock()
 	pm := p.Map
@@ -633,7 +635,7 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 			n10++
 		}
 	}
-	if n10 >= 3 || dest != "" && now.Sub(l.At) < 10*time.Minute && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() &&
+	if n10 >= 3 && !kafraChainHop(l, dest, goal, n10) || dest != "" && now.Sub(l.At) < 10*time.Minute && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() &&
 		!(l.ForTrip && b.trip == nil) { // (the one way home after a town run stays free)
 		// when it clears (travel waits in town for it rather than walking a deadly way, see kafraWaitInTown)
 		until := l.At.Add(10 * time.Minute)
@@ -674,7 +676,7 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 		}
 	}
 	why := ""
-	if dest != "" && now.Sub(l.At) < cd && (dest == l.From || nearestTown(dest) == l.From) {
+	if dest != "" && now.Sub(l.At) < cd && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() { // following the party / leader back is no flip-flop (healerstick.go)
 		why = fmt.Sprintf("not straight back to %s (left it %d min ago)", l.From, int(now.Sub(l.At).Minutes()))
 	} else if mx := tune().KafraMaxPerHour; mx > 0 && n >= mx && !b.kafraCapExempt(now) {
 		if goal != "" && !b.kafraWalkSafe(goal, now) {
@@ -958,7 +960,7 @@ func (b *Bot) routeSafeFrom(m string, x, y int, goal string) bool {
 func (b *Bot) kafraPartyMove() bool {
 	p := partyOf(b)
 	if p == nil || p.Human != "" {
-		return false
+		return b.humanLeaderLeg() // healerstick.go
 	}
 	parties.Lock()
 	pm := p.Map
@@ -983,6 +985,11 @@ func (b *Bot) kafraWaitInTown(goal string, now time.Time) bool {
 		b.event("info", "", fmt.Sprintf("waiting in %s for the Kafra toward %s: the walk crosses maps too strong for me", b.MapName, goal))
 	}
 	b.route, b.path = nil, nil
+	if rallyParkOn() { // rallypark.go: one owner of the waiting sit, and a cap on the park
+		b.waitSit(!now.After(b.MoveUntil), now)
+		b.parkTick(goal, now)
+		return true
+	}
 	if !b.Sitting && now.Sub(b.sitSentAt) > 3*time.Second {
 		b.sitSentAt = now
 		go b.sit()

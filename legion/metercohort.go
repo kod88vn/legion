@@ -172,15 +172,16 @@ func meterDerive(rows []*meterRow, minMin [mwN]float64) {
 			fair, min float64
 			inc       int64
 		}
-		parties := map[uint32]*agg{}
+		parties := map[string]*agg{} // by meterPartyKey (meterparty.go): b.PartyID is a placeholder 1 for every party
 		for _, r := range rows {
-			if r.PartyID == 0 || meterMode(r.Role, r.PartyID) != "party" {
+			k := r.partyKey()
+			if k == "" || meterMode(r.Role, r.PartyID) != "party" {
 				continue
 			}
-			a := parties[r.PartyID]
+			a := parties[k]
 			if a == nil {
 				a = &agg{}
-				parties[r.PartyID] = a
+				parties[k] = a
 			}
 			x := &r.Win[w]
 			a.fair += float64(x.Fair)
@@ -196,7 +197,7 @@ func meterDerive(rows []*meterRow, minMin [mwN]float64) {
 				st.ZPHOwn = float64(x.income()) / x.Min * 60
 				st.DPH = float64(x.Deaths) / x.Min * 60
 				st.KPM, st.ZPH = st.KPMOwn, st.ZPHOwn
-				if a := parties[r.PartyID]; a != nil && meterMode(r.Role, r.PartyID) == "party" && a.min > 0 {
+				if a := parties[r.partyKey()]; a != nil && meterMode(r.Role, r.PartyID) == "party" && a.min > 0 {
 					st.KPM = a.fair / a.min
 					st.ZPH = float64(a.inc) / a.min * 60
 				}

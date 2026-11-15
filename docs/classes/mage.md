@@ -9,6 +9,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   grouped. Existing bolt Mages are not wrong builds; they keep their levels and every new skill point goes to area spells. (2026-11-14)
 - CL07. A Wizard or Mage casts an area spell at every chance a group forms, placed on the cell that covers the most monsters (the
   crowd centre); it never idles or single-targets in a crowd. (2026-11-14)
+- CL16. A caster (Wizard, Mage, Sage) whose SP sits full most of the time is a bug: it should be spending SP on spells in every fight and resting only to refill. (2026-11-14)
 - CL08. A party with a Wizard plays around it: tank and melee lure and gather monsters into a tight group in the Wizard's range,
   the Wizard drops its AoE on the centre, the others pick off survivors. Applies to every such party, Ayla's included. (2026-11-14)
 

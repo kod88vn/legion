@@ -302,6 +302,9 @@ func (b *Bot) escape(gm *GameMap, hp float64, moving bool, now time.Time) bool {
 			return true
 		}
 	}
+	// partystick.go PT31: with party mates on this map no Fly Wing / Teleport to a random cell - run to the tank /
+	// priest / leader, call for help, Butterfly Wing to the save Kafra only when about to die (announced)
+	sHandled, sFled := b.stickEscape(gm, hp, n, farAbove && hp < 0.35 || bossRecent(b.MapName, lv) && hp < 0.35, moving, now, why)
 	anchor, ad, aok := b.partyAnchor(now)
 	reach := 15
 	if strings.Contains(b.MapName, "_dun") {
@@ -319,6 +322,8 @@ func (b *Bot) escape(gm *GameMap, hp float64, moving bool, now time.Time) bool {
 	}
 	toParty := aok && ad <= reach && (ad > 2 || reach > 40) && hp >= minHP && !farAbove
 	switch {
+	case sHandled:
+		// PT31 done above
 	case toParty:
 		if n >= 3 && now.After(b.buffAt["helpcall"]) {
 			b.buffAt["helpcall"] = now.Add(45 * time.Second)
@@ -400,6 +405,9 @@ func (b *Bot) escape(gm *GameMap, hp float64, moving bool, now time.Time) bool {
 		go b.partySay(styled(typing, pick("this map is too much for me, can we go somewhere easier?", "i keep running away here, lets move pls")))
 		leaderNoteBad(partyLeaderName(b), b.MapName, leaderFleeBan) // party.go: survives a re-formed party
 		go p.relocate(b.MapName, b.X, b.Y, b.charName()+" keeps fleeing")
+	}
+	if sHandled {
+		return sFled // next to the party mate: fight back here
 	}
 	return true
 }

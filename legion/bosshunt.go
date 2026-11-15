@@ -447,8 +447,10 @@ func endBossHunt(h *bossHunt, phase, why string) {
 		if back != "" {
 			l.mu.Lock()
 			l.Goal, l.route, l.path = Goal{Mode: "hunt", Map: back, Set: "party-leader"}, nil, nil
+			typing := l.P.Typing
 			l.mu.Unlock()
 			p.moveTo(back)
+			sayPartyDest(l, typing, p, back, "back to farming") // partydest.go PT30: say where to be
 		}
 	}
 }
@@ -684,6 +686,9 @@ func (b *Bot) bossEscape(hp float64, now time.Time) (handled, fled bool) {
 	}
 	if hp >= 0.25 {
 		return true, false
+	}
+	if h, f := b.stickEscape(maps[b.MapName], hp, 1, false, false, now, "boss hunt: low HP"); h { // partystick.go PT31
+		return true, f
 	}
 	if b.escItemOK(itemFlyWing, now) {
 		b.escapeAt = now.Add(4 * time.Second)

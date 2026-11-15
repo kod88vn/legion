@@ -274,7 +274,7 @@ func (b *Bot) think() {
 	if b.bossWatch(gm, moving, now) || b.survive(gm, moving, now) { // bossnote.go: leave before a far-above boss reaches us
 		return
 	}
-	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.lowHPGuard(gm, moving, now) {
+	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.selfKyrie(now) || b.lowHPGuard(gm, moving, now) { // healerstick.go: Kyrie on the priest itself
 		return
 	}
 	// economy.go: meeting another player for a trade (bought or sold on #trade) owns the bot until done or timed out
@@ -443,6 +443,12 @@ func (b *Bot) think() {
 				// party run: out of potions" and died twice on gef_fild10; kiraknight likewise on prt_fild10): no trip
 				// interval, the short party-run gap, and alone when the party can't go now
 				potNeed := why == "out of potions"
+				// PT24 for the healer (healerstick.go): no solo town trip while the leader is out farming - only a bag at
+				// the urgent weight line goes alone; the rest waits for the party's run
+				healerStays := p != nil && healerStickOn() && healerTripBlocked(b.isHealer(), b.leaderOut(p, now), b.MaxWeight > 0 && b.Weight*100/b.MaxWeight >= tune().TripUrgentWeightPct)
+				if healerStays {
+					urgent, potNeed = false, false
+				}
 				switch {
 				case p != nil && (classW && !bowless || noArrows) && !urgent && b.errandCanLeave(p, now) && errandFieldMap(b.MapName):
 					// economy run 8: a short errand buys it right after this (errand.go "weapon"), no waiting line
@@ -466,7 +472,7 @@ func (b *Bot) think() {
 								"can i grab a "+it.Name+" on our next town run?", "still using a knife, need a "+it.Name+" when we go to town")))
 						}
 					}
-				case p.Human != "" && realNeed && !b.humanAskAt.IsZero() && now.Sub(b.humanAskAt) > 10*time.Minute:
+				case p.Human != "" && realNeed && !healerStays && !b.humanAskAt.IsZero() && now.Sub(b.humanAskAt) > 10*time.Minute:
 					// asked for 10+ min and the human leader never took the party to town: a real need (no potions, bag
 					// full) can't wait forever - a short solo trip, said in party chat (startTrip announces it), back after
 					b.humanAskAt = time.Time{}
@@ -1248,11 +1254,7 @@ func (b *Bot) travel(gm *GameMap, moving bool) {
 		if t, wing := b.kafraVia(b.Goal.Map, now); t != "" {
 			b.viaTown, b.viaFor, b.route, b.path = t, b.Goal.Map, nil, nil
 			if wing && now.Sub(b.wingAt) > 30*time.Second {
-				if idx := b.invIndex(itemButterflyWing); idx >= 0 {
-					b.wingAt = now
-					b.wingEvent(itemButterflyWing, "kafra trip via "+t+" to "+b.Goal.Map, now)
-					go b.useItem(idx)
-				}
+				b.flySave("kafra trip via "+t+" to "+b.Goal.Map, now) // travelwing.go: Butterfly Wing, else Teleport lv2
 			}
 			b.event("info", "", fmt.Sprintf("heading to the Kafra in %s for the trip to %s", t, b.Goal.Map))
 		}
@@ -1560,6 +1562,9 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	if partyRole(b) == roleTank && partyOf(b) != nil {
 		restAt *= 0.5 // a party's tank keeps going (potions, the priest heals) instead of sitting back
 	}
+	if b.selfHealInstead(hp, restAt, now) { // healerstick.go: a bot with Heal heals itself instead of sitting for HP
+		return
+	}
 	if b.wantSit {
 		done := hp >= 0.95 && !b.lowSP() && (b.MaxSP == 0 || b.SP*100/b.MaxSP >= 80 || b.bestAttack() == nil)
 		if !b.spCaster() {
@@ -1593,7 +1598,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		b.setState("resting")
 		return
 	}
-	if b.Sitting && !b.wantSit && now.Sub(b.sitSentAt) > 2*time.Second && now.Sub(b.restSitAt) > 1500*time.Millisecond { // stand up if something left us seated (not a party-rest sit: together.go)
+	if b.Sitting && !b.wantSit && now.Sub(b.sitSentAt) > 2*time.Second && now.Sub(b.restSitAt) > 1500*time.Millisecond && !b.waitSitHeld(now) { // stand up if something left us seated (not a party-rest sit: together.go)
 		b.sitSentAt = now
 		go b.stand()
 	}
@@ -1667,7 +1672,12 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	if !heavy {
 		var best *GroundItem
 		bd := 7
+		sRefs, sOK := b.stickRefs(now) // partystick.go: no drop beyond together_cells of the party
+		sx0, sy0 := b.livePos(now)
 		for _, it := range b.items {
+			if sOK && !stickAllows(sx0, sy0, it.X, it.Y, sRefs, togetherCells()) {
+				continue
+			}
 			if b.overRegenWeight() && heavyJunk(it.ItemID) {
 				continue // over the regen line: low-value NPC junk stays on the ground (lootvalue.go heavyJunk)
 			}
@@ -1748,7 +1758,10 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	clv := b.champLv() // bossnote.go: champions measured with the party's strength
 	var pick *Entity
 	pd := 99
-	bt := b.bossHuntTarget() // bosshunt.go: the party hunts this boss here - everyone goes for it on sight
+	bt := b.bossHuntTarget()       // bosshunt.go: the party hunts this boss here - everyone goes for it on sight
+	tRefs, tOK := b.stickRefs(now) // partystick.go: no pull beyond together_cells of the party (what hits us still counts)
+	tx0, ty0 := b.livePos(now)
+	fip := b.fightInPlace(now, tRefs) // pt32.go: PT32 in-place filter for party members (nil = off / solo)
 	for _, e := range b.ents {
 		if e.Type != objMob {
 			continue
@@ -1765,6 +1778,12 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		if now.Sub(e.LastHitMe) < 4*time.Second {
 			pick, pd = e, -1
 			break
+		}
+		if tOK && !stickAllows(tx0, ty0, ex, ey, tRefs, togetherCells()) {
+			continue
+		}
+		if fip != nil && !fip.allows(e.ID, ex, ey) {
+			continue
 		}
 		mb := mobs[e.Class]
 		if mb != nil && (mb.Boss || mb.Level > maxLv || mb.worthless()) {
@@ -1986,6 +2005,7 @@ func partyFitLv(ms []*Bot) (minLv, fitLv, known, unknown int) {
 			minLv = min(minLv+b, max(minLv, partyMinBase(ms)))
 			fitLv += b
 		}
+		minLv, fitLv = partyPerfAdjust(ms, minLv, fitLv, false) // gearscore.go: easy farming steps the party up
 	}
 	return
 }
@@ -2014,6 +2034,9 @@ func partyFitLvRaw(ms []*Bot) (minLv, fitLv, known, unknown int) {
 		}
 		minLv = min(minLv, lv)
 		fitLv = min(fitLv, max(lv+tn.TargetLvOver+int(b.P.Aggression*tn.TargetLvAggression), tn.TargetLvMin))
+	}
+	if known > 0 {
+		minLv, fitLv = partyPerfAdjust(ms, minLv, fitLv, true) // gearscore.go: deaths / poor kills step the party down
 	}
 	return
 }
@@ -2443,6 +2466,7 @@ func (b *Bot) leaderPartyPick(p *Party) bool {
 	if m != cur {
 		b.event("party", "", fmt.Sprintf("re-planning the party map: %s -> %s (fits the weakest member)", cur, m))
 		go p.moveTo(m)
+		sayPartyDest(b, b.P.Typing, p, m, "better spot for all of us") // partydest.go PT30: say where to be
 	}
 	return true
 }
@@ -2760,10 +2784,16 @@ func (b *Bot) fight(e *Entity, moving bool, now time.Time) {
 	if b.kiteStep(e, moving, now) { // kite.go: a bow user steps back out of melee reach (hit and run), Ankle Snare
 		return
 	}
+	if b.casterKite(e, moving, now) { // casterkite.go: a Mage-line caster walls / backs off a monster next to it
+		return
+	}
 	if b.trapCast(e, now) { // trap.go: Claymore Trap / Land Mine where the monster will step (trapper Hunter)
 		return
 	}
 	if b.aoeCast(e, now) { // aoe.go: Mage/Wizard area spells on 3+ grouped monsters, Fire Wall against a walker
+		return
+	}
+	if b.casterActive(e, moving, now) { // casteractive.go (CL16): no group -> a spell on a party target in range, no melee chase
 		return
 	}
 	if b.weaponAoE(e, now) { // weaponskill.go: Archer-line Arrow Shower on 3+ grouped monsters

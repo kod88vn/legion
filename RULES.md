@@ -7,7 +7,7 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 ## Hard gates (the full register with enforcement is `docs/rules/gates.md`)
 - G01 (SA01) Never drive any client with the real mouse or keyboard. Only the Wine client on virtual display :98, or OpenKore.
 - G02 (SA02) No fullscreen for the owner's client.
-- G03 (SA03) No GM account for watching the world.
+- G03 (SA03) No hidden GM account for watching the world. Exception (owner, 2026-11-14): one all-powerful GM account (`wander`) for the owner himself to wander the game, used only by him; it may use every GM command, @hide included.
 - G04 (SA04) The GM test account stays out of the economy and parties and never talks in public.
 - G05 (SA05) Never turn Ayla's AI off: never send a bare `ai`, `ai off` or `ai manual` to her OpenKore; never weaken or test the `cmdfile.pl` guard. To inspect her use only `where`, `ai_v`/`aiv` via logs, or `ai on`.
 - G06 (SA06) Re-seeds never touch human characters: delete only in the bot account range 2100001-2199999, keep Ayla's party (`-keep`).

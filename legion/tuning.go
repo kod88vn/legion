@@ -25,6 +25,12 @@ package main
 //   priest_sit_low_sp_pct     40   a standing party healer with nobody hurt sits under this SP % (then rests to 80%, 60% when the party moves)
 //   priest_buff_renew_min_sec 220  a buff on a member is renewed after a random time between min and max seconds
 //   priest_buff_renew_max_sec 260
+//   priest_active_buffs       true PT29 (priestbuff.go): members ask for missing buffs, the priest buffs them on request and before expiry
+//   priest_buff_hold_sp_pct   30   ...down to this SP % (kept for Heal); replaces the 70% floor while priest_active_buffs is on
+//
+//   Map choice by level AND gear (gearscore.go, AY07)
+//   gear_score_on             true the effective level rates the whole kit (weapon+refine, all armor DEF/MDEF, cards, empty slots)
+//   gear_perf_on              true measured kills / deaths step a solo bot or a party down (easier map) or up
 //
 //   Solo / general AI (ai.go)
 //   beginner_lv               20   below this base level a bot stays near its home town and Kafra keeps more money
@@ -51,6 +57,8 @@ package main
 //   guild_duty_kick_days      2    short days after the warning before the kick (/ strictness)
 //   guild_kicks_per_hour      2    server-wide expel cap (15 min between two, 2 h per guild)
 //   guild_kick_cooldown_h     24   hours a kicked bot refuses every guild invitation
+//   starveil_auto_lead        true Starveil is led with no AI (starveillead.go, AY19): duty warnings/kicks through Ayla's
+//                                  plugin, guild-pool funding, keep gifts, member parties (main instance)
 //
 //   Kafra (kafra.go)
 //   kafra_min_saving          3    teleport only if it saves at least this many map changes
@@ -115,13 +123,15 @@ type Tuning struct {
 	TogetherCells int `json:"together_cells"`
 	// hysteresis: a collect / regroup that started beyond together_cells keeps going until within this many cells
 	// (stopping at 20 too made leaders oscillate at the boundary, QA 2026-11-14 pay_fild04)
-	CollectStopCells  int `json:"collect_stop_cells"`
-	TankPullRadius    int `json:"tank_pull_radius"`
-	TankMaxLvOver     int `json:"tank_max_lv_over"`
-	PriestBuffMinSP   int `json:"priest_buff_min_sp_pct"`
-	PriestSitBelowSP  int `json:"priest_sit_low_sp_pct"` // 2026-11-14: was priest_sit_below_sp_pct (95, "SP not full"); new key so the old file value is ignored
-	PriestBuffRenewLo int `json:"priest_buff_renew_min_sec"`
-	PriestBuffRenewHi int `json:"priest_buff_renew_max_sec"`
+	CollectStopCells  int  `json:"collect_stop_cells"`
+	TankPullRadius    int  `json:"tank_pull_radius"`
+	TankMaxLvOver     int  `json:"tank_max_lv_over"`
+	PriestBuffMinSP   int  `json:"priest_buff_min_sp_pct"`
+	PriestSitBelowSP  int  `json:"priest_sit_low_sp_pct"` // 2026-11-14: was priest_sit_below_sp_pct (95, "SP not full"); new key so the old file value is ignored
+	PriestBuffRenewLo int  `json:"priest_buff_renew_min_sec"`
+	PriestBuffRenewHi int  `json:"priest_buff_renew_max_sec"`
+	PriestActiveBuffs bool `json:"priest_active_buffs"`     // PT29 priestbuff.go: members ask for buffs, the priest buffs down to the hold line
+	PriestBuffHoldSP  int  `json:"priest_buff_hold_sp_pct"` // PT29: no buffs under this SP % (kept for Heal)
 	// AI
 	BeginnerLv          int     `json:"beginner_lv"`
 	StayCrowd           int     `json:"stay_crowd"`
@@ -143,10 +153,20 @@ type Tuning struct {
 	// rally only with rally_enabled true; human-led parties (Ayla's) rally unless rally_human_disabled is true
 	RallyEnabled       bool `json:"rally_enabled"`
 	RallyHumanDisabled bool `json:"rally_human_disabled"`
+	// partydest.go PT30: members head for the leader's destination by their own route (true = old trailing)
+	PartyDestOff bool `json:"party_dest_off"`
+	// healerstick.go: the party healer stays with the leader and keeps the leader buffed (true = old behaviour)
+	HealerStickOff bool `json:"healer_stick_off"`
+	// kafrachain.go: the next hop of one Kafra trip (same goal) is not refused by the 3-in-10-min cap (true = plain cap)
+	KafraChainOff bool `json:"kafra_chain_off"`
 	// staged rollout: with rally_enabled false, this percentage of bot parties (by party-name hash) rally
 	RallyBotShare int `json:"rally_bot_share"`
-	PotHPAcolyte  int `json:"pot_hp_acolyte"`
-	PotSPTarget   int `json:"pot_sp_target"`
+	// rallypark.go: one owner of the rally/Kafra-wait sit, members leave a rally leg they can't travel, park cap.
+	// ON by default (rally_park_off true switches it off); rally_park_cap_min 0 = 12 (Ayla's rally timeout)
+	RallyParkOff    bool `json:"rally_park_off"`
+	RallyParkCapMin int  `json:"rally_park_cap_min"`
+	PotHPAcolyte    int  `json:"pot_hp_acolyte"`
+	PotSPTarget     int  `json:"pot_sp_target"`
 	// parcel.go (economy batch 17): surplus gear mailed to vendors. Off by default; parcel_test_bots (comma-separated
 	// character names) turns it on for those bots only, for a live test before enabling it for everyone.
 	ParcelsEnabled bool `json:"parcels_enabled"`
@@ -155,6 +175,11 @@ type Tuning struct {
 	DropRatesFromConf bool `json:"drop_rates_from_conf"`
 	// skillaudit.go (run 6): true = don't hold skills until the predicted can-act time (for a before/after measurement)
 	SkillCanactOff bool `json:"skill_canact_off"`
+	// casteractive.go (CL16): true = Mage-line casters back to the old single-target/no-help behaviour; bolt floor
+	// and help threshold in % of max SP
+	CasterActiveOff    bool `json:"caster_active_off"`
+	CasterBoltFloorPct int  `json:"caster_bolt_floor_pct"`
+	CasterHelpSPPct    int  `json:"caster_help_sp_pct"`
 	// reset.go (run 7): true = no new natural build resets start (a running one still finishes / fetches its items)
 	ResetsOff      bool    `json:"resets_off"`
 	DropRateMul    float64 `json:"drop_rate_mul"`
@@ -178,6 +203,8 @@ type Tuning struct {
 	GuildDutyKickDays  int  `json:"guild_duty_kick_days"`   // short days after the warning before the kick (same)
 	GuildKicksPerHour  int  `json:"guild_kicks_per_hour"`   // server-wide expel cap (plus 15 min between two, 2 h per guild)
 	GuildKickCooldownH int  `json:"guild_kick_cooldown_h"`  // hours a kicked bot refuses every guild invitation
+	// starveillead.go (owner rule AY19): Starveil runs like a bot guild with no AI around (default on, owner order)
+	StarveilAutoLead bool `json:"starveil_auto_lead"`
 	// Kafra
 	KafraMinSaving    int `json:"kafra_min_saving"`
 	KafraKeepBeginner int `json:"kafra_keep_zeny_beginner"`
@@ -234,18 +261,37 @@ type Tuning struct {
 	ChatJobsOn           bool `json:"chat_jobs_on"`
 	ChatJobWaitMinSec    int  `json:"chat_job_wait_min_sec"`
 	ChatJobWaitMaxSec    int  `json:"chat_job_wait_max_sec"`
+	// shopannounce.go (EC35): vendors announce their shop's rare items on #trade (default on, owner's rule);
+	// shop_announce_gap_sec = server-wide seconds between two shop lines
+	ShopAnnounceOn     bool `json:"shop_announce_on"`
+	ShopAnnounceGapSec int  `json:"shop_announce_gap_sec"`
+	// gearscore.go (AY07, 2026-11-14): the effective level rates the whole kit (gear_score_on) and measured kills /
+	// deaths step a solo bot or a party down / up (gear_perf_on); both default ON
+	GearScoreOn bool `json:"gear_score_on"`
+	GearPerfOn  bool `json:"gear_perf_on"`
+	// partystick.go (PT04/PT06/PT31, 2026-11-14): no move / target / loot takes a grinding party member beyond
+	// together_cells of its party (party_stick_on), and no solo random Fly Wing / Teleport escape while party mates are
+	// on the map (party_stick_escape_on): run to the party, call for help, Butterfly Wing only when about to die. Both ON.
+	PartyStickOn       bool `json:"party_stick_on"`
+	PartyStickEscapeOn bool `json:"party_stick_escape_on"`
+	// pt32.go (PT32/PR16, 2026-11-14): a party member fights in place - a new target within 8 cells of it or a party
+	// mate, no other aggressive monster on the way, none while 2+ monsters are on it. ON (owner rule).
+	PartyFightInPlaceOn bool `json:"party_fight_in_place_on"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
 var defaultTuning = Tuning{
+	GearScoreOn: true, GearPerfOn: true,
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
+	PriestActiveBuffs: true, PriestBuffHoldSP: 30,
+	CasterBoltFloorPct: 35, CasterHelpSPPct: 60,
 
 	BeginnerLv: 20, StayCrowd: 70, TargetLvOver: 2, TargetLvAggression: 6, TargetLvMin: 8,
 	RoamGiveUpSec: 120, CrowdSpawnsPerBot: 5, CrowdRoamPct: 30, RoamCrowdSec: 75, GhostTargetSec: 10, LeaderCollectSec: 90, TripUrgentWeightPct: 90, TripBagPct: 70, TripMinIntervalMin: 45,
 	WeightRegenPct: 50, PotWeightCapPct: 45, PotHPAcolyte: 8, PotSPTarget: 15,
 
-	GuildDutyMinPerDay: 120, GuildDutyWarnDays: 3, GuildDutyKickDays: 2, GuildKicksPerHour: 2, GuildKickCooldownH: 24,
+	GuildDutyMinPerDay: 120, GuildDutyWarnDays: 3, GuildDutyKickDays: 2, GuildKicksPerHour: 2, GuildKickCooldownH: 24, StarveilAutoLead: true,
 
 	KafraMinSaving: 3, KafraKeepBeginner: 1000, KafraKeep: 200, KafraCooldownMin: 50, KafraMaxPerHour: 3, KafraMinSaveSec: 120,
 
@@ -260,6 +306,8 @@ var defaultTuning = Tuning{
 	ChatGuildLeader: 0.5, ChatReactBase: 0.25, ChatReactChattiness: 0.5, ChatReactJobChange: 0.25, ChatReactDeath: 0.3,
 	LfgGlobalPerMin: 6,
 	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
+	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
+	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
 }
 
 var curTuning atomic.Value // *Tuning
@@ -309,6 +357,8 @@ func (t *Tuning) sanitize() {
 		}
 	}
 	pos(&t.PartyLeash, d.PartyLeash)
+	pos(&t.CasterBoltFloorPct, d.CasterBoltFloorPct)
+	pos(&t.CasterHelpSPPct, d.CasterHelpSPPct)
 	pos(&t.TogetherCells, d.TogetherCells)
 	pos(&t.CollectStopCells, d.CollectStopCells)
 	pos(&t.GearReserveZenyDiv, d.GearReserveZenyDiv)

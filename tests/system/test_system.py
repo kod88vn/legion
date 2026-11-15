@@ -67,6 +67,22 @@ class TestBugq(Env):
         self.assertTrue(new3)   # closed bug: a new entry
         self.assertNotEqual(i1, i3)
 
+    def test_extra_queue_file_from_ayla_watchdog(self):
+        import bugq
+        self.assertEqual(bugq.extra_paths(), [])  # tests (LEGION_DATA set): no default extra file
+        extra = os.path.join(self.d, "ayla-logs-bugqueue.jsonl")
+        with open(extra, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"id": "w1-ayla", "t": "2027-01-15T08:00:00", "from": "ayla-watchdog", "priority": "high",
+                                "status": "open", "key": "ayla-watchdog-stuck-izlude", "text": "Ayla watchdog STUCK on izlude",
+                                "evidence": "cell 24,98"}) + "\n")
+        os.environ["LEGION_BUGQ_EXTRA"] = extra
+        try:
+            self.assertIn("w1-ayla", bugq.load())
+            bugq.close("w1-ayla", note="fixed")  # the update goes to the main file and merges by id
+            self.assertEqual(bugq.load()["w1-ayla"]["status"], "closed")
+        finally:
+            os.environ.pop("LEGION_BUGQ_EXTRA", None)
+
     def test_bump_throttle(self):
         import bugq
         i, _ = bugq.add("sentinel", "high", "x", key="k", bump_min_secs=600)

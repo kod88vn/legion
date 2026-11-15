@@ -152,7 +152,7 @@ services:
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
     # profiles log in/out on their own daily schedules; at most LEGION_MAX_ONLINE are online at once
     # the owner's core test party runs in legion-core (below), so deploying this service never logs it out
-    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,Silent rogue,vex_x18}"]
+    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,LilLilyblade,vex_x18}"]
     restart: unless-stopped
 
   legion-core:
@@ -173,7 +173,7 @@ services:
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro   # drop rates (droprate.go)
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
-    command: ["run", "-only", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,Silent rogue,vex_x18}", "-api", "127.0.0.1:8091", "-pprof", "127.0.0.1:6061", "-stagger", "2s"]
+    command: ["run", "-only", "${LEGION_CORE:-Zendancer84,Echobunny,Zen.fox,xXRinfangXx,LilLilyblade,vex_x18}", "-api", "127.0.0.1:8091", "-pprof", "127.0.0.1:6061", "-stagger", "2s"]
     restart: unless-stopped
 
   mastermind:

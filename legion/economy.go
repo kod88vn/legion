@@ -1070,6 +1070,7 @@ func econRound(bots []*Bot, now time.Time) {
 	for _, p := range posts {
 		go exchangeTradePost(p.b, p.text) // exchange.go: channelSay("#trade"), or a chat job (chat_jobs_on)
 	}
+	shopAnnounceRound(snaps, now) // shopannounce.go (EC35): vendors tell #trade about their shop's rare items
 	pecoFundRound(snaps, now)   // peco.go: guild / party mates pay a rider's Peco Peco first
 	katarFundRound(snaps, now)  // peco.go: ... and part of an Assassin's katar
 	guildFund(snaps, now)       // alchemy.go

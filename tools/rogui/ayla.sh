@@ -6,7 +6,8 @@
 #   status         ask OpenKore for status (s) + inventory summary, then show the answer
 #   cmd TEXT       run any OpenKore console command, e.g.  cmd p hi guys   |  cmd c hello   |  cmd lockmap prt_fild06
 #   say TEXT       public chat (OpenKore "c")         party TEXT  party chat ("p")      whisper NAME TEXT  ("pm")
-#   map NAME       hunt on another map (partylead goto NAME + conf lockMap: cancels any rally/hold; the party follows)
+#   map NAME       hunt on another map (partylead goto NAME only: the plugin checks it against the party's gear-rated level
+#                  and sets lockMap itself when it accepts; a raw conf lockMap far above the party is reverted)
 #   rally cancel   drop a Kafra rally at once (no new one for 30 min)  |  rally TOWN [MAP]  meet + save at TOWN's Kafra,
 #                  then the party goes to MAP (no MAP: they wait at the Kafra for a "map" order; the old lockMap is dropped)
 #   lead           what the party-lead plugin is doing (holding / rally / fetching / lockMap)
@@ -42,7 +43,7 @@ case "$a" in
   say) send "c $*"; echo ok;;
   party) send "p $*"; echo ok;;
   whisper) to=$1; shift; send "pm \"$to\" $*"; echo ok;;
-  map) send "partylead goto $1"; send "conf lockMap $1"; echo "heading to $1";;
+  map) send "partylead goto $1"; echo "asked partylead to go to $1 (rejected if far above the party: see ayla.sh log)";;
   rally) send "partylead rally $*"; echo "sent: partylead rally $*";;
   guild-create) [ -n "$*" ] || { echo "usage: ayla.sh guild-create NAME"; exit 1; }; send "guild create $*"; sleep 3; docker logs --tail 20 ro-openkore-ayla 2>&1 | clean | grep -i guild | tail -3;;
   guild) curl -s -m 8 "http://127.0.0.1:8090/api/human-guild" | python3 "$HERE/ayla_guild.py" guild;;

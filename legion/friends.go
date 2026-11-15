@@ -849,6 +849,9 @@ func friendMoveEligible(s *friendSnap) bool {
 	if !s.online || s.master || s.vision || s.pinned || s.guild == "" {
 		return false
 	}
+	if keepsHumanGuild(s.name, s.guild) { // humanpartyroster.go: a former party friend stays with its friends
+		return false
+	}
 	if g := guildByName[strings.ToLower(s.guild)]; g != nil {
 		if s.name == guildAlchemistChar2(g.ID) || s.name == guildTrader(g.ID) {
 			return false // the guild's brewer / trader stays

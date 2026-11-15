@@ -144,6 +144,7 @@ func (b *Bot) humanState(name string, now time.Time) (pubState, bool) {
 		if hp, ok := b.partyHP[s.AID]; ok && hp[1] > 0 {
 			s.HPFrac = float64(hp[0]) / float64(hp[1])
 		}
+		s.HPFrac = humanHPFrac(name, b.MapName, s.HPFrac, now) // healreach.go: her own fresh HP when we have it
 	}
 	humanTrailNote(name, s.Map, now) // together.go: her road map by map, for her friends to follow
 	if s.X >= 1000 || s.Y >= 1000 {  // a bogus party-list position (65535,65535: "no path ... to 65535,65535")
@@ -232,11 +233,20 @@ func (b *Bot) humanPartySync(now time.Time) {
 			// a strong party follows HER map by map (m stays her current map: the same portals she takes) - routing
 			// to the lock map on its own sent the friends down another road (QA 20:23Z: she went via pay_fild08, they
 			// planned pay_fild01/07 and posted "lost u"); a weaker party waits at the Kafra town nearest the lock map
-			if !partyStrong(p) {
-				if cp := nearestTown(st.LockMap); cp != "" {
-					m = cp
-				}
-			}
+			// (2026-11-15: the weaker party no longer waits at the Kafra town nearest the lock map while she walks the
+			// fields - it sat in geffen while she crossed gef_fild10 alone; partydest.go humanMemberTarget: follow her)
+		}
+	}
+	// PT30 (partydest.go): she said where to be - head for her destination (or its meeting town) by our own route, not
+	// for the map/town she is crossing; on her map we stay with her (partyThink)
+	destMode := false
+	if ok && h.Map != "" {
+		hm := h.Map
+		if t := townOf(hm); t != "" {
+			hm = t
+		}
+		if _, t := b.humanDestNow(p, hm, now); t != "" {
+			m, destMode = t, true
 		}
 	}
 	// her road, not ours: when we stand on a map she crossed lately, the next map is the one she went to from it (the
@@ -249,6 +259,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	// the leader went somewhere far too dangerous for our level: wait at the checkpoint town to be picked up
 	// instead of walking in alone and dying (the leader comes back for us)
 	waiting := false
+	preWait := m // healerstick.go: where a healer goes instead of a danger hold
 	// one party, one decision: members follow the leader unless the map is deadly for the party's weakest member
 	// (each member used to judge alone by its own risk trait - Echobunny waited in Payon while the priest went in)
 	if m != b.MapName && !isTown(m) && p.Checkpoint != "" {
@@ -284,6 +295,11 @@ func (b *Bot) humanPartySync(now time.Time) {
 			m, waiting = p.Checkpoint, true
 		}
 	}
+	// the healer goes where the leader is (healerstick.go): no hold for the weakest member's map rating - only its own
+	// two deaths there in 10 min (live 03:43Z: "waiting in geffen: gef_fild08 too dangerous" while Ayla farmed it)
+	if waiting && healerStickOn() && b.isHealer() && !healerHoldsForDanger(b.healerOwnDeaths(b.waitDanger, now)) {
+		m, waiting = preWait, false
+	}
 	b.waitingAtCheckpoint = waiting
 	if !waiting {
 		b.waitDanger = ""
@@ -298,7 +314,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 				p.repointTownRun(ht, now)
 				b.event("party", "", fmt.Sprintf("%s is in %s, not %s: the town run goes there", p.Human, ht, town))
 			}
-			if t := b.trip; t != nil && t.Town != ht && (t.Why == "town run with the party" || t.Why == "with the party" || t.Why == "gear") {
+			if t := b.trip; t != nil && !destMode && t.Town != ht && (t.Why == "town run with the party" || t.Why == "with the party" || t.Why == "gear") {
 				b.trip, b.tripAgain, b.route, b.path = nil, time.Time{}, nil, nil // rejoin the run for her town
 			}
 		}
@@ -329,7 +345,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	}
 	// separated from the leader for 2+ minutes: ask for help in party chat (owner: "Party member should know to ask for
 	// help and ayla should know to go collect them"); Ayla's plugin answers by coming to get them
-	if ok && h.Map != "" && h.Map != b.MapName {
+	if ok && h.Map != "" && h.Map != b.MapName && !destMode { // on our way to where she said: not lost
 		if b.awaySince.IsZero() {
 			b.awaySince = now
 		} else if now.Sub(b.awaySince) > 45*time.Second && now.After(b.buffAt["helpsay"]) && p.rallyInfo().Town == "" && b.trip == nil && b.errand == nil && townOf(b.MapName) == "" {
@@ -340,6 +356,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	} else {
 		b.awaySince = time.Time{}
 	}
+	m = b.parkRedirect(p, m, now) // rallypark.go: a town we parked in front of for the cap -> the party's farm map
 	if b.Goal.Mode != "party" || b.Goal.Map != m || b.Goal.Set != "human" {
 		if b.Goal.Map != m {
 			b.route, b.path = nil, nil
@@ -351,7 +368,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	// in Payon, then walked into pay_dun00/01 one by one and got swarmed)
 	b.escortHold = ""
 	if ok && h.Map != "" && !waiting {
-		if t, why := b.escortGate(p, h.Map, now); t != "" {
+		if t, why := b.escortGate(p, h.Map, now); t != "" && !(healerStickOn() && b.isHealer() && why != "the way in is too dangerous alone") { // healerstick.go: the healer goes in to her
 			m, b.escortHold = t, why
 		}
 	}
@@ -390,6 +407,7 @@ func humanPartyManager(bots []*Bot, stop <-chan struct{}) {
 		}
 		parties.Unlock()
 		for _, p := range hps {
+			humanPartyStrays(p, time.Now()) // humanpartyroster.go: new members leave their old in-game party first
 			// the in-game party leader does the inviting (only leaders can invite; rAthena keeps parties across
 			// restarts); if nobody is in the party yet, the first online member founds it
 			var lead, first *Bot
@@ -548,6 +566,7 @@ func (b *Bot) kickSession() {
 type savedHumanParty struct {
 	Human   string   `json:"human"`
 	Members []string `json:"members"`
+	Alumni  []string `json:"alumni,omitempty"` // humanpartyroster.go: left the party (owner's order), live on their own
 }
 
 func humanPartyFile() string { return filepath.Join(*dataDir, "human-parties.json") }
@@ -572,6 +591,7 @@ func saveHumanParties() {
 		out = append(out, s)
 	}
 	parties.Unlock()
+	out = withAlumni(out) // humanpartyroster.go
 	b, _ := json.MarshalIndent(out, "", "  ")
 	os.WriteFile(humanPartyFile(), b, 0644)
 }

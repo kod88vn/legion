@@ -59,8 +59,10 @@ One line per rule: ID, statement, date. Owner words in `archive.md`.
   (2026-11-13)
 
 ## Market behaviour
-- EC31. HP restore items (potions, herbs, fruit) come first in the market, ahead of Blue Potions; more bots farm healing drops.
+- EC31. HP restore items (potions, herbs, fruit) are the market's top priority to stock and sell, ahead of Blue Potions, and herbs go to alchemists for brewing; more bots farm healing drops.
   (2026-11-14)
-- EC32. Bots read the Prontera market (what sells, at what price, what buyers want that nobody sells) and farm the gaps. (2026-11-14)
-- EC33. Bots say what they find in natural #trade/#global talk, rate-limited to about 10-30 public lines a minute. (2026-11-14)
+- EC32. Bots read the Prontera market (what sells, at what price, what buyers want that nobody sells) and farm the gaps, but only if a map safe for their level drops the item. (2026-11-14)
+- EC33. Bots say what they find in natural #trade/#global talk, rate-limited to about 10-30 public lines a minute, so other bots and humans hear it and can act on it (farm it, list it, buy it). (2026-11-14)
 - EC34. A glut (price near or under NPC value, many sellers) sends bots to farm items that pay better, so the price recovers. (2026-11-14)
+- EC35. Merchants with an open shop occasionally announce its rare items (cards, katana and the like) in #trade so buyers know; natural wording, not spam, within the EC33 rate limit. (2026-11-14)
+- EC36. Waiting time is never wasted: a bot or party member with nothing to do (waiting for the party, a rally or a Kafra) uses it for errands: sell loot, store items, restock potions and arrows, repair, especially when its bag is nearly full. (2026-11-14)

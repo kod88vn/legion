@@ -19,7 +19,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Class rules
   at that Kafra until all (leader included) have saved, and the leader confirms in party chat. A death that respawns elsewhere
   is a bug. (2026-11-14)
 - PT03. A party heading out or regrouping meets at the Kafra nearest the destination, saves there, then sets out together. (2026-11-13)
-- PT04. Stay close while grinding; a member far from the leader regroups first, fighting only what hits it. (2026-11-13)
+- PT04. Rule number one for every party (owner, since day one): stay close while grinding; a member far from the leader regroups first, fighting only what hits it. (2026-11-13)
 - PT06. "Together" means within 20 cells of the leader; nobody holds, collects or regroups for a member inside 20. Applies to the engine, Ayla's plugin, the dashboard and the sentinel. (2026-11-14)
 - PT05. The leader is decisive: collects stragglers one by one, never switches target halfway, never hovers in the middle. Bots
   bouncing between the same places are a bug. (2026-11-13)
@@ -62,3 +62,6 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Class rules
 - PT28. A tracked friendship score grows with time together (party, fighting side by side, chat, trade, guild) and fades without
   contact. Friends prefer to party again and share a guild; a bot may leave its guild to follow close friends. It is its own
   system with its own data and dashboard view. (2026-11-14)
+- PT29. Party members ask for buffs when they lack them, and the priest buffs them (Blessing, Increase Agility and the like) unless its SP is low; the priest is never passive. Applies to every party, Ayla's included. (2026-11-14)
+- PT31. (Part of PT04/PT06.) Party members stay with their party. Nobody escapes alone with a random Teleport while in a party; in danger a member retreats to the tank or priest, asks for help in party chat, and only when it would die uses a Butterfly Wing to the party's save Kafra and says so. The leader never leaves its party behind. Applies to every party, Ayla's included. (2026-11-14)
+- PT32. Fight in place, near the party: hit the first monster that comes into reach (the nearest one) instead of walking past it into the middle of a pack (only monsters far below her level are ignored); don't run around pulling more attackers; take monsters one or a few at a time where the party (priest) can cover, and stay back rather than charging into groups. Applies to Ayla and every bot. (2026-11-14)

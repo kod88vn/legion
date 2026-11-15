@@ -296,6 +296,10 @@ func bestPartySpot(members []*Bot) string {
 	if b := partyStrength(members); b > 0 && minLv < 999 { // lfg.go: a composed party fights above its weakest member
 		minLv, fitLv = min(minLv+b, max(minLv, minBase)), fitLv+b
 	}
+	if minLv < 999 && gearPerfOn() { // gearscore.go: the party's measured step (deaths down, easy farming up)
+		o := partyPerfOffset(members)
+		minLv, fitLv = max(1, minLv+o), max(1, fitLv+o)
+	}
 	now := time.Now()
 	fits := func(g GuideSpot) bool {
 		if bad, _ := leaderAvoids(lname, g.Map, now); bad {

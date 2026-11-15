@@ -27,7 +27,7 @@ def sql(q, raw=False):
     if raw:
         return r.stdout.decode('utf8')
     return list(csv.DictReader(io.StringIO(r.stdout.decode('utf8')), delimiter='\t', quoting=csv.QUOTE_NONE))
-PARTY = {'zendancer84', 'echobunny', 'zen.fox', 'xxrinfangxx', 'silent rogue', 'vex_x18'}
+PARTY = {'zendancer84', 'echobunny', 'zen.fox', 'xxrinfangxx', 'silent rogue', 'lillilyblade', 'vex_x18'}  # Silent rogue: Ayla's ex-Alchemist, kept (AY11)
 
 # ---- plans parsed from builds.go
 src = open(os.path.join(SRV, 'legion', 'builds.go'), encoding='utf8').read()

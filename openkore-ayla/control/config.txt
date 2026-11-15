@@ -37,7 +37,7 @@ XKore_listenIp 0.0.0.0
 XKore_listenPort 6901
 XKore_listenPort_map 6903
 XKore_listenPort_char 6902
-XKore_publicIp 172.18.0.3
+XKore_publicIp 172.18.0.4
 XKore_ID
 
 # It is not advised to set secureAdminPassword if you're using Xkore 2
@@ -83,14 +83,14 @@ attackAllowStartStorageBuySell 1
 attackDistance 1
 attackDistanceAuto 1
 attackMaxDistance 1
-attackMaxRouteTime 4
+attackMaxRouteTime 3
 attackMinPlayerDistance 2
 attackMinPortalDistance 4
 attackUseWeapon 1
 attackNoGiveup 0
 attackCanSnipe 0
 attackCheckLOS 1
-attackRouteMaxPathDistance 20
+attackRouteMaxPathDistance 10
 attackLooters 0
 attackLooters_dist 1
 attackChangeTarget 1
@@ -214,7 +214,7 @@ cartMaxWeight 7900
 itemsTakeGreed 0
 itemsCheckWeight 1
 
-lockMap
+lockMap gl_church
 lockMap_x
 lockMap_y
 lockMap_randX
@@ -268,7 +268,7 @@ runFromTarget_noAttackMethodFallback 0
 runFromTarget_noAttackMethodFallback_attackMaxDist 14
 runFromTarget_noAttackMethodFallback_minStep 8
 
-saveMap payon
+saveMap geffen
 saveMap_x
 saveMap_y
 saveMap_warp 0
@@ -310,17 +310,17 @@ skillsAddAuto_list NV_BASIC 9
 tankMode 0
 tankModeTarget
 
-teleportAuto_hp 35
+teleportAuto_hp 0
 teleportAuto_sp 0
 teleportAuto_idle 0
 teleportAuto_portal 0
 teleportAuto_search 0
-teleportAuto_minAggressives 6
-teleportAuto_minAggressivesInLock 7
+teleportAuto_minAggressives 0
+teleportAuto_minAggressivesInLock 0
 teleportAuto_onlyWhenSafe 0
 teleportAuto_maxDmg 0
 teleportAuto_maxDmgInLock 0
-teleportAuto_deadly 1
+teleportAuto_deadly 0
 teleportAuto_useSkill 0
 teleportAuto_useChatCommand
 teleportAuto_allPlayers 0

@@ -225,7 +225,7 @@ class ScheduleTests(unittest.TestCase):
         s = self.sched([{"role": "ayla", "t": NOW - 30}])
         s.note("ayla", "event:death")
         self.assertIsNone(s.due("ayla", NOW, [], {}))
-        self.assertEqual(s.due("ayla", NOW + 100, [], {}), "event:death")
+        self.assertEqual(s.due("ayla", NOW + dispatch.ROLES["ayla"]["min_gap"], [], {}), "event:death")
 
     def test_classify_ayla_event(self):
         names = {"kira", "bo"}
@@ -300,13 +300,13 @@ class CommandTests(unittest.TestCase):
         self.assertNotIn("{ROLE}", brief)
 
     def test_models(self):
-        self.assertEqual(dispatch.ROLES["ayla"]["model"], "sonnet")
+        self.assertEqual(dispatch.ROLES["ayla"]["model"], "haiku")  # PR38/AY05: a watcher
         self.assertEqual(dispatch.ROLES["build"]["model"], "sonnet")
         for r in ["market", "chat"] + dispatch.GUILDS:
             self.assertEqual(dispatch.ROLES[r]["model"], "haiku")
 
     def test_only_ayla_gets_ayla_sh(self):
-        self.assertEqual(len(dispatch.allowed_tools("ayla")), 2)
+        self.assertEqual(len(dispatch.allowed_tools("ayla")), 2 + len(dispatch.AYLA_READ) + len(dispatch.AYLA_ACT))
         self.assertEqual(len(dispatch.allowed_tools("market")), 1)
 
     def test_all_briefs_load(self):
@@ -420,7 +420,58 @@ class IntegrationTests(unittest.TestCase):
     def test_ayla_sh_through_wsl_on_windows(self):
         self.assertEqual(dispatch.wsl_path("G:/RO/legion/tools/rogui/ayla.sh"), "/mnt/g/RO/legion/tools/rogui/ayla.sh")
         self.assertTrue(dispatch.ayla_cmd(nt=True).startswith("wsl -d "))
-        self.assertTrue(dispatch.ayla_cmd(nt=True).endswith(" -- bash " + dispatch.wsl_path(dispatch.AYLA_SH)))
+        self.assertTrue(dispatch.ayla_cmd(nt=True).endswith(" -- bash tools/rogui/ayla.sh"))
         self.assertEqual(dispatch.ayla_cmd(nt=False), "bash " + dispatch.wsl_path(dispatch.AYLA_SH))
         self.assertIn(dispatch.ayla_cmd(), dispatch.load_brief("ayla"))
-        self.assertIn(f"Bash({dispatch.ayla_cmd()}:*)", dispatch.allowed_tools("ayla"))
+        self.assertIn(f"Bash({dispatch.ayla_cmd()} log:*)", dispatch.allowed_tools("ayla"))
+
+    def test_windows_mind_no_slash_args(self):
+        # Git Bash rewrites any argument starting with '/' (2026-11-15: exit 127 on /mnt/g/.../ayla.sh)
+        for part in dispatch.ayla_cmd(nt=True).split():
+            self.assertFalse(part.startswith("/"), part)
+        self.assertIn("--cd ", dispatch.ayla_cmd(nt=True))
+        old = dispatch.WIN_MIND
+        try:
+            dispatch.WIN_MIND = True
+            env = dispatch.mind_env()
+            self.assertEqual(env["MSYS_NO_PATHCONV"], "1")
+            self.assertIn("MSYS_NO_PATHCONV", env["WSLENV"].split(":"))
+            for t in dispatch.allowed_tools("ayla") + dispatch.allowed_tools("chat"):
+                self.assertNotIn("/mnt/", t)
+        finally:
+            dispatch.WIN_MIND = old
+
+    def test_ayla_helper_guarded_commands_only(self):
+        tl = dispatch.allowed_tools("ayla")
+        tools = " ".join(tl)
+        for w in ("cmd:", "say", "give", "whisper", "guild"):
+            self.assertNotIn(f"ayla.sh {w}", tools)
+        self.assertIn(f"Bash({dispatch.ayla_cmd()} cmd respawn)", tl)   # exact: no free console text (G05)
+        for a in ("map", "rally", "party"):   # owner 2026-11-14: Haiku controls Ayla again (map / rally / party)
+            self.assertIn(f"Bash({dispatch.ayla_cmd()} {a}:*)", tl)
+        self.assertTrue(any("bugq.py add:*" in t for t in tl))
+        denied = " ".join(dispatch.denied_tools("python", "ayla"))
+        for c in ("party-say:*", "say:*", "chat-jobs:*", "guild-direction-set:*", "goal:*"):
+            self.assertIn(c, denied)
+        self.assertNotIn("party-say:*", " ".join(dispatch.denied_tools("python", "chat")))
+        self.assertNotIn(" ai off`", dispatch.load_brief("ayla").replace("never `ai`, `ai off`", ""))
+
+    def test_watchdog_reports_wake_ayla(self):
+        with tempfile.TemporaryDirectory() as d:
+            q = os.path.join(d, "bugqueue.jsonl")
+            open(q, "w").write(json.dumps({"from": "ayla-watchdog", "text": "Ayla watchdog STUCK on izlude: x"}) + "\n")
+            sig = dispatch.Signals(lambda: None, d)
+            self.assertEqual(sig.watchdog_reports(q), [])  # first poll: offset only
+            with open(q, "a") as f:
+                f.write(json.dumps({"from": "ayla-watchdog", "text": "Ayla watchdog WRONG_MAP on pay_dun00: y"}) + "\n")
+                f.write(json.dumps({"from": "sentinel", "text": "Ayla watchdog IDLE fake"}) + "\n")
+                f.write("junk\n")
+            self.assertEqual(sig.watchdog_reports(q), ["wrong_map"])
+            self.assertEqual(sig.watchdog_reports(q), [])
+            c = os.path.join(d, "console.txt")
+            open(c, "w").write("[partylead] rally: going to the Kafra in yuno\n")
+            self.assertEqual(sig.watchdog_console(c), [])  # first poll: offset only
+            with open(c, "a") as f:
+                f.write("\x1b[1;33m[watchdog] STUCK izlude 24,98 for 3 min -> respawn\x1b[0m\n[watchdog] STUCK again\n")
+            self.assertEqual(sig.watchdog_console(c), ["stuck"])
+            self.assertEqual(sig.watchdog_console(c), [])

@@ -45,8 +45,13 @@ type BotSummary struct {
 	Kills     int    `json:"kills"`
 	Deaths    int    `json:"deaths"`
 	Error     string `json:"error,omitempty"`
+	PrevError string `json:"prev_error,omitempty"` // loginready.go: the error before the last good login
 	// the guild's one leader (guilds.go pickGuildLeaders / in-game master); its Guild is the guild it leads
 	GuildLeader bool `json:"guild_leader,omitempty"`
+	// healerstick.go: the engine party (who it follows) and the in-game party the server put it in. The field was missing,
+	// so tools read "party: None" for Ayla's priest although it was in her party (2026-11-14)
+	Party       string `json:"party,omitempty"`
+	GameParty   string `json:"game_party,omitempty"`
 }
 
 func (b *Bot) summary() BotSummary {
@@ -58,7 +63,8 @@ func (b *Bot) summary() BotSummary {
 	defer b.mu.Unlock()
 	return BotSummary{Name: b.charName(), Player: b.P.Name, Role: b.charRole(), Class: className(b.Class), Level: b.BaseLvOr(), Guild: guild, GuildLeader: lead,
 		Archetype: b.P.Archetype, Online: b.Online, State: b.State, Map: b.MapName, X: b.X, Y: b.Y,
-		HP: strconv.Itoa(b.HP) + "/" + strconv.Itoa(b.MaxHP), Weight: weightStr(b.Weight, b.MaxWeight), Goal: b.Goal, Kills: b.Kills, Deaths: b.Deaths, Error: b.LastErr}
+		HP: strconv.Itoa(b.HP) + "/" + strconv.Itoa(b.MaxHP), Weight: weightStr(b.Weight, b.MaxWeight), Goal: b.Goal, Kills: b.Kills, Deaths: b.Deaths, Error: b.LastErr, PrevError: b.PrevErr,
+		Party: partyNameOf(b), GameParty: b.PartyName}
 }
 
 // weightStr: "cur/max" raw weight, "" when the limit isn't known yet.
@@ -225,7 +231,7 @@ func serveAPI(addr string, bots []*Bot) {
 				"x": b.X, "y": b.Y, "hp": b.HP, "max_hp": b.MaxHP, "sp": b.SP, "max_sp": b.MaxSP,
 				"base_level": b.BaseLv, "job_level": b.JobLv, "zeny": b.Zeny, "weight": b.Weight, "max_weight": b.MaxWeight,
 				"goal": b.Goal, "kills": b.Kills, "deaths": b.Deaths, "loots": b.Loots, "inventory": inv,
-				"nearby": nearby, "error": b.LastErr, "plan": b.planStatus(), "class": className(b.Class),
+				"nearby": nearby, "error": b.LastErr, "prev_error": b.PrevErr, "prev_error_cleared": prevErrAt(b.PrevErrAt), "plan": b.planStatus(), "class": className(b.Class),
 				"gear_next": b.gearStepView()} // gearpool.go: next gear step (item, cost, funded by, party turn)
 			b.mu.Unlock()
 			writeJSON(w, d)
@@ -604,6 +610,9 @@ func serveAPI(addr string, bots []*Bot) {
 			out := map[string]interface{}{"party": p.Name, "human": p.Human, "checkpoint": p.Checkpoint,
 				"human_last_seen": map[string]interface{}{"map": h.Map, "x": h.X, "y": h.Y, "ago_s": int(now.Sub(h.At).Seconds())}}
 			out["rally"] = rallyView(p, now)
+			if s, ok := humanStatusOf(p.Human); ok {
+				out["human_effects"] = humanEffectsView(s, now) // effects.go: the human's own buffs/debuffs
+			}
 			var mem []map[string]interface{}
 			for _, m := range p.Members {
 				m.mu.Lock()
@@ -611,10 +620,12 @@ func serveAPI(addr string, bots []*Bot) {
 				row := map[string]interface{}{"name": m.charName(), "class": className(m.Class), "level": m.BaseLvOr(),
 					"online": m.Online, "state": m.State, "map": m.MapName, "x": m.X, "y": m.Y,
 					"hp": fmt.Sprintf("%d/%d", m.HP, m.MaxHP), "sp": fmt.Sprintf("%d/%d", m.SP, m.MaxSP), "weight": weightStr(m.Weight, m.MaxWeight),
-					"in_party": m.PartyID != 0, "party_roster": m.roster, "goal": m.Goal, "waiting_at_checkpoint": m.waitingAtCheckpoint}
+					"in_party": m.PartyID != 0, "party_roster": m.roster, "goal": m.Goal, "waiting_at_checkpoint": m.waitingAtCheckpoint,
+					"power": m.powerLv(), "kills": m.Kills, "deaths": m.Deaths} // gearscore.go: gear-rated level; partylead.pl's map choice and step
 				if st, known := m.knownSave(); known {
 					row["saved_town"] = st // together.go: Ayla's departure gate waits until every friend saved at the rally Kafra
 				}
+				row["effects"] = m.effectsOf(now) // effects.go: active buffs/debuffs with time left
 				if ok && hs.Map == m.MapName {
 					row["sees_human"] = map[string]interface{}{"x": hs.X, "y": hs.Y, "dist": dist(m.X, m.Y, hs.X, hs.Y),
 						"hp": hs.HPFrac, "target": hs.Target}

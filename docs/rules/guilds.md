@@ -11,7 +11,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Design deta
 - GD04. Guild leaders are the server's best players: they form the right party and level fast, and sit on the leaderboard. (2026-11-13)
 - GD05. Each guild leader (Starveil included) tracks guild stock and every member's development and keeps supplies ready before
   members need them (potions, common and build-specific gear). It assigns dedicated farmers with high solo survivability, DS
-  Hunters first, to hunt what the guild needs. (2026-11-14)
+  Hunters first, to hunt what the guild needs. Stock is kept in guild storage, or in the leader's or treasurer's storage while guild storage is not unlocked. (2026-11-14)
 - GD06. Every guild sets a small EXP tax on member positions to level up; the tax applies to every member, no human
   exception (G25, 2026-11-14); guild skill points go to Guild Extension first, then
   the useful skills. (2026-11-14)

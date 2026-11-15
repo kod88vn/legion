@@ -82,3 +82,17 @@ start anything.
 
 ## Next
 (The main session fills this in.)
+
+### 2026-11-14 late evening: live, all systems on (G21)
+- Running: full stack, sentinel, partycheck, dispatcher (Ayla on the Haiku helper), unwall loop, bugq watch. Ayla's watch
+  client is retired (AY17); her OpenKore log is shown in a terminal; the owner watches with GM account `wander`.
+- Live by plugin reload/copy (no recreate): Ayla watchdog + map table + stuck escape, renewal field files in her container
+  (the compose overlay that makes them permanent is in fix/izlude-fields, merged on the next Ayla recreate).
+- Critical deploy in progress: engine batch (meter, priest buffs, wizard, rally-sitstand, login, Starveil, shop
+  announce) + fix/party-destination + fix/gear-maps.
+- Waiting for the next regular deploy (built, tested, not merged): fix/idle-errands 4f206ae, fix/ayla-tell cb5ccdc,
+  fix/chat-guild-api d3b87c2, fix/ayla-log ee521d6 (then start `python tools/system/aylalog.py`), fix/restore-behaviour
+  aa02068, fix/farm-share 9ea7200, fix/system-layer 5814c60 (then restart sentinel, partycheck, bugq watch, dispatcher).
+- Also queued: fix/leader-talk 57475f0 (PT10 bot leaders announce/answer; based on party-destination).
+- Being built: fix/party-stick (PT04 stay close, critical).
+- Owner decision pending: enable rathena chat logging for `@partyspy` (needs a rathena restart).

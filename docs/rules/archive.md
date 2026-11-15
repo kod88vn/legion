@@ -1714,3 +1714,109 @@ Kind: process rule. First date: 2026-11-14.
 "all system must go online."
 "READ MY WORDS: ALL SYSTEMS MUST BE ON. why are you asking questions I already answer. Write it down"
 ```
+
+## AY18
+```text
+"ayla code is just so bad she mostly does not do anything for a large amount of time. Terrible. Make sure she has 0 downtime"
+```
+
+## G03 (amended)
+```text
+"create another GM account for me to wander around the game"
+"GM account means all powerful game master account. Are you that dumb?"
+```
+
+## AY19
+```text
+"ayla should have basic function like a normal bot when no AI system is around. You fuckers keep forgetiting my instruction"
+```
+
+## EC35
+```text
+"merchants that have a shop should occasionally announce the rare items they have like cards or katana, letting buyers know."
+```
+
+## PR38 / AY05 (replaced)
+```text
+"in general, I want you guys, the AI to keep improving the algorithm for bots to keep making better decision on their own, their coding decides what they do for the most part, you are only here to observe and fix their code. Ayla being the main test subject, that's why she gets a dedicated haiku llm to watch her. eventually only the puppet master class should run and it should only run once a day. We want to build toward that goal"
+```
+
+## PT29
+```text
+"1 thing I notice, the priest in the party is very passive. Party memeber should request buff when no buff and priest should buff them unless low sp"
+```
+
+## CL16
+```text
+"I also notice wiz is not doing much. If that class has full sp all the time, something is wrong"
+```
+
+## AY17 (replaced)
+```text
+"ok, change of plan, let ayla run like a normal bot, no more UI, I will use GM account if I want to watch. Just use a normal openkore terminal so I can still see the logs"
+```
+
+## AY05 (amended)
+```text
+"also let haiku helps her whenever possible. Her algorithm runs most of the time unless she gets stuck or making poor decisions"
+```
+
+## PT30
+```text
+"and why doesn't she tell her paty where to be in stead of following her to the wrong location?"
+```
+
+## AY07 (sharpened)
+```text
+"also map choice should base on gear level too, not just level since most of her parties are poorly equipped. Factor that in"
+```
+
+## PR39
+```text
+"make sure your system agents report bugs so you can fix. that's your main blind spot"
+```
+
+## EC36
+```text
+"if they have nothing to do at least go sell their stuff. It's almost full. Stop dping nothing useful"
+```
+
+## AY20
+```text
+"can we make her system in a way thay we can send her instruction? Right now she can just tell her party to do a town run"
+```
+
+## PT31
+```text
+"and now she's teleporting away from her party. I thought there's a rule to stick to her party?"
+```
+
+## PT04 (repeated)
+```text
+"when in a fucking party must stay close to a fucking party and avoid straying away, that was number 1 rule ince day 1 and this stupid fuck keeps doing it"
+```
+
+## AY05 (narrowed)
+```text
+"the helper ai should only help unstuck her, do not interfere too much"
+```
+
+## AY21
+```text
+"fucking deploy right now, do not wait. Fix for ayla always come immediately"
+```
+
+## PT32
+```text
+"do not run around and get more attackers. Stay back"
+```
+
+## PT32 (clarified)
+```text
+"no, that's not what I meants. I meant she did not hit the first target, not the sedond, not the 10th, she went straight into the middle of the pack and be swamped on. That's the stupid shit. How come she cannot just hit the first target she sees?"
+```
+
+## PT32 (refined)
+```text
+"only ignore very low level mobs... you stupid shit is too stupid"
+```
