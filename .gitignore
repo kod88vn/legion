@@ -35,6 +35,7 @@ legion/data/alchemists.json
 legion/data/brewers.json
 legion/data/shoptitles.json
 legion/data/trace.txt
+legion/data/meter.jsonl
 legion/data/goroutines-*.txt
 
 # compiled binaries

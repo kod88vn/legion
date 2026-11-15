@@ -741,6 +741,7 @@ func serveAPI(addr string, bots []*Bot) {
 	registerDashboard(mux, bots, start) // dashboard.go: /dashboard, /api/overview
 	registerGuilds(mux, bots)           // guilds.go: /api/guilds/detail
 	registerPartyDash(mux)              // partydash.go: /api/parties/detail
+	registerMeter(mux, bots)            // meterapi.go: /api/meter (kills/min, zeny/h, time budget, cohorts, Neo)
 	if !coreInstance() {                // the minds bus lives on the main instance only (instances.go)
 		registerMinds(mux) // minds.go: /api/minds (LLM minds' thoughts + owner messages)
 	}

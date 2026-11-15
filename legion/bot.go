@@ -361,6 +361,7 @@ type Bot struct {
 
 	// stats
 	Kills, Deaths, Loots int
+	meter                meterCounters // meter.go: kills, income, deaths, time budget (guarded by mu)
 	ConnectedAt          time.Time
 	LastErr              string
 	pktsIn               int64
@@ -697,6 +698,7 @@ func (b *Bot) handle(pk []byte) {
 			if pk[6] == 1 {
 				b.Dead = true
 				b.Deaths++
+				b.meterDeath(now) // meter.go
 				atomic.AddInt64(&stats.deaths, 1)
 				b.event("death", "", fmt.Sprintf("died on %s", b.MapName))
 				reportDeath(b.MapName)
@@ -720,6 +722,7 @@ func (b *Bot) handle(pk []byte) {
 		}
 		if pk[6] == 1 && id == b.target {
 			b.Kills++
+			b.meterKill(b.ents[id], now) // meter.go: fair kill by the monster's level
 			atomic.AddInt64(&stats.kills, 1)
 		}
 		if e := b.ents[id]; pk[6] == 1 && e != nil && e.Type == objMob && bossHuntsLive.Load() > 0 {
@@ -847,6 +850,7 @@ func (b *Bot) handle(pk []byte) {
 		}
 	case 0x00b1:
 		if le.Uint16(pk[2:]) == 20 {
+			b.meterZeny(int(int32(le.Uint32(pk[4:])))) // meter.go
 			b.Zeny = int(int32(le.Uint32(pk[4:])))
 		}
 	case 0x0acb:
@@ -882,6 +886,7 @@ func (b *Bot) handle(pk []byte) {
 			}
 			it.Count += int(le.Uint16(pk[4:]))
 			b.Loots++
+			b.meterLoot(it.ItemID, int(le.Uint16(pk[4:]))) // meter.go: market value of the loot
 			atomic.AddInt64(&stats.loots, 1)
 		}
 	case 0x0b39: // equipment list (68 bytes each after invType): idx, itemid, type, location, wearstate, ...
@@ -1215,6 +1220,7 @@ func (b *Bot) handle(pk []byte) {
 	case 0x0177, 0x0179: // Magnifier: identify list / result (identify.go)
 		b.onIdentify(op, pk)
 	case 0x00af, 0x07fa: // item removed / used
+		b.meterRemoved(op, pk) // meter.go: ammo / skill materials used up
 		idx := int(le.Uint16(pk[2:]))
 		amt := int(le.Uint16(pk[4:]))
 		if op == 0x07fa {
@@ -1241,6 +1247,7 @@ func (b *Bot) handle(pk []byte) {
 		if len(pk) >= 15 && le.Uint32(pk[8:]) == b.aid && pk[14] == 1 {
 			idx := int(le.Uint16(pk[2:]))
 			if it := b.inv[idx]; it != nil {
+				b.meterUsed(it.ItemID, it.Count-int(le.Uint16(pk[12:]))) // meter.go: potions, wings
 				it.Count = int(le.Uint16(pk[12:]))
 				if it.Count <= 0 {
 					delete(b.inv, idx)
@@ -1557,6 +1564,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		}
 		b.remember("logged in on %s", b.MapName)
 		b.kafraLastFromDiary(now) // kafra.go: an hourly restart doesn't reset the "no Kafra back-and-forth" memory
+		b.meterLogin(now)         // meter.go: purse baseline, new counters for another character
 		b.mu.Unlock()
 		b.wmu.Lock()
 		conn := b.conn // this session's conn, captured once (readLoop never re-reads b.conn)
