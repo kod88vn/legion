@@ -550,13 +550,19 @@ func starveilEngineState(down bool, why string) {
 // queue keeps its cap (the oldest go first).
 func starveilRequeue(orders []*starveilOrder, now time.Time) {
 	var live []*starveilOrder
+	var dropped []string
 	for _, o := range orders {
 		if now.Sub(o.At) <= starveilOrderTTL {
 			live = append(live, o)
+		} else {
+			dropped = append(dropped, o.Kind)
 		}
 	}
 	starveilLead.Lock()
 	defer starveilLead.Unlock()
+	for _, k := range dropped {
+		starveilLead.counters["orders expired: "+k]++ // past TTL: counted as expired, as starveilTake does
+	}
 	q := append(live, starveilLead.q...)
 	if n := len(q); n > starveilOrderMax {
 		q = q[n-starveilOrderMax:]
