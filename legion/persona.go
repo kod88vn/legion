@@ -10,6 +10,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -377,7 +378,29 @@ func loadPersonas(path string) ([]*Persona, error) {
 	}
 	var ps []*Persona
 	err = json.Unmarshal(b, &ps)
+	fillLoginSecrets(filepath.Dir(path), ps)
 	return ps, err
+}
+
+// loginSecretsFile: passwords kept out of the tracked personas.json (ayla-switch: Ayla's login comes from her OpenKore
+// config through the migration, which writes here; the file is git-ignored).
+func loginSecretsFile(dir string) string { return filepath.Join(dir, "logins.local.json") }
+
+// fillLoginSecrets: a persona without a password in the file gets the one in logins.local.json (keyed by account id).
+func fillLoginSecrets(dir string, ps []*Persona) {
+	raw, err := os.ReadFile(loginSecretsFile(dir))
+	if err != nil {
+		return
+	}
+	var secrets map[string]string
+	if json.Unmarshal(raw, &secrets) != nil {
+		return
+	}
+	for _, p := range ps {
+		if p.Password == "" {
+			p.Password = secrets[strconv.Itoa(p.AccountID)]
+		}
+	}
 }
 
 // ---------------------------------------------------------------- DB seeding

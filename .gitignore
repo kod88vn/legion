@@ -61,6 +61,8 @@ legion/data/puppet_heartbeat.json*
 legion/data/puppet.pause
 legion/data/ayla_orders.jsonl
 legion/data/bugqueue.jsonl
+# logins kept out of the tracked personas.json (ayla-switch): account id -> password
+legion/data/logins.local.json
 legion/data/neo.wake
 legion/data/build.wake
 legion/data/guild_duty.json

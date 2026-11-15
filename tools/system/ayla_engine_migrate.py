@@ -10,13 +10,17 @@ What it does in the data directory (legion/data), only with --apply (default: dr
   3. human-parties.json is RENAMED to human-parties.json.pre-ayla-engine. It is never deleted, and a rename onto an
      existing .pre-ayla-engine file is refused.
 
+Login: the password is read from Ayla's OpenKore config (openkore-ayla/control/config.txt, username/password) unless
+--password is given. It is never printed. It goes only to legion/data/logins.local.json (git-ignored, keyed by account
+id); personas.json gets an empty password, because personas.json is tracked by git.
+
 Safety: refuses if human-parties.json names any human other than --human (those parties stay human-led and must be
-moved by hand); refuses a missing --password (the owner supplies it, nothing is guessed); needs --map (the map her
-party is restored on). It does not talk to the database at all, so account 2000000 is never touched there.
+moved by hand); refuses when no password can be found; needs --map (the map her party is restored on). It does not
+talk to the database at all, so account 2000000 is never touched there.
 Run once at cut-over, by the deploy agent, with legion and legion-core stopped (G15, G17). A second run finds the
 rename done and changes nothing.
 
-usage: python tools/system/ayla_engine_migrate.py --data legion/data --password PW --map MAP [--apply]
+usage: python tools/system/ayla_engine_migrate.py --data legion/data --map MAP [--apply] [--password PW]
 """
 import argparse
 import copy
@@ -32,6 +36,42 @@ CHAR_NAME = "Ayla"
 BUILD = "assassin_sonic"
 CLASS_ID, CLASS_NAME = 12, "Assassin"
 PRE = ".pre-ayla-engine"
+OPENKORE_CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
+                               "openkore-ayla", "control", "config.txt")
+SECRETS = "logins.local.json"
+
+
+def read_openkore_login(path):
+    """(username, password) from an OpenKore config.txt ('key value' lines). Values are never printed."""
+    user = pw = ""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                key, _, val = line.partition(" ")
+                if key == "username":
+                    user = val.strip()
+                elif key == "password":
+                    pw = val.strip()
+    except OSError:
+        return "", ""
+    return user, pw
+
+
+def write_secret(data, account_id, password):
+    path = os.path.join(data, SECRETS)
+    secrets = {}
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            secrets = json.load(f)
+    secrets[str(account_id)] = password
+    write_json_atomic(path, secrets)
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
 
 
 def clean_party_name(s):
@@ -109,7 +149,7 @@ def plan(data, args):
         actions.append(("done", "personas.json already has %s" % CHAR_NAME))
     else:
         if not args.password:
-            return [], "--password is required (the owner supplies Ayla's login password; nothing is guessed)"
+            return [], "no password: pass --password or set password in %s" % args.openkore_config
         actions.append(("add_persona", personas_path))
     return actions, None
 
@@ -118,7 +158,7 @@ def persona_entry(personas, args):
     p = copy.deepcopy(personas[0])   # same shape as every generated persona
     p["index"] = max(x.get("index", 0) for x in personas) + 1
     p["account"] = args.userid
-    p["password"] = args.password
+    p["password"] = ""   # the password is in logins.local.json (git-ignored), see write_secret
     p["account_id"] = ACCOUNT_ID
     p["char_id"] = CHAR_ID
     p["name"] = CHAR_NAME
@@ -144,23 +184,27 @@ def describe(a):
     if kind == "write_engine":
         return "write %s (engine party %s)" % (a[1], a[2][0]["name"])
     if kind == "add_persona":
-        return "add persona %s to %s (copy kept as %s)" % (CHAR_NAME, a[1], a[1] + PRE)
+        return "add persona %s to %s (copy kept as %s); login secret to %s" % (CHAR_NAME, a[1], a[1] + PRE, SECRETS)
     return a[1]
+
+
+def add_persona(path, args):
+    with open(path, encoding="utf-8") as f:
+        personas = json.load(f)
+    shutil.copy2(path, path + PRE)
+    personas.append(persona_entry(personas, args))
+    write_json_atomic(path, personas)
 
 
 def apply(actions, args):
     for a in actions:
         if a[0] == "rename":
             os.rename(a[1], a[2])
+        elif a[0] == "add_persona":
+            write_secret(args.data, ACCOUNT_ID, args.password)
+            add_persona(a[1], args)
         elif a[0] == "write_engine":
             write_json_atomic(a[1], a[2])
-        elif a[0] == "add_persona":
-            path = a[1]
-            with open(path, encoding="utf-8") as f:
-                personas = json.load(f)
-            shutil.copy2(path, path + PRE)
-            personas.append(persona_entry(personas, args))
-            write_json_atomic(path, personas)
         print("done: " + describe(a))
 
 
@@ -168,11 +212,16 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data", required=True, help="the legion data directory (legion/data)")
     ap.add_argument("--human", default="Ayla", help="the human whose party moves to the engine")
-    ap.add_argument("--userid", default="player", help="Ayla's login name (the DB login.userid)")
-    ap.add_argument("--password", default="", help="Ayla's login password (the owner supplies it)")
+    ap.add_argument("--userid", default="", help="Ayla's login name (default: username in her OpenKore config)")
+    ap.add_argument("--password", default="", help="override: Ayla's password (default: her OpenKore config)")
+    ap.add_argument("--openkore-config", default=OPENKORE_CONFIG, help="Ayla's OpenKore config.txt")
     ap.add_argument("--map", default="", help="the map her party is restored on (her last map, from the DB)")
     ap.add_argument("--apply", action="store_true", help="write (default: dry run)")
     args = ap.parse_args(argv)
+    if not args.password or not args.userid:
+        user, pw = read_openkore_login(args.openkore_config)
+        args.password = args.password or pw
+        args.userid = args.userid or user or "player"
     actions, err = plan(args.data, args)
     if err:
         print("REFUSED: " + err, file=sys.stderr)

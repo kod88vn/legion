@@ -28,10 +28,13 @@ class MigrateTest(unittest.TestCase):
             json.dump([bot_persona(1), bot_persona(2)], f)
         with open(os.path.join(self.data, "human-parties.json"), "w", encoding="utf-8") as f:
             json.dump([{"human": "Ayla", "members": ["Zendancer84", "Zen.fox"], "alumni": ["Echobunny"]}], f)
+        self.cfg = os.path.join(self.dir, "config.txt")
+        with open(self.cfg, "w", encoding="utf-8") as f:
+            f.write("# OpenKore\nusername player\npassword CFGPW-7731\n")
 
     def run_main(self, *extra):
         out = io.StringIO()
-        argv = ["--data", self.data, "--map", "pay_dun03", "--password", "TESTPW"] + list(extra)
+        argv = ["--data", self.data, "--map", "pay_dun03", "--openkore-config", self.cfg] + list(extra)
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
             rc = mig.main(argv)
         return rc, out.getvalue()
@@ -45,6 +48,20 @@ class MigrateTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("dry run", out)
         self.assertEqual(self.files(), before)
+        self.assertNotIn("CFGPW-7731", out)
+
+    def test_password_override_wins(self):
+        rc, out = self.run_main("--apply", "--password", "OVERRIDE-1")
+        self.assertEqual(rc, 0)
+        self.assertNotIn("OVERRIDE-1", out)
+        with open(os.path.join(self.data, "logins.local.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), {"2000000": "OVERRIDE-1"})
+
+    def test_no_password_anywhere_refuses(self):
+        os.remove(self.cfg)
+        rc, _ = self.run_main("--apply")
+        self.assertEqual(rc, 2)
+        self.assertTrue(os.path.exists(os.path.join(self.data, "human-parties.json")))
 
     def test_apply_moves_party_and_adds_persona(self):
         rc, _ = self.run_main("--apply")
@@ -66,7 +83,11 @@ class MigrateTest(unittest.TestCase):
         self.assertEqual(len(ayla), 1)
         self.assertEqual(ayla[0]["char_id"], 150010)
         self.assertEqual(ayla[0]["build"], "assassin_sonic")
-        self.assertEqual(ayla[0]["password"], "TESTPW")
+        self.assertEqual(ayla[0]["password"], "")   # tracked file: no secret in it
+        with open(os.path.join(self.data, "personas.json"), encoding="utf-8") as f:
+            self.assertNotIn("CFGPW-7731", f.read())
+        with open(os.path.join(self.data, "logins.local.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), {"2000000": "CFGPW-7731"})
         self.assertEqual(ayla[0]["index"], 3)
         self.assertEqual(ayla[0]["characters"][0]["char_id"], 150010)
         # the old personas file is kept
@@ -91,13 +112,6 @@ class MigrateTest(unittest.TestCase):
         self.assertEqual(rc, 2)
         self.assertTrue(os.path.exists(os.path.join(self.data, "human-parties.json")))
         self.assertFalse(os.path.exists(os.path.join(self.data, "parties_engine.json")))
-
-    def test_refuses_without_password_and_keeps_files(self):
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
-            rc = mig.main(["--data", self.data, "--map", "pay_dun03", "--apply"])
-        self.assertEqual(rc, 2)
-        self.assertTrue(os.path.exists(os.path.join(self.data, "human-parties.json")))
 
     def test_never_overwrites_kept_file(self):
         with open(os.path.join(self.data, "human-parties.json.pre-ayla-engine"), "w", encoding="utf-8") as f:
