@@ -76,6 +76,9 @@ type starveilOrder struct {
 	Reason string    `json:"reason,omitempty"`
 	At     time.Time `json:"at"`
 	fetch  func()    // run once the plugin took the order (the member's answer)
+	// engine delivery (ayla_engine_on): fetched guards the one run; invitedAcct is marked suggested on delivery only
+	fetched     bool
+	invitedAcct string
 }
 
 var starveilLead = struct {
@@ -467,35 +470,99 @@ func registerStarveilEngine(mux *http.ServeMux, bots []*Bot) {
 	})
 }
 
-// starveilEngineDrain (main, ayla_engine_on): the queued orders are taken once; the member side of each runs here
-// (its fetch), the rest goes to the master bot in core. A failed post is counted, not retried (orders expire anyway).
+// starveilEngineDrain (main, ayla_engine_on): the queued orders are taken and posted to the master bot in core. Only a
+// 200 from core delivers them: their member side (fetch) and the recruit's mark run then, once each. Anything else
+// (no URL, unreachable, a 409 or another status) puts them back at the front of the queue, still within their TTL,
+// and logs one warning per episode. A requeued order has run nothing yet; the fetched flag keeps it to one run anyway.
 func starveilEngineDrain(now time.Time) {
 	orders := starveilTake(now)
 	if len(orders) == 0 {
 		return
 	}
-	for _, o := range orders {
-		if o.fetch != nil {
-			o.fetch()
-		}
-	}
 	base := coreAPIURL()
 	if base == "" {
-		starveilCount("engine: no core API, orders dropped")
+		starveilEngineFail("no core API", orders, now)
 		return
 	}
 	raw, _ := json.Marshal(orders)
 	resp, err := coreClient.Post(base+"/api/human-guild/engine", "application/json", bytes.NewReader(raw))
 	if err != nil {
-		starveilCount("engine: core unreachable")
+		starveilEngineFail("core unreachable: "+err.Error(), orders, now)
 		return
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		starveilCount("engine: core refused the orders")
+		starveilEngineFail(fmt.Sprintf("core answered HTTP %d", resp.StatusCode), orders, now)
 		return
 	}
+	starveilEngineState(false, "")
 	starveilCount("engine: orders sent to core")
+	for _, o := range orders {
+		o.runDelivered(now)
+	}
+}
+
+// runDelivered: the member side of a delivered order, once. Warnings run their member answer (fetch); a recruit's
+// invite marks its candidate as suggested only now, so a candidate whose invite never left is picked again.
+func (o *starveilOrder) runDelivered(now time.Time) {
+	if o.fetched {
+		return
+	}
+	o.fetched = true
+	if o.fetch != nil {
+		o.fetch()
+	}
+	if o.invitedAcct != "" {
+		humanGuild.Lock()
+		humanGuild.invited[o.invitedAcct] = now
+		humanGuild.Unlock()
+	}
+}
+
+// starveilEngineFail: the orders were not delivered; they go back to the front of the queue (TTL applies) and the
+// episode is logged once.
+func starveilEngineFail(why string, orders []*starveilOrder, now time.Time) {
+	starveilRequeue(orders, now)
+	starveilEngineState(true, why)
+	starveilCount("engine: orders requeued")
+}
+
+// starveilEngineState: one warning when core stops taking the orders, one line when it takes them again.
+var starveilEngineDown = struct {
+	sync.Mutex
+	down bool
+}{}
+
+func starveilEngineState(down bool, why string) {
+	starveilEngineDown.Lock()
+	was := starveilEngineDown.down
+	starveilEngineDown.down = down
+	starveilEngineDown.Unlock()
+	switch {
+	case down && !was:
+		log.Printf("starveil engine: core is not taking the orders (%s); they stay queued until it does", why)
+	case !down && was:
+		log.Printf("starveil engine: core takes the orders again")
+	}
+}
+
+// starveilRequeue puts undelivered orders back at the front of the queue. Orders past their TTL are dropped, and the
+// queue keeps its cap (the oldest go first).
+func starveilRequeue(orders []*starveilOrder, now time.Time) {
+	var live []*starveilOrder
+	for _, o := range orders {
+		if now.Sub(o.At) <= starveilOrderTTL {
+			live = append(live, o)
+		}
+	}
+	starveilLead.Lock()
+	defer starveilLead.Unlock()
+	q := append(live, starveilLead.q...)
+	if n := len(q); n > starveilOrderMax {
+		q = q[n-starveilOrderMax:]
+	}
+	starveilLead.q = q
+	starveilLead.counters["engine: requeued orders"] += len(live)
 }
 
 // starveilRecruitRound (main, ayla_engine_on): the next recruit is the one guildrecruit.pl would invite (her party
@@ -537,11 +604,7 @@ func starveilRecruitRound(bots []*Bot, guild string, now time.Time) {
 		return
 	}
 	c := picks[0]
-	humanGuild.Lock()
-	if c.account != "" {
-		humanGuild.invited[c.account] = now
-	}
-	humanGuild.Unlock()
-	starveilQueue(&starveilOrder{Kind: "invite", Char: c.Name, Guild: guild, AID: c.AID}, now)
+	// marked as suggested only once core has the invite (runDelivered)
+	starveilQueue(&starveilOrder{Kind: "invite", Char: c.Name, Guild: guild, AID: c.AID, invitedAcct: c.account}, now)
 	log.Printf("starveil lead: invite %s (engine)", c.Name)
 }

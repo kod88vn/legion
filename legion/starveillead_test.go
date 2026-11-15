@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -361,5 +362,89 @@ func TestG12TradeAndGiftCallSites(t *testing.T) {
 	}
 	if g := ayla.giftableZeny(); g > 2000 {
 		t.Fatalf("Ayla with 12,000z may give at most 2,000z to a gear pool, got %d", g)
+	}
+}
+
+func TestAylaEngineDrainRequeuesOn409DeliversOnce(t *testing.T) {
+	var status int32 = http.StatusConflict
+	var posts []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var got []starveilOrder
+		json.Unmarshal(body, &got)
+		posts = append(posts, len(got))
+		w.WriteHeader(int(atomic.LoadInt32(&status)))
+	}))
+	defer srv.Close()
+	withAylaEngine(t, true, false, func() {
+		*coreAPI = srv.URL
+		starveilLead.Lock()
+		old := starveilLead.q
+		starveilLead.q = nil
+		starveilLead.Unlock()
+		defer func() { starveilLead.Lock(); starveilLead.q = old; starveilLead.Unlock() }()
+		humanGuild.Lock()
+		delete(humanGuild.invited, "acct-1")
+		humanGuild.Unlock()
+
+		now := time.Now()
+		fetches := 0
+		starveilQueue(&starveilOrder{Kind: "warn", Char: "Member", Guild: "Starveil", Line: "hi",
+			fetch: func() { fetches++ }}, now)
+		starveilQueue(&starveilOrder{Kind: "invite", Guild: "Starveil", AID: 2100009, invitedAcct: "acct-1"}, now)
+
+		starveilEngineDrain(now) // core answers 409: nothing delivered
+		starveilLead.Lock()
+		left := len(starveilLead.q)
+		starveilLead.Unlock()
+		if left != 2 {
+			t.Fatalf("409: %d orders queued, want both back in the queue", left)
+		}
+		if fetches != 0 {
+			t.Fatalf("409: the warning's member answer ran %d times before delivery", fetches)
+		}
+		humanGuild.Lock()
+		_, marked := humanGuild.invited["acct-1"]
+		humanGuild.Unlock()
+		if marked {
+			t.Fatal("409: the candidate must not be marked suggested before delivery")
+		}
+
+		atomic.StoreInt32(&status, http.StatusOK)
+		starveilEngineDrain(now) // core takes them now
+		if len(posts) != 2 || posts[1] != 2 {
+			t.Fatalf("posts = %v, want the second post to carry both orders", posts)
+		}
+		if fetches != 1 {
+			t.Fatalf("delivered warning ran its member answer %d times, want once", fetches)
+		}
+		humanGuild.Lock()
+		_, marked = humanGuild.invited["acct-1"]
+		humanGuild.Unlock()
+		if !marked {
+			t.Fatal("delivered invite: the candidate is marked suggested")
+		}
+
+		starveilEngineDrain(now) // nothing left: no second delivery, no second run
+		if fetches != 1 || len(posts) != 2 {
+			t.Fatalf("after delivery: fetches %d, posts %d; a delivered order is never sent again", fetches, len(posts))
+		}
+	})
+}
+
+func TestStarveilRequeueDropsExpired(t *testing.T) {
+	starveilLead.Lock()
+	old := starveilLead.q
+	starveilLead.q = nil
+	starveilLead.Unlock()
+	defer func() { starveilLead.Lock(); starveilLead.q = old; starveilLead.Unlock() }()
+	now := time.Now()
+	stale := &starveilOrder{Kind: "say", Line: "old", At: now.Add(-starveilOrderTTL - time.Minute)}
+	fresh := &starveilOrder{Kind: "say", Line: "new", At: now}
+	starveilRequeue([]*starveilOrder{stale, fresh}, now)
+	starveilLead.Lock()
+	defer starveilLead.Unlock()
+	if len(starveilLead.q) != 1 || starveilLead.q[0] != fresh {
+		t.Fatalf("requeue kept %d orders, want only the one within its TTL", len(starveilLead.q))
 	}
 }
