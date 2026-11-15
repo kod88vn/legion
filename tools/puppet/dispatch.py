@@ -15,6 +15,7 @@ pauses it too. Stop: Ctrl+C / kill. Heartbeats: puppet_heartbeat.json (details) 
 tools/mindgate.py and tools/sentinel.py). Standard library only.
 """
 import argparse
+import glob
 import json
 import os
 import shutil
@@ -34,7 +35,16 @@ BRIEFS = os.path.join(HERE, "briefs")
 WORKDIR = os.path.join(HERE, "workdir")
 CTL = os.path.join(REPO, "tools", "legionctl.py").replace("\\", "/")
 AYLA_SH = os.path.join(REPO, "tools", "rogui", "ayla.sh").replace("\\", "/")
+WIN_MIND = False  # dispatcher in WSL driving a Windows claude.exe: the mind's Bash is Windows Git Bash (Windows paths)
 WSL_DISTRO = os.environ.get("LEGION_WSL_DISTRO", "Ubuntu-24.04")
+
+
+def win_path(p):
+    """/mnt/g/RO/x -> G:/RO/x (a path already in Windows form is returned unchanged)"""
+    p = p.replace("\\", "/")
+    if p.startswith("/mnt/") and len(p) > 6 and p[6:7] == "/":
+        return p[5].upper() + ":" + p[6:]
+    return p
 
 
 def wsl_path(p):
@@ -49,7 +59,7 @@ def ayla_cmd(nt=None):
     """the command line Ayla's mind uses for her interface. ayla.sh needs WSL: it calls docker (in WSL) and writes
     /mnt/g/... paths. From Windows (the CLI's Bash tool is Git Bash) it must go through wsl.exe; when the dispatcher
     itself runs inside WSL, plain bash works."""
-    nt = (os.name == "nt") if nt is None else nt
+    nt = (os.name == "nt" or WIN_MIND) if nt is None else nt
     if nt:
         return f"wsl -d {WSL_DISTRO} -- bash {wsl_path(AYLA_SH)}"
     return f"bash {wsl_path(AYLA_SH)}"
@@ -79,7 +89,7 @@ ORDER_GAP = 120  # an owner order wakes a role at most this often
 # ----------------------------------------------------------------- command line for the Claude CLI
 def allowed_tools(role, python="python"):
     """Bash only, and only legionctl (Ayla's mind also gets ayla.sh, her own interface)."""
-    tools = [f"Bash({python} {CTL}:*)"]
+    tools = [f"Bash({python} {mind_path(CTL)}:*)"]
     if role == "ayla":
         tools.append(f"Bash({ayla_cmd()}:*)")
     return tools
@@ -91,7 +101,7 @@ DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-
 
 
 def denied_tools(python="python"):
-    return [f"Bash({python} {CTL} {c}:*)" for c in DENIED_CTL]
+    return [f"Bash({python} {mind_path(CTL)} {c}:*)" for c in DENIED_CTL]
 
 
 def load_brief(role):
@@ -100,8 +110,12 @@ def load_brief(role):
     for name in ("_common", cfg["brief"]):
         with open(os.path.join(BRIEFS, name + ".md"), encoding="utf-8") as f:
             text += f.read().rstrip() + "\n\n"
-    return (text.replace("{CTL}", CTL).replace("{ROLE}", role).replace("{MIND}", cfg["bus"])
-            .replace("{AYLA_SH}", ayla_cmd()).replace("{NOTES}", os.path.join(NOTES, role + ".md").replace("\\", "/")))
+    return (text.replace("{CTL}", mind_path(CTL)).replace("{ROLE}", role).replace("{MIND}", cfg["bus"])
+            .replace("{AYLA_SH}", ayla_cmd()).replace("{NOTES}", mind_path(os.path.join(NOTES, role + ".md").replace("\\", "/"))))
+
+
+def mind_path(p):
+    return win_path(p) if WIN_MIND else p
 
 
 def build_command(role, claude="claude", python="python", model=None, call_cap=None):
@@ -132,7 +146,14 @@ def render(cmd):
 
 
 def find_claude():
-    return shutil.which("claude") or "claude"
+    """the claude CLI. In WSL only the Windows claude.exe exists (no `claude` on the Linux PATH: FileNotFoundError, 2026-11-14)."""
+    for name in ("claude", "claude.exe"):
+        found = shutil.which(name)
+        if found:
+            return found
+    for home in sorted(glob.glob("/mnt/c/Users/*/.local/bin/claude.exe")):
+        return home
+    return "claude"
 
 
 # ----------------------------------------------------------------- call log, budget
@@ -448,6 +469,7 @@ def other_instance_alive():
 
 
 def main(argv=None):
+    global WIN_MIND
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dry-run", action="store_true", help="print command + briefing, spend nothing")
     ap.add_argument("--once", metavar="ROLE", help="one call for this role now, then exit")
@@ -462,6 +484,7 @@ def main(argv=None):
     ap.add_argument("--force", action="store_true", help="start even if a heartbeat says another dispatcher runs")
     args = ap.parse_args(argv)
     args.claude = args.claude or find_claude()
+    WIN_MIND = os.name != "nt" and args.claude.lower().endswith(".exe")
 
     if args.list:
         for r, c in ROLES.items():
