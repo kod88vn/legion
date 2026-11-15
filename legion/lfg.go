@@ -152,6 +152,7 @@ var lfgStats = struct {
 	tickLast  time.Duration      // duration of the last lfgTick
 	tickSum   time.Duration      // sum of lfgTick durations since start (not saved)
 	ticks     int                // lfgTick count since start (not saved)
+	tickRing  [lfgCostWindow]time.Duration // the last lfgCostWindow tick durations (lfgstats.go guard)
 }{started: time.Now(), counted: time.Now(), set: map[string]int{}, met: map[string]int{}, expired: map[string]int{}, changed: map[string]int{},
 	posts: map[string]int{}, dissolved: map[string]int{}, leaves: map[string]int{}}
 
@@ -1417,7 +1418,7 @@ const lfgCrossMax = 60
 func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) (joins, formed int) {
 	t := &lfgTally{} // lfgstats.go: this tick's join checks (flushed at the end)
 	defer t.flush()
-	countAll := tune().LfgCountMaps // every fitting pair's map check counted (costs a partyMapOK per pair)
+	countAll := lfgCountMaps() // every fitting pair's map check counted (costs a partyMapOK per pair; lfgstats.go guard)
 	// 1. open parties take candidates: no-healer parties first; up to 2 per party per tick
 	sort.SliceStable(ps, func(i, j int) bool {
 		if ps[i].healer != ps[j].healer {
@@ -1571,12 +1572,8 @@ func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) 
 // lfgTick: matching first, then new posts within the #global budget (flavour: they also fill the last places).
 func lfgTick(bots []*Bot, now time.Time) {
 	start := time.Now()
-	defer func() { // /api/lfg tick_ms_*: what one matching tick costs (lfg_count_maps included)
-		lfgStats.Lock()
-		lfgStats.tickLast = time.Since(start)
-		lfgStats.tickSum += lfgStats.tickLast
-		lfgStats.ticks++
-		lfgStats.Unlock()
+	defer func() { // /api/lfg tick_ms_*: what one matching tick costs (lfg_count_maps included); lfgstats.go guard
+		lfgNoteTick(time.Since(start))
 	}()
 	cs, ps := lfgGather(bots, now)
 	used := map[*Bot]bool{}
@@ -1689,7 +1686,7 @@ func lfgLocal(cs []*lfgCand, used map[*Bot]bool, now time.Time, t *lfgTally) int
 						t.addJoin(why, o.lv)
 						continue
 					}
-					if s := lfgScore(o, P); s > bs || tune().LfgCountMaps {
+					if s := lfgScore(o, P); s > bs || lfgCountMaps() {
 						if !lfgMapOK(P, o) {
 							t.addJoin(jMap, o.lv)
 							continue
@@ -2204,6 +2201,8 @@ func registerLFG(mux *http.ServeMux) {
 		out["tick_ms_last"] = float64(lfgStats.tickLast.Microseconds()) / 1000
 		out["tick_ms_avg"] = avgMs(lfgStats.tickSum, lfgStats.ticks)
 		out["ticks_since_start"] = lfgStats.ticks
+		out["count_maps_on"] = lfgCountMaps()
+		out["count_maps_auto_off"] = lfgMapAutoOff.Load()
 		lfgStats.Unlock()
 		writeJSON(w, out)
 	})

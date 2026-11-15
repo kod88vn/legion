@@ -17,6 +17,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 )
 
@@ -283,21 +284,22 @@ func avgMs(total time.Duration, n int) float64 {
 // by the party's level band: {band: {step: parties}}. "no_state" = the leader has no step yet. Measurement only: the
 // step itself is not changed here (AY07). Takes parties and the members' locks, never with lfgStats held.
 func lfgPerfHistogram(now time.Time) map[string]map[string]int {
+	type snap struct {
+		lead *Bot
+		mem  []*Bot
+	}
 	parties.Lock()
-	var list []*Party
+	var list []snap
 	for _, p := range parties.byName {
 		if p.Human == "" && p.Leader != nil {
-			list = append(list, p)
+			list = append(list, snap{p.Leader, append([]*Bot(nil), p.Members...)})
 		}
 	}
 	parties.Unlock()
 	out := map[string]map[string]int{}
 	for _, p := range list {
-		parties.Lock()
-		mem := append([]*Bot(nil), p.Members...)
-		parties.Unlock()
 		sum, n := 0, 0
-		for _, m := range mem {
+		for _, m := range p.mem {
 			m.mu.Lock()
 			if m.BaseLv > 0 {
 				sum += m.BaseLvOr()
@@ -311,7 +313,7 @@ func lfgPerfHistogram(now time.Time) map[string]map[string]int {
 		band := bandNames[lfgBandIdx(sum/n)]
 		partyPerf.mu.Lock()
 		step := "no_state"
-		if s := partyPerf.s[p.Leader.P.Name]; s != nil {
+		if s := partyPerf.s[p.lead.P.Name]; s != nil {
 			step = itoa(s.off)
 		}
 		partyPerf.mu.Unlock()
@@ -321,4 +323,40 @@ func lfgPerfHistogram(now time.Time) map[string]map[string]int {
 		out[band][step]++
 	}
 	return out
+}
+
+// Cost guard for the full map count (lfg_count_maps). When the average lfgTick over the last lfgCostWindow ticks is
+// above lfgCostLimit, every pair goes back to the best-candidate-only count, logged once; it stays off until the
+// engine restarts. The tuning flag remains the manual switch.
+const (
+	lfgCostWindow = 20
+	lfgCostLimit  = 2 * time.Second
+)
+
+var lfgMapAutoOff atomic.Bool
+
+// lfgCountMaps: count the map check of every fitting pair now (tuning on and the guard has not tripped).
+func lfgCountMaps() bool {
+	return tune().LfgCountMaps && !lfgMapAutoOff.Load()
+}
+
+// lfgNoteTick records one lfgTick duration and trips the guard when the window's average is over the limit.
+func lfgNoteTick(d time.Duration) {
+	lfgStats.Lock()
+	defer lfgStats.Unlock()
+	lfgStats.tickLast = d
+	lfgStats.tickSum += d
+	lfgStats.tickRing[lfgStats.ticks%lfgCostWindow] = d
+	lfgStats.ticks++
+	if lfgStats.ticks < lfgCostWindow || lfgMapAutoOff.Load() {
+		return
+	}
+	var sum time.Duration
+	for _, t := range lfgStats.tickRing {
+		sum += t
+	}
+	if avg := sum / lfgCostWindow; avg > lfgCostLimit {
+		lfgMapAutoOff.Store(true)
+		log.Printf("lfgstats: full map count switched off: lfgTick averages %v over the last %d ticks (limit %v)", avg, lfgCostWindow, lfgCostLimit)
+	}
 }

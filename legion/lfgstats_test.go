@@ -225,3 +225,49 @@ func TestLfgPerfHistogramAndDefaults(t *testing.T) {
 		t.Fatalf("histogram = %v, want one lv41-60 party at step -9", h)
 	}
 }
+
+// TestLfgCostGuardSwitchesMapCountOff: the guard trips only on a full window whose average is over the limit; the
+// tuning flag itself is left alone, and a fast window never trips it.
+func TestLfgCostGuardSwitchesMapCountOff(t *testing.T) {
+	reset := func() {
+		lfgMapAutoOff.Store(false)
+		lfgStats.Lock()
+		lfgStats.ticks, lfgStats.tickRing, lfgStats.tickSum = 0, [lfgCostWindow]time.Duration{}, 0
+		lfgStats.Unlock()
+	}
+	old := curTuning.Load()
+	nt := defaultTuning
+	nt.LfgCountMaps = true
+	curTuning.Store(&nt)
+	defer func() {
+		reset()
+		if v, ok := old.(*Tuning); ok && v != nil {
+			curTuning.Store(v)
+		} else {
+			curTuning.Store(&defaultTuning)
+		}
+	}()
+
+	reset()
+	for i := 0; i < lfgCostWindow; i++ {
+		lfgNoteTick(time.Millisecond)
+	}
+	if lfgMapAutoOff.Load() || !lfgCountMaps() {
+		t.Fatal("a fast window tripped the guard")
+	}
+
+	reset()
+	for i := 0; i < lfgCostWindow-1; i++ {
+		lfgNoteTick(3 * time.Second)
+	}
+	if lfgMapAutoOff.Load() {
+		t.Fatal("the guard tripped before a full window")
+	}
+	lfgNoteTick(3 * time.Second)
+	if !lfgMapAutoOff.Load() || lfgCountMaps() {
+		t.Fatal("a full window averaging 3s did not switch the full map count off")
+	}
+	if !tune().LfgCountMaps {
+		t.Fatal("the guard changed the manual tuning flag")
+	}
+}
