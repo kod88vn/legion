@@ -1847,15 +1847,19 @@ sub lockmap_guard {
 our (%leftTown, $prevMap);
 our $regroupTo = ''; # AY22: walking back to the priest - the town she left is no barrier then
 my $tbgLogAt = 0;
+our $tbgHold; # [lockMap, until] held while the town she left blocks the way
 sub town_back_guard {
 	return unless $field && $char;
 	my $here = $field->baseName;
+	if ($tbgHold && (time > $tbgHold->[1] || $regroupTo ne '' || $rally)) { $config{lockMap} = $tbgHold->[0] if ($config{lockMap} || '') eq ''; $tbgHold = undef }
 	$leftTown{$prevMap} = time if defined $prevMap && $prevMap ne $here && is_townmap($prevMap) && !is_townmap($here) && $prevMap !~ /_in\d*$/;
 	$prevMap = $here;
 	return if $rally || $regroupTo ne '' || is_townmap($here) || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'teleport');
 	my ($dm, $nm) = route_maps();
 	foreach my $t ($nm, $dm) {
 		next unless $t ne '' && $leftTown{$t} && time - $leftTown{$t} < 300;
+		# lockMap held until the window ends (clearing its route every tick = a route recalculation every 0.5 s)
+		if (($config{lockMap} || '') ne '' && !$tbgHold) { $tbgHold = [$config{lockMap}, $leftTown{$t} + 300]; $config{lockMap} = '' }
 		AI::clear('route', 'move');
 		message "[partylead] PT04: not going back into $t (left it " . int(time - $leftTown{$t}) . " s ago) - holding here
 ", 'system' if time - $tbgLogAt > 20;
@@ -1876,7 +1880,9 @@ sub tp_guard {
 	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
 	my @fr = stick_on() ? online_friends() : ();
 	if (@fr) {
-		foreach my $k (@TP_KEYS, 'route_teleport') {
+		# saveMap_warpToBuyOrSell: OpenKore's auto-buy / sell / storage wings her to the save map (live 04:38:49) - with
+		# friends online town trips are party town runs on foot / by Kafra
+		foreach my $k (@TP_KEYS, 'route_teleport', 'saveMap_warpToBuyOrSell') {
 			next unless $config{$k};
 			$tpSaved{$k} = $config{$k} unless exists $tpSaved{$k};
 			$config{$k} = 0;
@@ -2262,6 +2268,8 @@ sub friend_cls {
 	return '';
 }
 sub pack_tick {
+	# a lockMap held during the last tick's wait comes back first (the wait below takes it again if still waiting)
+	if (($pk{lmHold} || '') ne '') { $config{lockMap} = $pk{lmHold} if ($config{lockMap} || '') eq ''; $pk{lmHold} = '' }
 	return 0 if defined $config{partylead_pack} && $config{partylead_pack} eq '0';
 	return 0 if $rally || $depart || $holding || $collect || $fetchMap ne '' || $char->{dead} || !$char->{pos_to};
 	return 0 if AI::inQueue('NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal', 'teleport') || (defined &aylagear::busy && aylagear::busy());
@@ -2335,7 +2343,9 @@ sub pack_tick {
 			return 1;
 		}
 	}
-	# wait: stand where she is (OpenKore's sitAuto still sits her under its HP / SP marks)
+	# wait: stand where she is (OpenKore's sitAuto still sits her under its HP / SP marks). lockMap is held for the
+	# wait - clearing OpenKore's lockMap route every tick made it recalculate it every 0.5 s ("Calculating lockMap route")
+	if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
 	AI::clear('route', 'move') if AI::inQueue('route', 'move');
 	if (time - $pk{sayAt} >= 60) {
 		$pk{sayAt} = time;
