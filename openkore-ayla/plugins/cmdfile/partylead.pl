@@ -761,6 +761,19 @@ sub rally_tick {
 	}
 	my $here = $field->baseName;
 	my $d = blockDistance($char->{pos_to}, {x => $r->{x}, y => $r->{y}});
+	# a rally to her save town from a field: a Butterfly Wing lands on the save point (PT22 - the party wings to town,
+	# it doesn't walk; live 14:02 "rally at the Kafra in payon ... regroup" walked from pay_dun02 with 5 wings in the bag)
+	if ($here ne $r->{town} && !is_townmap($here) && ($config{saveMap} || '') eq $r->{town} && !$r->{wingAt}
+		&& $char->inventory->getByName('Butterfly Wing') && !AI::inQueue('teleport')) {
+		$r->{wingAt} = time;
+		$partylead::wingOkUntil = time + 10; # the no-teleport guard lets exactly this wing through
+		message "[partylead] rally: Butterfly Wing to $r->{town} (save point) instead of walking
+", 'system';
+		psay("wing to the $r->{town} kafra, meet me there", 1, 0);
+		AI::clear('route', 'move');
+		AI::ai_useTeleport(2);
+		return 1;
+	}
 	if ($here ne $r->{town} || $d > 4) {
 		if (time - $r->{routeAt} > 15 || !AI::inQueue('route', 'move')) {
 			$r->{routeAt} = time;
