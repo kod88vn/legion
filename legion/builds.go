@@ -1315,6 +1315,9 @@ func (b *Bot) gearStepNeed() (*Item, *Shop) {
 		return nil, nil
 	}
 	budget := b.Zeny - b.gearReserve()
+	if it, sh := b.gatedGearShop(budget); it != nil { // buildmilestones.go (EC39): the gated piece before any other step
+		return it, sh
+	}
 	pick := func(ids []int, slot uint32, score func(*Item) float64, floor float64) (*Item, *Shop) {
 		for _, it := range b.inv { // already carrying something better: equipFromInventory / identifyThink, no trip
 			if x := items[it.ItemID]; x != nil && !it.Equipped && gearSlot(x.Loc) == slot && score(x) >= floor &&

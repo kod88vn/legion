@@ -346,3 +346,37 @@ func TestGatedBotBuysFailingPieceFirst(t *testing.T) {
 		t.Fatalf("maps: gated level %d, want the new ceiling %d", got, gate1)
 	}
 }
+
+// the necessary-purchase path (gearStepNeed) buys the gated piece, not another slot's step
+func TestGatedBotNecessaryStepIsTheGatedPiece(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39need", 60, 9103, 9201)
+	b.MapName = "prontera"
+	b.Zeny = 50000
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 2000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+	if it, _ := b.gearStepNeed(); it == nil || it.ID != 9202 {
+		t.Fatalf("gearStepNeed = %v, want the gated Armor II", it)
+	}
+}
+
+// the economy wants (econWant) bid for nothing else while gated: the failing piece is the only gear want
+func TestGatedBotWantsOnlyTheGatedPiece(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39want", 60, 9103, 9201)
+	b.MapName = "prontera"
+	b.Zeny = 50000
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 2000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+	if w := b.econWant(); w != nil && w.ItemID != 9202 {
+		t.Fatalf("econWant = item %d, want nothing or the gated Armor II (9202)", w.ItemID)
+	}
+}

@@ -406,10 +406,19 @@ func (b *Bot) econWant() *Want {
 	// buildgear.go nextBuildPiece (economy run 7, owner: "each bot should prioritize farming or trading to perfect its
 	// build"): the build's next piece comes first when only players have it (drop / trade). Asked for when someone
 	// offers it, and now and then anyway (the want is demand the market and farm.go see).
-	if pc := b.nextBuildPiece(); pc != nil && pc.NPC == 0 && (pc.Source == "trade" || pc.Source == "drop") {
+	// buildmilestones.go (EC39): gated, the failing gear piece is the only gear want; the other slots wait
+	_, goal := b.gearGate(lv)
+	pc := b.nextBuildPiece()
+	if goal != nil {
+		pc = gearGoalPiece(*goal, lv)
+	}
+	if pc != nil && pc.NPC == 0 && (pc.Source == "trade" || pc.Source == "drop") {
 		if bid := bidPrice(b.P, pc.ItemID); bid > 0 && bid <= budget && (onBoard(pc.ItemID) || cfloat() < 0.2) {
 			return &Want{ItemID: pc.ItemID, Count: 1, Each: bid, Why: "for my build"}
 		}
+	}
+	if goal != nil {
+		return nil
 	}
 	var best *Want
 	bestGain := 0
