@@ -11,10 +11,12 @@ import (
 //   sell   - a potion shop here buys the loot: the trip logic sells it (town.go needTrip "selling in town");
 //   store  - 200+ zeny and storable items: the Kafra takes them (storage.go storeNeed / storeThink);
 //   buy    - 500+ zeny: the trip logic buys potions ("out of potions");
-//   drop   - none of the above, and only junk (what an NPC buys and no protected kind): the lowest sell value per
-//            weight stack is dropped, but only when dropping junk alone brings the bag under the line. Capped per visit.
-// Dropped stacks are confirmed from the server's inventory list; a refused drop is remembered and never retried; the
-// bot never picks up again what it dropped itself. Behind tuning.json town_drop_junk (default on, EC37).
+//   drop   - none of the above, and only junk (what an NPC buys and no protected or wanted kind): the lowest sell value
+//            per weight stack is dropped, but only when dropping junk alone brings the bag under the line. Capped per
+//            town visit.
+// Dropped stacks are confirmed from the server's inventory list; a refused drop is remembered for 30 min (never retried
+// meanwhile); the bot never picks up again what it dropped itself (ai.go and party.go loot loops). Behind tuning.json
+// town_drop_junk (default on, EC37).
 
 const (
 	regenDropCap     = 6               // stacks per town visit
@@ -22,14 +24,17 @@ const (
 	regenDropGap     = 2 * time.Second
 	regenOwnRadius   = 3                // a dropped stack lands within this many cells of the drop
 	regenOwnLifetime = 30 * time.Minute // the bot never picks up its own drop for this long
+	regenRefusedLife = 30 * time.Minute // a refused stack is not retried for this long
+	regenMemoryCap   = 64               // own drops and refusals kept per bot (the oldest go first)
 )
 
 // regenDropState: the drop bookkeeping of one bot (b.mu held).
 type regenDropState struct {
 	pend    *regenPend
-	refused map[string]bool // item key (index:id) the server refused: never retried
-	visit   int             // stacks confirmed dropped on this town visit
-	own     []regenOwnDrop  // what the bot dropped itself
+	refused map[string]time.Time // item key (index:id) the server refused, and when
+	visit   int                  // stacks confirmed dropped on this town visit
+	town    string               // the map the current visit is counted on
+	own     []regenOwnDrop       // what the bot dropped itself
 }
 
 type regenPend struct {
@@ -64,9 +69,30 @@ func (b *Bot) regenLastResort() bool {
 	return true
 }
 
+// regenWanted (b.mu held): item ids the bot or its guild wants to keep: the economy's wants (econWantAll), the next build
+// piece, and the guild stock's gaps (guildstock.go). Computed once per pass; guildGap takes the gstock lock, the same
+// order as vendbuy.go (under b.mu).
+func (b *Bot) regenWanted() map[int]bool {
+	out := map[int]bool{}
+	if w := b.econWantAll(false); w != nil && w.ItemID > 0 {
+		out[w.ItemID] = true
+	}
+	if w := b.econWant(); w != nil && w.ItemID > 0 {
+		out[w.ItemID] = true
+	}
+	if p := b.nextBuildPiece(); p != nil && p.ItemID > 0 {
+		out[p.ItemID] = true
+	}
+	return out
+}
+
 // regenProtected (b.mu held): kinds the drop never touches, whatever their value per weight.
-func (b *Bot) regenProtected(it *InvItem, x *Item) bool {
+func (b *Bot) regenProtected(it *InvItem, x *Item, wanted map[int]bool) bool {
 	id := it.ItemID
+	guild := ""
+	if b.P != nil {
+		guild = b.P.Guild
+	}
 	switch {
 	case it.Equipped || it.Count <= 0:
 		return true
@@ -82,23 +108,26 @@ func (b *Bot) regenProtected(it *InvItem, x *Item) bool {
 		return true
 	case b.keepsGear(x) || b.keepsCard(id): // the gear path and card slots
 		return true
-	}
-	if w := b.econWant(); w != nil && w.ItemID == id { // a want the bot is working on (economy)
+	case wanted[id]: // the economy, the build plan, the guild stock (regenWanted)
+		return true
+	case guild != "" && guildGap(guild, id): // the guild's stock lacks it
 		return true
 	}
 	return false
 }
 
 // regenJunk (b.mu held): the droppable bag stacks, lowest sell value per weight first. Junk only: what an NPC buys
-// (npcSellable = npcJunk or junkGear) and that no protected kind covers.
+// (npcSellable = npcJunk or junkGear) and that no protected or wanted kind covers.
 func (b *Bot) regenJunk() []*InvItem {
+	b.regenPrune(time.Now())
+	wanted := b.regenWanted()
 	var out []*InvItem
 	for _, it := range b.inv {
 		if it == nil {
 			continue
 		}
 		x := items[it.ItemID]
-		if x == nil || b.regenProtected(it, x) || !b.npcSellable(it) || b.regenRefused(it) {
+		if x == nil || b.regenProtected(it, x, wanted) || !b.npcSellable(it) || b.regenRefused(it) {
 			continue
 		}
 		out = append(out, it)
@@ -118,7 +147,38 @@ func (b *Bot) regenJunk() []*InvItem {
 	return out
 }
 
-func (b *Bot) regenRefused(it *InvItem) bool { return b.rdrop.refused[regenKey(it)] }
+// regenRefused: the server kept this stack less than regenRefusedLife ago.
+func (b *Bot) regenRefused(it *InvItem) bool {
+	at, ok := b.rdrop.refused[regenKey(it)]
+	return ok && time.Since(at) < regenRefusedLife
+}
+
+// regenPrune (b.mu held): the visit counts on the town it is in (a new town or a new visit starts at 0), and the
+// memories expire or are capped: own drops after regenOwnLifetime, refusals after regenRefusedLife.
+func (b *Bot) regenPrune(now time.Time) {
+	st := &b.rdrop
+	if st.town != b.MapName {
+		st.town, st.visit = b.MapName, 0
+	}
+	own := st.own[:0]
+	for _, o := range st.own {
+		if now.Sub(o.at) < regenOwnLifetime {
+			own = append(own, o)
+		}
+	}
+	if len(own) > regenMemoryCap {
+		own = own[len(own)-regenMemoryCap:]
+	}
+	st.own = own
+	for k, at := range st.refused {
+		if now.Sub(at) >= regenRefusedLife {
+			delete(st.refused, k)
+		}
+	}
+	if len(st.refused) > regenMemoryCap {
+		st.refused = map[string]time.Time{} // over the cap: forget them all (the server refuses again if it still must)
+	}
+}
 
 // regenDropPlan (b.mu held): the junk stacks to drop, lowest value per weight first, only when they bring the bag under
 // the line. Empty when junk alone cannot do it (nothing is dropped then; the party or guild or a store trip must).
@@ -143,6 +203,7 @@ func (b *Bot) regenDropPlan() []*InvItem {
 // regenDrop (b.mu held, lowHPGuard): the drop path. True while it owns the tick (a drop is in flight, or it dropped).
 func (b *Bot) regenDrop(now time.Time) bool {
 	st := &b.rdrop
+	b.regenPrune(now)
 	if p := st.pend; p != nil {
 		if now.Sub(p.at) < regenDropWait {
 			b.setState(fmt.Sprintf("low HP (%d%%), over the regen weight: dropping junk", b.hpPct()))
@@ -152,9 +213,9 @@ func (b *Bot) regenDrop(now time.Time) bool {
 		it := b.inv[p.idx]
 		if it != nil && it.ItemID == p.itemID && it.Count >= p.n {
 			if st.refused == nil {
-				st.refused = map[string]bool{}
+				st.refused = map[string]time.Time{}
 			}
-			st.refused[fmt.Sprintf("%d:%d", p.idx, p.itemID)] = true // the server kept it: never again
+			st.refused[fmt.Sprintf("%d:%d", p.idx, p.itemID)] = now // the server kept it: not again for a while
 		} else {
 			st.visit++
 			st.own = append(st.own, regenOwnDrop{itemID: p.itemID, x: p.x, y: p.y, at: now})

@@ -289,7 +289,7 @@ func TestRegenDropVisitCap(t *testing.T) {
 	shopsByMap = map[string][]*Shop{}
 	b := overweightTown(map[int]*InvItem{10: {Index: 10, ItemID: testJunkID, Count: 25}})
 	b.Zeny = 0
-	b.rdrop.visit = regenDropCap
+	b.rdrop.visit, b.rdrop.town = regenDropCap, b.MapName // this visit has used its cap
 	if hookDrops(b, time.Now()) {
 		t.Fatal("the visit cap must stop the drops")
 	}
