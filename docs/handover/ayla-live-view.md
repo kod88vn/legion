@@ -31,8 +31,7 @@
   with a PIN request), `0AC5` map info on char select (was `0071`), and lets the client close login/char connections
   (the proxy closing first -> "Disconnected from Server"). Base::Ragnarok::* modules compile only when X-Kore 2
   starts, so those overrides are applied lazily in `mainLoop_pre`.
-- If the rathena container is recreated and its IP changes from 172.18.0.3, update `XKore_publicIp` in
-  `openkore-ayla/control/config.txt` (and the `in_game` check in `ai-client.sh`), then restart `openkore-ayla`.
+- The `openkore-ayla` entrypoint in docker-compose.yml writes the rathena container IP into `XKore_publicIp` at every start (a stale IP made OpenKore quit with "Cannot assign requested address" / "Bye!" and restart-loop, 2026-11-14). The `in_game` check in `ai-client.sh` still hardcodes 172.18.0.3 and must follow the real IP.
 - **Scripts** (`G:\RO\legion\tools\rogui\`, run in WSL as long-running commands):
   - `ai-display.sh`: Xvfb :98 1280x720 + x11vnc + TigerVNC viewer window. Restart all three if the view freezes.
     **View size** (owner 2026-11-14 "double the UI window", then "too big now, keep 3/4"): the game and Xvfb stay at
