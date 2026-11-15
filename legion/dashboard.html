@@ -743,8 +743,21 @@ function chatBlock(c) {
   return '<div style="margin:2px 0 6px"><div style="color:var(--muted)">party chat (newest first)</div><div style="max-height:220px;overflow-y:auto">' +
     c.map(l => `<div><span style="color:var(--muted)">${new Date(l.ts * 1000).toLocaleTimeString()}</span> <b>${esc(l.from || '?')}</b>: ${esc(l.text)}</div>`).join('') + '</div></div>';
 }
+// a human-led party's bot members: distance to the leader, kills/min and exp/h (partyintent.go)
+function metricCells(m) {
+  const mu = '<span style="color:var(--muted)">–</span>';
+  if (m.human) return `<td class="r">${mu}</td><td class="r">${m.detail ? (m.detail.kpm || 0) : mu}</td><td class="r">${m.detail ? fmt(m.detail.exp_h || 0) : mu}</td>`;
+  const d = m.dist_lead == null ? mu : m.dist_lead >= 0 ? fmt(m.dist_lead) : `<span style="color:var(--muted)">${esc(m.map || '?')} ≠ ${esc(m.lead_map || '?')}</span>`;
+  return `<td class="r">${d}</td><td class="r">${m.kpm != null ? m.kpm : mu}</td><td class="r" title="${m.exp_min ? 'over ' + m.exp_min + ' min' : 'needs a minute of samples'}">${m.exp_min ? fmt(m.exp_h) : mu}</td>`;
+}
+// the Haiku helper's last run for Ayla (tools/puppet/dispatch.py puppet_calls.jsonl)
+function helperLine(r) {
+  if (!r) return '<div style="color:var(--muted);margin:2px 0 4px">Haiku helper: no run recorded</div>';
+  return `<div style="margin:2px 0 4px" title="${esc(r.result || '')}"><span style="color:var(--muted)">Haiku helper last ran ${agoTs(r.t)} (trigger ${esc(r.trigger || '?')}, ${r.exit || r.is_error ? '<span style="color:var(--bad, #d9534f)">failed</span>' : 'ok'}):</span> ` +
+    `${esc((r.result || '').replace(/\s+/g, ' ').slice(0, 220))}</div>`;
+}
 function memberRows(p) {
-  let h = '<table><thead><tr><th>member</th><th>class</th><th class="r">lv</th><th>role</th><th>map</th><th>HP</th><th>SP</th><th class="r">zeny</th><th class="r" title="current weight / weight limit, as the game shows it; amber at 50% (natural HP/SP regen stops), red at 90% (cannot attack)">weight</th><th>doing</th><th class="r">kills</th><th class="r">deaths</th><th title="next gear step for the build: item, cost, who funds it; the party gear turn is marked">next gear</th><th title="active status effects: buffs (green) and debuffs (red), with time left when known">effects</th></tr></thead><tbody>';
+  let h = '<table><thead><tr><th>member</th><th>class</th><th class="r">lv</th><th>role</th><th>map</th><th>HP</th><th>SP</th><th class="r">zeny</th><th class="r" title="current weight / weight limit, as the game shows it; amber at 50% (natural HP/SP regen stops), red at 90% (cannot attack)">weight</th><th>doing</th><th class="r">kills</th><th class="r">deaths</th><th title="next gear step for the build: item, cost, who funds it; the party gear turn is marked">next gear</th><th title="active status effects: buffs (green) and debuffs (red), with time left when known">effects</th>' + (p.human ? '<th class="r" title="cells to the human leader (other map: her map)">to leader</th><th class="r" title="own kills per minute, last 10 min (meter)">kpm</th><th class="r" title="base exp per hour, last 10 min at most">exp/h</th>' : '') + '</tr></thead><tbody>';
   for (const m of p.members || []) {
     const dot = `<span class="${m.online ? 'on' : 'off'}" title="${m.online ? 'online' : 'offline'}">&#9679;</span>`;
     const where = m.online ? `${esc(m.map || '?')} <span style="color:var(--muted)">${m.x},${m.y}</span>` +
@@ -757,10 +770,11 @@ function memberRows(p) {
       `<td class="r">${m.zeny != null && m.zeny >= 0 ? fmt(m.zeny) : '<span style="color:var(--muted)">–</span>'}</td>` +
       `<td class="r">${wtCell(m.weight, m.max_weight)}</td>` +
       `<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc((m.detail && m.detail.intent ? m.detail.intent + ' | ' : '') + (m.state || ''))}">${m.detail && m.detail.intent ? '<b>' + esc(m.detail.intent) + '</b> · ' : ''}${esc(m.state || '')}</td>` +
-      `<td class="r">${m.human ? '–' : fmt(m.kills)}</td><td class="r">${m.human ? '–' : fmt(m.deaths)}</td><td>${gearCell(m.gear_next)}</td><td>${m.online ? effCell(m.effects) : '–'}</td></tr>`;
+      `<td class="r">${m.human ? '–' : fmt(m.kills)}</td><td class="r">${m.human ? '–' : fmt(m.deaths)}</td><td>${gearCell(m.gear_next)}</td><td>${m.online ? effCell(m.effects) : '–'}</td>${p.human ? metricCells(m) : ''}</tr>`;
   }
   h += '</tbody></table>';
   for (const m of p.members || []) if (m.human && m.detail) h += humanDetailBlock(m);
+  if (p.human) h += helperLine(p.helper);
   if (p.human) h += chatBlock(p.chat);
   if (p.gear_turn || (p.gear_log && p.gear_log.length)) {
     h += `<div style="color:var(--muted);margin:2px 0 4px">gear turn: <b>${esc(p.gear_turn || '–')}</b>` +

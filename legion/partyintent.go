@@ -6,6 +6,10 @@ package main
 // chat comes from the engine itself (her friends receive every party line), so it keeps working while OpenKore is down.
 
 import (
+	"encoding/json"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -118,4 +122,139 @@ func partyChatOf(human string) []partyChatLine {
 		out[len(l)-1-i] = l[i]
 	}
 	return out
+}
+
+// ---------------------------------------------------------------- per-member metrics (partydash.go)
+
+// PartyMemberExtras: a bot member's distance to the human leader and its 10-minute meter.
+type PartyMemberExtras struct {
+	DistLead int     `json:"dist_lead"`          // cells to the human leader on the same map; -1 = another map / unknown
+	LeadMap  string  `json:"lead_map,omitempty"` // the leader's map (to read dist_lead -1)
+	KPM      float64 `json:"kpm"`                // own kills per minute, last 10 min (meter, any level)
+	ExpH     int64   `json:"exp_h"`              // base exp per hour over the last <= 10 min (expSample)
+	ExpMin   float64 `json:"exp_min"`            // minutes the exp/h covers
+}
+
+type expPoint struct {
+	t    time.Time
+	gain int64 // cumulative base exp gained since the first sample
+}
+
+var expMeter struct {
+	sync.Mutex
+	by map[string]*expTrack
+}
+
+type expTrack struct {
+	lv   int
+	exp  int64
+	gain int64
+	pts  []expPoint
+}
+
+// expSample records a member's base exp (b.mu may be held: leaf lock only) and returns its exp/h over the last
+// <= 10 min and the minutes covered (0 below one minute of samples). A level-up counts the new level's exp only.
+func expSample(name string, lv int, exp int64, now time.Time) (int64, float64) {
+	k := strings.ToLower(name)
+	expMeter.Lock()
+	defer expMeter.Unlock()
+	if expMeter.by == nil {
+		expMeter.by = map[string]*expTrack{}
+	}
+	t := expMeter.by[k]
+	if t == nil {
+		t = &expTrack{lv: lv, exp: exp}
+		expMeter.by[k] = t
+	}
+	switch {
+	case lv == t.lv && exp >= t.exp:
+		t.gain += exp - t.exp
+	case lv > t.lv:
+		t.gain += exp
+	}
+	t.lv, t.exp = lv, exp
+	t.pts = append(t.pts, expPoint{now, t.gain})
+	i := 0
+	for i < len(t.pts)-1 && now.Sub(t.pts[i].t) > 10*time.Minute {
+		i++
+	}
+	t.pts = t.pts[i:]
+	if len(t.pts) > 400 { // the dashboard polls every 10 s: keep it bounded anyway
+		t.pts = append([]expPoint(nil), t.pts[len(t.pts)-400:]...)
+	}
+	min := now.Sub(t.pts[0].t).Minutes()
+	if min < 1 {
+		return 0, 0
+	}
+	return int64(float64(t.gain-t.pts[0].gain) / min * 60), float64(int(min*10)) / 10
+}
+
+// meterKPM: a bot's own kills per minute over 10 min from the published meter view (no bot lock).
+func meterKPM(name string) float64 {
+	v := meterCur.Load()
+	if v == nil {
+		return 0
+	}
+	if r := v.byName[strings.ToLower(name)]; r != nil {
+		return r.stat[mw10].KPMAll
+	}
+	return 0
+}
+
+// ---------------------------------------------------------------- the Haiku helper's last run (puppet dispatcher)
+
+// helperRun: the last ayla row of <data>/puppet_calls.jsonl (tools/puppet/dispatch.py append_log).
+type helperRun struct {
+	T       float64 `json:"t"`
+	Trigger string  `json:"trigger"`
+	Model   string  `json:"model"`
+	Exit    int     `json:"exit"`
+	IsError bool    `json:"is_error"`
+	Result  string  `json:"result"`
+	Seconds float64 `json:"duration_s"`
+}
+
+var helperCache struct {
+	sync.Mutex
+	at  time.Time
+	run *helperRun
+}
+
+// helperLastRun: read the file's last 256 KB at most every 15 s.
+func helperLastRun(role string) *helperRun {
+	helperCache.Lock()
+	defer helperCache.Unlock()
+	if time.Since(helperCache.at) < 15*time.Second {
+		return helperCache.run
+	}
+	helperCache.at = time.Now()
+	f, err := os.Open(filepath.Join(*dataDir, "puppet_calls.jsonl"))
+	if err != nil {
+		return helperCache.run
+	}
+	defer f.Close()
+	st, err := f.Stat()
+	if err != nil {
+		return helperCache.run
+	}
+	off := st.Size() - 256*1024
+	if off < 0 {
+		off = 0
+	}
+	buf := make([]byte, st.Size()-off)
+	if _, err := f.ReadAt(buf, off); err != nil && err != io.EOF {
+		return helperCache.run
+	}
+	lines := strings.Split(string(buf), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		if !strings.Contains(lines[i], `"role": "`+role+`"`) && !strings.Contains(lines[i], `"role":"`+role+`"`) {
+			continue
+		}
+		var r helperRun
+		if json.Unmarshal([]byte(lines[i]), &r) == nil {
+			helperCache.run = &r
+			break
+		}
+	}
+	return helperCache.run
 }
