@@ -710,6 +710,9 @@ func botPartyKeeper(bots []*Bot, stop <-chan struct{}) {
 		// bots in no engine party but still in a bot-led in-game party (left over from a restart or a disband
 		// whose leave packet was lost): leave it, so the next invite works. A human's party is left alone.
 		for _, b := range bots {
+			if b.alumniLeave(now) { // humanpartyroster.go: left the human's party on the owner's order
+				continue
+			}
 			if partyOf(b) != nil || now.Sub(leftAt[b]) < time.Minute {
 				continue
 			}

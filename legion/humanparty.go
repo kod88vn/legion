@@ -407,6 +407,7 @@ func humanPartyManager(bots []*Bot, stop <-chan struct{}) {
 		}
 		parties.Unlock()
 		for _, p := range hps {
+			humanPartyStrays(p, time.Now()) // humanpartyroster.go: new members leave their old in-game party first
 			// the in-game party leader does the inviting (only leaders can invite; rAthena keeps parties across
 			// restarts); if nobody is in the party yet, the first online member founds it
 			var lead, first *Bot
@@ -565,6 +566,7 @@ func (b *Bot) kickSession() {
 type savedHumanParty struct {
 	Human   string   `json:"human"`
 	Members []string `json:"members"`
+	Alumni  []string `json:"alumni,omitempty"` // humanpartyroster.go: left the party (owner's order), live on their own
 }
 
 func humanPartyFile() string { return filepath.Join(*dataDir, "human-parties.json") }
@@ -589,6 +591,7 @@ func saveHumanParties() {
 		out = append(out, s)
 	}
 	parties.Unlock()
+	out = withAlumni(out) // humanpartyroster.go
 	b, _ := json.MarshalIndent(out, "", "  ")
 	os.WriteFile(humanPartyFile(), b, 0644)
 }
