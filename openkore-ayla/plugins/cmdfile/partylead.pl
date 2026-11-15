@@ -3118,6 +3118,37 @@ sub pack_tick {
 			}
 		} else { ($pk{offSince}, $pk{offSaid}) = (0, 0) }
 	}
+	# FETCH (bug b1794748027887-984: 82-146 cells behind on pay_dun02 while she kept walking): a member more than 20 cells
+	# back on this map is fetched, not left. Nothing on her (no fightable monster within 8 cells) and not in town: she
+	# stops, 10 s for it to come, then walks to it (re-routed every 5 s). It ends when the member is within 20 cells,
+	# or after 180 s (logged FETCH, then the other rules run for 3 min).
+	if (!is_townmap($here) && time - ($pk{fetchGaveUp} || 0) > 180) {
+		my @far = grep { $_->[2] eq $here && (!defined $_->[3] || $_->[3] > 20) && !friend_dead($_->[0]) } @fr;
+		my $fightNear = grep { $_->{pos_to} && defined $_->{pos_to}{x} && !$_->{dead} && fightable($_) && blockDistance(my_pos(), $_->{pos_to}) <= 8 } @{$monstersList ? $monstersList->getItems() : []};
+		if (@far && !$fightNear) {
+			my ($m) = sort { ($b->[3] // 9999) <=> ($a->[3] // 9999) } @far;
+			if (!$pk{fetch} || $pk{fetch}{name} ne $m->[0]) { $pk{fetch} = {name => $m->[0], at => time} }
+			my $fw = $pk{fetch};
+			if (time - $fw->{at} > 180) {
+				wd_report('FETCH', $here, "$fw->{name} still " . ($m->[3] // '?') . " cells back after 3 min", 'continuing without it');
+				($pk{fetchGaveUp}, $pk{fetch}) = (time, undef);
+			} elsif (time - $fw->{at} < 10 || !$m->[4]) {
+				AI::clear('route', 'move') if AI::inQueue('route', 'move');
+				pk_say(!$m->[4] ? "$m->[0] where r u? waiting here" : "waiting for $m->[0], $m->[3] cells back");
+				@pk{qw(act an seenAt)} = ('wait', $m, time);
+				return 1;
+			} else {
+				if (time - ($fw->{routeAt} || 0) > 5) {
+					$fw->{routeAt} = time;
+					Commands::run('stand') if $char->{sitting};
+					AI::clear('attack', 'route', 'move');
+					safe_route($here, $m->[4]{x}, $m->[4]{y}, distFromGoal => 6, maxRouteTime => 10, noMapRoute => 1, attackOnRoute => 1);
+				}
+				@pk{qw(act an seenAt)} = ('goto', $m, time);
+				return 1;
+			}
+		} else { $pk{fetch} = undef }
+	}
 	my ($act, $an) = pack_decide({here => $here, friends => \@fr, farm => $farm, leaving => ($leaving || $pk{wf} ? 1 : 0), cross => $cross,
 		waited => $pk{waitAt} ? time - $pk{waitAt} : 0, shrinking => $shrinking, collecting => ($pk{goName} ne '' ? 1 : 0),
 		nearFor => $pk{nearSince} ? time - $pk{nearSince} : 0});
