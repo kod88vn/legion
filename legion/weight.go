@@ -56,7 +56,7 @@ func (b *Bot) regenWeightNeed() string {
 	}
 	// selling can't bring the bag under the line (the weight is kept items): the trip is for the Kafra store, so the
 	// bag can be cleared there; a plain sell trip would leave it over the line (weight.go regenSellClears)
-	if !b.regenSellClears() && len(b.storeCandidates()) > 0 {
+	if !b.regenSellClears() && b.canStoreIn(nearestTown(b.MapName)) {
 		return "bag is heavy (store)"
 	}
 	return "bag is heavy"

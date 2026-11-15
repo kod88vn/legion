@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -159,12 +160,24 @@ func TestRegenTripOnlyWhenSellingClears(t *testing.T) {
 	}
 	// 52% from kept cards with one junk piece: selling leaves the bag over the line, so no repeat trip (store path)
 	kept := mk(10400, map[int]*InvItem{1: {Index: 1, ItemID: 7001, Count: 1}, 2: {Index: 2, ItemID: 7002, Count: 20}})
-	// the trip still comes at once (owner: 50% triggers a run), but for the store: a plain sell trip would not clear it
+	kept.MapName, kept.Zeny, kept.Class = "prontera", 5000, 1 // Class != 0: basicLv reads the class (9), not the skill tree
+	if kafraSpots["prontera"] == nil {
+		t.Fatal("test data: no Kafra in prontera")
+	}
 	if kept.regenSellClears() {
 		t.Fatal("kept cards: selling must not clear the bag")
 	}
-	if len(kept.storeCandidates()) > 0 && kept.regenWeightNeed() != "bag is heavy (store)" {
-		t.Fatalf("kept weight: need %q, want the store trip", kept.regenWeightNeed())
+	if len(kept.storeCandidates()) == 0 || !kept.canStoreIn("prontera") {
+		t.Fatal("test data: the kept cards must be storable in prontera")
+	}
+	// the trip still comes at once (owner: 50% triggers a run), for the store: a plain sell trip would not clear it
+	if got := kept.regenWeightNeed(); got != "bag is heavy (store)" {
+		t.Fatalf("kept weight with a Kafra and 5,000z: need %q, want the store trip", got)
+	}
+	// no store possible (too poor): the sell trip, not a "(store)" trip that cannot store
+	kept.Zeny = 100
+	if got := kept.regenWeightNeed(); got != "bag is heavy" {
+		t.Fatalf("too poor to store: need %q, want the sell trip", got)
 	}
 }
 
@@ -214,9 +227,10 @@ func TestTopUpCallSite(t *testing.T) {
 	}
 }
 
-// Call site: the dungeon-side walk (escortGate -> floorHoldStep). A member alone on pay_dun00 with her on pay_dun03
-// holds at once, then after floorHoldMove it moves one floor toward her or asks to be collected; it never leaves the
-// dungeon from here, and the timer restarts on a new floor.
+// Call site: the dungeon-side walk (escortGate -> floorHoldStep). A member alone on pay_dun00 with her on pay_dun03:
+// the first minutes HOLD (reason without "asking"); after floorHoldMove it MOVES one floor toward her when a friend is
+// there or the floor is safe alone, and otherwise ASKS (stays, reason "asking to be collected"). Each outcome is told
+// apart by its own reason. It never leaves the dungeon from here.
 func TestFloorHoldWalkCallSite(t *testing.T) {
 	if next, ok := nextFloorToward("pay_dun00", "pay_dun03"); !ok || next != "pay_dun01" {
 		t.Fatalf("toward pay_dun03 from pay_dun00: %q %v", next, ok)
@@ -230,33 +244,83 @@ func TestFloorHoldWalkCallSite(t *testing.T) {
 	if _, ok := nextFloorToward("payon", "pay_dun01"); ok {
 		t.Fatal("a town is no floor")
 	}
+	const hold = "waiting on this floor for FloorWalkHumanfirst"
+	clearDeaths := func(m string) {
+		deathLog.Lock()
+		delete(deathLog.m, m)
+		delete(deathLog.t, m)
+		deathLog.Unlock()
+	}
+	clearDeaths("pay_dun01")
+	defer clearDeaths("pay_dun01")
+
+	// step the clock every 30 s so the hold stays continuous (escortGate runs each tick while holding)
+	run := func(name string, friend bool, now time.Time) (string, string, *Bot, *Party) {
+		human := "FloorWalkHuman" + name
+		humanLocs.Store(human, humanSeen{Map: "pay_dun03", At: now})
+		t.Cleanup(func() { humanLocs.Delete(human) })
+		b := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "floorwalk" + name}}}, MapName: "pay_dun00",
+			MaxHP: 3500, HP: 3500, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+		members := []*Bot{b}
+		if friend {
+			f := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "floorfriend" + name}}}}
+			v := &atomic.Value{}
+			v.Store(pubState{Name: f.P.Name, Map: "pay_dun01", Online: true})
+			pubs.Store(f.P.Name, v)
+			t.Cleanup(func() { pubs.Delete(f.P.Name) })
+			members = append(members, f)
+		}
+		p := &Party{Human: human, Members: members}
+		var town, why string
+		for at := now; at.Before(now.Add(floorHoldMove + time.Second)); at = at.Add(30 * time.Second) {
+			town, why = b.escortGate(p, "pay_dun03", at)
+		}
+		town, why = b.escortGate(p, "pay_dun03", now.Add(floorHoldMove+time.Second))
+		return town, why, b, p
+	}
 	now := time.Now()
-	human := "FloorWalkHuman"
-	humanLocs.Store(human, humanSeen{Map: "pay_dun03", At: now})
-	defer humanLocs.Delete(human)
-	b := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "floorwalk"}}}, MapName: "pay_dun00",
+
+	// 1. the first minute holds
+	humanLocs.Store("FloorWalkHumanfirst", humanSeen{Map: "pay_dun03", At: now})
+	b0 := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "floorwalkfirst"}}}, MapName: "pay_dun00",
 		MaxHP: 3500, HP: 3500, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
-	p := &Party{Human: human, Members: []*Bot{b}}
-	town, why := b.escortGate(p, "pay_dun03", now)
-	if town != "pay_dun00" || !strings.HasPrefix(why, "waiting on this floor") {
-		t.Fatalf("first minute: %q %q, want a hold on the floor", town, why)
+	p0 := &Party{Human: "FloorWalkHumanfirst", Members: []*Bot{b0}}
+	if town, why := b0.escortGate(p0, "pay_dun03", now); town != "pay_dun00" || why != hold {
+		t.Fatalf("first call: %q %q, want the hold %q", town, why, hold)
 	}
-	later := now.Add(floorHoldMove + time.Second)
-	town, why = b.escortGate(p, "pay_dun03", later)
-	if isTown(town) || (town != "pay_dun00" && town != "pay_dun01") {
-		t.Fatalf("after %v: %q %q - the member must stay on the dungeon floors", floorHoldMove, town, why)
+	humanLocs.Delete("FloorWalkHumanfirst")
+
+	// 2. a friend already on the next floor: the member moves one floor toward her
+	if town, why, _, _ := run("friend", true, now); town != "pay_dun01" || !strings.HasPrefix(why, "moving one floor") {
+		t.Fatalf("friend on pay_dun01 after %v: %q %q, want the move", floorHoldMove, town, why)
 	}
-	// the collection call is at most once per floorHoldAsk: the escortGate call above may have used it already
-	if strings.HasPrefix(why, "waiting on this floor") && floorHoldAskDue(b, later.Add(time.Minute)) {
-		t.Fatal("collection call: a second one within floorHoldAsk")
+
+	// 3. alone, pay_dun01 had deaths: no move, and no walk out: it stays and the party's line asks
+	clearDeaths("pay_dun01")
+	for i := 0; i < 4; i++ { // decay: three deaths sit just under the recentDeaths >= 3 line, four are over it
+		reportDeath("pay_dun01")
 	}
-	if !floorHoldAskDue(b, later.Add(floorHoldAsk+time.Second)) {
-		t.Fatal("collection call: due again after floorHoldAsk")
+	if town, why, _, _ := run("deaths", false, now); town != "pay_dun00" || !strings.Contains(why, "asking to be collected") {
+		t.Fatalf("deaths on pay_dun01: %q %q, want the ask (stay)", town, why)
 	}
-	// a new floor restarts the timer
-	b.MapName = "pay_dun01"
-	if d := floorHoldFor(b, later); d != 0 {
-		t.Fatalf("new floor: hold timer %v, want 0", d)
+	clearDeaths("pay_dun01")
+
+	// 4. alone and the floor is safe: the move (the same test the code runs)
+	if floorSafeAlone("pay_dun01", 60) {
+		if town, why, _, _ := run("safe", false, now); town != "pay_dun01" || !strings.HasPrefix(why, "moving one floor") {
+			t.Fatalf("safe floor alone: %q %q, want the move", town, why)
+		}
 	}
-	escortRestockClear(b)
+
+	// 5. a gap with no escortGate call restarts the timer: back on the floor after 5 min is a hold again
+	b5 := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "floorwalkgap"}}}, MapName: "pay_dun00",
+		MaxHP: 3500, HP: 3500, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+	humanLocs.Store("FloorWalkHumangap", humanSeen{Map: "pay_dun03", At: now})
+	p5 := &Party{Human: "FloorWalkHumangap", Members: []*Bot{b5}}
+	b5.escortGate(p5, "pay_dun03", now)
+	if town, why := b5.escortGate(p5, "pay_dun03", now.Add(5*time.Minute)); town != "pay_dun00" || why != "waiting on this floor for FloorWalkHumangap" {
+		t.Fatalf("after a 5 min gap: %q %q, want a fresh hold", town, why)
+	}
+	humanLocs.Delete("FloorWalkHumangap")
+	escortRestockClear(b5)
 }

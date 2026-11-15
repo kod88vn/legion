@@ -748,7 +748,9 @@ func (b *Bot) tripThink(gm *GameMap, moving bool, now time.Time) bool {
 		t.Stage, t.At = "talk", now
 		return true
 	case "done":
-		b.lastTripOverLine = b.overRegenWeight() // the bag cleared (or not) by the end of this trip
+		if !b.canStoreIn(b.MapName) { // a store step follows in a Kafra town (storage.go): it sets the flag then
+			b.lastTripOverLine = b.overRegenWeight()
+		}
 		b.trip = nil
 		b.startKafraMeet(t.Why, now) // kaframeet.go (PT22): a bot party's town run ends at the Kafra, the party returns together
 		b.checkMarket(now)     // opportunity.go (run 8): what's missing in the market becomes the money goal

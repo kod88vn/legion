@@ -1247,39 +1247,33 @@ var floorHold = struct {
 type floorHoldState struct {
 	floor string    // the floor it holds on: a change of floor restarts the timer
 	since time.Time // when it began holding here
-	asked time.Time // its last call for collection in party chat
+	seen  time.Time // the last escortGate call that held it: a gap restarts the timer
 }
 
 const (
-	floorHoldMove = 3 * time.Minute // held this long: the member moves one floor toward her, or asks to be collected
-	floorHoldAsk  = 3 * time.Minute // the collection call in party chat, at most this often
+	floorHoldMove = 3 * time.Minute // held this long: the member moves one floor toward her, when it is safe
+	floorHoldGap  = time.Minute     // no escortGate call for this long: the hold starts over
 )
 
-// floorHoldFor: how long the bot has held on its current floor.
+// floorHoldFor: how long the bot has held on its current floor, continuously (a new floor, or no call for
+// floorHoldGap, restarts it).
 func floorHoldFor(b *Bot, now time.Time) time.Duration {
 	floorHold.Lock()
 	defer floorHold.Unlock()
 	key := strings.ToLower(b.P.Name)
 	s, ok := floorHold.st[key]
-	if !ok || s.floor != b.MapName {
-		s = floorHoldState{floor: b.MapName, since: now, asked: s.asked}
-		floorHold.st[key] = s
+	if !ok || s.floor != b.MapName || now.Sub(s.seen) > floorHoldGap {
+		s = floorHoldState{floor: b.MapName, since: now}
 	}
+	s.seen = now
+	floorHold.st[key] = s
 	return now.Sub(s.since)
 }
 
-// floorHoldAskDue: the bot may call for collection now (once per floorHoldAsk); it marks the call.
-func floorHoldAskDue(b *Bot, now time.Time) bool {
-	floorHold.Lock()
-	defer floorHold.Unlock()
-	key := strings.ToLower(b.P.Name)
-	s := floorHold.st[key]
-	if !s.asked.IsZero() && now.Sub(s.asked) < floorHoldAsk {
-		return false
-	}
-	s.asked = now
-	floorHold.st[key] = s
-	return true
+// floorSafeAlone: a floor a member may walk to by itself: no monster there is above its level and no recent deaths
+// (the same test as the route check in kafra.go routeSafeFrom, applied to the floor itself).
+func floorSafeAlone(m string, maxLv int) bool {
+	return !mapTooStrong(m, maxLv) && recentDeaths(m) < 3
 }
 
 // nextFloorToward: the floor one step from `from` toward `to`, in the same dungeon ("pay_dun00" toward "pay_dun03" is
@@ -1300,16 +1294,19 @@ func nextFloorToward(from, to string) (string, bool) {
 
 // floorHoldStep: a member alone on a floor of her dungeon, she two or more floors away. It HOLDS here: it keeps fighting
 // what comes to it and keeps safe (the goal stays on this floor; it does not walk on alone). After floorHoldMove it moves
-// one floor toward her when a friend is on that floor or the route there is safe; otherwise it asks in party chat to
-// be collected. It never walks out of the dungeon from here (only escortGate's hurt / out-of-potions case does).
+// one floor toward her (never past her floor) when a friend is on that floor or the floor is safe to walk to alone;
+// otherwise it stays and the party's "where r u" line (humanparty.go) asks to be collected. It never walks out of the
+// dungeon from here (only escortGate's hurt / out-of-potions case does).
 func (b *Bot) floorHoldStep(p *Party, herMap string, now time.Time) (string, string) {
 	if floorHoldFor(b, now) >= floorHoldMove {
-		if next, ok := nextFloorToward(b.MapName, herMap); ok && (friendOnFloor(p, b, next, now) || b.routeSafeFrom(b.MapName, b.X, b.Y, next)) {
-			return next, "moving one floor toward " + p.Human
-		}
-		if floorHoldAskDue(b, now) {
-			typing := b.P.Typing
-			go b.partySay(styled(typing, pick("stuck on "+b.MapName+", can someone come get me?", "im alone on "+b.MapName+", can u come back for me?")))
+		if next, ok := nextFloorToward(b.MapName, herMap); ok {
+			// one floor, never past her: a friend already there, or the floor itself is safe to walk to alone
+			if friendOnFloor(p, b, next, now) || floorSafeAlone(next, b.targetMaxLv()) {
+				return next, "moving one floor toward " + p.Human
+			}
+			// the floor is too strong or has had deaths: stay, and the party's "where r u" line (humanparty.go) asks
+			// to be collected
+			return b.MapName, "waiting on this floor for " + p.Human + ": asking to be collected"
 		}
 	}
 	return b.MapName, "waiting on this floor for " + p.Human
