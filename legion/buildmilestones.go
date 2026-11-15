@@ -21,6 +21,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -184,16 +185,39 @@ func (b *Bot) gatedPrice() (int, bool) {
 		return 0, false
 	}
 	it := items[goal.Item]
-	if it == nil || it.Buy <= 0 || len(gearShops(goal.Item)) == 0 || !b.canEquip(it) {
+	if it == nil || it.Buy <= 0 || len(gearShops(goal.Item)) == 0 || !b.canEquip(it) || b.gearFailed[goal.Item] {
 		return 0, false
 	}
 	return it.Buy, true
 }
 
-// gatedSaveHold (b.mu held): the gated piece is a shop piece that costs more than the budget: buy nothing else.
+// gatedSaveHold (b.mu held): the gated piece is a shop piece that costs more than the budget: buy nothing else
+// meanwhile. Capped like the build piece hold in nextGear (saves only while the price is at most max(3 x budget,
+// 5000)): a piece beyond the cap never blocks the other necessary steps; the bot takes the next affordable step,
+// logged once per hour.
 func (b *Bot) gatedSaveHold(budget int) bool {
 	price, ok := b.gatedPrice()
-	return ok && price > budget
+	if !ok || price <= budget {
+		return false
+	}
+	if price > max(3*budget, 5000) {
+		b.logGateCap(price, budget)
+		return false
+	}
+	return true
+}
+
+// logGateCap: a gated piece beyond the save cap (buffAt "gatecap", once per hour).
+func (b *Bot) logGateCap(price, budget int) {
+	if b.buffAt == nil {
+		b.buffAt = map[string]time.Time{}
+	}
+	now := time.Now()
+	if now.Before(b.buffAt["gatecap"]) {
+		return
+	}
+	b.buffAt["gatecap"] = now.Add(time.Hour)
+	b.event("info", "", fmt.Sprintf("gated piece costs %dz, beyond the save cap at a budget of %dz: taking the next affordable step", price, budget))
 }
 
 // milestoneFileLoop: writes data/buildmilestones_gear.json now and every 5 min (the Builds tab's format:
@@ -208,12 +232,21 @@ func milestoneFileLoop() {
 	}
 }
 
+// cardEntryJSON: one card of a band, with its slot, priority (the engine's card value) and reason.
+type cardEntryJSON struct {
+	ID   int    `json:"id"`
+	Slot string `json:"slot"`
+	Prio int    `json:"prio"`
+	Why  string `json:"why"`
+}
+
 type milestoneRangeJSON struct {
 	Min           int              `json:"min"`
 	Max           int              `json:"max"`
-	Slots         map[string][]int `json:"slots"`     // every slot of the band's gear table (buildgear.go), for the dashboard rows
-	Cards         []int            `json:"cards"`     // the band's card list (buildgear.go)
-	Milestone     map[string]int   `json:"milestone"` // the gate's items: the weapon and armor milestone ids
+	Slots         map[string][]int `json:"slots"`        // every slot of the band's gear table (buildgear.go), for the dashboard rows
+	Cards         []int            `json:"cards"`        // the band's card ids (buildgear.go)
+	CardEntries   []cardEntryJSON  `json:"card_entries"` // the same cards with slot, prio and why
+	Milestone     map[string]int   `json:"milestone"`    // the gate's items: the weapon and armor milestone ids
 	WeaponATK     int              `json:"weapon_atk"`
 	ArmorDEF      int              `json:"armor_def"`
 	CardsRequired int              `json:"cards_required"`
@@ -230,7 +263,7 @@ func milestoneFileJSON() map[string]interface{} {
 		var ranges []milestoneRangeJSON
 		for i, m := range ms {
 			r := milestoneRangeJSON{Min: m.Min, Max: m.Max, WeaponATK: m.Weapon, ArmorDEF: m.Armor, CardsRequired: m.Cards,
-				Magic: m.Magic, Slots: map[string][]int{}, Cards: []int{},
+				Magic: m.Magic, Slots: map[string][]int{}, Cards: []int{}, CardEntries: []cardEntryJSON{},
 				Milestone: map[string]int{"weapon": m.WeaponItem, "armor": m.ArmorItem}}
 			for _, sl := range gearSlots {
 				r.Slots[sl.Name] = []int{}
@@ -243,6 +276,7 @@ func milestoneFileJSON() map[string]interface{} {
 				}
 				for _, c := range bands[i].Cards {
 					r.Cards = append(r.Cards, c.ID)
+					r.CardEntries = append(r.CardEntries, cardEntryJSON{ID: c.ID, Slot: c.Slot, Prio: c.Score, Why: c.Why})
 				}
 			}
 			ranges = append(ranges, r)

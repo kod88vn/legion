@@ -325,6 +325,26 @@ def item_name(items, i):
     return items.get(i) or "#%d (no name in the local item table)" % i
 
 
+def engine_card_rows(items, r):
+    """The engine file's cards for one range (legion/data/buildmilestones_gear.json): every card id resolved to its
+    name, with the slot, prio and why from card_entries (the engine writes them). A card with no entry keeps its id
+    and name, so no row is lost (G08)."""
+    entries = {e.get("id"): e for e in (r.get("card_entries") or [])}
+    rows = []
+    for cid in r.get("cards") or []:
+        e = entries.get(cid, {})
+        rows.append({"id": cid, "name": item_name(items, cid), "slot": e.get("slot"), "prio": e.get("prio"),
+                     "why": e.get("why", "")})
+    return rows
+
+
+def engine_gear_rows(eng, items):
+    """The engine's milestone ranges as dashboard rows: slots by name, and the cards of the range (engine_card_rows)."""
+    return [{"min": r["min"], "max": r["max"], "cards": engine_card_rows(items, r),
+             "slots": {s: [item_name(items, i) for i in ids] for s, ids in (r.get("slots") or {}).items() if ids}}
+            for r in eng.get("ranges") or []]
+
+
 def load_json_or_none(path):
     """a JSON file read at export time; None when it is missing or unreadable"""
     try:
@@ -525,9 +545,7 @@ def build_export(items, skills, paths=None):
         # gear rows: the engine's own milestone gear when its file exists (hook ENGINE_GEAR_JSON), else buildgear.json
         eng = engine_gear_builds.get(bid)
         if eng and eng.get("ranges"):
-            gear_rows = [{"min": r["min"], "max": r["max"], "cards": [],
-                          "slots": {s: [item_name(items, i) for i in ids] for s, ids in (r.get("slots") or {}).items() if ids}}
-                         for r in eng["ranges"]]
+            gear_rows = engine_gear_rows(eng, items)
             row_gear_src = "engine milestone gear (legion/data/buildmilestones_gear.json)"
         else:
             gear_rows, row_gear_src = bands, gear_src

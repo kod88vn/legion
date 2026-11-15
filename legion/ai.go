@@ -991,6 +991,9 @@ func (b *Bot) bestGearIn(town string) *Item {
 	if b.gearHold() {
 		return nil // no class weapon / no arrows yet: nothing else at a gear shop, the money waits (builds.go gearHold)
 	}
+	if b.gatedSaveHold(b.Zeny - b.gearReserve()) { // buildmilestones.go (EC39): saving for the gated piece, no lesser gear
+		return nil
+	}
 	// lfg.go turnPiece: a human party's member buys exactly its turn piece (the party's money is for it), nothing else
 	if id := b.turnPiece(); id != 0 {
 		if it := items[id]; it != nil && soldIn(id, town) && b.Zeny-b.gearReserve() >= it.Buy {

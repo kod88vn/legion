@@ -441,3 +441,68 @@ func TestLegacyPowerLvIsGated(t *testing.T) {
 		t.Fatalf("legacy powerLv %d for Sword III + Armor I at lv60, want <= 45", got)
 	}
 }
+
+// the save-hold has a cap: a gated piece beyond max(3 x budget, 5000) does not block the other steps
+func TestGatedSaveHoldIsCapped(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39cap", 60, 9103, 9201)
+	b.MapName = "prontera"
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 60000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+	if b.gatedSaveHold(1000) {
+		t.Fatalf("60000z piece, budget 1000z: beyond the cap, no hold expected")
+	}
+	items[9202].Buy = 2000
+	if !b.gatedSaveHold(1000) {
+		t.Fatalf("2000z piece, budget 1000z: within the cap, the hold must hold")
+	}
+}
+
+// gatedPrice honours gearFailed: a piece that failed to equip is no saving goal
+func TestGatedPriceHonoursGearFailed(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39failed", 60, 9103, 9201)
+	b.MapName = "prontera"
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 2000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+	if _, ok := b.gatedPrice(); !ok {
+		t.Fatal("the gated Armor II should be a saving goal before it fails")
+	}
+	b.gearFailed = map[int]bool{9202: true}
+	if _, ok := b.gatedPrice(); ok {
+		t.Fatal("a gated piece in gearFailed must not be a saving goal")
+	}
+}
+
+// the town shop visit (bestGearIn) buys no lesser gear while saving for the gated piece
+func TestTownVisitRespectsSaveHold(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39town", 60, 9103, 9201)
+	b.MapName = "prontera"
+	b.Zeny = 1000
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 2000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+	// a cheap weapon sold in the town: it would be bought without the hold
+	items[9401] = &Item{ID: 9401, Name: "Cheap Blade", Type: "Weapon", Loc: 0x2, Atk: 10, WLv: 1, MinLv: 1, Buy: 100}
+	shopsByMap["prontera"] = append(shopsByMap["prontera"], &Shop{Map: "prontera", Items: []int{9401}})
+	t.Cleanup(func() {
+		delete(items, 9401)
+		list := shopsByMap["prontera"]
+		shopsByMap["prontera"] = list[:len(list)-1]
+	})
+	if it := b.bestGearIn("prontera"); it != nil {
+		t.Fatalf("saving for Armor II (2000z) with 1000z: the town visit bought %s", it.Name)
+	}
+}
