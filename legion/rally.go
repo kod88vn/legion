@@ -588,6 +588,13 @@ func (b *Bot) rallyThink(gm *GameMap, moving bool, now time.Time) bool {
 	if out {
 		return false
 	}
+	// rallyleave.go: the human leader left the rally town - the rally ends, members follow her (the healer first)
+	if p.Human != "" {
+		if h, ok := b.humanState(p.Human, now); ok && humanLeftRally(r.Town, h.Map, r.At, now) {
+			p.endRally(false, p.Human+" left "+r.Town, now)
+			return false
+		}
+	}
 	if b.rallyID != r.At {
 		b.rallyID, b.rallySaid, b.rallyCell = r.At, false, [2]int{}
 	}
