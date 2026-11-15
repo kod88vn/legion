@@ -115,7 +115,8 @@ my ($lastPos, $stillSince) = ('', time);
 my $lastExit = 0;
 my ($sellTrigSaved, $sellTrigUntil) = (0, 0); # sell-run loop guard
 my $errandStart = 0; # her sell/buy errand (party town run) started
-my $townWaitAt = 0; # passing through town: waiting for a friend behind since
+my $townWaitAt = 0;
+my $meetArrAt = 0; # when she reached the Kafra for the regroup after a town run # passing through town: waiting for a friend behind since
 my ($meetRouteAt, $meetSaid) = (0, 0); # after a town run: walking to the town's Kafra, announced once
 my $errandEnd = 0;  # when her last sell/buy errand finished
 
@@ -745,6 +746,16 @@ sub rally_tick {
 	if (!$r->{said}) { $r->{said} = 1; psay(pick("at the kafra, save here and wait", "at the kafra in $r->{town}, everyone save here pls"), 1, 0) }
 	# everyone online within 12 cells of the Kafra, and everyone saved here (friends say "saved at <town>"; 2 min after
 	# all arrived without that line she goes anyway - the Legion side may not say it), she too -> confirm and go
+	# every rally wait ends at most 60 s after she reached the Kafra, saved or not (live: "IDLE rally (payon) wait 4 min"
+	# - the regroup rally skipped the save and the unsaved-members wait ran on); AY22 / pack rules take over
+	$r->{arrAt} ||= time;
+	if (time - $r->{arrAt} > 60) {
+		my $goMap0 = ($saved && ($saved->{lockMap} || '') ne '') ? $saved->{lockMap} : ($r->{thenGoto} || $r->{dest} || '');
+		$gotoMap = $goMap0 if $goMap0 ne '' && !is_townmap($goMap0);
+		psay($goMap0 ne '' ? "ok we go, $goMap0" : "ok, lets go", 1, 0);
+		end_rally("60 s at the Kafra", 4);
+		return 0;
+	}
 	my ($all, @unsaved) = (1);
 	foreach my $f (online_friends()) {
 		my $pl = $playersList ? $playersList->getByName($f->[0]) : undef;
@@ -3149,6 +3160,9 @@ sub tick {
 		# the Kafra, return together behind her): she walks there once and says so once
 		if (time - $errandEnd < 180 && $KAFRA{$here} && time - $meetRouteAt > 10 && !AI::inQueue('route', 'move', 'NPC', 'attack')) {
 			my ($k) = sort { blockDistance($char->{pos_to}, {x => $a->[0], y => $a->[1]}) <=> blockDistance($char->{pos_to}, {x => $b->[0], y => $b->[1]}) } @{$KAFRA{$here}};
+			# the regroup after a town run ends 60 s after she reached the Kafra (owner: every regroup wait <= 60 s)
+			if (blockDistance($char->{pos_to}, {x => $k->[0], y => $k->[1]}) <= 5) { $meetArrAt ||= time } else { $meetArrAt = 0 }
+			if ($meetArrAt && time - $meetArrAt > 60) { $errandEnd = 0; $meetArrAt = 0; message "[partylead] town run regroup: 60 s at the Kafra - going on\n", 'system' }
 			if (blockDistance($char->{pos_to}, {x => $k->[0], y => $k->[1]}) > 5) {
 				$meetRouteAt = time;
 				Commands::run('stand') if $char->{sitting};
