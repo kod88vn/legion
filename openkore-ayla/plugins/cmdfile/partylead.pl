@@ -2704,11 +2704,31 @@ sub pack_tick {
 			my ($rdm) = route_maps();
 			# the route is made once and kept (re-made every 10 s it flipped between the Kafra and the walk: aldebaran <->
 			# mjolnir_12 ping-pong) - only when there is none, it points elsewhere, or she hasn't moved for 20 s
-			if (!AI::inQueue('route', 'move') || ($rdm ne '' && $rdm ne $am) || (!moved_recently() && time - $pk{routeAt} > 20)) { # never onward: only to the friend
+			# only HER collect route may run (live 01:37: "going back to collect Zendancer84" while the old route to pay_dun02
+			# walked her away): any other route in the queue is cleared; the distance must shrink (checked every 5 s)
+			my $ri = AI::findAction('route');
+			my $cur = (defined $ri && $ri ne '') ? AI::args($ri) : undef;
+			my $foreign = $cur && (!$pk{colArgs} || $cur != $pk{colArgs}) ? 1 : 0;
+			my $wrong = 0;
+			if (defined $an->[3] && $am eq $here) {
+				if (!$pk{colChk} || time - $pk{colChk}[1] >= 5) {
+					$wrong = 1 if $pk{colChk} && $pk{colChk}[2] eq $an->[0] && $an->[3] > $pk{colChk}[0] + 2;
+					$pk{colChk} = [$an->[3], time, $an->[0]];
+				}
+			}
+			if ($wrong) { wd_report('COLLECT_WRONG_WAY', $here, "collecting $an->[0]: distance grew to $an->[3] cells - re-routing", 're-route to its cell') }
+			if ($am eq $here && !defined $ax) { # no fresh cell on this map: ask, wait (never a guess)
+				AI::clear('route', 'move') if AI::inQueue('route', 'move');
+				ask_where($an->[0]);
+				return 1;
+			}
+			if (!$cur || $foreign || $wrong || ($rdm ne '' && $rdm ne $am) || (!moved_recently() && time - $pk{routeAt} > 20)) { # never onward: only to the friend
 				$pk{routeAt} = time;
 				Commands::run('stand') if $char->{sitting};
-				AI::clear('attack', 'route', 'move');
+				AI::clear('route', 'move');
 				safe_route($am, $ax, $ay, distFromGoal => 4, attackOnRoute => route_aor(), ($am eq $here ? (noMapRoute => 1, maxRouteTime => 10) : ()));
+				my $ni = AI::findAction('route');
+				$pk{colArgs} = (defined $ni && $ni ne '') ? AI::args($ni) : undef;
 			}
 			return 1;
 		}
