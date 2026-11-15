@@ -378,11 +378,16 @@ def classify_ayla_event(e, names):
     kind = str(e.get("kind", "")).lower()
     text = str(e.get("text", "")).lower()
     who = str(e.get("bot", ""))
-    if names and who.lower() not in names and "ayla" not in text:
+    # no party names (her party not found in /api/parties) must not let every bot's event through: b1794739867792-368
+    # woke her helper for deaths anywhere on the server
+    if not names:
+        return None
+    if who.lower() not in names and "ayla" not in text:
         return None
     blob = kind + " " + text
     if "death" in kind or "died" in blob or "killed by" in blob:
-        return "death"
+        # a death counts only for one of her party members (the wake is instant: no 10-min grace)
+        return "death" if who.lower() in names else None
     if any(w in blob for w in ("separated", "split", "lost the party", "left the party", "far from")):
         return "split"
     if any(w in blob for w in ("goal met", "goal done", "got the", "completed", "gear done")):
