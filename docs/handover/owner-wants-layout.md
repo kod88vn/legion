@@ -32,7 +32,7 @@
 
 | Path | What |
 |---|---|
-| `G:\RO\legion\docker-compose.yml`, `.env` | the stack: `ro-db` (MariaDB), `ro-rathena` (login/char/map), `ro-agency` (login token stub), `ro-legion` (bot engine + dashboard/API on :8090), `ro-openkore` (spare), `ro-openkore-ayla` (plays Ayla) |
+| `G:\RO\legion\docker-compose.yml`, `.env` (not tracked; copy `example.env` to `.env` and fill in) | the stack: `ro-db` (MariaDB), `ro-rathena` (login/char/map), `ro-agency` (login token stub), `ro-legion` (bot engine + dashboard/API on :8090), `ro-openkore` (spare), `ro-openkore-ayla` (plays Ayla) |
 | `G:\RO\legion\rathena\` | rAthena (Renewal, packetver 20210107). `conf/import/*` local config, `npc-custom/legion.txt` job changes / autoskill / starter kit |
 | `G:\RO\legion\legion\` | Legion (Go). `README.md` = engine internals + HTTP API. `data/` = personas, memory, minds, guild roster, human parties, bugs.md, lessons.md, backups |
 | `G:\RO\legion\tools\legionctl.py` | CLI the minds use (status, inbox, say, party, goal, minds bus...) |

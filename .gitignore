@@ -100,3 +100,6 @@ legion/data/instance_handoff_main.json
 legion/data/partychat.json
 legion/data/rotation_candidates.json
 legion/data/tuning.json.pre-*
+
+# local settings and secrets: .env stays on disk only; example.env is the tracked template (PR46)
+.env
