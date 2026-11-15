@@ -20,6 +20,9 @@ package AI; our (@Q, $CLEARS); sub inQueue { my %q = map { $_ => 1 } @Q; return 
 package main;
 package partylead;
 use constant DENSITY_PER_MEMBER => 20;
+use constant ATTACK_RECENT => 5;
+use constant ATTACK_RANGE => 12;
+our (%attackSeen, %attackAt);
 our (%config, %droppedUntil, %crowdedAt, $gotoMap, $homeMap, $homeAt, $homeBy, $fitAt, $lmSet, $saved, $char, $field);
 our (%waitEndSaid, %gatherDist, $gatherMoved, @FRIENDS, %DIST, $wdLast, $monstersList, %pgCross, $pgPrev, $pgFrom, $pgAt, $errand, $pgLog, $arrInfo, $portalHoldUntil, $portalHoldMap, %MAP_SPAWNS_STOCK, $MAP_RATE, $MAP_DENSITY_LOADED);
 sub seen_dist { return $DIST{$_[0]} }
@@ -42,8 +45,8 @@ my ($pass, $fail) = (0, 0);
 sub ok($$) { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
 
 # a sub missing from the plugin is a failure here (the fix is not in); the others are extracted from the source
-for my $sub (qw(wait_end_log_due rally_away gather_closing nearest_attacker portal_back_guard drop_map
-	load_map_density map_spawns map_dense_enough)) {
+for my $sub (qw(wait_end_log_due rally_away gather_closing attacker_sample current_attacker nearest_attacker rally_gather_hold
+	portal_back_guard drop_map load_map_density map_spawns map_dense_enough)) {
 	my ($code) = $src =~ /(sub $sub \{.*?\n\}\n)/s;
 	if (!$code) { ok(0, "$sub is missing from partylead.pl"); next }
 	eval "package partylead;\n$code\n1" or die "$sub: $@";
@@ -87,19 +90,49 @@ for my $sub (qw(wait_end_log_due rally_away gather_closing nearest_attacker port
 	ok(partylead::gather_closing() == 0, 'a friend on another map does not count');
 }
 
-# ---- b1794737139520-016 follow-up: the monster that hits her is the one she fights back
+# ---- fightback 2026-11-15: a monster is fought when it hit or missed her recently, at any distance, within 12 cells
+# for a new target; the rally keeps it; the gather wait is per absence
 {
-	my $me = {name => 'Ayla', pos_to => {x => 10, y => 10}};
-	my @mons = ({name => 'Zombie far', pos_to => {x => 20, y => 10}, dmgToYou => 1},
-		{name => 'Zombie idle', pos_to => {x => 11, y => 10}},
-		{name => 'Zombie near', pos_to => {x => 12, y => 10}, missedYou => 1},
-		{name => 'Zombie dead', pos_to => {x => 10, y => 11}, dmgToYou => 1, dead => 1});
-	$partylead::char = $me;
-	$partylead::monstersList = MonStub->new(@mons);
+	$partylead::char = {name => 'Ayla', pos_to => {x => 10, y => 10}};
+	my $m1 = {ID => 1, name => 'Near idle', pos_to => {x => 11, y => 10}, dmgToYou => 0};
+	my $m2 = {ID => 2, name => 'Ranged far', pos_to => {x => 18, y => 10}, missedYou => 0}; # 8 cells
+	my $m3 = {ID => 3, name => 'Out of range', pos_to => {x => 25, y => 10}, dmgToYou => 0}; # 15 cells
+	my $dead = {ID => 4, name => 'Dead', pos_to => {x => 10, y => 11}, dmgToYou => 0, dead => 1};
+	$partylead::monstersList = MonStub->new($m1, $m2, $m3, $dead);
+	%partylead::attackSeen = (); %partylead::attackAt = ();
+	ok(!defined partylead::nearest_attacker(), 'fightback: no target before any monster hits or misses her');
+	$m2->{dmgToYou} = 5; $m3->{missedYou} = 2;
 	my $t = partylead::nearest_attacker();
-	ok($t && $t->{name} eq 'Zombie near', 'nearest_attacker: the nearest monster that hit or missed her (not idle, not dead)');
-	$partylead::monstersList = MonStub->new(@mons[1, 3]);
-	ok(!defined partylead::nearest_attacker(), 'nearest_attacker: none when nothing attacks her');
+	ok($t && $t->{name} eq 'Ranged far', 'fightback: a monster that just hit her (8 cells, ranged) is the target');
+	ok(partylead::current_attacker($m2) == 1, 'fightback: a hit within 5 s is current at any distance');
+	ok(partylead::current_attacker($m3) == 1, 'fightback: a 15-cell attacker is current (any distance)');
+	$partylead::monstersList = MonStub->new($m3);
+	ok(!defined partylead::nearest_attacker(), 'fightback: a new target must be within 12 cells');
+	$partylead::monstersList = MonStub->new($m1, $m2, $m3, $dead);
+	$partylead::attackAt{2} = time - 10;
+	ok(partylead::current_attacker($m2) == 0, 'fightback: an old hit (10 s) is no longer current');
+	my $m5 = {ID => 5, name => 'Seen late', pos_to => {x => 11, y => 11}, dmgToYou => 7}; # total 7, never sampled before
+	$partylead::monstersList = MonStub->new($m5);
+	partylead::nearest_attacker();
+	ok(!defined $partylead::attackAt{5}, 'fightback: a total seen for the first time is not counted as a new hit');
+	$m5->{dmgToYou} = 8;
+	ok(partylead::nearest_attacker() == $m5, 'fightback: the total rising again is a fresh hit on a near monster');
+	ok(partylead::current_attacker($dead) == 0, 'fightback: a dead monster is never current');
+}
+
+# ---- rally gather wait: per absence (goneAt and gatherAt reset once everyone is back)
+{
+	$partylead::field = FieldStub->new('pay_dun02');
+	my $r = {town => 'prontera'};
+	@FRIENDS = (['Zendancer84', 'pay_dun01']);
+	ok(partylead::rally_gather_hold($r, 'pay_dun02') == 1, 'gather: holds for a member on another map');
+	$r->{gatherAt} = time - 100;
+	ok(partylead::rally_gather_hold($r, 'pay_dun02') == 0 && $r->{goneAt}, 'gather: after 90 s she goes on without it');
+	@FRIENDS = (['Zendancer84', 'pay_dun02']);
+	ok(partylead::rally_gather_hold($r, 'pay_dun02') == 0 && !$r->{goneAt}, 'gather: back on her map resets the wait');
+	@FRIENDS = (['Zendancer84', 'pay_dun01']);
+	ok(partylead::rally_gather_hold($r, 'pay_dun02') == 1, 'gather: a later absence gets its own 90 s');
+	ok(partylead::rally_gather_hold({town => 'prontera'}, 'prontera') == 0, 'gather: no wait in the rally town');
 }
 
 # ---- b1794736237191-004: an auto-buy / sell / storage task may cross the portal back

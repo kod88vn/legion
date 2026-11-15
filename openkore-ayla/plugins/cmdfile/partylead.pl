@@ -736,9 +736,35 @@ sub rally_away {
 	my ($r, $here) = @_;
 	return grep { $_->[1] ne '' && $_->[1] ne $here && $_->[1] ne $r->{town} } online_friends();
 }
+# the walk to the rally town from a field waits up to 90 s for members on another map (not on this map, not in the
+# town) - said once, then she goes on without them. Each absence gets its own 90 s: once everyone is back on her map or in
+# the town the wait is reset (gatherAt, goneAt). Returns 1 while she holds (fightback 2026-11-15: goneAt per absence).
+sub rally_gather_hold {
+	my ($r, $here) = @_;
+	return 0 if $here eq $r->{town} || is_townmap($here);
+	my @away = rally_away($r, $here);
+	if (!@away) { $r->{gatherAt} = 0; $r->{goneAt} = 0; $r->{gatherSaid} = ''; return 0 }
+	return 0 if $r->{goneAt};
+	$r->{gatherAt} ||= time;
+	my $names = join(', ', map { $_->[0] } @away);
+	if (time - $r->{gatherAt} < 90) {
+		if (($r->{gatherSaid} || '') ne $names) {
+			$r->{gatherSaid} = $names;
+			psay("$names where r u? i wait here, kafra in $r->{town} after", 1, 0);
+			message "[partylead] rally: waiting up to 90 s for $names (not on $here or in $r->{town})
+", 'system';
+		}
+		return 1;
+	}
+	$r->{goneAt} = time;
+	message "[partylead] rally: going to $r->{town} without $names after 90 s
+", 'system';
+	return 0;
+}
 sub rally_tick {
 	return 0 unless $rally;
 	my $r = $rally;
+	attacker_sample(); # hits and misses of this tick, for the fight-back rule in the attack check below
 	if (time - $r->{at} > 720) { end_rally("timed out after 12 min", 0); return 0 }
 	# priority (main 2026-11-14): a friend on her map in danger > her own rally. A self-started rally pauses (the hold /
 	# collect logic below the rally goes to that friend); a rally the mind or the friends called keeps going.
@@ -754,7 +780,8 @@ sub rally_tick {
 		my $ai = AI::findAction('attack');
 		my $a = (defined $ai && $ai ne '') ? AI::args($ai) : undef;
 		my $t = ($a && $monstersList) ? $monstersList->getByID($a->{ID}) : undef;
-		return 1 if $t && ($t->{dmgToYou} || $t->{missedYou}) && $t->{pos_to} && blockDistance($char->{pos_to}, $t->{pos_to}) <= 3;
+		attacker_sample();
+		return 1 if current_attacker($t); # fightback: a monster hitting her is fought at any distance (ranged too)
 		AI::clear('attack');
 	}
 	# the rally owns her movement: a lockMap set meanwhile (the mind's 'conf lockMap', a restore) is kept for afterwards,
@@ -785,24 +812,7 @@ sub rally_tick {
 	}
 	# b1794751481844-856: the walk to the rally town from a field waits up to 90 s for members on another map (not on
 	# this map, not in the town) - said once, then she goes on without them (the walk alone split the party)
-	if ($here ne $r->{town} && !is_townmap($here) && !$r->{goneAt}) {
-		my @away = rally_away($r, $here);
-		if (@away) {
-			$r->{gatherAt} ||= time;
-			my $names = join(', ', map { $_->[0] } @away);
-			if (time - $r->{gatherAt} < 90) {
-				AI::clear('route', 'move') if AI::inQueue('route', 'move');
-				if (($r->{gatherSaid} || '') ne $names) {
-					$r->{gatherSaid} = $names;
-					psay("$names where r u? i wait here, kafra in $r->{town} after", 1, 0);
-					message "[partylead] rally: waiting up to 90 s for $names (not on $here or in $r->{town})\n", 'system';
-				}
-				return 1;
-			}
-			$r->{goneAt} = time;
-			message "[partylead] rally: going to $r->{town} without $names after 90 s\n", 'system';
-		}
-	}
+	if (rally_gather_hold($r, $here)) { AI::clear('route', 'move') if AI::inQueue('route', 'move'); return 1 }
 	if ($here ne $r->{town} || $d > 4) {
 		if (time - $r->{routeAt} > 15 || !AI::inQueue('route', 'move')) {
 			$r->{routeAt} = time;
@@ -2945,12 +2955,34 @@ sub farm_sweep {
 	return 1;
 }
 # the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
-# the nearest monster that is attacking her (hit or missed her): the one she fights back (undef = none)
+# ---- fight back (fightback 2026-11-15): OpenKore's dmgToYou / missedYou are running totals, so "attacking her now" is read
+# from their change: a monster whose total rose within ATTACK_RECENT seconds hit or missed her, at any distance.
+use constant ATTACK_RECENT => 5;  # seconds since the last hit / miss that still counts as attacking her
+use constant ATTACK_RANGE => 12;  # cells: a monster this close is a new target (nearest_attacker)
+our (%attackSeen, %attackAt);
+sub attacker_sample {
+	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
+		next unless defined $mo->{ID};
+		my $n = ($mo->{dmgToYou} || 0) + ($mo->{missedYou} || 0);
+		my $prev = $attackSeen{$mo->{ID}};
+		$attackAt{$mo->{ID}} = time if defined $prev && $n > $prev;
+		$attackSeen{$mo->{ID}} = $n;
+	}
+}
+# a live monster that hit or missed her within ATTACK_RECENT seconds (any distance)
+sub current_attacker {
+	my $mo = shift;
+	return 0 unless $mo && defined $mo->{ID} && $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead};
+	return (time - ($attackAt{$mo->{ID}} || 0) <= ATTACK_RECENT) ? 1 : 0;
+}
+# the nearest monster that is attacking her now, within ATTACK_RANGE: the one she fights back (undef = none)
 sub nearest_attacker {
+	attacker_sample();
 	my ($best, $bd);
 	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
-		next unless $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead} && ($mo->{dmgToYou} || $mo->{missedYou});
+		next unless current_attacker($mo);
 		my $d = blockDistance($char->{pos_to}, $mo->{pos_to});
+		next if $d > ATTACK_RANGE;
 		($best, $bd) = ($mo, $d) if !defined $bd || $d < $bd;
 	}
 	return $best;
