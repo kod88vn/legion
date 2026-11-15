@@ -274,7 +274,7 @@ func (b *Bot) think() {
 	if b.bossWatch(gm, moving, now) || b.survive(gm, moving, now) { // bossnote.go: leave before a far-above boss reaches us
 		return
 	}
-	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.selfKyrie(now) || b.lowHPGuard(gm, moving, now) { // healerstick.go: Kyrie on the priest itself
+	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.selfKyrie(now) || b.selfBuffs(now) || b.lowHPGuard(gm, moving, now) { // healerstick.go: Kyrie on the priest itself
 		return
 	}
 	// economy.go: meeting another player for a trade (bought or sold on #trade) owns the bot until done or timed out
