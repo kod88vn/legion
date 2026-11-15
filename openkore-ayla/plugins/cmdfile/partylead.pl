@@ -1731,10 +1731,14 @@ my %gmWin = (map => '', at => 0, k => 0, d => 0, n => 0);
 # logs/ayla_step.json across reloads; the first load of this version re-picks the map at once (PLAN_CHANGE)
 my $gmOff = -10;
 our $forceRepick = 0;
-sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 2}); close $f } }
+sub step_save { eval { open(my $f, '>', 'logs/ayla_step.json') or die; print $f JSON::PP->new->encode({off => $gmOff, v => 3, repick => $forceRepick ? 1 : 0}); close $f } }
+# no step file yet: create it now (-10) with the owner's re-pick pending; a pending re-pick survives further reloads
 eval {
-	if (open(my $f, '<', 'logs/ayla_step.json')) { local $/; my $d = JSON::PP->new->decode(<$f>); close $f; $gmOff = $d->{off} if $d && defined $d->{off} && ($d->{v} || 0) >= 2 }
-	else { $forceRepick = 1 }
+	if (open(my $f, '<', 'logs/ayla_step.json')) {
+		local $/; my $d = JSON::PP->new->decode(<$f>); close $f;
+		$gmOff = $d->{off} if $d && defined $d->{off} && ($d->{v} || 0) >= 2;
+		$forceRepick = 1 if $d && ($d->{repick} || ($d->{v} || 0) < 3); # v2 re-picked into the gear-turn map: again
+	} else { $forceRepick = 1; step_save() }
 };
 sub gm_kill { $gmKills++ }
 sub gm_died {
@@ -1820,7 +1824,9 @@ sub mind_fresh { return $homeBy eq 'mind' && $homeMap ne '' && time - $homeAt < 
 # where the party should farm now, and why
 sub choose_map {
 	my ($tm, $who) = party_turn();
-	return ($tm, "$who\'s gear turn") if $tm ne '' && !(time - ($crowdedAt{$tm} || 0) < 3600) && route_unsafe($tm) eq '';
+	# a gear-turn map far above the conservative party level is no reason to go there (live 05:14: the owner's re-pick
+	# chose the gear turn's mjolnir_12 for a party rated 48)
+	return ($tm, "$who\'s gear turn") if $tm ne '' && !(time - ($crowdedAt{$tm} || 0) < 3600) && route_unsafe($tm) eq '' && mind_map_far($tm) eq '';
 	my $plv = party_fit_lv();
 	return (level_map($plv), "fits the party (level $plv" . (party_has_healer() ? ', healer' : ', no healer') . ")");
 }
@@ -1843,22 +1849,6 @@ sub fit_tick {
 	return if time - $fitAt < FIT_EVERY && !$gmRecheck;
 	$gmRecheck = 0;
 	$fitAt = time;
-	if ($forceRepick) { # owner order 2026-11-15: re-pick now, conservative (PT16 plan change)
-		my @fr0 = online_friends();
-		return if @fr0 && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr0) && time - $fitLoadAt < 300;
-		$forceRepick = 0; step_save();
-		my ($m, $why) = choose_map();
-		if (defined $m && $m ne '') {
-			my $old = plan_map() || $homeMap || '-';
-			if ($old ne $m) {
-				wd_report('PLAN_CHANGE', $old, "$old -> $m: owner: party too weak ($why)", 'new plan on arrival');
-				$plan = undef; plan_save();
-				($homeMap, $homeAt, $homeBy) = ('', 0, 'auto');
-				auto_goto($m, "owner: party too weak; $why");
-			}
-		}
-		return;
-	}
 	return if mind_fresh();
 	if ((my $pc = plan_map()) ne '') { # PT16: one map for ~2 h
 		my ($tm) = party_turn();
@@ -2074,7 +2064,25 @@ sub portal_back_guard {
 	AI::clear('route', 'move');
 	if (time - $pgLog > 10) { $pgLog = time; message "[partylead] no crossing back to $pgFrom within 30 s of coming from it - holding on $here\n", 'system' }
 }
+# the owner's re-pick (2026-11-15 "this party is not strong enough"): runs from the guarded tick wrapper, so no wait /
+# collect / rally can skip it; overrides the PT16 commitment with a PLAN_CHANGE line
+sub force_repick {
+	return unless $forceRepick && $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
+	my @fr0 = online_friends();
+	return if @fr0 && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr0) && time - $fitLoadAt < 300;
+	$forceRepick = 0;
+	my ($m, $why) = choose_map();
+	if (defined $m && $m ne '') {
+		my $old = plan_map() || $homeMap || ($config{lockMap} || '-');
+		wd_report('PLAN_CHANGE', $old, "$old -> $m: owner: party too weak ($why)", 'new plan on arrival');
+		$plan = undef; plan_save();
+		($homeMap, $homeAt, $homeBy) = ('', 0, 'auto');
+		auto_goto($m, "owner: party too weak; $why") if $old ne $m;
+	} else { $forceRepick = 1 } # nothing chosen yet: try again next tick
+	step_save();
+}
 sub tick_guarded {
+	force_repick();
 	tp_guard();
 	route_guard();
 	lockmap_guard();
