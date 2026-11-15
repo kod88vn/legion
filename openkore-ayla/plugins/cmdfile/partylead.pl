@@ -2488,6 +2488,9 @@ sub pack_tick {
 		}
 		return 1;
 	}
+	# AY22: the priest within 6 cells is enough to set off (the others follow her through the engine) - the older
+	# "everyone close" holds / town waits below stand aside (live: she waited in geffen with the priest 0 cells away)
+	$pk{prOkAt} = ($act eq 'ok' && defined $prD && $prD <= 6) ? time : 0;
 	if ($act eq 'ok' || $act eq 'solo') {
 		if ($cross eq 'pre' && $pk{crossSaid} ne $nm) { $pk{crossSaid} = $nm; psay("crossing $nm together, stay close", 0, 0); message "[partylead] PT04: crossing $nm with the party\n", 'system' }
 		$pk{crossSaid} = '' if $cross eq '' && !cross_danger($here);
@@ -3039,6 +3042,13 @@ sub tick {
 	gear_refresh();
 	rest_sit(party_resting()) unless is_townmap($field->baseName); # sit/stand for a rest before any hold logic returns
 	return if back_tick($field->baseName);
+	if ($pk{prOkAt} && time - $pk{prOkAt} < 3 && $field->baseName ne ($huntMap || '') && !$errand && !AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'NPC')) {
+		restore() if $holding;
+		$depart = undef; $townWaitAt = 0;
+		my $dest = $gotoMap ne '' ? $gotoMap : ($config{lockMap} || $homeMap || '');
+		if ($dest ne '' && $dest ne $field->baseName && ($pk{annDest} || '') ne $dest) { $pk{annDest} = $dest; psay("going to $dest, follow me", 1, 0) }
+		return;
+	}
 	my $here = $field->baseName;
 	# in town (a town run): don't touch her movement - she walks to shops - and don't send her back to the hunting
 	# map while the friends are still shopping. The old version restored lockMap here, so she left for the cave
