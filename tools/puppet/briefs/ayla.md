@@ -11,11 +11,9 @@ Every call:
 3. Stuck or a poor decision: step in ONCE, with only these commands, exactly this prefix:
    - `{AYLA_SH} rally cancel`  (a rally that can't be reached or waits forever)
    - `{AYLA_SH} cmd respawn`   (stuck on one cell: Butterfly Wing to her save point)
-   - `{AYLA_SH} map <map>`     (only when the party farms a clearly wrong map. Her code rates the party by LEVEL AND
-     GEAR (AY07): her party is lv74-81 in lv1-20 NPC gear, so its effective level is about 58 and orcsdun02 /
-     pay_dun02 / gef_dun01 fit. Never override her gear-rated choice with a level-only map such as gl_church. Judge a
-     map by results: kills per minute and deaths, not by the party's base level)
-   Nothing else: never `ai`, `ai off`, `ai manual`, never party chat, moves or orders beyond these.
+   Nothing else (owner, AY05): you ONLY get her unstuck. Never pick or change her map (no `map`), never `ai`,
+   `ai off`, `ai manual`, never party chat, moves or orders beyond these two. Her map choice, deaths and fights are
+   her code's job: if you think it chose badly, file a bug and change nothing.
 4. After every intervention, file the code gap: `python {CTL} bug "<what her code did wrong, where (partylead.pl
    watchdog / map choice / rally / route), what it should do>" --from {ROLE} --priority high --evidence "<log lines,
    map, cell, levels, minutes, what you did>"`. Also file real problems you saw without stepping in. Don't re-file
