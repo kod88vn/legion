@@ -145,6 +145,11 @@ sub cmd_partylead {
 		}
 	} elsif ($args =~ /^\s*goto\s+(\S+)/i) {
 		my $m = $1;
+		if (!$autoPick && (my $why = mind_map_far($m))) { # the mind / helper sent her somewhere far above the party
+			my ($own) = choose_map();
+			wd_report('MIND_MAP', $m, "rejected: goto $m - $why", "keeping her own choice " . ($own || $homeMap || '-'));
+			return;
+		}
 		$rally = undef; $depart = undef; $collect = undef; $fetchMap = ''; $gotoMap = $m;
 		$backWho = ''; # a mind's order beats holding for a straggler (QA 12:10: 'map pay_dun00' ignored while holding)
 		%helpFrom = (); %farSince = (); # old calls for help don't pull her back off the map she was sent to
@@ -167,7 +172,12 @@ sub cmd_partylead {
 		# (QA 20:54: goto from pay_fild08 while the plan said "regroup at payon kafra" - she walked through Payon alone)
 		my $rgT = is_townmap($hereT) ? $hereT : (!is_dungeon($hereT) && $KAFRA{$st} ? $st : '');
 		$hereT = $rgT if $rgT ne '';
-		if (!is_townmap($m) && $rgT ne '' && $KAFRA{$rgT} && !$allNear && ($config{saveMap} || '') eq $st) {
+		# saved at the destination's Kafra in the last 15 min: no new regroup / save stop there, she goes straight (live
+		# 2026-11-14: a repeated 'goto gl_church' restarted the Geffen Kafra rally - save again, wait again)
+		my $savedRecently = $saveOkTown eq $st && time - $saveOkAt < 900;
+		if ($savedRecently) {
+			message "[partylead] goto $m: saved at the $st Kafra " . int((time - $saveOkAt) / 60) . " min ago - no new rally, going straight\n", 'system';
+		} elsif (!is_townmap($m) && $rgT ne '' && $KAFRA{$rgT} && !$allNear && ($config{saveMap} || '') eq $st) {
 			# in town with the party scattered: regroup at this town's Kafra, then everyone walks out together (the plan's
 			# "meet at the kafra" - QA 20:22: she left Payon via pay_fild07, the friends via pay_fild01, all lost)
 			$rallyNext = 0;
@@ -490,6 +500,7 @@ sub town_of_map {
 	return 'payon';
 }
 
+use constant RALLY_WAIT => 180; # a rally waits at most 3 min for members after her save (owner 2026-11-14)
 sub start_rally {
 	my ($town, $x, $y, $why, $announce) = @_;
 	return unless $KAFRA{$town};
@@ -533,7 +544,7 @@ sub end_rally {
 	}
 	$rallyNext = time + ($how ? 1200 : 600); # rallies are rare: once when setting out (owner: 90% farming)
 	Commands::run('stand') if $char->{sitting};
-	if ($how && $field && $field->baseName eq $town) {
+	if ($how && $how != 4 && $field && $field->baseName eq $town) { # 4: gave up waiting after the save - no departure wait either
 		$depart = {town => $town, at => time, routeAt => 0};
 	} else {
 		restore();
@@ -667,6 +678,22 @@ sub rally_tick {
 	}
 	$r->{allAt} = $all ? ($r->{allAt} || time) : 0;
 	my $mineOk = $r->{saved} || ($r->{saveTries} >= 3 && time - $r->{saveAt} > 15);
+	$r->{mineAt} ||= time if $mineOk;
+	my $goMap = ($saved && ($saved->{lockMap} || '') ne '') ? $saved->{lockMap} : ($r->{thenGoto} || $r->{dest} || '');
+	if ($mineOk && !$all && $goMap ne '' && time - $r->{mineAt} > RALLY_WAIT) {
+		# owner 2026-11-14: she sat at the Geffen Kafra most of the time - after 3 min she goes with whoever is there; the
+		# others travel to the destination by their own route (Legion PT30 reads her dest)
+		my @miss;
+		foreach my $f (online_friends()) {
+			my $pl = $playersList ? $playersList->getByName($f->[0]) : undef;
+			push @miss, $f->[0] if $f->[1] ne $r->{town} || !$pl || !$pl->{pos_to} || !defined $pl->{pos_to}{x}
+				|| blockDistance({x => $r->{x}, y => $r->{y}}, $pl->{pos_to}) > 12;
+		}
+		psay((@miss ? join(', ', @miss) . " meet us on $goMap, we go" : "ok we go, $goMap"), 1, 0);
+		$gotoMap = $goMap if !is_townmap($goMap);
+		end_rally("waited " . int((time - $r->{mineAt}) / 60) . " min after saving; missing: " . (join(', ', @miss) || '-'), 4);
+		return 0;
+	}
 	if ($all && $mineOk && (!@unsaved || time - $r->{allAt} > 120)) {
 		my $next = ($saved && ($saved->{lockMap} || '') ne '') ? "ok going in, $saved->{lockMap}" : "good, wait here for the next stop";
 		psay(@unsaved ? "everyone saved at $r->{town}? @unsaved save at the kafra pls. $next" : "everyone saved at $r->{town}? $next", 1, 0);
@@ -674,7 +701,9 @@ sub rally_tick {
 		return 0;
 	}
 	if ($all && $mineOk && @unsaved && time - ($r->{askSave} || 0) > 40) { $r->{askSave} = time; psay("@unsaved save at the kafra here pls, say when saved", 1, 0) }
-	Commands::run('sit') if !$char->{sitting} && !AI::inQueue('sitting', 'route', 'move');
+	my $low = ($char->{hp_max} && $char->{hp} / $char->{hp_max} < 0.5) || ($char->{sp_max} && $char->{sp} / $char->{sp_max} < 0.5);
+	if ($low) { Commands::run('sit') if !$char->{sitting} && !AI::inQueue('sitting', 'route', 'move') }
+	elsif ($char->{sitting} && !AI::inQueue('sitAuto')) { Commands::run('stand') } # no sitting around at the Kafra (owner 2026-11-14)
 	if (time - $lastMsg > 30) { $lastMsg = time; message "[partylead] rally: waiting at the Kafra in $r->{town}\n", 'system' }
 	return 1;
 }
@@ -1632,6 +1661,18 @@ sub gm_step_offset {
 	}
 	%gmWin = (map => $here, at => time, k => $k, d => $d, n => $n);
 	return $gmOff;
+}
+# a map order far above the party: every table row for it starts 4+ levels over the party's gear-rated level (with the
+# measured kills / deaths step, party_fit_lv). '' = fine (or a map not in the table). conf partylead_mindCheck 0 = off.
+sub mind_map_far {
+	my $m = shift || '';
+	return '' if defined $config{partylead_mindCheck} && $config{partylead_mindCheck} eq '0';
+	my $lo;
+	foreach my $r (@FIT_MAPS) { $lo = $r->[0] if $r->[2] eq $m && (!defined $lo || $r->[0] < $lo) }
+	return '' unless defined $lo;
+	my $plv = party_fit_lv();
+	return '' if $plv + 3 >= $lo;
+	return "$m starts at level $lo, the party is rated $plv (gear, kills and deaths)";
 }
 sub map_fits {
 	my ($m, $plv) = @_;
