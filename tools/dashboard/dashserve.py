@@ -6,6 +6,7 @@
   GET  /  (also /dashboard)   the page, read from legion/dashboard.html on every request (no engine deploy needed)
   GET  /status                what is up and what is down, from sources that do not need the engine: container
                               state, heartbeat files, bug queue, deploy log, dispatcher log, markers
+  POST, DELETE /api/ayla/overrides   the owner tool's writes (AY25); only these carry the owner token, added here
   *    /api/...               forwarded to the engine. When the engine does not answer, a GET gets the last good
                               answer (header X-Dash-Stale: <age in seconds>), or 503 {"down": true} if there is none.
 
@@ -748,6 +749,11 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.startswith("/api/"):
             return self.send(404, "text/plain; charset=utf-8", b"not found")
         self.proxy("POST")
+
+    def do_DELETE(self):   # the owner tool clears an override: DELETE /api/ayla/overrides/{id} (AY25)
+        if not self.path.startswith("/api/"):
+            return self.send(404, "text/plain; charset=utf-8", b"not found")
+        self.proxy("DELETE")
 
     def proxy(self, method):
         body = None

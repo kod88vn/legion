@@ -121,6 +121,20 @@ tr:last-child td { border-bottom: 0; }
 button.btn { background: #3a2230; border: 1px solid #6b3450; color: #f2a6c3; border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 12.5px; cursor: pointer; }
 button.btn:hover { background: #4a2a3d; }
 button.btn.sm { padding: 1px 8px; font-size: 11.5px; }
+button.btn:disabled { opacity: 0.45; cursor: default; }
+.ctl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
+.ctl-box { border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; min-width: 0; }
+.ctl-box label { display: flex; flex-direction: column; gap: 3px; color: var(--text-2); }
+.ctl-box select, .ctl-box input { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 4px 6px; font: inherit; font-size: 12.5px; min-width: 0; }
+.ctl-box select:disabled, .ctl-box input:disabled { opacity: 0.5; }
+.ctl-hint { color: var(--muted); font-size: 11.5px; }
+.ctl-msg { font-size: 12.5px; margin: 10px 0 4px; }
+.ctl-msg:empty { display: none; }
+.ctl-msg.ok { color: #5fd35f; } .ctl-msg.bad { color: #f07a7a; }
+.ctl-msg ul { margin: 4px 0 0 18px; padding: 0; }
+.ctl-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; font-size: 12.5px; margin-top: 4px; }
+.ctl-cols h3 { font-size: 12.5px; margin: 0 0 6px; color: var(--text-2); font-weight: 600; }
+#ctlActive { margin-top: 12px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; font-size: 12px; color: var(--muted); }
 .chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 9px; color: var(--text-2); cursor: pointer; font: inherit; font-size: 12px; }
 .chip:hover { border-color: var(--s5); }
@@ -199,6 +213,37 @@ td.wrapc { white-space: normal; max-width: 640px; }
     <section class="kpis" id="kpisAyla"></section>
     <div class="card"><h2>Ayla's party <small id="partyNoteAyla"></small></h2><div class="tbl" id="partiesAyla"><div class="empty">loading...</div></div>
       <div style="margin-top:8px;font-size:12.5px"><a class="lnk" data-openmind="ayla">Talk to Ayla (her chat is on the Puppet master decisions tab)</a></div></div>
+    <div class="card" id="aylaCtl"><h2>Ayla control <small id="ctlNote">owner overrides (AY25)</small></h2>
+      <div id="ctlState"><div class="empty">loading...</div></div>
+      <div class="ctl-grid" id="ctlForms">
+        <form class="ctl-box" data-kind="farm_map"><b>Farm map</b>
+          <div class="ctl-hint">Her base and max level come from her party. The fair and fit gates are checked; a warning needs "Force anyway".</div>
+          <label>map <select id="ctlMap"><option value="">loading...</option></select></label>
+          <label>expires <select id="ctlFarmHours">
+            <option value="1">1 h</option><option value="6">6 h</option><option value="24" selected>24 h</option>
+            <option value="72">3 days</option><option value="168">1 week</option><option value="720">until cleared (30 days cap)</option></select></label>
+          <div><button class="btn" type="submit">Set farm map</button></div></form>
+        <form class="ctl-box" data-kind="guild_dir"><b>Guild direction</b>
+          <div class="ctl-hint">The Starveil direction, as free text, for the guild leader and members.</div>
+          <label>direction <input id="ctlGuildTxt" maxlength="200" placeholder="e.g. level at pay_fild08" autocomplete="off"></label>
+          <label>expires <select id="ctlGuildHours">
+            <option value="1">1 h</option><option value="6">6 h</option><option value="24" selected>24 h</option>
+            <option value="72">3 days</option><option value="168">1 week</option><option value="720">until cleared (30 days cap)</option></select></label>
+          <div><button class="btn" type="submit">Set guild direction</button></div></form>
+        <div class="ctl-box" id="ctlOrders"><b>Party orders</b>
+          <div class="ctl-hint">Her party acts on these at once. One override of each kind is active at a time.</div>
+          <div><button class="btn" type="button" data-order="town_run" data-value="now">Town run</button></div>
+          <label>rally to <select id="ctlTown"><option>prontera</option><option>geffen</option><option>payon</option><option>morocc</option><option>alberta</option><option>izlude</option><option>aldebaran</option><option>comodo</option><option>yuno</option><option>lutie</option><option>umbala</option><option>hugel</option></select></label>
+          <div><button class="btn" type="button" data-order="rally" data-value="">Rally to town</button> <button class="btn" type="button" data-order="rally" data-value="cancel">Cancel rally</button></div>
+          <div><button class="btn" type="button" data-order="party_order" data-value="follow_me">All follow me</button></div>
+          <label>expires <select id="ctlOrdHours">
+            <option value="1" selected>1 h</option><option value="6">6 h</option><option value="24">24 h</option>
+            <option value="72">3 days</option><option value="168">1 week</option><option value="720">until cleared (30 days cap)</option></select></label>
+        </div>
+      </div>
+      <div id="ctlMsg" class="ctl-msg" role="status"></div>
+      <div id="ctlActive"></div>
+    </div>
     <details class="more" id="dAylaMeter"><summary>Meter: the party against par <small id="aylaMeterNote"></small></summary><div class="in tbl" id="aylaMeter"><div class="empty">loading...</div></div></details>
     <details class="more"><summary>Ayla's own files <small>status.json and her OpenKore logs</small></summary><div class="in" id="aylaFiles"><div class="empty">loading...</div></div></details>
   </section>
@@ -1685,10 +1730,153 @@ function renderOffline() {
   if (!TABS.includes(t)) { try { t = localStorage.getItem('dashTab') || 'ayla'; } catch (e) { t = 'ayla'; } }
   showTab(t, true);
 }
+// ---- Ayla control (AY25, DB10): the owner's overrides for Ayla's puppet-master directives. The browser never holds the
+// owner token: dashserve.py adds it to POST and DELETE on /api/ayla/overrides and nothing else. Read-only while the
+// engine is down (the forms are disabled; the saved answer, if any, is shown with its age).
+const CTL = {res: null, spotsLv: 0, pending: null};
+const CTL_TTL = {1: '1 h', 6: '6 h', 24: '24 h', 72: '3 days', 168: '1 week', 720: 'until cleared'};
+// seconds from a Go RFC 3339 time (nanoseconds cut to milliseconds); null when unreadable
+const isoS = s => { const m = /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(\.\d+)?(Z|[+-]\d\d:\d\d)$/.exec(s || ''); return m ? Date.parse(m[1] + (m[2] ? m[2].slice(0, 4) : '') + m[3]) / 1000 : null; };
+const leftTxt = o => { const t = isoS(o.expires_at); if (t == null) return '–'; const s = t - Date.now() / 1000; return s <= 0 ? 'ended' : ageTxt(s) + ' left'; };
+const ctlParty = () => (Array.isArray(P.data) ? P.data.find(p => p.human) : null) || null;
+// base_lv and max_lv for the farm-map gates: the lowest and highest level among her online members
+function ctlLevels(p) {
+  const all = (p && p.members) || [];
+  const on = all.filter(m => m.online && m.level).map(m => m.level), lv = on.length ? on : all.filter(m => m.level).map(m => m.level);
+  return lv.length ? {base: Math.min(...lv), max: Math.max(...lv)} : {base: 0, max: 0};
+}
+function ctlDisabled() {
+  const live = !!(CTL.res && CTL.res.ok && CTL.res.stale == null);
+  for (const el of document.querySelectorAll('#aylaCtl input, #aylaCtl select, #aylaCtl button')) el.disabled = !live;
+}
+function ctlMsg(html, cls) { const m = $('ctlMsg'); m.className = 'ctl-msg' + (cls ? ' ' + cls : ''); m.innerHTML = html; }
+
+async function refreshOverrides() {
+  CTL.res = await eget('/api/ayla/overrides');
+  renderCtl();
+  const live = CTL.res.ok && CTL.res.stale == null, lv = ctlLevels(ctlParty()).base;
+  if (live && lv && lv !== CTL.spotsLv) await ctlSpots(lv);
+}
+// the farm-map picker: the engine's map list for her level (/api/spots); the last list is kept when the engine is down
+async function ctlSpots(lv) {
+  const res = await eget('/api/spots?level=' + lv);
+  if (!res.ok || res.stale != null) return;
+  CTL.spotsLv = lv;
+  const sel = $('ctlMap'), cur = sel.value, rows = Array.isArray(res.data) ? res.data : [];
+  sel.innerHTML = rows.length ? rows.map(s => `<option value="${esc(s.Map)}">${esc(s.Map)} · lv ${s.MinLv}-${s.MaxLv} · ${s.Mobs} mobs</option>`).join('')
+    : '<option value="">no map fits this level</option>';
+  if (cur) sel.value = cur;
+}
+function renderCtl() {
+  const res = CTL.res, live = !!(res && res.ok && res.stale == null);
+  $('ctlNote').textContent = live ? 'owner overrides (AY25): they win over the puppet masters until cleared or expired'
+    : 'read-only: the engine is not answering, so overrides cannot be set or cleared' + staleSfx(res || {});
+  if (!res || !res.ok) {
+    $('ctlState').innerHTML = downMsg(res || {err: ''}, 'override state'); $('ctlActive').innerHTML = ''; ctlDisabled(); return;
+  }
+  const d = res.data || {}, own = d.owner || {}, rows = (d.overrides || []).filter(o => o.active);
+  const p = ctlParty(), lv = ctlLevels(p), puppet = d.puppet || {}, sg = puppet.starveil_guild || {}, ord = puppet.orders || {};
+  const dirs = list => (list || []).map(g => `${esc(g.kind || '')} ${esc(g.map || '')}${g.note ? ' · ' + esc(g.note) : ''} <span style="color:var(--muted)">(${esc(g.set_by || '')})</span>`).join('<br>') || '<span style="color:var(--muted)">none</span>';
+  const lastOf = a => (a || []).length ? a[a.length - 1] : null;
+  const ho = lastOf(ord.owner), hh = lastOf(ord.helper);
+  const fm = own.farm_map;
+  $('ctlState').innerHTML = '<div class="ctl-cols">' +
+    '<div><h3>Her party</h3>' + kvRows([
+      ['led by', p ? esc(p.human) : 'no human-led party right now'],
+      ['on the map', p ? esc(p.map || '?') : '–'],
+      ['together', p ? `${fmt(p.together)} of ${fmt(p.online)} online` : '–'],
+      ['base / max level', p ? `${fmt(lv.base)} / ${fmt(lv.max)}` : '–'],
+      ['farm map', fm ? `<b>${esc(fm.value)}</b> <span style="color:var(--muted)">(owner, ${leftTxt(fm)})</span>` : '<span style="color:var(--muted)">no owner override: her own choice applies</span>'],
+    ]) + '</div>' +
+    '<div><h3>Puppet masters\' directives (now)</h3>' + kvRows([
+      ['Starveil directions', dirs(sg.active)],
+      ['Starveil autopilot', dirs(sg.autopilot)],
+      ['last owner order', ho ? `${esc(ho.text || '')} <span style="color:var(--muted)">${esc(ho.iso || '')}</span>` : '<span style="color:var(--muted)">none</span>'],
+      ['helper result', hh ? esc(hh.result || '') : '<span style="color:var(--muted)">none</span>'],
+    ]) + '</div></div>';
+  $('ctlActive').innerHTML = '<h3 style="font-size:12.5px;margin:0 0 6px;color:var(--text-2);font-weight:600">Your active overrides</h3>' +
+    (rows.length ? '<div class="tbl"><table><thead><tr><th>kind</th><th>value</th><th>note</th><th>set</th><th class="r">time left</th><th></th></tr></thead><tbody>' +
+      rows.map(o => `<tr><td>${esc(o.kind)}</td><td><b>${esc(o.value)}</b></td><td>${esc(o.note || '')}</td><td>${clock(isoS(o.set_at))}</td>` +
+        `<td class="r">${leftTxt(o)}</td><td><button class="btn sm" type="button" data-clear="${esc(o.id)}">Clear</button></td></tr>`).join('') +
+      '</tbody></table></div>' : '<div class="empty">no owner override: the puppet masters and her own defaults apply</div>');
+  ctlDisabled();
+}
+
+function ctlBody(kind, value, hours, note) {
+  const b = {kind, value, hours: +hours, note: note || ''};
+  if (kind === 'farm_map') { const lv = ctlLevels(ctlParty()); b.base_lv = lv.base; b.max_lv = lv.max; }
+  return b;
+}
+// one POST. 200: stored. 409: the gate warnings, nothing stored, and "Force anyway" re-sends with confirm=true.
+async function ctlSend(body) {
+  ctlMsg('saving...', '');
+  let resp, txt = '', data = null;
+  try {
+    resp = await fetch('/api/ayla/overrides', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body), cache: 'no-store'});
+    txt = await resp.text();
+    try { data = JSON.parse(txt); } catch (e) {}
+  } catch (e) { ctlMsg('could not reach the dashboard server: nothing was stored', 'bad'); return; }
+  if (resp.status === 200) {
+    CTL.pending = null;
+    ctlMsg(`stored: ${esc(body.kind)} ${esc(body.value)}, ${esc(CTL_TTL[body.hours] || body.hours + ' h')}`, 'ok');
+    refreshOverrides(); return;
+  }
+  if (resp.status === 409 && data && data.warnings) {
+    CTL.pending = body;
+    ctlMsg(`not stored: ${data.warnings.map(esc).join('; ')}<div style="margin-top:6px"><button class="btn" type="button" data-force="1">Force anyway</button></div>`, 'bad');
+    return;
+  }
+  CTL.pending = null;
+  if (resp.status === 503 || (data && data.down)) ctlMsg('engine down: nothing was stored', 'bad');
+  else if (resp.status === 403) ctlMsg('the dashboard server could not authorise the write; nothing was stored', 'bad');
+  else ctlMsg('not stored: ' + esc((data && data.error) || txt.slice(0, 160) || 'HTTP ' + resp.status), 'bad');
+}
+async function ctlClear(id) {
+  ctlMsg('clearing...', '');
+  let resp, data = null;
+  try {
+    resp = await fetch('/api/ayla/overrides/' + encodeURIComponent(id), {method: 'DELETE', cache: 'no-store'});
+    try { data = await resp.json(); } catch (e) {}
+  } catch (e) { ctlMsg('could not reach the dashboard server: nothing was cleared', 'bad'); return; }
+  if (resp.status === 200) { ctlMsg(`cleared: ${esc(data && data.kind || '')} ${esc(data && data.value || '')}`, 'ok'); refreshOverrides(); return; }
+  if (resp.status === 409) { ctlMsg('it had already expired', 'bad'); refreshOverrides(); return; }
+  if (resp.status === 404) { ctlMsg('no such override any more', 'bad'); refreshOverrides(); return; }
+  if (resp.status === 503 || (data && data.down)) ctlMsg('engine down: nothing was cleared', 'bad');
+  else ctlMsg('not cleared: ' + esc((data && data.error) || 'HTTP ' + resp.status), 'bad');
+}
+$('aylaCtl').addEventListener('submit', ev => {
+  const f = ev.target.closest('form[data-kind]');
+  if (!f) return;
+  ev.preventDefault();
+  if (f.dataset.kind === 'farm_map') {
+    const v = $('ctlMap').value;
+    if (!v) { ctlMsg('pick a map first', 'bad'); return; }
+    return ctlSend(ctlBody('farm_map', v, $('ctlFarmHours').value));
+  }
+  const v = $('ctlGuildTxt').value.trim();
+  if (!v) { ctlMsg('write the direction first', 'bad'); return; }
+  ctlSend(ctlBody('guild_dir', v, $('ctlGuildHours').value));
+});
+$('ctlOrders').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-order]');
+  if (!b) return;
+  const v = b.dataset.value || $('ctlTown').value;
+  ctlSend(ctlBody(b.dataset.order, v, $('ctlOrdHours').value));
+});
+$('ctlMsg').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-force]');
+  if (b && CTL.pending) ctlSend(Object.assign({}, CTL.pending, {confirm: true}));
+});
+$('ctlActive').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-clear]');
+  if (b) ctlClear(b.dataset.clear);
+});
+
 const every = (fn, ms) => { fn(); setInterval(fn, ms); };
 every(refreshStatus, 10000);
 every(refresh, 10000);
 every(refreshParties, 10000);
+every(refreshOverrides, 10000);
 every(refreshMinds, 5000);
 every(refreshGuilds, 30000);
 every(refreshLeaderboard, 30000);

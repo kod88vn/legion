@@ -34,6 +34,19 @@ def get(url):
         return e.code, dict(e.headers), e.read()
 
 
+def call_api(base, method, path, body=None):
+    """one request with a JSON body (or none); returns (status, headers, bytes) for HTTP errors too"""
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(base + path, data=data, method=method)
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status, dict(r.headers), r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, dict(e.headers), e.read()
+
+
 class Base(unittest.TestCase):
     engine_alive = False
     data_alive = False
@@ -197,6 +210,129 @@ class FromFiles(Base):
         only_files = json.loads(get(self.url + "/players/char?name=Silent%20Heals")[2])
         self.assertIsNone(only_files["source"])
         self.assertEqual(only_files["char"]["base_level"], 80)
+
+
+class OwnerTool(Base):
+    """AY25 / DB10: the Ayla control panel. The engine is up (the fake engine wants the owner token on writes) or
+    down. The browser never gets the owner token: dashserve adds it server-side on POST and DELETE only."""
+    engine_alive = True
+    data_alive = True
+
+    def setUp(self):
+        super().setUp()
+        self.token = self.fe.OWNER_TOKEN
+        with open(os.path.join(self.d, "owner.token"), "w", encoding="utf-8") as f:
+            f.write(self.token + "\n")
+
+    def call(self, method, path, body=None):
+        return call_api(self.url, method, path, body)
+
+    def test_panel_is_in_the_page(self):
+        code, _, body = get(self.url + "/")
+        self.assertEqual(code, 200)
+        for part in (b'id="aylaCtl"', b"Ayla control", b'id="ctlFarmHours"', b'data-kind="guild_dir"', b'data-order="town_run"',
+                     b'data-order="rally" data-value="cancel"', b'data-order="party_order" data-value="follow_me"',
+                     b'id="ctlActive"', b'<option value="720">until cleared', b"Force anyway", b"/api/ayla/overrides",
+                     b"/api/spots?level="):
+            self.assertIn(part, body, part)
+        self.assertIn(b"Puppet master decisions", body)   # G08: the existing tabs and panels are still there
+        self.assertIn(b"Ayla's party", body)
+
+    def test_script_parses(self):
+        import re
+        import shutil
+        import subprocess
+        import tempfile
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node not on PATH")
+        html = get(self.url + "/")[2].decode("utf-8")
+        scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+        self.assertTrue(scripts)
+        d = tempfile.mkdtemp()
+        try:
+            path = os.path.join(d, "page.js")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(max(scripts, key=len))
+            r = subprocess.run([node, "--check", path], capture_output=True, text=True, timeout=60)
+            self.assertEqual(r.returncode, 0, r.stderr)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_gate_warning_then_force_then_clear(self):
+        farm = {"kind": "farm_map", "value": "moc_fild12", "hours": 24, "base_lv": 50, "max_lv": 54, "note": "test"}
+        code, _, body = self.call("POST", "/api/ayla/overrides", farm)
+        self.assertEqual(code, 409)                       # the gate answers 409 with the warnings; nothing stored
+        warn = json.loads(body)
+        self.assertTrue(warn["warnings"])
+        self.assertFalse(warn["stored"])
+        self.assertIsNone(json.loads(self.call("GET", "/api/ayla/overrides")[2])["owner"]["farm_map"])
+        code, _, body = self.call("POST", "/api/ayla/overrides", dict(farm, confirm=True))   # "Force anyway"
+        self.assertEqual(code, 200)
+        oid = json.loads(body)["id"]
+        view = json.loads(self.call("GET", "/api/ayla/overrides")[2])
+        self.assertEqual(view["owner"]["farm_map"]["value"], "moc_fild12")
+        self.assertEqual(view["puppet"]["starveil_guild"]["autopilot"][0]["value"], "pay_fild08")   # puppet shown beside
+        # a second farm map ends the first ("replaced"); a guild direction is a separate kind
+        self.assertEqual(self.call("POST", "/api/ayla/overrides", {"kind": "farm_map", "value": "pay_fild08", "hours": 6})[0], 200)
+        self.assertEqual(self.call("POST", "/api/ayla/overrides", {"kind": "guild_dir", "value": "level at pay_fild08", "hours": 720})[0], 200)
+        self.assertEqual(self.call("DELETE", "/api/ayla/overrides/" + oid)[0], 409)   # already replaced: it ended
+        self.assertEqual(self.call("DELETE", "/api/ayla/overrides/nope")[0], 404)
+        gid = json.loads(self.call("GET", "/api/ayla/overrides")[2])["owner"]["guild_dir"]["id"]
+        code, _, body = self.call("DELETE", "/api/ayla/overrides/" + gid)
+        self.assertEqual(code, 200)
+        self.assertEqual(json.loads(body)["end_reason"], "clear")
+        self.assertIsNone(json.loads(self.call("GET", "/api/ayla/overrides")[2])["owner"]["guild_dir"])
+
+    def test_bad_input_is_refused_with_the_reason(self):
+        code, _, body = self.call("POST", "/api/ayla/overrides", {"kind": "weather", "value": "rain"})
+        self.assertEqual(code, 400)
+        self.assertIn("kind must be one of", json.loads(body)["error"])
+        code, _, _ = self.call("POST", "/api/ayla/overrides", {"kind": "farm_map", "value": "pay_fild08", "hours": 1000})
+        self.assertEqual(code, 400)
+
+    def test_token_never_reaches_the_browser(self):
+        seen = [get(self.url + "/"), get(self.url + "/status"), get(self.url + "/api/ayla/overrides"),
+                get(self.url + "/api/spots?level=50")]
+        farm = {"kind": "farm_map", "value": "moc_fild12", "hours": 1}
+        seen.append(self.call("POST", "/api/ayla/overrides", farm))
+        seen.append(self.call("POST", "/api/ayla/overrides", dict(farm, confirm=True)))
+        seen.append(self.call("DELETE", "/api/ayla/overrides/ov99"))
+        seen.append(self.call("POST", "/api/ayla/overrides", {"kind": "weather", "value": "rain"}))
+        for code, headers, body in seen:
+            self.assertNotIn(self.token.encode(), body)
+            self.assertNotIn(self.token, json.dumps(headers))
+        self.assertEqual(seen[5][0], 200)   # the engine did get the token: the confirmed write was stored
+
+    def test_engine_refusal_is_passed_on_not_faked(self):
+        # no token file: the dashboard sends none and the engine refuses; the browser sees that refusal
+        os.remove(os.path.join(self.d, "owner.token"))
+        code, _, _ = self.call("POST", "/api/ayla/overrides", {"kind": "farm_map", "value": "pay_fild08", "hours": 1})
+        self.assertEqual(code, 403)
+
+
+class OwnerToolEngineDown(Base):
+    """the engine is down: the page is read-only, writes answer 503 and nothing is stored"""
+    engine_alive = False
+    data_alive = True
+
+    def setUp(self):
+        super().setUp()
+        self.token = self.fe.OWNER_TOKEN
+        with open(os.path.join(self.d, "owner.token"), "w", encoding="utf-8") as f:
+            f.write(self.token + "\n")
+
+    def test_read_only_when_down(self):
+        code, _, body = get(self.url + "/")
+        self.assertEqual(code, 200)
+        self.assertIn(b"read-only: the engine is not answering", body)
+        self.assertEqual(call_api(self.url, "GET", "/api/ayla/overrides")[0], 503)
+        for method, path, data in (("POST", "/api/ayla/overrides", {"kind": "farm_map", "value": "pay_fild08"}),
+                                   ("DELETE", "/api/ayla/overrides/ov1", None)):
+            code, _, body = call_api(self.url, method, path, data)
+            self.assertEqual(code, 503)
+            self.assertTrue(json.loads(body)["down"])
+        self.assertNotIn(self.token.encode(), get(self.url + "/")[2])
 
 
 class Small(unittest.TestCase):
