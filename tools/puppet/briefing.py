@@ -477,8 +477,8 @@ def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
             parts.append(section("IDLE ALERT (rule: Ayla has zero downtime)",
                                  f"Ayla spent {int(lazy * 100)}% of the last 10 min in town/idle/waiting (now on {amap}; shares {compact(sh, 200)}). "
                                  "Her code is failing her. Read her log (`ayla.sh log 120`: watchdog, [partylead] lines), find what "
-                                 "holds her, step in once if needed (`ayla.sh rally cancel`, `ayla.sh cmd respawn` or "
-                                 "`ayla.sh map <fitting map>`) and file the code gap (`bug ... --priority high` with the log lines)."))
+                                 "holds her, step in once if needed (`ayla.sh rally cancel` or `ayla.sh cmd respawn`; "
+                                 "never pick her map) and file the code gap (`bug ... --priority high` with the log lines)."))
         parts.append(section("You, your party and Starveil against comparable bots (par = p75, last hour)", body))
         for name, d in (("party", ps), ("starveil", ss)):
             for k in ("ratio_kpm", "ratio_zph", "above_par_kpm", "above_par_zph"):
