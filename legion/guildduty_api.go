@@ -212,12 +212,27 @@ func guildDirAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	case p.Remove != "":
 		keep := gduty.dirs[id][:0]
+		found, auto := false, false
 		for _, d := range gduty.dirs[id] {
 			if d.ID != p.Remove {
 				keep = append(keep, d)
+			} else {
+				found = true
 			}
 		}
+		for _, d := range gduty.auto[id] {
+			auto = auto || d.ID == p.Remove
+		}
+		if !found && !auto {
+			gduty.Unlock()
+			apiErr(w, 404, "no direction "+p.Remove+" in "+id)
+			return
+		}
 		gduty.dirs[id] = keep
+		if !found {
+			// an autopilot direction: it is recomputed every round under the same id, so it is held off for a while
+			gduty.dismissed[p.Remove] = now.Add(guildDirDismissTTL)
+		}
 		gduty.dirty = true
 		gduty.Unlock()
 		writeJSON(w, dirViewOf(id, now))
@@ -238,6 +253,7 @@ func guildDirAPI(w http.ResponseWriter, r *http.Request) {
 	gduty.dirty = true
 	dutyCount("leader directions set")
 	gduty.Unlock()
+	dutySave() // a set is on disk at once, not at the next 5-minute save (a restart in between lost it); no lock held
 	go dutyAnnounce(id, d)
 	writeJSON(w, dirViewOf(id, now))
 }

@@ -46,23 +46,24 @@ import (
 )
 
 const (
-	guildDirMax       = 3
-	guildDirLeaderTTL = 24 * time.Hour
-	dutyTick          = time.Minute
-	dutyPlanGap       = 10 * time.Minute // between two plan checks of one member
-	dutyPlanPerTick   = 30               // plan checks per tick (each takes one bot's lock briefly)
-	dutyBlockMinMin   = 30
-	dutyBlockSlack    = 45 * time.Minute // a block may run this much longer than its minutes (town runs, deaths)
-	dutyDaysKept      = 8                // today + the last 7 days
-	dutyPlayedMin     = 30               // online minutes that make a played day
-	dutyDeliverGap    = 10 * time.Minute
-	dutyRecentBlock   = time.Hour // requested items of a block that ended this recently still go to the stock
-	dutyWarnGap       = 5 * time.Minute
-	dutyGuildKickGap  = 2 * time.Hour
-	dutyKickMinGap    = 15 * time.Minute
-	dutySayGap        = 3 * time.Minute // guild chat lines about blocks, per guild
-	dutyOldGuildBan   = 7 * 24 * time.Hour
-	dutyInviteGap     = 90 * time.Second
+	guildDirMax        = 3
+	guildDirLeaderTTL  = 24 * time.Hour
+	guildDirDismissTTL = 2 * time.Hour // an autopilot direction a leader cleared stays off this long (its id recurs every round)
+	dutyTick           = time.Minute
+	dutyPlanGap        = 10 * time.Minute // between two plan checks of one member
+	dutyPlanPerTick    = 30               // plan checks per tick (each takes one bot's lock briefly)
+	dutyBlockMinMin    = 30
+	dutyBlockSlack     = 45 * time.Minute // a block may run this much longer than its minutes (town runs, deaths)
+	dutyDaysKept       = 8                // today + the last 7 days
+	dutyPlayedMin      = 30               // online minutes that make a played day
+	dutyDeliverGap     = 10 * time.Minute
+	dutyRecentBlock    = time.Hour // requested items of a block that ended this recently still go to the stock
+	dutyWarnGap        = 5 * time.Minute
+	dutyGuildKickGap   = 2 * time.Hour
+	dutyKickMinGap     = 15 * time.Minute
+	dutySayGap         = 3 * time.Minute // guild chat lines about blocks, per guild
+	dutyOldGuildBan    = 7 * 24 * time.Hour
+	dutyInviteGap      = 90 * time.Second
 )
 
 // GuildDirection: one standing direction of a guild
@@ -149,6 +150,8 @@ type dutyKicked struct {
 	JoinedAt  time.Time `json:"joined_at,omitempty"`
 }
 
+var dutySaveMu sync.Mutex // dutySave: serialises the file write
+
 var gduty = struct {
 	sync.Mutex
 	dirs      map[string][]*GuildDirection // guild -> leader-set directions (persisted)
@@ -158,6 +161,7 @@ var gduty = struct {
 	kicked    map[string]*dutyKicked       // char
 	kicks     []time.Time                  // server-wide expel times (rate limit)
 	guildKick map[string]time.Time
+	dismissed map[string]time.Time // autopilot direction id -> off until (a leader cleared it)
 	guildWarn map[string]time.Time
 	guildSay  map[string]time.Time
 	charGuild map[string]string   // last snapshot: char -> guild id (relations, trades)
@@ -166,7 +170,7 @@ var gduty = struct {
 	dirty     bool
 	loaded    bool
 }{dirs: map[string][]*GuildDirection{}, auto: map[string][]*GuildDirection{}, members: map[string]*dutyMember{},
-	byChar: map[string]*dutyMember{}, kicked: map[string]*dutyKicked{}, guildKick: map[string]time.Time{},
+	byChar: map[string]*dutyMember{}, kicked: map[string]*dutyKicked{}, guildKick: map[string]time.Time{}, dismissed: map[string]time.Time{},
 	guildWarn: map[string]time.Time{}, guildSay: map[string]time.Time{}, charGuild: map[string]string{}, left: map[string]dutyLeft{}, counters: map[string]int{}}
 
 type dutyLeft struct {
@@ -297,7 +301,7 @@ func activeDirsLocked(guild string, now time.Time) []*GuildDirection {
 	}
 	for _, d := range gduty.auto[guild] {
 		k := d.Kind + "|" + fmt.Sprint(d.ItemID) + "|" + d.Map
-		if len(out) >= guildDirMax || seen[k] || now.After(d.Expires) {
+		if len(out) >= guildDirMax || seen[k] || now.After(d.Expires) || now.Before(gduty.dismissed[d.ID]) {
 			continue
 		}
 		seen[k] = true
@@ -1324,11 +1328,12 @@ func dutyDeliver(snaps []*dutySnap, now time.Time) {
 // ---------------------------------------------------------------- persistence
 
 type dutyFile struct {
-	Saved    time.Time                    `json:"saved"`
-	Dirs     map[string][]*GuildDirection `json:"directions"`
-	Members  []*dutyMember                `json:"members"`
-	Kicked   []*dutyKicked                `json:"kicked"`
-	Counters map[string]int               `json:"counters"`
+	Saved     time.Time                    `json:"saved"`
+	Dirs      map[string][]*GuildDirection `json:"directions"`
+	Members   []*dutyMember                `json:"members"`
+	Kicked    []*dutyKicked                `json:"kicked"`
+	Counters  map[string]int               `json:"counters"`
+	Dismissed map[string]time.Time         `json:"dismissed,omitempty"` // autopilot direction id -> off until
 }
 
 func dutyFilePath() string { return filepath.Join(*dataDir, "guild_duty.json") }
@@ -1343,7 +1348,10 @@ func dutyLoad() {
 	}
 	var f dutyFile
 	if json.Unmarshal(raw, &f) != nil {
-		log.Printf("guild duty: %s does not parse, starting empty", dutyFilePath())
+		// keep the unreadable file: the next save would otherwise overwrite every direction and record with an empty one
+		kept := fmt.Sprintf("%s.unparsed-%d", dutyFilePath(), time.Now().UnixNano()) // every bad file kept, none replaced
+		os.Rename(dutyFilePath(), kept)
+		log.Printf("guild duty: %s does not parse, starting empty (kept as %s)", dutyFilePath(), kept)
 		return
 	}
 	for g, ds := range f.Dirs {
@@ -1362,16 +1370,30 @@ func dutyLoad() {
 	for k, v := range f.Counters {
 		gduty.counters[k] = v
 	}
+	for id, until := range f.Dismissed {
+		if time.Now().Before(until) {
+			gduty.dismissed[id] = until
+		}
+	}
 }
 
 // dutySave: marshal under the lock, write after releasing it (never file I/O under a lock)
 func dutySave() {
+	dutySaveMu.Lock() // one writer at a time: the tick and the API both save, through one tmp file
+	defer dutySaveMu.Unlock()
 	gduty.Lock()
 	if !gduty.dirty || !gduty.loaded {
 		gduty.Unlock()
 		return
 	}
-	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Counters: gduty.counters}
+	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Counters: gduty.counters, Dismissed: map[string]time.Time{}}
+	for id, until := range gduty.dismissed {
+		if time.Now().Before(until) {
+			f.Dismissed[id] = until
+		} else {
+			delete(gduty.dismissed, id)
+		}
+	}
 	for _, m := range gduty.members {
 		f.Members = append(f.Members, m)
 	}

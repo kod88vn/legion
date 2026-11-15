@@ -49,12 +49,15 @@ var grank = struct {
 	cur       map[string]*guildRankRow
 	hist      map[string][]*guildRankRow
 	histAt    time.Time
-	funds     map[string][2]int // char -> {zeny, last seen unix} for leaders / vendors (offline ones keep their last purse)
-	fundGuild map[string]string // char -> guild id
+	funds     map[string][2]int   // char -> {zeny, last seen unix} for leaders / vendors (offline ones keep their last purse)
+	fundGuild map[string]string   // char -> guild id
+	owner     map[string]ownerRec // shop owner char -> its guild as the feed last showed it
+	shops     map[string]shopMemo // vendor char -> its shop's value when last seen online (counts while it is offline)
 	tradeSeen time.Time
 	dirty     bool
 	loaded    bool
-}{cur: map[string]*guildRankRow{}, hist: map[string][]*guildRankRow{}, funds: map[string][2]int{}, fundGuild: map[string]string{}}
+}{cur: map[string]*guildRankRow{}, hist: map[string][]*guildRankRow{}, funds: map[string][2]int{}, fundGuild: map[string]string{},
+	owner: map[string]ownerRec{}, shops: map[string]shopMemo{}}
 
 var grel = struct {
 	sync.Mutex
@@ -124,21 +127,81 @@ func relationsFromTrades(now time.Time) {
 	}
 }
 
+// ownerGrace: a shop owner seen with no guild this long has left it (a login's guild name can lag a little)
+const ownerGrace = 5 * time.Minute
+
+// wealthKeep: a purse, a shop owner, or an offline vendor's last shop value counts this long after it was last seen
+const wealthKeep = 24 * time.Hour
+
+// ownerRec: a shop owner's guild as the feed last showed it; Blank = when the feed first showed it with no guild (0: no)
+type ownerRec struct {
+	Guild string `json:"guild"`
+	Seen  int64  `json:"seen"`
+	Blank int64  `json:"blank,omitempty"`
+}
+
+// shopMemo: a vendor's open shop, valued when it was last seen online
+type shopMemo struct {
+	Guild string `json:"guild"`
+	Value int    `json:"value"`
+	Seen  int64  `json:"seen"`
+}
+
+// rankShop: one open shop and its listings, copied out of econ.shops
+type rankShop struct {
+	name  string
+	items []vendListing
+}
+
+// shopWorth (pure given price): market value of a shop's listings
+func shopWorth(items []vendListing, price func(int) int) int {
+	v := 0
+	for _, l := range items {
+		v += price(l.ItemID) * l.Count
+	}
+	return v
+}
+
 // guildRankRound: rank and wealth of every guild (no bot lock: the snapshot, the level book, guild stats, shops)
 func guildRankRound(snaps []*dutySnap, now time.Time, starveil string) {
+	if len(snaps) == 0 {
+		return // no bot feed (engine start or reset): keep the last round instead of publishing zero wealth
+	}
 	ids := []string{humanGuildID}
 	for _, g := range guildDefs {
 		ids = append(ids, g.ID)
 	}
+	nowU := now.Unix()
 	// funds: leaders' and vendors' purses (offline ones keep the last seen purse for a day)
 	charGuild := map[string]string{}
 	hName, hZeny, hTS, hOK := humanGuildPurse(starveil) // guildrank_human.go: Starveil's master is played outside the engine
 	grank.Lock()
 	for _, s := range snaps {
 		charGuild[s.name] = s.guild
+		if s.guild != "" {
+			grank.owner[s.name] = ownerRec{Guild: s.guild, Seen: nowU}
+		} else if r, ok := grank.owner[s.name]; ok {
+			if r.Blank == 0 {
+				r.Blank = nowU
+				grank.owner[s.name] = r
+			}
+			if nowU-r.Blank >= int64(ownerGrace/time.Second) {
+				delete(grank.owner, s.name) // it left the guild: its shop is no longer that guild's stock
+			}
+		}
 		if s.guild != "" && (s.vendor || s.vision || s.master) {
-			grank.funds[s.name] = [2]int{s.zeny, int(now.Unix())}
+			grank.funds[s.name] = [2]int{s.zeny, int(nowU)}
 			grank.fundGuild[s.name] = s.guild
+		}
+	}
+	// an owner missing from this feed (offline, or not loaded after a restart) keeps its remembered guild for a day
+	for c, r := range grank.owner {
+		if nowU-r.Seen >= int64(wealthKeep/time.Second) {
+			delete(grank.owner, c)
+			continue
+		}
+		if charGuild[c] == "" {
+			charGuild[c] = r.Guild
 		}
 	}
 	if hOK {
@@ -146,7 +209,7 @@ func guildRankRound(snaps []*dutySnap, now time.Time, starveil string) {
 	}
 	funds := map[string]int{}
 	for c, f := range grank.funds {
-		if now.Unix()-int64(f[1]) > 24*3600 {
+		if nowU-int64(f[1]) > int64(wealthKeep/time.Second) {
 			delete(grank.funds, c)
 			delete(grank.fundGuild, c)
 			continue
@@ -154,33 +217,54 @@ func guildRankRound(snaps []*dutySnap, now time.Time, starveil string) {
 		funds[grank.fundGuild[c]] += f[0]
 	}
 	grank.Unlock()
-	// stock value: open shops of the guild's vendors (copied under econ.mu, priced after)
-	type shopCopy struct {
-		name  string
-		items []vendListing
+	online := map[string]bool{}
+	for _, s := range snaps {
+		online[s.name] = true
 	}
+	// stock value: open shops of the guild's vendors (copied under econ.mu; priced with no lock of ours held)
 	econ.mu.Lock()
-	shops := make([]shopCopy, 0, len(econ.shops))
+	shops := make([]rankShop, 0, len(econ.shops))
 	for _, sh := range econ.shops {
-		shops = append(shops, shopCopy{sh.name, append([]vendListing(nil), sh.items...)})
+		shops = append(shops, rankShop{sh.name, append([]vendListing(nil), sh.items...)})
 	}
 	econ.mu.Unlock()
-	stock := map[string]int{}
+	type openShop struct {
+		guild string
+		value int
+	}
+	open := map[string]openShop{}
 	prices := map[int]int{}
-	for _, sh := range shops {
-		g := charGuild[sh.name]
-		if g == "" {
-			continue
+	price := func(id int) int {
+		p, ok := prices[id]
+		if !ok {
+			p = priceOf(id)
+			prices[id] = p
 		}
-		for _, l := range sh.items {
-			p, ok := prices[l.ItemID]
-			if !ok {
-				p = priceOf(l.ItemID)
-				prices[l.ItemID] = p
-			}
-			stock[g] += p * l.Count
+		return p
+	}
+	for _, sh := range shops {
+		if g := charGuild[sh.name]; g != "" {
+			open[sh.name] = openShop{g, shopWorth(sh.items, price)}
 		}
 	}
+	// a vendor's shop counts for its guild; an offline vendor's last known value counts for a day
+	stock := map[string]int{}
+	grank.Lock()
+	for name, o := range open {
+		stock[o.guild] += o.value
+		grank.shops[name] = shopMemo{Guild: o.guild, Value: o.value, Seen: nowU}
+	}
+	for name, m := range grank.shops {
+		if _, ok := open[name]; ok {
+			continue
+		}
+		if online[name] || nowU-m.Seen >= int64(wealthKeep/time.Second) {
+			delete(grank.shops, name) // online with no open shop, or too old
+			continue
+		}
+		stock[m.Guild] += m.Value
+	}
+	grank.Unlock()
 	// members' levels and leaderboard places from the level book (offline characters included)
 	levelBook.Lock()
 	es := make([]lvEntry, 0, len(levelBook.m))
@@ -283,6 +367,10 @@ type guildRankFile struct {
 	History   map[string][]*guildRankRow `json:"history"`
 	HistAt    time.Time                  `json:"hist_at"`
 	Relations []*guildRelation           `json:"relations"`
+	Funds     map[string][2]int          `json:"funds,omitempty"`
+	FundGuild map[string]string          `json:"fund_guild,omitempty"`
+	OwnerRecs map[string]ownerRec        `json:"owner_recs,omitempty"`
+	ShopMemo  map[string]shopMemo        `json:"shop_memo,omitempty"`
 }
 
 func guildRankPath() string { return filepath.Join(*dataDir, "guild_rank.json") }
@@ -298,6 +386,19 @@ func guildRankLoad() {
 			grank.hist[id] = h
 		}
 		grank.histAt = f.HistAt
+		// purses and shop owners survive a restart: without them every guild reads 0 until its members are back
+		for c, v := range f.Funds {
+			grank.funds[c] = v
+		}
+		for c, g := range f.FundGuild {
+			grank.fundGuild[c] = g
+		}
+		for c, r := range f.OwnerRecs {
+			grank.owner[c] = r
+		}
+		for c, m := range f.ShopMemo {
+			grank.shops[c] = m
+		}
 	}
 	grank.Unlock()
 	if ok {
@@ -316,7 +417,8 @@ func guildRankSave() {
 		grank.Unlock()
 		return
 	}
-	f := guildRankFile{Saved: time.Now(), History: grank.hist, HistAt: grank.histAt}
+	f := guildRankFile{Saved: time.Now(), History: grank.hist, HistAt: grank.histAt, Funds: grank.funds,
+		FundGuild: grank.fundGuild, OwnerRecs: grank.owner, ShopMemo: grank.shops}
 	grank.dirty = false
 	grel.Lock()
 	for _, r := range grel.m {

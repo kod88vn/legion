@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/binary"
+	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -379,5 +382,250 @@ func TestGuildChatJobs(t *testing.T) {
 	chatJobsPolled(time.Now()) // an agent is polling: the kick line waits, the expel waits for its deadline
 	if w, _ := dutyChatKick(l, "MemberY", "bye", "short days"); w < 40 {
 		t.Fatalf("kick with an agent: expel waits past the job deadline, got %d", w)
+	}
+}
+
+// guild ledger (P9, 2026-11-15): wealth must not depend on who is online this round, and directions must persist
+func TestRankRoundCountsVendorsAndForgetsLeavers(t *testing.T) {
+	econ.mu.Lock()
+	saveS := econ.shops
+	econ.shops = []shopRef{{name: "Vendor A", items: []vendListing{{ItemID: 501, Count: 3}}}}
+	econ.mu.Unlock()
+	grank.Lock()
+	saveO, saveM, saveC := grank.owner, grank.shops, grank.cur
+	grank.owner, grank.shops = map[string]ownerRec{}, map[string]shopMemo{}
+	grank.Unlock()
+	defer func() {
+		econ.mu.Lock()
+		econ.shops = saveS
+		econ.mu.Unlock()
+		grank.Lock()
+		grank.owner, grank.shops, grank.cur = saveO, saveM, saveC
+		grank.Unlock()
+	}()
+	want := priceOf(501) * 3
+	if want <= 0 {
+		t.Fatal("no price for the test item")
+	}
+	stockOf := func() int {
+		grank.Lock()
+		defer grank.Unlock()
+		if r := grank.cur["guild01"]; r != nil {
+			return r.Stock
+		}
+		return -1
+	}
+	vendor := func(g string) *dutySnap { return &dutySnap{name: "Vendor A", guild: g, vendor: true} }
+	t0 := time.Now()
+	// the vendor is online in guild01: its shop counts
+	guildRankRound([]*dutySnap{vendor("guild01")}, t0, "")
+	if got := stockOf(); got != want {
+		t.Fatalf("online vendor: stock %d, want %d", got, want)
+	}
+	// its guild name reads empty for a moment (login lag): inside the grace the shop still counts
+	guildRankRound([]*dutySnap{vendor("")}, t0.Add(time.Minute), "")
+	if got := stockOf(); got != want {
+		t.Fatalf("login lag: stock %d, want %d", got, want)
+	}
+	// still with no guild after the grace: it left, the shop is no longer guild01's
+	guildRankRound([]*dutySnap{vendor("")}, t0.Add(10*time.Minute), "")
+	if got := stockOf(); got != 0 {
+		t.Fatalf("left guild, stock %d, want 0", got)
+	}
+}
+
+func TestRankRoundKeepsOfflineVendorShop(t *testing.T) {
+	econ.mu.Lock()
+	saveS := econ.shops
+	econ.shops = []shopRef{{name: "Vendor A", items: []vendListing{{ItemID: 501, Count: 3}}}}
+	econ.mu.Unlock()
+	grank.Lock()
+	saveO, saveM, saveC := grank.owner, grank.shops, grank.cur
+	grank.owner, grank.shops = map[string]ownerRec{}, map[string]shopMemo{}
+	grank.Unlock()
+	defer func() {
+		econ.mu.Lock()
+		econ.shops = saveS
+		econ.mu.Unlock()
+		grank.Lock()
+		grank.owner, grank.shops, grank.cur = saveO, saveM, saveC
+		grank.Unlock()
+	}()
+	want := priceOf(501) * 3
+	stockOf := func() int {
+		grank.Lock()
+		defer grank.Unlock()
+		if r := grank.cur["guild01"]; r != nil {
+			return r.Stock
+		}
+		return -1
+	}
+	other := &dutySnap{name: "Other"}
+	t0 := time.Now()
+	guildRankRound([]*dutySnap{{name: "Vendor A", guild: "guild01", vendor: true}}, t0, "")
+	// the vendor goes offline: its last shop value keeps counting for its guild for a day
+	econ.mu.Lock()
+	econ.shops = nil
+	econ.mu.Unlock()
+	guildRankRound([]*dutySnap{other}, t0.Add(time.Hour), "")
+	if got := stockOf(); got != want {
+		t.Fatalf("offline vendor: stock %d, want %d", got, want)
+	}
+	guildRankRound([]*dutySnap{other}, t0.Add(25*time.Hour), "")
+	if got := stockOf(); got != 0 {
+		t.Fatalf("offline a day: stock %d, want 0", got)
+	}
+}
+
+func TestRankRoundKeepsWealthWithoutFeed(t *testing.T) {
+	grank.Lock()
+	saved := grank.cur
+	grank.cur = map[string]*guildRankRow{"guild01": {Guild: "guild01", Wealth: 160514}}
+	grank.Unlock()
+	defer func() { grank.Lock(); grank.cur = saved; grank.Unlock() }()
+	guildRankRound(nil, time.Now(), "")
+	grank.Lock()
+	defer grank.Unlock()
+	if r := grank.cur["guild01"]; r == nil || r.Wealth != 160514 || len(grank.cur) != 1 {
+		t.Fatalf("empty feed replaced the last round: %+v", grank.cur)
+	}
+}
+
+func TestRankFundsSurviveRestart(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	defer func() { *dataDir = old }()
+	grank.Lock()
+	saveF, saveG, saveO := grank.funds, grank.fundGuild, grank.owner
+	grank.funds, grank.fundGuild, grank.owner = map[string][2]int{"Leader": {7037, int(time.Now().Unix())}},
+		map[string]string{"Leader": "guild01"}, map[string]ownerRec{"Vendor A": {Guild: "guild01", Seen: time.Now().Unix()}}
+	grank.loaded, grank.dirty = true, true
+	grank.Unlock()
+	guildRankSave()
+	grank.Lock()
+	grank.funds, grank.fundGuild, grank.owner = map[string][2]int{}, map[string]string{}, map[string]ownerRec{}
+	grank.loaded = false
+	grank.Unlock()
+	guildRankLoad()
+	grank.Lock()
+	defer grank.Unlock()
+	ok := grank.funds["Leader"][0] == 7037 && grank.fundGuild["Leader"] == "guild01" && grank.owner["Vendor A"].Guild == "guild01"
+	grank.funds, grank.fundGuild, grank.owner = saveF, saveG, saveO
+	if !ok {
+		t.Fatalf("purses or owners lost on restart: %v %v %v", grank.funds, grank.fundGuild, grank.owner)
+	}
+}
+
+func TestLeaderDirectionsStackAndPersist(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	defer func() { *dataDir = old }()
+	gduty.Lock()
+	saveD := gduty.dirs["guild02"]
+	gduty.dirs["guild02"], gduty.dirty, gduty.loaded = nil, true, true
+	gduty.Unlock()
+	defer func() { gduty.Lock(); gduty.dirs["guild02"] = saveD; gduty.Unlock() }()
+	for _, body := range []string{`{"kind":"supply","min_lv":10,"max_lv":60,"hours":4}`, `{"kind":"wealth","hours":4}`} {
+		rec := httptest.NewRecorder()
+		guildDirAPI(rec, httptest.NewRequest("POST", "/api/guild-direction/guild02", strings.NewReader(body)))
+		if rec.Code != 200 {
+			t.Fatalf("post %s: %d %s", body, rec.Code, rec.Body.String())
+		}
+	}
+	if act := activeDirsLocked("guild02", time.Now()); len(act) != 2 {
+		t.Fatalf("two leader directions in force, got %d", len(act))
+	}
+	dutySave()
+	gduty.Lock()
+	gduty.dirs["guild02"] = nil
+	gduty.loaded = false
+	gduty.Unlock()
+	dutyLoad()
+	gduty.Lock()
+	n := len(gduty.dirs["guild02"])
+	gduty.dirs["guild02"] = saveD
+	gduty.Unlock()
+	if n != 2 {
+		t.Fatalf("directions after restart: %d, want 2", n)
+	}
+}
+
+func TestClearAutopilotDirectionFreesSlot(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	defer func() { *dataDir = old }()
+	now := time.Now()
+	gduty.Lock()
+	saveA, saveD := gduty.auto["guild09"], gduty.dismissed
+	gduty.auto["guild09"] = autopilotDirs("guild09", []int{5001}, false, nil, now)
+	gduty.dismissed = map[string]time.Time{}
+	gduty.loaded, gduty.dirty = true, true
+	gduty.Unlock()
+	defer func() { gduty.Lock(); gduty.auto["guild09"], gduty.dismissed = saveA, saveD; gduty.Unlock() }()
+	id := "guild09-auto-stock-5001"
+	if act := activeDirsLocked("guild09", now); len(act) < 1 || act[0].ID != id {
+		t.Fatalf("autopilot stock not in force before the clear: %+v", act)
+	}
+	// an id this guild never had is refused, and records nothing
+	rec := httptest.NewRecorder()
+	guildDirAPI(rec, httptest.NewRequest("POST", "/api/guild-direction/guild09", strings.NewReader(`{"remove":"guild09-bogus"}`)))
+	if rec.Code != 404 {
+		t.Fatalf("unknown id: %d, want 404", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	guildDirAPI(rec, httptest.NewRequest("POST", "/api/guild-direction/guild09", strings.NewReader(`{"remove":"`+id+`"}`)))
+	if rec.Code != 200 {
+		t.Fatalf("remove: %d %s", rec.Code, rec.Body.String())
+	}
+	for _, d := range activeDirsLocked("guild09", now) {
+		if d.ID == id {
+			t.Fatal("cleared autopilot direction still in force")
+		}
+	}
+	// the dismissal survives a restart
+	dutySave()
+	gduty.Lock()
+	gduty.dismissed = map[string]time.Time{}
+	gduty.loaded = false
+	gduty.Unlock()
+	dutyLoad()
+	for _, d := range activeDirsLocked("guild09", now) {
+		if d.ID == id {
+			t.Fatal("dismissal lost on restart")
+		}
+	}
+}
+
+func TestGuildLeaderSayOfflineLeader(t *testing.T) {
+	l := &Bot{P: &Persona{Chars: []CharSpec{{Name: "suncat82"}}}}
+	rec := httptest.NewRecorder()
+	guildLeaderSay(rec, httptest.NewRequest("POST", "/api/guild-leaders/guild08/say", strings.NewReader(`{"text":"hi all"}`)), l)
+	if rec.Code != 409 {
+		t.Fatalf("offline leader: %d %s, want 409", rec.Code, rec.Body.String())
+	}
+}
+
+func TestDutyLoadKeepsUnparsedFiles(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	defer func() { *dataDir = old }()
+	unparsed := func() int {
+		ents, _ := os.ReadDir(*dataDir)
+		n := 0
+		for _, e := range ents {
+			if strings.HasPrefix(e.Name(), "guild_duty.json.unparsed-") {
+				n++
+			}
+		}
+		return n
+	}
+	for i := 0; i < 2; i++ { // two bad starts: both kept, the first is not replaced
+		if err := os.WriteFile(dutyFilePath(), []byte("{not json"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		dutyLoad()
+	}
+	if n := unparsed(); n != 2 {
+		t.Fatalf("unparseable duty files kept: %d, want 2", n)
 	}
 }
