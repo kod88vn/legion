@@ -621,9 +621,10 @@ func goalTick(bots []*Bot, last map[*Bot]time.Time, now time.Time) {
 		}
 		done++
 		b.mu.Lock()
-		// pinned bots are skipped - except a human party's members (pinned online by humanparty.go): Ayla's friends got
+		// pinned bots are skipped - except a human or engine party's members (pinned online by humanparty.go and
+		// engineparty.go): Ayla's friends got
 		// no goals at all and every turn read "nobody needs a map" (live 2026-11-14 19:25)
-		if !b.Online || b.BaseLv <= 0 || !b.invReady() || b.charRole() == "vendor" || (b.pin != nil && !inHumanParty(b)) {
+		if !b.Online || b.BaseLv <= 0 || !b.invReady() || b.charRole() == "vendor" || goalPinSkips(b) {
 			b.mu.Unlock()
 			continue
 		}

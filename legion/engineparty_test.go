@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"strings"
 	"testing"
+	"time"
 )
 
 // engineMk: a bot whose persona has the given characters (the first one is its main).
@@ -144,5 +145,61 @@ func TestSeedLeavesAccountOutsideBotRange(t *testing.T) {
 	}
 	if !strings.Contains(sql, "'lg0001'") {
 		t.Fatal("the bot account is not seeded")
+	}
+}
+
+// TestEngineMembersGetGoals: the API path (startEnginePartyFor) pins the members, and goalTick must still give them
+// goals: their pin is their party's, like a human party's; a pinned bot in no party stays skipped.
+func TestEngineMembersGetGoals(t *testing.T) {
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaGoal" })
+	a, b, c := engineMk(41, "AylaGoal"), engineMk(42, "GoalZen"), engineMk(43, "GoalVex")
+	p := startEnginePartyFor("AylaGoal", []*Bot{a, b, c}, []string{"AylaGoal", "GoalZen", "GoalVex"}, 0)
+	engineClean(t, p)
+	if p == nil {
+		t.Fatal("engine party not formed through startEnginePartyFor")
+	}
+	for _, m := range []*Bot{a, b, c} {
+		if goalPinSkips(m) {
+			t.Errorf("engine party member %s is skipped by goalTick", m.charName())
+		}
+	}
+	loner := engineMk(44, "GoalLoner")
+	loner.pin = &Pin{Char: "GoalLoner"}
+	if !goalPinSkips(loner) {
+		t.Error("a pinned bot in no party must still be skipped")
+	}
+}
+
+// TestSyncBotPartyHandsLeadToEngineLeader: the in-game party was founded by a member (Zen.fox), so the engine's
+// leader (Ayla) does not re-found it: the member is asked to hand the lead over (acted is stamped for it), and Ayla is
+// not sent to leave or re-create the party.
+func TestSyncBotPartyHandsLeadToEngineLeader(t *testing.T) {
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "" })
+	lead, zen := engineMk(51, "HandAyla"), engineMk(52, "HandZen")
+	p := &Party{Name: "Ayla pt", Leader: lead, Members: []*Bot{lead, zen}, Formed: time.Now().Add(-time.Hour), Engine: true}
+	parties.Lock()
+	parties.byName[p.Name] = p
+	parties.ofBot[lead], parties.ofBot[zen] = p, p
+	parties.Unlock()
+	engineClean(t, p)
+	now := time.Now()
+	setView := func(b *Bot, pid uint32, pname, leader string, aid uint32) {
+		b.mu.Lock()
+		b.Online, b.MapName = true, "pay_dun03"
+		b.PartyID, b.PartyName, b.partyLeader, b.aid = pid, pname, leader, aid
+		b.mu.Unlock()
+	}
+	setView(lead, 2, "Ayla pt", "HandZen", 2000000)  // in the party, led by Zen.fox
+	setView(zen, 2, "Ayla pt", "HandZen", 2100003)  // the in-game leader
+	st := &partySync{invited: map[*Bot]time.Time{}, acted: map[*Bot]time.Time{}}
+	syncBotParty(p, st, nil, now)
+	if st.acted[zen].IsZero() {
+		t.Fatal("the in-game leader was not asked to hand the lead to Ayla")
+	}
+	if !st.acted[lead].IsZero() {
+		t.Fatal("Ayla left or re-founded the party while the hand-over was pending")
+	}
+	if !st.createAt.IsZero() || lead.PartyName != "Ayla pt" {
+		t.Fatalf("Ayla re-founded the party: createAt=%v name=%q", st.createAt, lead.PartyName)
 	}
 }

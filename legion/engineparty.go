@@ -14,6 +14,18 @@ import (
 	"time"
 )
 
+// inEngineParty: the bot is in a party that runs on the engine (AY24). Its members are pinned like a human party's and
+// get farm goals the same way (lfg.go goalTick).
+func inEngineParty(b *Bot) bool {
+	p := partyOf(b)
+	return p != nil && p.Engine
+}
+
+// goalPinSkips: a pinned bot gets no goal of its own, except a member of a human-led or engine party (pinned by it).
+func goalPinSkips(b *Bot) bool {
+	return b.pin != nil && !inHumanParty(b) && !inEngineParty(b)
+}
+
 // enginePartyOn: the human's party runs on the engine (tuning engine_parties).
 func enginePartyOn(human string) bool {
 	return human != "" && nameSet(tune().EngineParties)[strings.ToLower(human)]
