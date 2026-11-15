@@ -2590,13 +2590,21 @@ sub pack_tick {
 	$pk{prLastNear} = time if defined $prD && $prD <= 15;
 	my $prComing = !defined $prD && time - ($pk{prLastNear} || 0) < 20;
 	($act) = ('wait') if $prComing && ($act eq 'goto' || $act eq 'ok');
+	# the priest went AHEAD onto the next map of her route (or her destination): she crosses to join it at once, with
+	# the party (live 01:26: the whole party waited on pay_arche "for Zendancer84" who was already in pay_dun00)
+	my $prAhead = $prRow && !defined $prD && $prRow->[2] ne '' && ($prRow->[2] eq $nm || $prRow->[2] eq $dm || $prRow->[2] eq (status_dest() || '-') || ($pk{lastNm} || '-') eq $prRow->[2]) ? 1 : 0;
+	$pk{lastNm} = $nm if $nm ne ''; # the next map of her route, kept while a wait cleared the route
+	if ($prAhead) {
+		$act = 'ok';
+		if (($pk{aheadSaid} || '') ne $prRow->[2]) { $pk{aheadSaid} = $prRow->[2]; pk_say("$prRow->[0] is in $prRow->[2] already, going in, follow me"); message "[partylead] AY22: $prRow->[0] is ahead on $prRow->[2] - joining it\n", 'system' }
+	}
 	# (1) before a portal into a dungeon / a dangerous map she stops on the near side until the priest is within 6
-	if ($act eq 'ok' && $nm ne '' && $nm ne $here && (is_dungeon($nm) || cross_danger($nm)) && !(defined $prD && $prD <= 6)) {
+	if (!$prAhead && $act eq 'ok' && $nm ne '' && $nm ne $here && (is_dungeon($nm) || cross_danger($nm)) && !(defined $prD && $prD <= 6)) {
 		my $pp = route_portal($here);
 		if (!$pp || blockDistance($char->{pos_to}, $pp) <= 10) { $act = 'wait' }
 	}
 	# (3) after a retreat to the Kafra: back in only with the priest within 6, and not for 60 s
-	if ($act eq 'ok' && $nm ne '' && (is_dungeon($nm) || cross_danger($nm)) && time - ($pk{retreatAt} || 0) < 60 && !(defined $prD && $prD <= 6)) { $act = 'wait' }
+	if (!$prAhead && $act eq 'ok' && $nm ne '' && (is_dungeon($nm) || cross_danger($nm)) && time - ($pk{retreatAt} || 0) < 60 && !(defined $prD && $prD <= 6)) { $act = 'wait' }
 	if ($act eq 'ok' && is_dungeon($here)) {
 		my @live = grep { !friend_dead($_->[0]) } @fr;
 		my $near20 = grep { $_->[2] eq $here && defined $_->[3] && $_->[3] <= 20 } @live;
