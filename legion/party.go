@@ -847,7 +847,9 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 				worst = &ss
 			}
 		}
-		if worst != nil && now.After(b.skillReady) {
+		// healerstick.go: heals on a member over 50% HP no longer starve the leader's Blessing / Increase AGI (live
+		// 2026-11-15: on gef_fild10 someone was always under 80%, every skill slot went to Heal, Ayla's buffs ran out)
+		if worst != nil && now.After(b.skillReady) && !(worst.HPFrac >= 0.5 && b.leaderBuffDue(p, members, now)) {
 			if si := b.skills[alHeal]; si != nil && si.Lv > 0 && b.SP < si.SP {
 				b.drinkSP(now) // someone needs healing and SP is short: SP potion
 			}

@@ -164,10 +164,45 @@ func (b *Bot) buffConfirm(skill, lv int, dst uint32, now time.Time) {
 		b.buffAt[k] = now.Add(kyrieRenew)
 	} else {
 		b.buffAt[k] = b.buffRenewAt(lv, now)
+		if isPartyLeaderName(partyOf(b), e.Name) {
+			b.buffAt[k] = b.buffAt[k].Add(-leaderBuffLead) // the leader is never without them: renew earlier
+		}
 	}
 	buffTries.Lock()
 	if t := buffTries.m[b]; t != nil {
 		delete(t, k)
 	}
 	buffTries.Unlock()
+}
+
+// leaderBuffLead: the leader's Blessing / Increase AGI are renewed this much earlier than the others' (~40 s before
+// they run out instead of ~20 s), so a fight or a walk in between never lets them lapse.
+const leaderBuffLead = 20 * time.Second
+
+// leaderBuffDue (b.mu held, party healer): the leader is in reach (live position, range + wall line) and her Blessing
+// or Increase AGI is due and affordable - the heal loop then lets the buff go first unless someone is under 50% HP.
+func (b *Bot) leaderBuffDue(p *Party, members []pubState, now time.Time) bool {
+	if !healerStickOn() || p == nil {
+		return false
+	}
+	for _, s := range members {
+		if !s.Online || s.Map != b.MapName || s.HPFrac <= 0 || s.Name == b.charName() || !isPartyLeaderName(p, s.Name) {
+			continue
+		}
+		lx, ly := livePosOf(s)
+		if !healReachable(maps[b.MapName], b.X, b.Y, lx, ly, healRange) {
+			return false
+		}
+		for _, id := range []int{alBlessing, alIncAgi} {
+			si := b.skills[id]
+			if si == nil || si.Lv == 0 || now.Before(b.buffAt[fmt.Sprintf("%d:%s", id, s.Name)]) {
+				continue
+			}
+			if b.buffOK(si, now) {
+				return true
+			}
+		}
+		return false
+	}
+	return false
 }

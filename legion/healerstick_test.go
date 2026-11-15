@@ -112,3 +112,27 @@ func TestHumanMemberTargetFollowsHerOut(t *testing.T) {
 		t.Fatalf("she left the meeting town: her map, got %q", got)
 	}
 }
+
+// live 2026-11-15: with a member always under 80% HP every skill slot went to Heal and Ayla's buffs lapsed.
+func TestLeaderBuffDueBeatsLightHeals(t *testing.T) {
+	now := time.Now()
+	b := pbPriest("zz_hslb", 900)
+	p := &Party{Name: "zz_hslb pt", Human: "zz_ayla3"}
+	members := []pubState{
+		{Name: "zz_hslb", Map: "pay_dun01", X: 50, Y: 50, Online: true, HPFrac: 1, Support: true, Back: true},
+		{Name: "zz_ayla3", Map: "pay_dun01", X: 54, Y: 50, Online: true, HPFrac: 0.7},
+	}
+	if !b.leaderBuffDue(p, members, now) {
+		t.Fatal("Blessing on the leader is due and affordable")
+	}
+	b.buffAt[fmt.Sprintf("%d:zz_ayla3", alBlessing)] = now.Add(time.Minute)
+	b.buffAt[fmt.Sprintf("%d:zz_ayla3", alIncAgi)] = now.Add(time.Minute)
+	if b.leaderBuffDue(p, members, now) {
+		t.Fatal("both buffs running: not due")
+	}
+	members[1].X = 70
+	delete(b.buffAt, fmt.Sprintf("%d:zz_ayla3", alBlessing))
+	if b.leaderBuffDue(p, members, now) {
+		t.Fatal("out of reach: not due")
+	}
+}
