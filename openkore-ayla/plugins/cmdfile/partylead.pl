@@ -1970,6 +1970,132 @@ use constant STICK_DEADLY => 0.20;
 my $stickLowAt = 0; # since when HP reads under STICK_DEADLY
 my ($stickHelpAt, $stickRunAt, $stickWingAt, $stickBossAt, $stickHp, $stickHitAt, $stickDeadly) = (0, 0, 0, 0, 1, 0, undef);
 our $stickWinged; # {town, back, at}: her last announced wing (the town-run line says the same)
+
+# ---- PT04 as a hard invariant (owner 2026-11-14: "Ayla is still wandering around without her party"): with friends
+# online she never travels or farms with no friend within 20 cells. Leaving town for a hunt: only with the priest
+# (priest offline: 2 friends) beside her. Travelling: the nearest friend more than 20 cells behind -> she stops and waits
+# ("waiting for u at <map> <x,y>", once a minute; no sitting but OpenKore's own HP/SP sitAuto). On the farm map she stays
+# within 20 cells of the priest (else of a friend) and walks back to them. After 3 min of waiting she goes TO the priest
+# ("coming to u, <name>") instead of going on alone. Crossing a map with aggressive packs near / above the party's
+# gear-rated level (%CROSS_DANGER; live 2026-11-14: alone on gef_fild10, 7-13 orcs, winged out at 4%) waits at the
+# last safe map until the priest and one more friend are within 10 cells, says "crossing <map> together, stay close"
+# and on that map keeps the priest within 10 cells. 2 wings on it within 30 min -> the destination behind it is
+# dropped for 2 h and her own choice picks the next fitting map. No friend online: solo (fit_tick picks a field).
+# conf partylead_pack 0 turns it off.
+our %CROSS_DANGER = (gef_fild10 => 60); # map -> top of its monster band (orc packs, aggressive)
+# ---- pack begin (pure: tested offline by tests/ayla/pack_test.pl)
+# $s: {here, friends => [[name, class, map, dist or undef]], farm, leaving, cross ('' | 'pre' | 'on'), waited (s)}
+# returns (action, anchor row): solo | ok | wait | back (walk to the anchor on this map) | goto (go to the anchor)
+sub pack_decide {
+	my $s = shift;
+	my @f = @{$s->{friends} || []};
+	return ('solo', undef) unless @f;
+	my $here = $s->{here};
+	my $cross = $s->{cross} || '';
+	my $R = $cross ? 10 : 20;
+	my @near = grep { $_->[2] eq $here && defined $_->[3] && $_->[3] <= $R } @f;
+	my $isPr = sub { ($_[0][1] || '') =~ /priest|acolyte/i };
+	my $sameD = sub { my $r = shift; return $r->[2] eq $here && defined $r->[3] ? $r->[3] : 9999 };
+	my ($pr) = sort { $sameD->($a) <=> $sameD->($b) } grep { $isPr->($_) } @f;
+	my $prNear = $pr && grep({ $_->[0] eq $pr->[0] } @near) ? 1 : 0;
+	my $two = @f >= 2 ? 2 : 1;
+	my $ok;
+	if ($cross eq 'pre') { $ok = $pr ? ($prNear && @near >= $two) : @near >= $two }
+	elsif ($cross eq 'on') { $ok = $pr ? $prNear : @near >= 1 }
+	elsif ($s->{leaving}) { $ok = $pr ? $prNear : @near >= $two }
+	elsif ($s->{farm} && $pr && $pr->[2] eq $here) { $ok = $prNear }
+	else { $ok = @near >= 1 }
+	my ($nearest) = sort { $sameD->($a) <=> $sameD->($b) } @f;
+	my $an = $pr || $nearest;
+	return ('ok', $an) if $ok;
+	return ('back', $an) if $s->{farm} && $an->[2] eq $here && defined $an->[3];
+	return ('goto', $an) if ($s->{waited} || 0) >= 180;
+	return ('wait', $an);
+}
+# ---- pack end
+my %pk = (waitAt => 0, sayAt => 0, logAt => 0, goName => '', routeAt => 0, crossSaid => '');
+my @crossWings; # [time, map]
+sub cross_danger { my $m = shift || ''; return $CROSS_DANGER{$m} && transit_fit_lv() < $CROSS_DANGER{$m} + 10 ? 1 : 0 }
+# her current map route: (destination map, the next map on the way)
+sub route_maps {
+	my $ri = AI::findAction('route');
+	return ('', '') unless defined $ri && $ri ne '';
+	my $ra = AI::args($ri);
+	return ('', '') unless ref $ra;
+	my $dm = (ref $ra->{dest} eq 'HASH' && $ra->{dest}{map}) ? $ra->{dest}{map} : '';
+	$dm = eval { $dm->baseName } || '' if ref $dm;
+	my $nm = (ref $ra->{mapSolution} eq 'ARRAY' && @{$ra->{mapSolution}} >= 2) ? ($ra->{mapSolution}[1]{map} || '') : '';
+	$nm = $dm if $nm eq '' && $dm ne '' && $field && $dm ne $field->baseName;
+	return ($dm, $nm);
+}
+sub cross_wing {
+	my ($m, $dest) = @_;
+	@crossWings = grep { time - $_->[0] < 1800 && $_->[1] eq $m } @crossWings;
+	push @crossWings, [time, $m];
+	return unless @crossWings >= 2 && $dest ne '' && $dest ne $m && !is_townmap($dest);
+	@crossWings = ();
+	drop_map($dest, "crossing $m failed twice (2 wings within 30 min); the next fitting map that does not need it");
+}
+sub pack_tick {
+	return 0 if defined $config{partylead_pack} && $config{partylead_pack} eq '0';
+	return 0 if $rally || $depart || $holding || $collect || $fetchMap ne '' || $char->{dead} || !$char->{pos_to};
+	return 0 if AI::inQueue('NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal', 'teleport') || (defined &aylagear::busy && aylagear::busy());
+	my $here = $field->baseName;
+	my @fr;
+	foreach my $u (values %{$char->{party}{users} || {}}) {
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		my $m = friend_map($u); $m =~ s/\.gat$//;
+		my ($pos) = $m eq $here ? friend_pos($u, $here) : ();
+		my $a = $apiPos{$u->{name}};
+		push @fr, [$u->{name}, ($a && $a->{cls}) || '', $m, ($pos && defined $pos->{x}) ? blockDistance($char->{pos_to}, $pos) : undef, $pos];
+	}
+	if (!@fr) { ($pk{waitAt}, $pk{goName}) = (0, ''); return 0 } # everyone offline: she may farm solo
+	my ($dm, $nm) = route_maps();
+	my $farm = $huntMap ne '' && $here eq $huntMap ? 1 : 0;
+	my $town = is_townmap($here);
+	my $leaving = $town && $dm ne '' && !is_townmap($dm) ? 1 : 0;
+	return 0 if $town && !$leaving;                   # town errands / shopping / the Kafra regroup
+	return 0 if !$farm && $dm ne '' && is_townmap($dm); # a town run back (the party meets at the Kafra)
+	my $cross = ($dm ne '' && $dm ne $here && cross_danger($here)) ? 'on' : ($nm ne '' && $nm ne $dm && cross_danger($nm)) ? 'pre' : '';
+	my ($act, $an) = pack_decide({here => $here, friends => \@fr, farm => $farm, leaving => $leaving, cross => $cross,
+		waited => $pk{waitAt} ? time - $pk{waitAt} : 0});
+	if ($act eq 'ok' || $act eq 'solo') {
+		if ($cross eq 'pre' && $pk{crossSaid} ne $nm) { $pk{crossSaid} = $nm; psay("crossing $nm together, stay close", 0, 0); message "[partylead] PT04: crossing $nm with the party\n", 'system' }
+		$pk{crossSaid} = '' if $cross eq '' && !cross_danger($here);
+		($pk{waitAt}, $pk{goName}) = (0, '');
+		return 0;
+	}
+	return 0 if AI::inQueue('attack') && scalar(AI::ai_getAggressives()); # she answers what is on her
+	$pk{waitAt} ||= time;
+	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
+	if (time - $pk{logAt} > 20) { $pk{logAt} = time; message "[partylead] PT04: $act - " . ($cross ? "crossing ($cross) needs the priest within 10, " : '') . "anchor $an->[0] on $an->[2]" . (defined $an->[3] ? " $an->[3] cells" : '') . "\n", 'system' }
+	if ($act eq 'back') {
+		if (time - $pk{routeAt} > 4 && $an->[4]) {
+			$pk{routeAt} = time;
+			AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
+			main::ai_route($here, $an->[4]{x}, $an->[4]{y}, distFromGoal => 4, maxRouteTime => 8, noMapRoute => 1, attackOnRoute => 1);
+		}
+		return 1;
+	}
+	if ($act eq 'goto') {
+		my $a = $apiPos{$an->[0]};
+		my ($am, $ax, $ay) = ($an->[2], $an->[4] ? ($an->[4]{x}, $an->[4]{y}) : ($a && time - $a->{at} < 10 && $a->{map} eq $an->[2] ? ($a->{x}, $a->{y}) : (undef, undef)));
+		if ($am ne '') {
+			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; psay("coming to u, $an->[0]", 1, 0) }
+			if (time - $pk{routeAt} > 10 || !AI::inQueue('route', 'move')) {
+				$pk{routeAt} = time;
+				Commands::run('stand') if $char->{sitting};
+				AI::clear('route', 'move');
+				main::ai_route($am, $ax, $ay, distFromGoal => 4, attackOnRoute => route_aor(), ($am eq $here ? (noMapRoute => 1, maxRouteTime => 10) : ()));
+			}
+			return 1;
+		}
+	}
+	# wait: stand where she is (OpenKore's sitAuto still sits her under its HP / SP marks)
+	AI::clear('route', 'move') if AI::inQueue('route', 'move');
+	if (time - $pk{sayAt} >= 60) { $pk{sayAt} = time; psay("waiting for u at $here $cx,$cy", 1, 0) }
+	return 1;
+}
 sub stick_on { return !defined $config{partylead_stick} || $config{partylead_stick} ne '0' }
 # online friends (not on an errand) on her map with a known cell: [name, pos, class]
 sub stick_mates {
@@ -2055,6 +2181,7 @@ sub stick_tick {
 		my $town = $config{saveMap} || 'town';
 		my $back = $homeMap ne '' ? $homeMap : $here;
 		$stickWinged = {town => $town, back => $back, at => time};
+		cross_wing($here, $back) if $CROSS_DANGER{$here};
 		message sprintf("[partylead] PT31: about to die (HP %d/%d = %d%%, under 20%% for %.1f s, %d monsters on her): Butterfly Wing to %s\n", $char->{hp}, $char->{hp_max}, $hpp * 100, time - $stickLowAt, $aggr, $town), 'system';
 		AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto');
 		AI::ai_useTeleport(2); # 2 = the respawn point (Butterfly Wing), never 1 (a random cell)
@@ -2136,6 +2263,8 @@ sub tick {
 	}
 	# PT31: with friends online no random Teleport - fall back to the party, ask for help, Butterfly Wing only when dying
 	return if stick_tick();
+	# PT04 hard invariant: never travel or farm with no friend within 20 cells (crossing gef_fild10: priest within 10)
+	return if pack_tick();
 	# escape rules (main 2026-11-14), solo since PT31 (no friend online): at 6+ monsters or 35% HP; an MVP/boss in sight
 	# always (mon_control teleport flag). The healer branch below only runs with partylead_stick 0.
 	if (!stick_on() || !online_friends()) {
