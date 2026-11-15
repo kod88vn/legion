@@ -22,9 +22,9 @@ Usage: python3 /mnt/g/RO/legion/tools/sentinel.py [--once] [--mute KEY[,KEY...]]
 import collections, json, os, random, re, subprocess, sys, time, urllib.request
 
 API = 'http://127.0.0.1:8090'
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.environ.get('LEGION_DATA') or os.path.join(ROOT, 'legion', 'data')
 LOG = os.path.join(DATA, 'health.log')
-ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'system'))
 try:
     import bugq as BUGQ, common as SYSC, meterlib as METER
