@@ -452,7 +452,8 @@ func guildFundLocal(bots []*Bot, to string, amount int, why string, now time.Tim
 
 // registerHumanGuildLead: /api/human-guild and /api/human-guild/fund (both instances; main merges the core).
 func registerHumanGuildLead(mux *http.ServeMux, bots []*Bot) {
-	registerStarveilOrders(mux) // starveillead.go: /api/human-guild/orders for Ayla's plugin
+	registerStarveilOrders(mux)       // starveillead.go: /api/human-guild/orders for Ayla's plugin
+	registerStarveilEngine(mux, bots) // starveillead.go: /api/human-guild/engine (core, ayla_engine_on)
 	mux.HandleFunc("/api/human-guild/fund", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "POST {\"to\",\"amount\",\"why\"}", 405)
