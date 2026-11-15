@@ -2546,8 +2546,23 @@ sub pack_tick {
 		nearFor => $pk{nearSince} ? time - $pk{nearSince} : 0});
 	# a dungeon map with a member more than 20 cells behind on it: she waits for it before advancing (live 00:26
 	# pay_dun01: she pushed on with the priest, the others 95-140 cells back)
-	if ($act eq 'ok' && is_dungeon($here) && grep({ $_->[2] eq $here && defined $_->[3] && $_->[3] > 20 } @fr)) {
-		$act = 'wait';
+	# (live 00:51: "waiting for Zendancer84 ... 3 cells" with the priest and three friends next to her - the wait was for
+	# xXRinfangXx 124 cells back): with the priest within 6 and at least half the online party within 20 she goes on;
+	# otherwise only for a member on this map that is coming toward her (distance shrinking), 30 s at most, named
+	if ($act eq 'ok' && is_dungeon($here)) {
+		my @live = grep { !friend_dead($_->[0]) } @fr;
+		my $near20 = grep { $_->[2] eq $here && defined $_->[3] && $_->[3] <= 20 } @live;
+		my $prNear = defined $prD && $prD <= 6;
+		foreach my $f (@live) { # distance trend per member on this map
+			next unless $f->[2] eq $here && defined $f->[3];
+			my $t = $pk{dtr}{$f->[0]} ||= {best => $f->[3], at => time};
+			if ($f->[3] < $t->{best}) { ($t->{best}, $t->{at}) = ($f->[3], time) } elsif ($f->[3] > $t->{best} + 3) { $t->{best} = $f->[3] }
+		}
+		my ($slow) = grep { $_->[2] eq $here && defined $_->[3] && $_->[3] > 20 && time - ($pk{dtr}{$_->[0]}{at} || 0) < 10 } @live;
+		if (!($prNear && $near20 * 2 >= @live) && $slow) {
+			$pk{dunWaitAt} ||= time;
+			if (time - $pk{dunWaitAt} < 30) { ($act, $an) = ('wait', $slow) } # the intent names the member waited for
+		} else { $pk{dunWaitAt} = 0 }
 	}
 	if ($act eq 'ok' && $pk{goName} ne '') {
 		message "[partylead] AY22: with $pk{goName} again (within 6 cells for 3 s) - going on together\n", 'system';
