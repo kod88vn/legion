@@ -1697,6 +1697,10 @@ our %farmedAt;   # map -> when a plan left it (drained / crowded / ...): not pic
 # kept in logs/ayla_farmed.json: a reload doesn't send her back to a drained map
 # with her kills on the plan map (times, last 15 min) and when she arrived on it: the drained-rate window survives reloads
 our (@planKillTimes, %planArr); # %planArr: {map, at}
+our $killTrackSince = time; # kill counting runs since this load: no drained verdict before 10 min of it
+our $pk_fsAt = 0;
+our $pk_drainLog = 0;
+our $planKillAt = 0; # her last kill on the plan map
 sub farmed_save {
 	@planKillTimes = grep { time - $_ < 900 } @planKillTimes;
 	eval { open(my $f, '>', 'logs/ayla_farmed.json') or die; print $f JSON::PP->new->canonical->encode({
@@ -1875,7 +1879,7 @@ eval {
 };
 sub gm_kill {
 	$gmKills++;
-	if ($field && $field->baseName eq (plan_map() || $partylead::huntMap || '-')) { $partylead::planKillAt = time; push @partylead::planKillTimes, time; partylead::farmed_save() }
+	# (the drained counter comes from her exp gains: plan_track)
 }
 sub gm_died {
 	$gmDeaths++; push @planDeaths, [time, $field ? $field->baseName : '']; @planDeaths = grep { time - $_->[0] < 1800 } @planDeaths;
@@ -2208,15 +2212,16 @@ sub kill_sample {
 	push @killSamples, [time, $gmKills, $here];
 	shift @killSamples while @killSamples > 120;
 }
-our $planKillAt = 0; # her last kill on the plan map
 sub map_drained {
 	my $c = shift;
 	# a kill rate: 10+ min on the plan map and under 15 kills by her in the last 10 min, while she sweeps there with the
 	# priest (not waiting / holding) -> drained (live: ~2 kills per 5 min on pay_dun02 kept resetting an 8-min timer)
 	if ($field && $field->baseName eq $c) {
 		if (($planArr{map} || '') ne $c) { %planArr = (map => $c, at => time); farmed_save() }
-		if (!$holding && !$rally && !pk_waiting() && priest_dist() <= 20 && time - $planArr{at} >= 600) {
-			my $n = grep { time - $_ < 600 } @planKillTimes;
+		my $n = grep { time - $_ < 600 } @planKillTimes;
+		if (time - ($pk_drainLog || 0) >= 300) { $pk_drainLog = time; message "[partylead] drained check: $n kills in 10 min on $c\n", 'system' }
+		my $since = $planArr{at} > $killTrackSince ? $planArr{at} : $killTrackSince;
+		if (!$holding && !$rally && !pk_waiting() && priest_dist() <= 20 && time - $since >= 600) {
 			return sprintf("map drained: %d kills in the last 10 min (under 15)", $n) if $n < 15;
 		}
 	}
@@ -2255,6 +2260,10 @@ sub plan_track {
 	my $here = $field->baseName;
 	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
 	my $gain = $ptExp >= 0 && $exp != $ptExp;
+	if ($gain && $exp > $ptExp && ($here eq (plan_map() || $huntMap || '-'))) { # a kill she or the party made (shared exp)
+		push @planKillTimes, time; $planKillAt = time;
+		farmed_save() if time - ($pk_fsAt || 0) > 60 && ($pk_fsAt = time);
+	}
 	$ptExp = $exp;
 	return if !$gain || is_townmap($here);
 	my $hunt = ($config{lockMap} || '') ne '' ? $config{lockMap} : $homeMap;
