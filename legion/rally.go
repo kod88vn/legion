@@ -291,7 +291,7 @@ func (p *Party) rallyMembers(now time.Time) []rallyMember {
 	}
 	parties.Unlock()
 	for _, m := range p.Members {
-		if s, ok := peek(m.P.Name); ok && s.Online && !s.Errand && s.Map != "" && !ex[s.Name] { // errand.go: not waited for
+		if s, ok := peek(m.P.Name); ok && s.Online && !s.Errand && s.Map != "" && !ex[s.Name] && !leftAloneOnTrip(p, s) { // errand.go: not waited for; AY23: a town run is left alone
 			out = append(out, rallyMember{name: s.Name, zone: rallyZone(s.Map), m: s.Map, x: s.X, y: s.Y,
 				saved: s.SavedTown, waiting: s.Waiting, posKnown: true})
 		}

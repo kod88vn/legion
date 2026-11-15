@@ -58,6 +58,27 @@ func needsCollect(leadMap string, lx, ly int, s pubState, committed bool) bool {
 	return true
 }
 
+// leftAloneOnTrip (AY23, engine parties only): a member on a town run is left to come back on its own - no collect
+// walk and no rally wait for it. Off for every other party (the old behaviour).
+func leftAloneOnTrip(p *Party, s pubState) bool {
+	return ovEngineParty(p) && s.Trip
+}
+
+// collectLagWait: how long the leader waits for a lagging member before it collects (AY23: about 10 s).
+const collectLagWait = 10 * time.Second
+
+// collectLagDue (AY23, engine parties): a lagging member gets about 10 s to catch up on its own (it regroups by itself)
+// before the leader goes back to collect it. The first sighting of a lag starts the clock; a lag not seen for 5 s is a
+// new episode. Caller holds b.mu.
+func (b *Bot) collectLagDue(name string, now time.Time) bool {
+	kf, ks := "collectlag:"+name, "collectlagseen:"+name
+	if now.Sub(b.buffAt[ks]) > 5*time.Second || b.buffAt[kf].IsZero() {
+		b.buffAt[kf] = now
+	}
+	b.buffAt[ks] = now
+	return now.Sub(b.buffAt[kf]) >= collectLagWait
+}
+
 // livePos: where the bot really stands now. While a walk is in progress b.X/b.Y is still the walk's START (it only
 // jumps to DestX/DestY when the walk ends, ai.go think), up to a whole ~11-cell segment behind on each side: a leader
 // and member walking to each other looked 21+ cells apart while really 5-13 apart, so leaders started fresh collects
