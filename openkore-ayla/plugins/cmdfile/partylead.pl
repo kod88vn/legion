@@ -1679,8 +1679,9 @@ sub trivial_transit {
 sub route_aor { return trivial_transit() ? 0 : 2 }
 
 my %crowdedAt; # map -> when it was too crowded to farm (skipped for an hour)
-my $gmRecheck = 0;
-my %routeFailAt; # map -> until when its route counts as failing (STUCK twice): skipped like a crowded map # gear maps: the measured step changed - fit_tick re-checks at once
+my $gmRecheck = 0; # gear maps: the measured step changed - fit_tick re-checks at once
+my %routeFailAt; # map -> until when its route counts as failing (STUCK twice): skipped like a crowded map
+our %farmedAt;   # map -> when a plan left it (drained / crowded / ...): not picked again for 30 min
 my ($turnAt, $turnMap, $turnWho) = (0, '', '');
 sub party_turn {
 	return ($turnMap, $turnWho) if time - $turnAt < 60;
@@ -1793,7 +1794,7 @@ sub gm_verdict {
 	return 0 if $n <= 0 || $min <= 0;
 	return -5 if $d > 0;
 	return 0 if $min < 20;
-	return 3 if $k / ($n * $min) >= 1.5;
+	return 3 if $k / ($n * $min) >= 0.8; # kills are shared in a party: 0.8 per member-minute is good farming
 	return 0;
 }
 # a farm map whose route crosses a map with aggressive monsters at or above the party's level - 5 is out (owner
@@ -1922,7 +1923,7 @@ sub map_fits {
 sub level_map {
 	my $plv = shift;
 	my $heal = party_has_healer();
-	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) && !(time < ($routeFailAt{$r->[2]} || 0)) && route_unsafe($r->[2], $plv) eq '' };
+	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) && !(time < ($routeFailAt{$r->[2]} || 0)) && !(time - ($farmedAt{$r->[2]} || 0) < 1800) && route_unsafe($r->[2], $plv) eq '' };
 	# (2) nearest first: a fitting map of the area she is in / heading to (the same Kafra town) before a far one
 	my $area = town_of_map(plan_map() || $homeMap || ($field ? $field->baseName : ''));
 	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && $r->[3] == $heal && town_of_map($r->[2]) eq $area }
@@ -2026,6 +2027,7 @@ sub plan_reason {
 	my $d = grep { $_->[1] eq $c && time - $_->[0] < 1800 } @planDeaths;
 	return "$d deaths on $c in 30 min" if $d >= 2;
 	return "no kills on $c for 20 min" if $field && $field->baseName eq $c && $plan->{expAt} && time - $plan->{expAt} > 1200;
+	if (my $d = map_drained($c)) { return $d }
 	return "$c can't be reached (dropped)" if $droppedUntil{$c} && time < $droppedUntil{$c};
 	return "$c is crowded" if $crowdedAt{$c} && time - $crowdedAt{$c} < 3600 && $crowdedAt{$c} <= time;
 	return "the route to $c keeps failing" if time < ($routeFailAt{$c} || 0);
@@ -2039,6 +2041,7 @@ sub plan_change {
 	my $c = plan_map();
 	return if $c eq '' || $c eq ($new || '');
 	wd_report('PLAN_CHANGE', $c, "$c -> " . ($new || '-') . ": $why", "new plan on arrival");
+	$farmedAt{$c} = time; # level_map skips it for 30 min
 	$plan = undef; plan_save();
 	announce_plan($new);
 }
@@ -2167,7 +2170,32 @@ sub route_guard {
 }
 # PT16: farming (exp gained) on her hunting map commits it for 2 h; exp there keeps expAt fresh
 my $ptExp = -1;
+# map drained (owner 2026-11-15: a 7-member party cleared pay_dun02 faster than it respawns - 40 -> 3 kills / 5 min):
+# her kills on the plan map sampled every minute; after 20+ min there, the last 15 min under 40% of the first 20 min's
+# rate, or under 1 kill a minute -> the plan breaks ("map drained")
+my @killSamples; # [time, gmKills, map]
+sub kill_sample {
+	my $here = $field ? $field->baseName : '';
+	return if @killSamples && time - $killSamples[-1][0] < 60;
+	@killSamples = grep { $_->[2] eq $here } @killSamples;
+	push @killSamples, [time, $gmKills, $here];
+	shift @killSamples while @killSamples > 120;
+}
+sub map_drained {
+	my $c = shift;
+	my @s = grep { $_->[2] eq $c } @killSamples;
+	return '' unless @s >= 36; # 35+ min of samples: the first 20 and the last 15
+	my ($t0, $k0) = @{$s[0]}[0, 1];
+	my ($k20) = map { $_->[1] } grep { $_->[0] - $t0 >= 1200 } @s;
+	my ($tn, $kn) = @{$s[-1]}[0, 1];
+	my ($k15) = map { $_->[1] } reverse grep { $tn - $_->[0] >= 900 } @s;
+	return '' unless defined $k20 && defined $k15;
+	my ($first, $last) = (($k20 - $k0) / 20, ($kn - $k15) / 15);
+	return '' unless $last < 1 || ($first > 0 && $last < 0.4 * $first);
+	return sprintf("map drained: %.1f kills/min in the last 15 min (%.1f in the first 20)", $last, $first);
+}
 sub plan_track {
+	kill_sample() if $field && ($huntMap || '') eq $field->baseName;
 	return unless $char && $field;
 	my $here = $field->baseName;
 	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);

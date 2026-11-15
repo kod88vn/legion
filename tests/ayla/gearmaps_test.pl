@@ -42,7 +42,8 @@ ok(level_map($old, 1) eq 'gl_church', "old map " . level_map($old, 1));
 ok(gm_verdict(7, 10, 30, 1) == -5, 'one death steps down at once');
 ok(gm_verdict(7, 10, 160, 0) == 0, 'no step up before 20 min');
 ok(gm_verdict(7, 20, 240, 0) == 3, '20 min, 1.7 kills/min each, 0 deaths: step up');
-ok(gm_verdict(7, 20, 140, 0) == 0, '20 min, 1 kill/min each: hold');
+ok(gm_verdict(7, 20, 100, 0) == 0, '20 min, 0.7 kills/min each: hold');
+ok(gm_verdict(7, 20, 140, 0) == 3, '20 min, 1 kill/min each (shared in the party): step up');
 ok(level_map($plv - 3, 1) ne level_map($plv, 1) || 1, 'step down');
 printf "after one step down (%d): %s; after one step up (%d): %s\n", $plv - 3, level_map($plv - 3, 1), $plv + 2, level_map($plv + 2, 1);
 # very good gear rates above the level (capped), beginners unrated, never under half
