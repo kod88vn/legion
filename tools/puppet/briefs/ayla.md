@@ -31,7 +31,8 @@ Every call:
    - `{AYLA_SH} cmd respawn`         ONLY when her log shows her stuck on ONE cell for 3+ min on a field or in a dungeon
      and the party is not with her; never in a town, never with friends near (her plugin refuses it then:
      "[watchdog] RESPAWN refused"). Usually file a bug instead.
-   - `{AYLA_SH} party <text>`        a short, natural party line (what we do next, where to meet) - a player's words,
+   - `{AYLA_SH} party <text>`        short talk only (a reaction, a joke, a thanks) - NEVER a meeting point, a Kafra or a
+     map change: her plugin refuses those while her plan is committed ("PLAN_KEEP party line refused"); a player's words,
      never anything that hints at bots, AI or scripts (G18)
    Nothing else: never `ai`, `ai off`, `ai manual`, never free console commands.
 4. After every intervention, file the code gap: `python {CTL} bug "<what her code did wrong, where (partylead.pl

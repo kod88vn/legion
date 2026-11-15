@@ -61,6 +61,10 @@ my $hooks = Plugins::addHooks(['AI_pre', guarded('tick', \&tick_guarded)], ['pac
 my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally cancel | rally <town> | goto <map> | status', guarded('command', \&cmd_guarded)]);
 # 'respawn' from outside (cmdfile: her helper) goes through respawn_guard (live 06:38: a Butterfly Wing in payon at full
 # HP with the party around); the plugin's own STUCK respawn calls Commands::cmdRespawn directly
+# 'p' (party chat) from outside (cmdfile: her helper) goes through party_line_guard: a meeting point / map change that
+# contradicts her committed PT16 plan is refused (live: "Meet at the prontera kafra, we go to mjolnir 12 instead");
+# her own lines (psay -> flush_say) and other plugins' talk pass unchanged
+my $pCmd = Commands::register(['p', 'Party chat (guarded by partylead: no meeting points against the plan)', guarded('p', \&party_line_guard)]);
 my $respCmd = Commands::register(['respawn', 'Respawn (guarded by partylead: refused in town / with friends near / when not stuck)', guarded('respawn', \&respawn_guard)]);
 
 my ($holding, $saved, $last, $lastMsg, $lastFetch) = (0, undef, 0, 0, 0);
@@ -1353,9 +1357,37 @@ sub status_town_run {
 	return ($field && is_townmap($field->baseName) && time - $errandEnd < 180) ? 1 : 0;
 }
 
+our $ownSay = 0;
+# a party line from outside that names a meeting point / another map while a plan is committed: refused
+sub party_line_guard {
+	my ($sw, $args) = @_;
+	$args = '' unless defined $args;
+	my $pc = plan_map();
+	if (!$ownSay && $pc ne '' && plan_reason() eq '' && plan_line_conflict($args, $pc, town_of_map($pc))) {
+		wd_report('PLAN_KEEP', $pc, "party line refused: \"" . substr($args, 0, 120) . "\" (committed to $pc, PT16)", 'not said');
+		return;
+	}
+	return Commands::cmdChat($sw, $args);
+}
+# pure: a line proposing a meeting point or a map change that names another town or map than the plan map / its town
+sub plan_line_conflict {
+	my ($line, $pc, $pt) = @_;
+	my $low = lc($line || '');
+	return 0 unless $low =~ /\b(meet|regroup|gather)\b[^.!?]*\bkafra\b|\bnew spot\b|\bwe go\b|\bgoing to\b|\bkafra in [a-z]+|\binstead\b|\bchange of plan\b/;
+	my @towns = $low =~ /\b(prontera|geffen|morocc|alberta|aldebaran|izlude|yuno|comodo|umbala|payon)\b/g;
+	return 1 if grep { $_ ne ($pt || '') } @towns;
+	(my $pn = lc($pc || '')) =~ s/[ _]//g;
+	foreach my $m ($low =~ /\b([a-z]{3,}(?:[ _][a-z]{2,})?[ _]?\d{1,2})\b/g) {
+		(my $n = $m) =~ s/[ _]//g;
+		next if $n =~ /^(lv|level|base|job)\d/;
+		return 1 if $n ne $pn;
+	}
+	return 0;
+}
 sub flush_say {
 	return unless @pending && time >= $pending[0][0];
 	my $p = shift @pending;
+	local $ownSay = 1;
 	Commands::run("p $p->[1]");
 }
 
@@ -3844,6 +3876,8 @@ sub unload {
 	if (defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef }
 	Plugins::delHooks($hooks);
 	Commands::unregister($respCmd) if $respCmd;
+	Commands::unregister($pCmd) if $pCmd;
+	Commands::register(['p', 'Chat in the party chat.', \&Commands::cmdChat]); # the built-in handler back
 	Commands::register(['respawn', 'Respawn', \&Commands::cmdRespawn]); # the built-in handler back
 	$config{route_randomWalk} = $restRW if defined $restRW && !$holding; # don't leave a rest's random-walk switch-off behind
 	$config{itemsMaxWeight_sellOrStore} = $sellTrigSaved if $sellTrigUntil; # don't leave the raised trigger behind
