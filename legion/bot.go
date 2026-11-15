@@ -1178,6 +1178,7 @@ func (b *Bot) handle(pk []byte) {
 			b.buffAskHeard(cstr(pk[8:]), now)   // priestbuff.go PT29: a party mate asks the priest for buffs
 			if b.pin != nil {
 				txt := cstr(pk[8:])
+				partyChatHeard(b.pin.Human, txt, now) // partyintent.go: the party chat on the dashboard
 				go func() { rallyHeard(partyOf(b), txt) }()                 // the human called a rally (rally.go)
 				go func() { humanRestHeard(partyOf(b), txt, time.Now()) }() // together.go: "resting" / "ready" from the human leader
 			}

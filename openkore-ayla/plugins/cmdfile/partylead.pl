@@ -1224,6 +1224,7 @@ sub psay {
 # ---- PT30 (2026-11-14): the leader tells the party where to be, once per new destination; members travel there by
 # their own route (Legion partydest.go reads "dest" from status.json). conf partylead_dest 0 turns it off.
 my ($destSaid, $destSaidAt) = ('', 0);
+my $holdInfo; # the current hold: {who, why, since} (tick sets it, status_intent reads it)
 my (%farHold, %toldGo); # a friend on another map: since when she holds for it / when she told it where to meet
 sub pt30_on { return !defined $config{partylead_dest} || $config{partylead_dest} ne '0' }
 sub say_dest {
@@ -2310,6 +2311,7 @@ sub pack_tick {
 	}
 	return 0 if AI::inQueue('attack') && scalar(AI::ai_getAggressives()); # she answers what is on her
 	$pk{waitAt} ||= time;
+	@pk{qw(act an seenAt)} = ($act, $an, time); # status_intent (dashboard): what this wait is about
 	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
 	if (time - $pk{logAt} > 20) { $pk{logAt} = time; message "[partylead] PT04: $act - " . ($cross ? "crossing ($cross) needs the priest within 10, " : '') . "anchor $an->[0] on $an->[2]" . (defined $an->[3] ? " $an->[3] cells" : '') . "\n", 'system' }
 	if ($act eq 'back') {
@@ -3025,6 +3027,7 @@ sub tick {
 	}
 
 	if ($why) {
+		$holdInfo = {who => $whoFar, why => $why, since => ($holding && $holdInfo ? $holdInfo->{since} : time)}; # status_intent (dashboard)
 		if (!$holding) {
 			psay(pick("waiting for u $whoFar", "hold up, $whoFar is behind", "stay together guys, waiting for $whoFar"), 1, 40);
 			$saved = {randomWalk => $config{route_randomWalk}, lockMap => $config{lockMap}};
@@ -3125,6 +3128,68 @@ sub tick {
 	sweep_tick();
 }
 
+# ---- dashboard (owner 2026-11-14 "since OpenKore crashed I have no way to know what Ayla is trying to do"): her current
+# intent in plain words, derived from the plugin's own state. Read-only; statusout.pl calls it inside eval every ~3 s.
+my ($intentKey, $intentSince) = ('', time);
+sub intent_of {
+	my $here = shift;
+	my $now = time;
+	return 'dead - respawning at ' . ($config{saveMap} || 'the save point') if $char->{dead};
+	return 'teleporting away (escape)' if AI::inQueue('teleport');
+	return "retreating to the party on $stickFlee->{map} (too many monsters on $stickFlee->{from})" if ref $stickFlee && $now - ($stickFlee->{at} || 0) < 90;
+	if ($pk{waitAt} && $now - ($pk{seenAt} || 0) < 5 && ref $pk{an}) {
+		my ($act, $an) = ($pk{act} || '', $pk{an});
+		my $cells = defined $an->[3] ? " $an->[3] cells" : '';
+		return "going back to collect $an->[0] ($an->[2]$cells)" if $act eq 'goto' || $act eq 'back';
+		return "waiting for $an->[0] ($an->[2]$cells, " . int($now - $pk{waitAt}) . " s) before moving on";
+	}
+	return 'buying gear from a player shop' if defined &aylagear::busy && aylagear::busy();
+	if ($errand || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto')) {
+		my $what = AI::inQueue('sellAuto') ? 'selling' : AI::inQueue('buyAuto') ? 'buying' : AI::inQueue('storageAuto') ? 'storage' : 'on the way';
+		my $t = is_townmap($here) ? $here : (status_dest() || '');
+		return 'town run' . ($t ne '' ? " to $t" : '') . " ($what)";
+	}
+	if ($rally) {
+		return "rally at the $rally->{town} kafra" . ($rally->{why} ? " ($rally->{why})" : '') . ($rally->{thenGoto} ? ", then $rally->{thenGoto}" : '');
+	}
+	return "leaving $depart->{town} with the party (everyone close behind)" if ref $depart && $depart->{town};
+	return "holding in town for $backWho" if $backWho ne '';
+	if (defined $collect && $char->{party}{users}{$collect}) {
+		return "going back for $char->{party}{users}{$collect}{name}" . ($collectWhy ne '' ? ": it $collectWhy" : '') . ' (' . int($now - $collectAt) . ' s)';
+	}
+	return "going to $fetchMap to get a friend who asked for help" if $fetchMap ne '';
+	if ($holding) {
+		my $h = $holdInfo || {};
+		return 'waiting for ' . ($h->{who} || 'the party') . ($h->{why} ? " ($h->{why})" : '') . ', ' . int($now - ($h->{since} || $now)) . ' s';
+	}
+	return "going to $gotoMap" if $gotoMap ne '' && $gotoMap ne $here;
+	my $aggr = scalar(AI::ai_getAggressives());
+	return 'fighting ' . ($aggr > 1 ? "$aggr monsters" : 'a monster') . " on $here" if AI::inQueue('attack');
+	if ($char->{sitting} || own_rest()) {
+		return sprintf('resting (HP %d%%, SP %d%%)', $char->{hp_max} ? 100 * $char->{hp} / $char->{hp_max} : 0, $char->{sp_max} ? 100 * $char->{sp} / $char->{sp_max} : 0);
+	}
+	return "looting on $here" if AI::inQueue('take', 'items_take', 'items_gather');
+	if (AI::inQueue('route', 'move')) {
+		my $ri = AI::findAction('route');
+		my $ra = (defined $ri && $ri ne '') ? AI::args($ri) : undef;
+		my $rm = ($ra && ref $ra && $ra->{dest} && $ra->{dest}{map}) ? $ra->{dest}{map} : '';
+		$rm = eval { $rm->baseName } || '' if ref $rm;
+		return "walking to $rm" if $rm ne '' && $rm ne $here;
+		return "farming $here (walking the loop)" if $huntMap ne '' && $here eq $huntMap;
+		return "walking on $here";
+	}
+	return "farming $here" if $huntMap ne '' && $here eq $huntMap;
+	return "in town ($here)" if is_townmap($here);
+	return "standing on $here";
+}
+# status_intent: (intent text, since when that kind of intent runs). Never dies.
+sub status_intent {
+	my $s = eval { ($char && $field && $net && $net->getState() == 5) ? intent_of($field->baseName) : 'not in game' };
+	$s = 'unknown (' . substr($@, 0, 80) . ')' if !defined $s;
+	(my $k = $s) =~ s/\d+//g;
+	($intentKey, $intentSince) = ($k, time) if $k ne $intentKey;
+	return ($s, int($intentSince));
+}
 sub unload {
 	if (defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef }
 	Plugins::delHooks($hooks);
