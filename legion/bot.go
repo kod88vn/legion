@@ -1168,6 +1168,7 @@ func (b *Bot) handle(pk []byte) {
 		if len(pk) > 8 {
 			b.event("party", "", cstr(pk[8:]))
 			friendHeard(b, cstr(pk[8:]), false) // friends.go
+			go leaderHeard(b, cstr(pk[8:]))     // leadertalk.go PT26: a bot leader answers its members
 			if b.pin != nil {
 				txt := cstr(pk[8:])
 				go func() { rallyHeard(partyOf(b), txt) }()                 // the human called a rally (rally.go)

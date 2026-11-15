@@ -197,6 +197,7 @@ func main() {
 		go lfgManager(bots, stop) // lfg.go: farm goals, LFG/LFM on #global, need-driven parties (main instance)
 		go humanPartyManager(bots, stop)
 		go rallyManager(stop)         // rally.go: parties regroup at the Kafra nearest their destination
+		go leaderTalkManager(stop)    // leadertalk.go PT10: bot leaders say town runs, rally waits, late members
 		go econManager(bots, stop)    // economy.go: #trade wants/offers, bot-to-bot trades
 		go alchemyManager(bots, stop) // alchemy.go: every guild's alchemist, brewing
 		go gearPoolManager(stop)      // gearpool.go: party gear turns, zeny gifts, planned gear runs

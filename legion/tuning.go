@@ -145,6 +145,8 @@ type Tuning struct {
 	RallyHumanDisabled bool `json:"rally_human_disabled"`
 	// partydest.go PT30: members head for the leader's destination by their own route (true = old trailing)
 	PartyDestOff bool `json:"party_dest_off"`
+	// leadertalk.go PT10/PT26: bot party leaders say town runs, rally waits, late members, answer members (true = off)
+	LeaderTalkOff bool `json:"leader_talk_off"`
 	// kafrachain.go: the next hop of one Kafra trip (same goal) is not refused by the 3-in-10-min cap (true = plain cap)
 	KafraChainOff bool `json:"kafra_chain_off"`
 	// staged rollout: with rally_enabled false, this percentage of bot parties (by party-name hash) rally
