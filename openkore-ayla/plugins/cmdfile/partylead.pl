@@ -2292,10 +2292,14 @@ sub watchdog_tick {
 	}
 	# a map far below her level for 5+ min (not a short crossing): report it - fit_tick moves her unless a fresh order holds her
 	my $top = map_top($here);
-	if ($top && !is_townmap($here) && ($char->{lv} || 0) >= $top + 15) {
+	# the same effective level as the map choice (gear-rated + the conservative step), and never on the PT16 plan map
+	# she farms with success (exp in the last 5 min, no death there in 30 min) - live: "WRONG_MAP on pay_dun02 ... at
+	# base 82" on her own conservative pick
+	my $okPlan = plan_map() eq $here && $plan && $plan->{expAt} && time - $plan->{expAt} < 300 && !grep({ $_->[1] eq $here && time - $_->[0] < 1800 } @planDeaths);
+	if ($top && !is_townmap($here) && !$okPlan && transit_fit_lv() >= $top + 15) {
 		($lowSince, $lowMap) = ($now, $here) if $lowMap ne $here;
 		if ($now - $lowSince > 300) {
-			wd_report('WRONG_MAP', $here, "on $here (worth to level $top) for " . int(($now - $lowSince) / 60) . " min at base $char->{lv}; party level " . party_fit_lv() . ", target " . ($homeMap || '-') . (mind_fresh() ? " (mind's order)" : ''),
+			wd_report('WRONG_MAP', $here, "on $here (worth to level $top) for " . int(($now - $lowSince) / 60) . " min, party rated " . party_fit_lv() . " (base $char->{lv}), target " . ($homeMap || '-') . (mind_fresh() ? " (mind's order)" : ''),
 				mind_fresh() ? "kept: the mind's order is fresh" : "own map choice re-checked");
 			$lowSince = $now; # next log line in 5 min (the queue item once an hour)
 			$fitAt = 0 unless mind_fresh(); # re-check the map choice now
