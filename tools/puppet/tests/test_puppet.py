@@ -1,9 +1,11 @@
 """Tests for the puppet harness: no server, no tokens. Run: python -m unittest discover -s tools/puppet/tests -v"""
+import http.server
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 
@@ -422,8 +424,23 @@ class QueueTests(unittest.TestCase):
         self.assertEqual(json.loads(lines[1])["priority"], "neo")
 
     def test_cli_bug_and_neo(self):
+        # "API down" is a local stub that answers 503 at once. A closed port is not used: on some hosts (WSL) it is a
+        # black hole, and each evidence call then waits out urllib's 20 s timeout (four calls: over the test limit).
+        class Down(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_error(503, "test stub: API down")
+
+            do_POST = do_GET
+
+            def log_message(self, *args):
+                pass
+
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Down)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
         with tempfile.TemporaryDirectory() as d:
-            env = dict(os.environ, LEGION_DATA=d, LEGION_API="http://127.0.0.1:1")
+            env = dict(os.environ, LEGION_DATA=d, LEGION_API="http://127.0.0.1:%d" % srv.server_address[1])
             ctl = os.path.join(TOOLS, "legionctl.py")
             r = subprocess.run([sys.executable, ctl, "bug", "knights stand still", "--from", "build"], env=env,
                                capture_output=True, text=True, timeout=60)

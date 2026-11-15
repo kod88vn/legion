@@ -5,6 +5,10 @@
 #   -run RE  passed to go test
 # Failures listed in baseline-failures.txt (next to this script; one test name per line, # comments)
 # are reported but do not fail the run. Exit 1 on vet/build failure or any non-baseline test failure.
+# Exit 2 when no route to WSL works or the Go toolchain is missing: that is never a pass (nothing was checked).
+#
+# Routes to WSL, first that exists: GOCHECK_WSL_EXE (only that one, for tests); `wsl` on PATH;
+# /c/Windows/System32/wsl.exe; $SYSTEMROOT/System32/wsl.exe. Already inside WSL: run the checks directly.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 FAST=0; RUN=""; DIR=""
@@ -24,9 +28,10 @@ case "$DIR" in
 esac
 BASE="$(grep -v '^\s*#' "$HERE/baseline-failures.txt" 2>/dev/null | sed 's/\s*#.*//' | grep -v '^\s*$' | tr '\n' ' ')"
 export WSL_DIR="$DIR" WSL_FAST="$FAST" WSL_RUN="$RUN" WSL_BASE="$BASE" WSLENV="WSL_DIR:WSL_FAST:WSL_RUN:WSL_BASE"
-MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 --exec bash -lc '
+INNER='
 set -u
 export PATH="$HOME/go-toolchain/go/bin:$PATH" GOCACHE="$HOME/.cache/go-build-gocheck" GOFLAGS=-mod=mod GOTOOLCHAIN=local GOPROXY=off
+command -v go >/dev/null 2>&1 || { echo "gocheck: no Go toolchain in WSL (~/go-toolchain/go/bin). Nothing was checked."; exit 2; }
 SRC="$WSL_DIR"; [ -f "$SRC/go.mod" ] || { echo "no go.mod in $SRC"; exit 2; }
 T="$(mktemp -d "$HOME/gocheck.XXXXXX")"; trap "rm -rf $T" EXIT
 cd "$SRC" && cp go.mod *.go "$T"/ 2>/dev/null
@@ -58,3 +63,22 @@ echo "skips: $(grep "^--- SKIP" test.log | awk "{print \$3}" | tr "\n" " ")"
 echo "(full log in WSL ~/gocheck-last-test.log)"
 exit $rc
 '
+if grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null || [ -n "${WSL_DISTRO_NAME:-}" ]; then
+  bash -lc "$INNER"; exit $?                       # already inside WSL
+fi
+WSL_EXE=""
+if [ -n "${GOCHECK_WSL_EXE:-}" ]; then
+  [ -x "$GOCHECK_WSL_EXE" ] && WSL_EXE="$GOCHECK_WSL_EXE"
+elif command -v wsl >/dev/null 2>&1; then
+  WSL_EXE="$(command -v wsl)"
+elif [ -x /c/Windows/System32/wsl.exe ]; then
+  WSL_EXE=/c/Windows/System32/wsl.exe
+elif [ -n "${SYSTEMROOT:-}" ] && [ -x "$(cygpath -u "$SYSTEMROOT" 2>/dev/null)/System32/wsl.exe" ]; then
+  WSL_EXE="$(cygpath -u "$SYSTEMROOT")/System32/wsl.exe"
+fi
+if [ -z "$WSL_EXE" ]; then
+  echo "gocheck: no route to WSL (wsl.exe not on PATH, not in /c/Windows/System32 or \$SYSTEMROOT). Nothing was checked." >&2
+  exit 2
+fi
+MSYS_NO_PATHCONV=1 "$WSL_EXE" -d Ubuntu-24.04 --exec bash -lc "$INNER"
+exit $?

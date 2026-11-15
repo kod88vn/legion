@@ -75,6 +75,35 @@ def read(p):
         return f.read()
 
 
+def native_path(p):
+    """a hook command's path as this interpreter sees it. settings.json names hooks by Windows path (G:/RO/legion/...)
+    or Git Bash path (/g/RO/legion/...); under WSL the same file is /mnt/g/RO/legion/... Returns p unchanged when it is
+    already a file, or when it is not a drive path."""
+    if os.path.isfile(p):
+        return p
+    m = re.match(r"^([A-Za-z]):[\\/](.*)$", p) or re.match(r"^/([A-Za-z])/(.*)$", p)
+    if not m:
+        return p
+    drive, rest = m.group(1), m.group(2).replace("\\", "/")
+    return "%s:/%s" % (drive.upper(), rest) if os.name == "nt" else "/mnt/%s/%s" % (drive.lower(), rest)
+
+
+def main_checkout(repo):
+    """the main checkout of the repo (G:/RO/legion). A git worktree (G:/RO/legion-wt/x) names it in its .git file."""
+    try:
+        text = read(os.path.join(repo, ".git")).strip()
+    except OSError:                       # a main checkout has a .git folder
+        return repo
+    m = re.match(r"gitdir:\s*(.+)$", text)
+    mm = re.match(r"^(.*)/\.git/worktrees/", m.group(1).strip().replace("\\", "/")) if m else None
+    return native_path(mm.group(1)) if mm else repo
+
+
+def session_root(repo):
+    """the folder the owner's session starts in (G:/RO: CLAUDE.md, .claude/settings.json): parent of the main checkout"""
+    return os.path.dirname(main_checkout(repo))
+
+
 def rel(p):
     try:
         r = os.path.relpath(p, REPO)
@@ -155,8 +184,9 @@ def instruction_files(root_dir, repo):
 
 def check_claude_md(rep, root_dir=None, repo=None, const_path=None):
     repo = repo or REPO
-    root_dir = root_dir or os.path.dirname(repo)
-    const_path = const_path or constitution.path()
+    root_dir = root_dir or session_root(repo)
+    # the live session loads the constitution of the main checkout through CLAUDE.md, so that is the file to match
+    const_path = const_path or os.path.join(main_checkout(repo), "CONSTITUTION.md")
     ckey = os.path.normcase(os.path.normpath(const_path))
     root_md = os.path.join(root_dir, "CLAUDE.md")
     src = "main session (and every subagent that loads CLAUDE.md)"
@@ -208,7 +238,7 @@ def hook_commands(settings_path):
 
 def check_hooks(rep, root_dir=None, repo=None):
     repo = repo or REPO
-    root_dir = root_dir or os.path.dirname(repo)
+    root_dir = root_dir or session_root(repo)
     for name in ("settings.json",):
         for d in (root_dir, repo):
             p = os.path.join(d, ".claude", name)
@@ -229,7 +259,7 @@ def check_hooks(rep, root_dir=None, repo=None):
                 missing = []
                 for _e, c in inject + guard:
                     for tok in c.split():
-                        if tok.endswith(".py") and not os.path.isfile(tok):
+                        if tok.endswith(".py") and not os.path.isfile(native_path(tok)):
                             missing.append(tok)
                 if missing:
                     rep.fail(src, "hook script not found: %s" % ", ".join(missing))
@@ -256,7 +286,7 @@ def agent_defs(dirs):
 
 def check_agents(rep, root_dir=None, repo=None):
     repo = repo or REPO
-    root_dir = root_dir or os.path.dirname(repo)
+    root_dir = root_dir or session_root(repo)
     dirs = [os.path.join(repo, ".claude", "agents"), os.path.join(root_dir, ".claude", "agents"),
             os.path.join(os.path.expanduser("~"), ".claude", "agents")]
     try:
@@ -317,7 +347,7 @@ def copy_lines(text, const):
 def prompt_files(repo=None, root_dir=None):
     """every file that is loaded into a prompt or is a prompt"""
     repo = repo or REPO
-    root_dir = root_dir or os.path.dirname(repo)
+    root_dir = root_dir or session_root(repo)
     pats = ["CLAUDE.md", "RULES.md", "STATUS.md", "AGENTS.md", "CLASSES.md", "HANDOVER.md", "README.md",
             ".claude/agents/**/*.md", ".claude/skills/**/*.md", ".claude/commands/**/*.md", ".claude/rules/**/*.md",
             "tools/puppet/briefs/*.md", "tools/puppet/workdir/CLAUDE.md", "tools/puppet/README.md",

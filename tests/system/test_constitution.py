@@ -2,6 +2,7 @@
 Run: python -m unittest discover -s tests/system -p "test_constitution.py" -v"""
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -291,6 +292,30 @@ class ConstcheckTests(unittest.TestCase):
     def test_the_live_tree_passes(self):
         rep, _head = constcheck.run()
         self.assertEqual(rep.bad, [])
+
+    def test_hook_paths_resolve_in_both_forms(self):
+        # this file as the Windows form (G:/...) and the Git Bash form (/g/...), each resolved by native_path
+        real = os.path.abspath(constcheck.__file__).replace("\\", "/")
+        if os.name == "nt":
+            drive, rest = real[0], real[2:]
+        else:
+            m = re.match(r"^/mnt/([a-z])/(.*)$", real)
+            if not m:
+                self.skipTest("not on a /mnt/<drive> path: no Windows drive form to compare")
+            drive, rest = m.group(1), m.group(2)
+        for form in ("%s:/%s" % (drive.upper(), rest), "/%s/%s" % (drive.lower(), rest)):
+            self.assertTrue(os.path.isfile(constcheck.native_path(form)), form)
+
+    def test_worktree_finds_the_main_checkout_and_its_session_root(self):
+        root = tempfile.mkdtemp(prefix="const-test-").replace("\\", "/")
+        main = os.path.join(root, "legion")
+        wt = os.path.join(root, "legion-wt", "x")
+        os.makedirs(main)
+        write(os.path.join(wt, ".git"), "gitdir: %s/.git/worktrees/x\n" % main)
+        self.assertEqual(os.path.normcase(os.path.normpath(constcheck.main_checkout(wt))),
+                         os.path.normcase(os.path.normpath(constcheck.native_path(main))))
+        self.assertEqual(os.path.normcase(os.path.normpath(constcheck.session_root(wt))),
+                         os.path.normcase(os.path.normpath(constcheck.native_path(root))))
 
 
 if __name__ == "__main__":
