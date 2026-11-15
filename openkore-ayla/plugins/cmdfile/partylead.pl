@@ -2102,10 +2102,25 @@ sub plan_track {
 # no crossing straight back through a portal: after a map change, 30 s without going back to the map she came from
 # (unless dying) - live: aldebaran <-> mjolnir_12 every few seconds
 my ($pgPrev, $pgFrom, $pgAt, $pgLog) = ('', '', 0, 0);
+our ($arrInfo, %pgCross, $portalHoldUntil, $portalHoldMap); # arrival cell of the current map; portal-loop hold
 sub portal_back_guard {
 	return unless $char && $field;
 	my $here = $field->baseName;
-	if ($here ne $pgPrev) { ($pgFrom, $pgAt, $pgPrev) = ($pgPrev, time, $here) }
+	if ($here ne $pgPrev) {
+		($pgFrom, $pgAt, $pgPrev) = ($pgPrev, time, $here);
+		$arrInfo = {map => $here, x => $char->{pos_to}{x}, y => $char->{pos_to}{y}, at => time, from => $pgFrom};
+		# more than 2 crossings of the same portal in 3 min = a loop: hold on the town side for 90 s
+		if ($pgFrom ne '') {
+			my $k = join('|', sort ($pgFrom, $here));
+			$pgCross{$k} = [grep { time - $_ < 180 } @{$pgCross{$k} || []}, time];
+			if (@{$pgCross{$k}} > 2) {
+				my $safe = (is_dungeon($here) || cross_danger($here)) ? $pgFrom : $here;
+				($portalHoldUntil, $portalHoldMap) = (time + 90, $safe);
+				$pgCross{$k} = [];
+				wd_report('PORTAL_LOOP', $here, "crossed $k 3 times in 3 min - holding on $safe for 90 s", "hold on $safe");
+			}
+		}
+	}
 	return if $pgFrom eq '' || time - $pgAt >= 30 || AI::inQueue('teleport') || pk_retreating();
 	return if $char->{hp_max} && $char->{hp} / $char->{hp_max} < 0.2;
 	my ($dm, $nm) = route_maps();
@@ -2145,6 +2160,9 @@ sub tick_guarded {
 	plan_track() if $net && $net->getState() == 5;
 	hp_sample() if $net && $net->getState() == 5;
 	portal_back_guard() if $net && $net->getState() == 5;
+	if ($portalHoldUntil && time < $portalHoldUntil && $field && $field->baseName eq ($portalHoldMap || '') && AI::inQueue('route', 'move') && !AI::inQueue('teleport')) {
+		AI::clear('route', 'move'); # PORTAL_LOOP: hold on the town side
+	}
 	$lmSet = $config{lockMap} || '' if defined $lmSet;
 }
 sub cmd_guarded {
@@ -2475,6 +2493,13 @@ sub pt32_ok {
 	}
 	return 1;
 }
+# in a dungeon with the priest away (another map / 20+ cells): wait at the cave entrance - for 60 s after arriving, and
+# after that as long as no monster is on her (only then the town Kafra)
+sub entrance_wait {
+	my ($prD, $atEntrance, $hit) = @_;
+	return 0 if defined $prD && $prD <= 20;
+	return ($atEntrance || !$hit) ? 1 : 0;
+}
 # ---- pack end
 our %WAIT_FIELDS = (geffen => ['gef_fild13', 'gef_fild07'], prontera => ['prt_fild08', 'prt_fild05', 'prt_fild06', 'prt_fild01']);
 sub wait_fields_for { return 0 } # owner 2026-11-14: rally / departure waits hold at the meeting point (no field trips)
@@ -2551,7 +2576,7 @@ sub pack_tick {
 	# a rally in ANOTHER town is travel too (live: the owner's re-pick to pay_dun02 started a Payon save-stop rally and
 	# she took the Kafra from aldebaran alone): the departure rule holds until she is in the rally town
 	my $rallyTravel = $rally && $field && $field->baseName ne $rally->{town} ? 1 : 0;
-	return 0 if ($rally && !$rallyTravel) || $depart || $holding && !$rallyTravel || $collect || $fetchMap ne '' || $char->{dead} || !$char->{pos_to};
+	return 0 if ($rally && !$rallyTravel) || $depart || $collect || $fetchMap ne '' || $char->{dead} || !$char->{pos_to}; # a legacy hold no longer bypasses the priest rules (it let goto walk her into pay_dun00 alone)
 	return 0 if AI::inQueue('NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal', 'teleport') || (defined &aylagear::busy && aylagear::busy());
 	my $here = $field->baseName;
 	my @fr;
@@ -2675,6 +2700,22 @@ sub pack_tick {
 		# away = not on her map / 20+ cells for 20 s (a priest crossing behind her is not away)
 		my $prAway = (!defined $prD || $prD > 20) && time - ($pk{prLastNear} || 0) >= 20;
 		my $t = town_of_map($here);
+		# first: wait at the cave entrance (the cell she arrived on) for 60 s - the town Kafra only after that and only
+		# with monsters on her (live: pay_dun00 -> "back to the payon Kafra" at once, a payon <-> pay_dun00 loop)
+		my $atEntrance = $arrInfo && $arrInfo->{map} eq $here && time - $arrInfo->{at} < 60;
+		my $hit = scalar(AI::ai_getAggressives());
+		if (entrance_wait($prD, $atEntrance, $hit)) {
+			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
+			my $pn = $an ? $an->[0] : 'guys';
+			if (($pk{entSaid} || '') ne $here) { $pk{entSaid} = $here; pk_say("$pn waiting at the cave entrance") }
+			if ($arrInfo && $arrInfo->{map} eq $here && blockDistance($char->{pos_to}, $arrInfo) > 3 && time - $pk{routeAt} > 4) {
+				$pk{routeAt} = time;
+				AI::clear('route', 'move');
+				safe_route($here, $arrInfo->{x}, $arrInfo->{y}, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 1);
+			} elsif (AI::inQueue('route', 'move')) { AI::clear('route', 'move') }
+			return 1;
+		}
+		$prAway = 0 if !$hit; # no monsters on her: no reason to leave the entrance
 		if ($prAway && $KAFRA{$t}) {
 			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
 			if (($pk{retreatSaid} || '') ne $t) { $pk{retreatSaid} = $t; pk_say("too dangerous to wait here, waiting at the $t kafra, come there") }

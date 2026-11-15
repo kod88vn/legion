@@ -70,5 +70,10 @@ ok(pt32_ok($me, {x => 51, y => 50}, undef, [], 3, 1), 'one hitting her: always')
 ok(!pt32_ok($me, {x => 54, y => 50}, undef, [], 0, 0, [{x => 57, y => 52}]), 'target with another monster 3 cells from it: no');
 ok(pt32_ok($me, {x => 54, y => 50}, undef, [], 0, 0, [{x => 54, y => 60}]), 'target alone: ok');
 ok(pt32_ok($me, {x => 54, y => 50}, undef, [], 1, 0, []), 'one on her: a new target is fine');
+# in a dungeon without the priest: the cave entrance first (60 s), the town Kafra only after that with monsters on her
+ok(entrance_wait(undef, 1, 3), 'priest away, just arrived, monsters: wait at the entrance');
+ok(entrance_wait(undef, 0, 0), 'priest away, no monsters: keep waiting at the entrance');
+ok(!entrance_wait(undef, 0, 2), 'priest away 60 s+, monsters on her: town Kafra');
+ok(!entrance_wait(5, 1, 0), 'priest here: no entrance wait');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);
