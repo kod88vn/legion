@@ -206,6 +206,41 @@ class TestProgress(unittest.TestCase):
         self.assertIn('"status":"no_data"', text)
 
 
+class TestRobustness(unittest.TestCase):
+    def test_bad_progress_shape_keeps_the_market_briefing(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as nd, mock.patch("progress.collect", side_effect=TypeError("bad shape")):
+            text, _ = briefing.assemble("market", full_api(), nd)
+        self.assertIn("market master", text)            # the rest of the briefing survives
+        self.assertIn('"status":"no_data"', text)
+        self.assertIn("progress block failed (TypeError)", text)
+
+
+class TestMarketDirectionArg(unittest.TestCase):
+    def test_by_market_reaches_the_body(self):
+        import legionctl_guild
+        sent = {}
+
+        def call(path, body=None):
+            sent["path"], sent["body"] = path, body
+            return {"guild": "guild04", "name": "", "active": []}
+
+        def opt(args, name, default=None, flag=False):
+            if name not in args:
+                return default
+            i = args.index(name)
+            if flag:
+                args.pop(i)
+                return True
+            return args.pop(i + 1) if i + 1 < len(args) else default
+
+        args = ["guild04", "supply", "--by", "market", "--hours", "4"]
+        legionctl_guild.guild_cmd("guild-direction-set", args, call, lambda *a: None, opt, lambda x: x)
+        self.assertEqual(sent["body"].get("by"), "market")
+        self.assertEqual(sent["body"].get("kind"), "supply")
+        self.assertNotIn("exclusive", sent["body"])
+
+
 class TestHelpers(unittest.TestCase):
     def test_band_of(self):
         bands = progress.level_bands(progress.milestone_builds(MILESTONES))

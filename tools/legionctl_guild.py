@@ -2,7 +2,8 @@
 
   guild-direction [guildNN]                  directions in force (leader-set + autopilot) for every guild or one
   guild-direction-set <guildNN> <kind> [--item NAME] [--map MAP] [--min-lv N] [--max-lv N] [--classes a,b]
-                     [--note TEXT] [--hours H] [--exclusive]     kind: stock|gear|carry|level|supply|wealth
+                     [--note TEXT] [--hours H] [--exclusive] [--by market]   kind: stock|gear|carry|level|supply|wealth
+                     (--by market: the market puppet master's direction, EC43; never exclusive; refused when off)
   guild-direction-clear <guildNN> [--id ID]  drop the leader directions (or one by id); autopilot takes over
   guild-duty [guildNN] [--all]               members' standing, today's minutes, block; --all lists good ones too
   guild-pardon <guildNN> <char>              standing back to good
@@ -58,7 +59,8 @@ def guild_cmd(cmd, args, call, out, opt, q):
             raise SystemExit("usage: guild-direction-set <guildNN> <kind> [--item NAME] [--map MAP] ...")
         body = {"kind": args[1]}
         for flag, key, conv in (("--item", "item", str), ("--map", "map", str), ("--min-lv", "min_lv", int),
-                                ("--max-lv", "max_lv", int), ("--note", "note", str), ("--hours", "hours", float)):
+                                ("--max-lv", "max_lv", int), ("--note", "note", str), ("--hours", "hours", float),
+                                ("--by", "by", str)):
             v = opt(args, flag)
             if v:
                 body[key] = conv(v)

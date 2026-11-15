@@ -85,6 +85,7 @@ type dirView struct {
 	Name      string            `json:"name"`
 	Active    []*GuildDirection `json:"active"`
 	Leader    []*GuildDirection `json:"leader_set"`
+	Market    []*GuildDirection `json:"market_set,omitempty"` // EC43: set_by market, shown beside the leader's
 	Autopilot []*GuildDirection `json:"autopilot"`
 }
 
@@ -102,6 +103,7 @@ func dirViewOf(id string, now time.Time) dirView {
 	}
 	v.Active = cp(activeDirsLocked(id, now))
 	v.Leader = cp(gduty.dirs[id])
+	v.Market = cp(gduty.market[id])
 	v.Autopilot = cp(gduty.auto[id])
 	return v
 }
@@ -119,6 +121,21 @@ type dirPost struct {
 	Exclusive bool     `json:"exclusive"`
 	Clear     bool     `json:"clear"`
 	Remove    string   `json:"remove"`
+	By        string   `json:"by"` // "" or "leader" (default), or "market" (EC43: tuning market_directions_on)
+}
+
+// dropDir: the list without the direction id (in place); found when it was there
+func dropDir(list []*GuildDirection, id string) ([]*GuildDirection, bool) {
+	keep := list[:0]
+	found := false
+	for _, d := range list {
+		if d.ID == id {
+			found = true
+			continue
+		}
+		keep = append(keep, d)
+	}
+	return keep, found
 }
 
 // newLeaderDirection: validates a POST body into a direction (pure apart from the item / map tables)
@@ -206,20 +223,17 @@ func guildDirAPI(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case p.Clear:
 		gduty.dirs[id] = nil
+		gduty.market[id] = nil
 		gduty.dirty = true
 		gduty.Unlock()
 		writeJSON(w, dirViewOf(id, now))
 		return
 	case p.Remove != "":
-		keep := gduty.dirs[id][:0]
-		found, auto := false, false
-		for _, d := range gduty.dirs[id] {
-			if d.ID != p.Remove {
-				keep = append(keep, d)
-			} else {
-				found = true
-			}
-		}
+		keep, found := dropDir(gduty.dirs[id], p.Remove)
+		mk, mfound := dropDir(gduty.market[id], p.Remove)
+		gduty.market[id] = mk
+		found = found || mfound
+		auto := false
 		for _, d := range gduty.auto[id] {
 			auto = auto || d.ID == p.Remove
 		}
@@ -239,22 +253,63 @@ func guildDirAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	gduty.Unlock()
+	by := strings.ToLower(strings.TrimSpace(p.By))
+	if by != "" && by != "leader" && by != "market" {
+		apiErr(w, 400, `by must be "leader" or "market"`)
+		return
+	}
+	market := by == "market"
+	if market && !marketDirOn() {
+		apiErr(w, 409, "market directions are off (tuning market_directions_on)")
+		return
+	}
+	if market && p.Exclusive {
+		apiErr(w, 400, "market directions are never exclusive")
+		return
+	}
 	d, err := newLeaderDirection(id, p, now)
 	if err != nil {
 		apiErr(w, 400, err.Error())
 		return
 	}
-	gduty.Lock()
-	ds := append(gduty.dirs[id], d)
-	if len(ds) > guildDirMax {
-		ds = ds[len(ds)-guildDirMax:]
+	if market {
+		d.SetBy = "market"
+		d.ID = fmt.Sprintf("%s-M%d", id, now.UnixNano()%1000000)
 	}
-	gduty.dirs[id] = ds
+	gduty.Lock()
+	if market {
+		live := 0
+		for _, x := range gduty.dirs[id] {
+			if now.Before(x.Expires) {
+				live++
+			}
+		}
+		if live >= 2 {
+			gduty.Unlock()
+			apiErr(w, 409, fmt.Sprintf("%s has %d leader directions in force: market directions fill guilds with fewer than 2", id, live))
+			return
+		}
+		// own cap (guildMarketMax): the newest market direction evicts only the market's own, never a leader's
+		mk := append(gduty.market[id], d)
+		if len(mk) > guildMarketMax {
+			mk = mk[len(mk)-guildMarketMax:]
+		}
+		gduty.market[id] = mk
+		dutyCount("market directions set")
+	} else {
+		ds := append(gduty.dirs[id], d)
+		if len(ds) > guildDirMax {
+			ds = ds[len(ds)-guildDirMax:]
+		}
+		gduty.dirs[id] = ds
+		dutyCount("leader directions set")
+	}
 	gduty.dirty = true
-	dutyCount("leader directions set")
 	gduty.Unlock()
-	dutySave() // a set is on disk at once, not at the next 5-minute save (a restart in between lost it); no lock held
-	go dutyAnnounce(id, d)
+	dutySave()   // a set is on disk at once, not at the next 5-minute save (a restart in between lost it); no lock held
+	if !market { // a market direction is not announced in the leader's voice (EC43)
+		go dutyAnnounce(id, d)
+	}
 	writeJSON(w, dirViewOf(id, now))
 }
 

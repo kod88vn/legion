@@ -48,6 +48,7 @@ import (
 
 const (
 	guildDirMax        = 3
+	guildMarketMax     = 1 // market directions (set_by market) a guild holds at once; they never evict a leader's
 	guildDirLeaderTTL  = 24 * time.Hour
 	guildDirDismissTTL = 2 * time.Hour // an autopilot direction a leader cleared stays off this long (its id recurs every round)
 	dutyTick           = time.Minute
@@ -156,6 +157,7 @@ var dutySaveMu sync.Mutex // dutySave: serialises the file write
 var gduty = struct {
 	sync.Mutex
 	dirs      map[string][]*GuildDirection // guild -> leader-set directions (persisted)
+	market    map[string][]*GuildDirection // guild -> market directions, set_by market (persisted, own cap)
 	auto      map[string][]*GuildDirection // guild -> autopilot directions
 	members   map[string]*dutyMember       // guild|char
 	byChar    map[string]*dutyMember       // char -> its current record
@@ -170,7 +172,7 @@ var gduty = struct {
 	counters  map[string]int
 	dirty     bool
 	loaded    bool
-}{dirs: map[string][]*GuildDirection{}, auto: map[string][]*GuildDirection{}, members: map[string]*dutyMember{},
+}{dirs: map[string][]*GuildDirection{}, market: map[string][]*GuildDirection{}, auto: map[string][]*GuildDirection{}, members: map[string]*dutyMember{},
 	byChar: map[string]*dutyMember{}, kicked: map[string]*dutyKicked{}, guildKick: map[string]time.Time{}, dismissed: map[string]time.Time{},
 	guildWarn: map[string]time.Time{}, guildSay: map[string]time.Time{}, charGuild: map[string]string{}, left: map[string]dutyLeft{}, counters: map[string]int{}}
 
@@ -180,6 +182,9 @@ type dutyLeft struct {
 }
 
 func dutyOn() bool { return tune().GuildDutyOn && !coreInstance() }
+
+// marketDirOn: tuning market_directions_on (EC43). Default off: the engine refuses set_by market and shows none.
+func marketDirOn() bool { return tune().MarketDirectionsOn }
 
 func dutyCount(k string) { // gduty held
 	gduty.counters[k]++
@@ -301,6 +306,23 @@ func activeDirsLocked(guild string, now time.Time) []*GuildDirection {
 		}
 	}
 	gduty.dirs[guild] = keep
+	// market directions (EC43): only while market_directions_on, only into a free slot, never beside an exclusive
+	// leader direction; a market direction never pushes a leader's out (the leader list is capped on its own)
+	mk := gduty.market[guild][:0]
+	for _, d := range gduty.market[guild] {
+		if now.After(d.Expires) {
+			gduty.dirty = true
+			dutyCount("market directions expired")
+			continue
+		}
+		mk = append(mk, d)
+		k := d.Kind + "|" + fmt.Sprint(d.ItemID) + "|" + d.Map
+		if marketDirOn() && !excl && len(out) < guildDirMax && !seen[k] {
+			out = append(out, d)
+			seen[k] = true
+		}
+	}
+	gduty.market[guild] = mk
 	if excl {
 		return out
 	}
@@ -1389,6 +1411,7 @@ func dutyDeliver(snaps []*dutySnap, now time.Time) {
 type dutyFile struct {
 	Saved     time.Time                    `json:"saved"`
 	Dirs      map[string][]*GuildDirection `json:"directions"`
+	Market    map[string][]*GuildDirection `json:"market_directions,omitempty"`
 	Members   []*dutyMember                `json:"members"`
 	Kicked    []*dutyKicked                `json:"kicked"`
 	Counters  map[string]int               `json:"counters"`
@@ -1415,6 +1438,9 @@ func dutyLoad() {
 	}
 	for g, ds := range f.Dirs {
 		gduty.dirs[g] = ds
+	}
+	for g, ds := range f.Market {
+		gduty.market[g] = ds
 	}
 	for _, m := range f.Members {
 		if m.Block.active() {
@@ -1445,7 +1471,7 @@ func dutySave() {
 		gduty.Unlock()
 		return
 	}
-	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Counters: gduty.counters, Dismissed: map[string]time.Time{}}
+	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Market: gduty.market, Counters: gduty.counters, Dismissed: map[string]time.Time{}}
 	for id, until := range gduty.dismissed {
 		if time.Now().Before(until) {
 			f.Dismissed[id] = until
