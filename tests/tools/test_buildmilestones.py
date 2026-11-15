@@ -80,6 +80,22 @@ class BuildMilestonesTest(unittest.TestCase):
             self.assertEqual(pc["stat_goals_unreached"], [], bid)
             self.assertEqual(pc["skills_unreached_at_99"], [], bid)
 
+    def test_prose_is_regenerated_not_stale(self):
+        # the "Build milestones" prose of the class docs is generated (tools/design/gen_milestones.py): no old claims
+        import glob
+        docs = glob.glob(os.path.join(ROOT, "docs", "classes", "*.md"))
+        self.assertGreaterEqual(len(docs), 9)
+        for path in docs:
+            text = open(path, encoding="utf-8").read()
+            i = text.find("### Build milestones")
+            if i < 0:
+                continue
+            section = text[i:]
+            self.assertNotIn("never reached", section, path)
+            self.assertNotIn("(not reached by the current plan)", section, path)
+            self.assertNotIn("plans unchanged", section, path)
+
+
     def test_playstyle_defined_for_solo_mvp_pvp(self):
         for bid, b in DOC["builds"].items():
             for k in ("solo", "mvp", "pvp"):

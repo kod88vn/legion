@@ -116,7 +116,7 @@ var builds = map[string]*Build{
 		// hold these only with Meteor Storm at 4; the bolts stay at 10 because Legacy Mages (bolts 10/10/10) keep their caps
 		// and are not wrong builds (tools/wrongbuilds.py accepts Legacy caps).
 		Skills:  sk(19, 5, 17, 5, 20, 4, 21, 5, 10, 1, 18, 5, 11, 1, 15, 1, 16, 1, 19, 10, 14, 10, 20, 10, 84, 5, 89, 10, 90, 3, 91, 5, 85, 10, 81, 2, 83, 4),
-		Legacy:  sk(19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 84, 10, 89, 10, 90, 3, 91, 3, 21, 1, 85, 10, 18, 5, 81, 2, 83, 5),
+		Legacy:  sk(19, 5, 20, 5, 17, 5, 21, 5, 10, 1, 18, 5, 14, 5, 15, 1, 11, 1, 16, 1, 84, 3, 89, 10, 90, 3, 91, 5, 84, 5, 85, 10, 81, 2, 83, 10, 92, 3, 21, 10, 19, 10, 20, 10, 17, 10, 14, 10, 84, 10, 18, 10, 19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 84, 10, 89, 10, 90, 3, 91, 3, 21, 1, 85, 10, 18, 5, 81, 2, 83, 5),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX AoE wizard: Fire Ball, Thunder Storm and Fire Wall as a Mage, then Storm Gust, Lord of Vermilion, Meteor Storm and Heaven's Drive on grouped monsters; end goal Wizard"},
 	"sage": {ID: "sage", Name: "INT/DEX Battle Sage", Class: 16, First: 2, Branch: 1,
@@ -129,7 +129,7 @@ var builds = map[string]*Build{
 		// (Wind monsters, skills.go boltFor) first, then Free Cast, Magic Rod / Spell Breaker (vs casters), Advanced
 		// Book 10, the endows (need their elemental stones - no endow AI yet), Dispell. Auto Spell is a melee-Sage skill:
 		// left out (existing Sages that took it are not wrong builds: 2nd-job skills aren't checked; Legacy below).
-		Skills:  sk(19, 10, 14, 5, 20, 5, 10, 1, 16, 1, 11, 1, 15, 1, 17, 5, 274, 10, 283, 1, 90, 3, 91, 5, 275, 1, 278, 10),
+		Skills:  sk(19, 10, 14, 5, 20, 5, 10, 1, 16, 1, 11, 1, 15, 1, 17, 5, 21, 5, 18, 5, 274, 10, 283, 1, 90, 3, 91, 5, 275, 1, 278, 10, 276, 1, 277, 5, 289, 5),
 		Legacy:  sk(19, 5, 14, 5, 20, 5, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 21, 5, 19, 10, 14, 10, 20, 10, 18, 5, 274, 5, 283, 1, 90, 5, 91, 5, 275, 1, 278, 4, 276, 1, 277, 5, 274, 10, 278, 10, 280, 2, 281, 2, 282, 2, 289, 5, 19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 274, 5, 283, 1, 90, 5, 91, 5, 275, 1, 278, 4, 279, 10, 276, 3, 280, 2, 281, 2, 278, 10, 274, 10),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX caster sage: bolts, Earth Spike, Heaven's Drive on groups, Free Cast; end goal Sage"},
@@ -206,7 +206,7 @@ var builds = map[string]*Build{
 		Weapons:     []int{1601, 1604, 1607, 1610}, Armors: armorHoly, Extras: append(append([]int{}, extrasHoly...), shields...),
 		Summary: "INT/DEX exorcist priest: heals the party and clears undead/demons with Magnus Exorcismus; end goal Priest"},
 	"monk": {ID: "monk", Name: "AGI/STR Combo Monk", Class: 15, First: 4, Branch: 1,
-		Stats:       st(stSTR, 20, stAGI, 20, stVIT, 15, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 25, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 40, stDEX, 35, stSTR, 80, stAGI, 80, stVIT, 50, stSTR, 85),
+		Stats:       st(stSTR, 20, stAGI, 20, stVIT, 15, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 25, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 40, stDEX, 35, stSTR, 80, stAGI, 80, stVIT, 50, stSTR, 85, stAGI, 85),
 		LegacyStats: st(stSTR, 20, stAGI, 20, stVIT, 15, stDEX, 15, stSTR, 40, stAGI, 40, stVIT, 25, stDEX, 25, stSTR, 60, stAGI, 60, stVIT, 40, stDEX, 35, stINT, 15, stSTR, 80, stAGI, 80, stVIT, 50, stDEX, 45, stSTR, 90),
 		// build review run 3: the combo first (Triple Attack 5 opens Chain Combo, Chain Combo 3 opens Combo Finish), then
 		// Triple Attack 10 - 66 of 75 Monks had Triple Attack and no Chain Combo; 2nd-job order isn't wrong-build checked
@@ -266,7 +266,7 @@ var builds = map[string]*Build{
 		Weapons: []int{1501, 1504, 1801, 1803, 1805, 1807}, Armors: armorHoly, Extras: extrasHoly,
 		Summary: "STR/INT/DEX Asura monk: Fury + Asura Strike burst on tough monsters, sits with Spiritual Cadence to refill SP; end goal Monk"},
 	"alchemist_battle": {ID: "alchemist_battle", Base: "alchemist", Name: "STR/DEX Battle Alchemist", Class: 18, First: 5, Branch: 1,
-		Stats:       st(stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 10, stSTR, 40, stDEX, 30, stVIT, 30, stAGI, 20, stSTR, 60, stDEX, 45, stVIT, 45, stAGI, 30, stSTR, 80, stDEX, 55, stVIT, 55, stSTR, 90, stVIT, 70),
+		Stats:       st(stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 10, stSTR, 40, stDEX, 30, stVIT, 30, stAGI, 20, stSTR, 60, stDEX, 45, stVIT, 45, stAGI, 30, stSTR, 80, stDEX, 55, stVIT, 55, stSTR, 90, stVIT, 70, stDEX, 65),
 		LegacyStats: st(stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 10, stSTR, 40, stDEX, 30, stVIT, 30, stAGI, 20, stSTR, 60, stDEX, 45, stVIT, 45, stAGI, 30, stSTR, 80, stDEX, 55, stVIT, 55, stSTR, 90),
 		// Merchant part as the main plan; Alchemist: Axe Mastery 10 first, then Pharmacy 5 for Acid Terror / Bomb
 		// (progress.go: only with the bottle in the bag), homunculus, Aid Potion, Potion Research / Pharmacy 10 last
@@ -275,7 +275,7 @@ var builds = map[string]*Build{
 		Weapons: []int{1201, 1301, 1351, 1354, 1357}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "STR/DEX battle alchemist: Axe Mastery, Acid Terror and Bomb, homunculus; end goal Alchemist"},
 	"alchemist_potion": {ID: "alchemist_potion", Base: "alchemist", Name: "INT/DEX/LUK Potion Alchemist", Class: 18, First: 5, Branch: 1,
-		Stats:       st(stINT, 20, stDEX, 20, stSTR, 15, stVIT, 15, stINT, 40, stDEX, 40, stSTR, 30, stVIT, 25, stLUK, 15, stINT, 60, stDEX, 55, stLUK, 30, stVIT, 35, stINT, 80, stDEX, 70, stLUK, 45, stDEX, 75),
+		Stats:       st(stINT, 20, stDEX, 20, stSTR, 15, stVIT, 15, stINT, 40, stDEX, 40, stSTR, 30, stVIT, 25, stLUK, 15, stINT, 60, stDEX, 55, stLUK, 30, stVIT, 35, stINT, 80, stDEX, 70, stLUK, 45, stDEX, 75, stINT, 85, stLUK, 50),
 		LegacyStats: st(stINT, 20, stDEX, 20, stSTR, 15, stVIT, 15, stINT, 40, stDEX, 40, stSTR, 30, stVIT, 25, stLUK, 15, stINT, 60, stDEX, 55, stLUK, 30, stVIT, 35, stINT, 80, stDEX, 70, stLUK, 45, stINT, 90, stDEX, 80, stLUK, 60),
 		// the guild's brewer (Renewal brew rate: Potion Research, Pharmacy, job level, INT, DEX, LUK): Merchant with
 		// Vending early (sells its potions) and Overcharge; Potion Research 10 + Pharmacy 10 first, Aid Potion, then the
@@ -303,7 +303,7 @@ var builds = map[string]*Build{
 		Weapons: []int{1201, 1207, 1250, 1254, 1252}, Armors: armorThief, Extras: extrasMelee,
 		Summary: "STR/AGI/DEX katar assassin: Sonic Blow on everything, Enchant Poison, Grimtooth; end goal Assassin"},
 	"assassin_dagger": {ID: "assassin_dagger", Base: "assassin", Name: "AGI/STR Dagger Assassin", Class: 12, First: 6, Branch: 0,
-		Stats:       st(stAGI, 20, stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 40, stSTR, 35, stDEX, 25, stAGI, 60, stSTR, 55, stDEX, 35, stLUK, 10, stVIT, 30, stAGI, 80, stSTR, 75, stDEX, 50, stLUK, 20, stSTR, 80),
+		Stats:       st(stAGI, 20, stSTR, 20, stDEX, 15, stVIT, 15, stAGI, 40, stSTR, 35, stDEX, 25, stAGI, 60, stSTR, 55, stDEX, 35, stLUK, 10, stVIT, 30, stAGI, 80, stSTR, 75, stDEX, 50, stLUK, 20, stSTR, 80, stAGI, 85, stDEX, 55),
 		LegacyStats: st(stAGI, 20, stSTR, 20, stDEX, 15, stAGI, 40, stSTR, 35, stDEX, 25, stVIT, 15, stAGI, 60, stSTR, 55, stDEX, 35, stLUK, 10, stVIT, 30, stAGI, 80, stSTR, 75, stDEX, 50, stLUK, 20, stAGI, 90, stSTR, 80),
 		// dagger + Double Attack (procs only with a dagger) and poison: Righthand Mastery, Enchant Poison 10, Poison
 		// React, Venom Dust, Lefthand Mastery (dual daggers later - the engine equips one weapon today), Venom Splasher.
@@ -311,12 +311,12 @@ var builds = map[string]*Build{
 		Weapons: []int{1201, 1207, 1210, 1213, 1216, 1222}, Armors: armorThief, Extras: extrasMelee,
 		Summary: "AGI/STR dagger assassin: Double Attack, Enchant Poison and Envenom with a dagger; end goal Assassin"},
 	"rogue_bow": {ID: "rogue_bow", Base: "rogue", Name: "DEX/AGI Bow Rogue", Class: 17, First: 6, Branch: 1,
-		Stats:       st(stDEX, 20, stVIT, 15, stAGI, 15, stDEX, 40, stAGI, 30, stDEX, 60, stAGI, 45, stLUK, 10, stVIT, 25, stDEX, 80, stAGI, 60, stVIT, 35, stDEX, 99, stAGI, 70, stLUK, 20, stVIT, 45),
+		Stats:       st(stDEX, 20, stVIT, 15, stAGI, 15, stDEX, 40, stAGI, 30, stDEX, 60, stAGI, 45, stLUK, 10, stVIT, 25, stDEX, 80, stAGI, 60, stVIT, 35, stDEX, 99, stAGI, 70, stLUK, 20, stVIT, 45, stAGI, 80),
 		LegacyStats: st(stDEX, 20, stAGI, 15, stDEX, 40, stAGI, 30, stVIT, 15, stDEX, 60, stAGI, 45, stLUK, 10, stVIT, 25, stDEX, 80, stAGI, 60, stVIT, 35, stDEX, 99, stAGI, 70, stLUK, 20),
 		// Thief part as the main plan; Rogue (bow): Vulture's Eye 10 -> Double Strafe 10 (progress.go, bow + arrows), then
 		// Snatcher 4 and Steal Coin 4. Back Stab / Raid / Intimidate / Plagiarism are out: Back Stab needs a dagger, so a
 		// bow rogue cannot use it (rebalance 2026-11-15). Earlier bow rogues keep those goals in Legacy.
-		Skills:  sk(48, 10, 49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 4, 211, 4, 213, 2),
+		Skills:  sk(49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 10, 211, 4, 213, 5, 124, 1),
 		Legacy:  sk(48, 10, 49, 10, 50, 5, 51, 1, 52, 10, 53, 1, 51, 3, 44, 10, 46, 10, 210, 4, 211, 4, 212, 4, 213, 2, 214, 5, 219, 5, 225, 5),
 		Weapons: []int{1201, 1701, 1704, 1707, 1710, 1713, 1714}, Armors: armorThief, Extras: extrasMelee,
 		Summary: "DEX/AGI bow rogue: Double Strafe from range with Vulture's Eye, Snatcher and Steal Coin; end goal Rogue"},
@@ -353,7 +353,7 @@ var builds = map[string]*Build{
 		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
 		// water AoE: Cold Bolt / Frost Diver / Thunderstorm as a Mage, then Jupitel 3 -> Storm Gust 10 (freezes the crowd),
 		// Lord of Vermilion, Heaven's Drive / Quagmire
-		Skills:  sk(14, 10, 15, 1, 20, 4, 11, 1, 16, 1, 21, 1, 19, 1, 84, 5, 89, 10, 85, 10, 91, 5, 84, 10, 90, 3),
+		Skills:  sk(14, 10, 15, 10, 20, 4, 11, 1, 16, 1, 21, 5, 19, 1, 84, 5, 89, 10, 85, 10, 91, 5, 84, 10, 90, 3, 87, 10),
 		Legacy:  sk(14, 10, 15, 5, 16, 1, 11, 1, 20, 4, 21, 5, 10, 1, 19, 1, 15, 10, 21, 10, 20, 5, 84, 3, 89, 5, 87, 1, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 92, 5, 84, 10),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX frost wizard: Storm Gust freezes the crowd, Lord of Vermilion and Cold Bolt; end goal Wizard"},

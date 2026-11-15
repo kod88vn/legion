@@ -66,8 +66,12 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   Elder Willow (INT+2), Zerom (DEX+3), DEX+2 accessory, Poring (LUK+2), Drops, Sohee, Raydric. A weak fighter: it
   levels with its party (RULES.md 2 "Gear for classes that can't farm").
 
-### Build milestones and playstyle (draft for owner review, 2026-11-15)
-- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Merchant-line build are in `legion/data/buildmilestones.json` (builds blacksmith, blacksmith_mace, alchemist, alchemist_battle, alchemist_potion). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
-- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
-  - Cart Revolution (Merchant skill, 1 point, no prerequisite) is in none of the five plans, yet the engine has a rule for it (weaponskill.go) and the rules above expect it. The first-job part has the room: blacksmith lists 46 first-job points for 39.
-  - `alchemist`, `alchemist_battle`, `blacksmith_mace` finish their stat goals with 175-226 points spare at level 99 (no plan tail); `alchemist_potion` needs 1,420 and ends DEX 74, LUK 45.
+### Build milestones and playstyle (rebalanced 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every build of this line are in `legion/data/buildmilestones.json` (`blacksmith`, `alchemist`, `alchemist_battle`, `alchemist_potion`, `blacksmith_mace`). Gear is by band in `buildgear.json`; the party role stays in code.
+- Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:
+  - `blacksmith` (STR/DEX Axe Blacksmith): stat goals 1,262 before (budget 1,273), skill points 88 before (budget 88), not reached before: none; now stat goals 1,262 (spare 11), skill points 84, ends STR 90, AGI 60, VIT 50, DEX 55, LUK 20, not reached now: none.
+  - `alchemist` (STR/INT Alchemist): stat goals 1,047 before (budget 1,273), skill points 88 before (budget 88), not reached before: none; now stat goals 1,269 (spare 4), skill points 84, ends STR 85, VIT 60, INT 60, DEX 60, not reached now: none.
+  - `alchemist_battle` (STR/DEX Battle Alchemist): stat goals 1,072 before (budget 1,273), skill points 88 before (budget 88), not reached before: none; now stat goals 1,260 (spare 13), skill points 84, ends STR 90, AGI 30, VIT 70, DEX 65, not reached now: none.
+  - `alchemist_potion` (INT/DEX/LUK Potion Alchemist): stat goals 1,420 before (budget 1,273), skill points 88 before (budget 88), not reached before: DEX 80; LUK 60; now stat goals 1,256 (spare 17), skill points 84, ends STR 30, VIT 35, INT 85, DEX 75, LUK 50, not reached now: none.
+  - `blacksmith_mace` (VIT/STR Mace Blacksmith): stat goals 1,098 before (budget 1,273), skill points 88 before (budget 88), not reached before: none; now stat goals 1,241 (spare 32), skill points 77, ends STR 95, AGI 15, VIT 80, DEX 50, not reached now: none.
+- Existing characters: a changed plan keeps the earlier goals in `Legacy` / `LegacyStats` (builds.go), so they are not wrong builds; `tests/tools/test_wrongbuilds_replay.py` replays the pre-rebalance plans through the wrongbuilds.py rules.

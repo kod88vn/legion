@@ -148,21 +148,13 @@ func TestWizardPlanAoE(t *testing.T) {
 	}
 }
 
-// Existing bolt Mages (built under the Legacy plan) must stay valid: every first-job level they can hold is within
-// the new plan's caps, and their next points go to area spells.
+// Existing bolt Mages (built under the bolts-first plan, the old Legacy) keep their levels: 30 points in bolts 10/10/10,
+// and the next 9 points go to Fire Ball and Thunder Storm. Legacy also carries the pre-rebalance first-job caps (Fire
+// Ball 10, Fire Wall 10, Thunder Storm 10), so a Mage that followed that plan is not a wrong build: that is replayed in
+// tests/tools/test_wrongbuilds_replay.py against the wrongbuilds.py rules.
 func TestLegacyMagesStayValid(t *testing.T) {
 	p := builds["wizard"]
-	caps := map[int]int{}
-	for _, g := range p.Skills {
-		caps[g.ID] = max(caps[g.ID], g.Lv)
-	}
-	for _, g := range p.Legacy {
-		if g.ID < 80 && caps[g.ID] < g.Lv {
-			t.Fatalf("legacy goal %d lv%d above the new cap %d: old Mages would look like wrong builds", g.ID, g.Lv, caps[g.ID])
-		}
-	}
-	// a legacy Mage after 30 points (bolts 10/10/10): the next 9 points go to Fire Ball and Thunder Storm
-	old := simPlan(p.Legacy, func(id int) bool { return id < 80 }, 30)
+	old := simPlan(sk(19, 10, 14, 10, 20, 10), func(id int) bool { return id < 80 }, 30)
 	next := map[int]int{}
 	for k, v := range old {
 		next[k] = v

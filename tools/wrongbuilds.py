@@ -35,31 +35,36 @@ PARTY = {'zendancer84', 'echobunny', 'zen.fox', 'xxrinfangxx', 'silent rogue', '
 # ---- plans parsed from builds.go
 src = open(os.path.join(SRV, 'legion', 'builds.go'), encoding='utf8').read()
 STAT = {'stSTR': 0, 'stAGI': 1, 'stVIT': 2, 'stINT': 3, 'stDEX': 4, 'stLUK': 5}
-plans = {}
-for m in re.finditer(r'"(\w+)": \{ID: "\w+".*?First: (\d+).*?Stats:\s+st\((.*?)\),.*?Skills:\s+sk\((.*?)\),', src, re.S):
-    pid, first, stats, skills = m.group(1), int(m.group(2)), m.group(3), m.group(4)
-    sv = [x.strip() for x in stats.split(',')]
-    st = [(STAT[sv[i]], int(sv[i + 1])) for i in range(0, len(sv) - 1, 2)]
-    kv = [int(x) for x in skills.split(',')]
-    plans[pid] = dict(first=first, stats=st, skills=[(kv[i], kv[i + 1]) for i in range(0, len(kv) - 1, 2)], legacy=[])
-    bm = re.search(r'Base: "(\w+)"', src[m.start():m.end()])
-    plans[pid]['base'] = bm.group(1) if bm else pid  # build variants (builds.go Base) belong to a main plan
-    # Legacy: an earlier plan's goals (builds.go Build.Legacy). Characters built under it are NOT wrong builds
-    # (owner 2026-11-14: existing bolt Mages keep their levels and grow into the AoE plan): their caps count too.
-    # LegacyStats: an earlier stat plan (owner 2026-11-14: priests go INT-first; old INT/VIT/DEX priests stay valid)
-    nxt = re.search(r'\n\t"\w+": \{ID:', src[m.end():])
-    block = src[m.start():m.end() + (nxt.start() if nxt else len(src) - m.end())]
-    ls = re.search(r'LegacyStats:\s+st\((.*?)\),', block)
-    if ls:
-        lv = [x.strip() for x in ls.group(1).split(',')]
-        plans[pid]['legacy_stats'] = [(STAT[lv[i]], int(lv[i + 1])) for i in range(0, len(lv) - 1, 2)]
-    lm = re.match(r'\s*Legacy:\s+sk\((.*?)\),', src[m.end():])
-    if lm:
-        lv = [int(x) for x in lm.group(1).split(',')]
-        plans[pid]['legacy'] = [(lv[i], lv[i + 1]) for i in range(0, len(lv) - 1, 2)]
-vf = re.search(r'var vendorFirst = sk\((.*?)\)', src).group(1)
-vf = [int(x) for x in vf.split(',')]
-VENDOR_FIRST = [(vf[i], vf[i + 1]) for i in range(0, len(vf) - 1, 2)]
+def parse_plans(src):
+    plans = {}
+    for m in re.finditer(r'"(\w+)": \{ID: "\w+".*?First: (\d+).*?Stats:\s+st\((.*?)\),.*?Skills:\s+sk\((.*?)\),', src, re.S):
+        pid, first, stats, skills = m.group(1), int(m.group(2)), m.group(3), m.group(4)
+        sv = [x.strip() for x in stats.split(',')]
+        st = [(STAT[sv[i]], int(sv[i + 1])) for i in range(0, len(sv) - 1, 2)]
+        kv = [int(x) for x in skills.split(',')]
+        plans[pid] = dict(first=first, stats=st, skills=[(kv[i], kv[i + 1]) for i in range(0, len(kv) - 1, 2)], legacy=[])
+        bm = re.search(r'Base: "(\w+)"', src[m.start():m.end()])
+        plans[pid]['base'] = bm.group(1) if bm else pid  # build variants (builds.go Base) belong to a main plan
+        # Legacy: an earlier plan's goals (builds.go Build.Legacy). Characters built under it are NOT wrong builds
+        # (owner 2026-11-14: existing bolt Mages keep their levels and grow into the AoE plan): their caps count too.
+        # LegacyStats: an earlier stat plan (owner 2026-11-14: priests go INT-first; old INT/VIT/DEX priests stay valid)
+        nxt = re.search(r'\n\t"\w+": \{ID:', src[m.end():])
+        block = src[m.start():m.end() + (nxt.start() if nxt else len(src) - m.end())]
+        ls = re.search(r'LegacyStats:\s+st\((.*?)\),', block)
+        if ls:
+            lv = [x.strip() for x in ls.group(1).split(',')]
+            plans[pid]['legacy_stats'] = [(STAT[lv[i]], int(lv[i + 1])) for i in range(0, len(lv) - 1, 2)]
+        lm = re.match(r'\s*Legacy:\s+sk\((.*?)\),', src[m.end():])
+        if lm:
+            lv = [int(x) for x in lm.group(1).split(',')]
+            plans[pid]['legacy'] = [(lv[i], lv[i + 1]) for i in range(0, len(lv) - 1, 2)]
+    vf = re.search(r'var vendorFirst = sk\((.*?)\)', src).group(1)
+    vf = [int(x) for x in vf.split(',')]
+    VENDOR_FIRST = [(vf[i], vf[i + 1]) for i in range(0, len(vf) - 1, 2)]
+    return plans, VENDOR_FIRST
+
+
+plans, VENDOR_FIRST = parse_plans(src)
 assert sum(p["base"] == k for k, p in plans.items()) == 13, plans.keys()
 
 # ---- 1st-job skill trees (Renewal): id -> (max, {prereq: lv})
@@ -149,6 +154,55 @@ CLEAR = ['skill', 'inventory', 'cart_inventory', 'char_reg_num', 'char_reg_str',
          'hotkey', 'memo', 'bonus_script', 'buyingstores', 'achievement']
 
 
+def plan_problems(plan, role, cls, sk, st):
+    """The skill and stat rules of the audit for one character (pure: no DB). Returns (problems, notes)."""
+    problems, notes = [], []
+    # ---- skills
+    if cls in TREE and cls == plan['first']:
+        first_pts = sum(v for k, v in sk.items() if k in TREE[cls])
+        # caps: the most each first-job skill gets from the plan's goal lists (vendorFirst too for vendors)
+        lists = ([VENDOR_FIRST] if role == 'vendor' else []) + [plan['skills'], plan['legacy']]
+        cap = collections.Counter()
+        for l in lists:
+            for i, g in l:
+                if i in TREE[cls]:
+                    cap[i] = max(cap[i], g)
+        plan1 = sum(cap.values())
+        over = {k: v - cap[k] for k, v in sk.items() if k in TREE[cls] and v > cap[k]}
+        overn = sum(over.values()) - max(0, first_pts - plan1)  # points past the plan's 1st-job goals may go anywhere
+        if overn >= 2:
+            problems.append('skills off-plan (irreversible) by %d pts: has %s, plan caps %s' % (
+                overn, {k: sk[k] for k in sorted(over)}, {k: cap[k] for k in sorted(over)}))
+        else:
+            exp = sim_skills(plan, role, cls, first_pts)
+            offn = sum(v - exp[k] for k, v in sk.items() if k in TREE[cls] and v > exp[k])
+            if offn >= 3:
+                notes.append('skill order differs from plan by %d pts (self-corrects: all within plan caps)' % offn)
+        if role == 'vendor' and cls == 5 and first_pts >= 11 and sk.get(41, 0) == 0:
+            problems.append('vendor without Vending after %d merchant pts' % first_pts)
+        if role == 'support' and cls == 4 and first_pts >= 3 and sk.get(28, 0) == 0:
+            problems.append('support acolyte without Heal after %d pts' % first_pts)
+    bad_nov = sk.get(1, 0)
+    if cls == 0 and any(k != 1 for k in sk if k < 200):
+        problems.append('novice with job skills %s' % sk)
+    # ---- stats
+    budget = spent(st)
+    horizon = sim_stats(plan, budget + max(budget, 40))
+    over = {i: st[i] - horizon[i] for i in range(6) if st[i] > horizon[i] + 1}
+    if over and plan.get('legacy_stats'):
+        lh = sim_stats(dict(stats=plan['legacy_stats']), budget + max(budget, 40))
+        if not any(st[i] > lh[i] + 1 for i in range(6)):
+            over = {}  # fits the earlier stat plan: not a wrong build
+    if over:
+        problems.append('stats off-plan (irreversible): has %s, plan by double these points %s' % (st, horizon))
+    else:
+        exp_st = sim_stats(plan, budget)
+        dist = sum(abs(a - b) for a, b in zip(st, exp_st))
+        if dist > 4:
+            notes.append('stat order differs from plan (|diff|=%d, converges): has %s, plan now %s' % (dist, st, exp_st))
+    return problems, notes
+
+
 def audit():
     chars = sql("SELECT c.char_id,c.account_id,l.userid,c.char_num,c.name,c.class,c.base_level,c.job_level,c.str,c.agi,c.vit,c.`int`,c.dex,c.luk,c.online "
                 "FROM `char` c LEFT JOIN login l ON l.account_id=c.account_id WHERE c.account_id BETWEEN 2100001 AND 2199999;")
@@ -217,49 +271,9 @@ def audit():
                 problems.append('legion_first=%d but plan %s needs 1st job %d' % (rf, c['plan'], plan['first']))
             if cls in TREE and cls != plan['first']:
                 problems.append('class %s cannot reach target %s (plan %s)' % (CORE[cls], c.get('target_class'), c['plan']))
-            # ---- skills
-            if cls in TREE and cls == plan['first']:
-                first_pts = sum(v for k, v in sk.items() if k in TREE[cls])
-                # caps: the most each first-job skill gets from the plan's goal lists (vendorFirst too for vendors)
-                lists = ([VENDOR_FIRST] if c['role'] == 'vendor' else []) + [plan['skills'], plan['legacy']]
-                cap = collections.Counter()
-                for l in lists:
-                    for i, g in l:
-                        if i in TREE[cls]:
-                            cap[i] = max(cap[i], g)
-                plan1 = sum(cap.values())
-                over = {k: v - cap[k] for k, v in sk.items() if k in TREE[cls] and v > cap[k]}
-                overn = sum(over.values()) - max(0, first_pts - plan1)  # points past the plan's 1st-job goals may go anywhere
-                if overn >= 2:
-                    problems.append('skills off-plan (irreversible) by %d pts: has %s, plan caps %s' % (
-                        overn, {k: sk[k] for k in sorted(over)}, {k: cap[k] for k in sorted(over)}))
-                else:
-                    exp = sim_skills(plan, c['role'], cls, first_pts)
-                    offn = sum(v - exp[k] for k, v in sk.items() if k in TREE[cls] and v > exp[k])
-                    if offn >= 3:
-                        notes.append('skill order differs from plan by %d pts (self-corrects: all within plan caps)' % offn)
-                if c['role'] == 'vendor' and cls == 5 and first_pts >= 11 and sk.get(41, 0) == 0:
-                    problems.append('vendor without Vending after %d merchant pts' % first_pts)
-                if c['role'] == 'support' and cls == 4 and first_pts >= 3 and sk.get(28, 0) == 0:
-                    problems.append('support acolyte without Heal after %d pts' % first_pts)
-            bad_nov = sk.get(1, 0)
-            if cls == 0 and any(k != 1 for k in sk if k < 200):
-                problems.append('novice with job skills %s' % sk)
-            # ---- stats
-            budget = spent(st)
-            horizon = sim_stats(plan, budget + max(budget, 40))
-            over = {i: st[i] - horizon[i] for i in range(6) if st[i] > horizon[i] + 1}
-            if over and plan.get('legacy_stats'):
-                lh = sim_stats(dict(stats=plan['legacy_stats']), budget + max(budget, 40))
-                if not any(st[i] > lh[i] + 1 for i in range(6)):
-                    over = {}  # fits the earlier stat plan: not a wrong build
-            if over:
-                problems.append('stats off-plan (irreversible): has %s, plan by double these points %s' % (st, horizon))
-            else:
-                exp_st = sim_stats(plan, budget)
-                dist = sum(abs(a - b) for a, b in zip(st, exp_st))
-                if dist > 4:
-                    notes.append('stat order differs from plan (|diff|=%d, converges): has %s, plan now %s' % (dist, st, exp_st))
+            pp, pn = plan_problems(plan, c['role'], cls, sk, st)
+            problems += pp
+            notes += pn
         if not problems:
             if notes:
                 order_only.append(dict(name=r['name'], account=r['userid'], cls=CORE.get(cls, str(cls)), plan=c.get('plan'), role=c['role'], base_level=lvl, notes=notes))

@@ -882,6 +882,16 @@
        "lv": 5
       },
       {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
        "id": 274,
        "name": "Study",
        "lv": 10
@@ -912,7 +922,7 @@
        "lv": 5
       }
      ],
-     "skill_points_unspent": 10
+     "skill_points_unspent": 0
     },
     {
      "range": "60-99",
@@ -972,6 +982,16 @@
        "lv": 5
       },
       {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 5
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
        "id": 274,
        "name": "Study",
        "lv": 10
@@ -1000,9 +1020,24 @@
        "id": 278,
        "name": "Free Cast",
        "lv": 10
+      },
+      {
+       "id": 276,
+       "name": "Magic Rod",
+       "lv": 1
+      },
+      {
+       "id": 277,
+       "name": "Spell Breaker",
+       "lv": 5
+      },
+      {
+       "id": 289,
+       "name": "Dispell",
+       "lv": 5
       }
      ],
-     "skill_points_unspent": 29
+     "skill_points_unspent": 8
     }
    ],
    "plan_check": {
@@ -1018,7 +1053,7 @@
     },
     "stat_points_spare_at_99": 40,
     "stat_goals_unreached": [],
-    "skill_points_listed": 59,
+    "skill_points_listed": 80,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
@@ -2810,15 +2845,15 @@
      "class_at_end": "Monk",
      "stats": {
       "STR": 85,
-      "AGI": 80,
+      "AGI": 85,
       "VIT": 50,
       "INT": 1,
       "DEX": 35,
       "LUK": 1
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1215,
-     "stat_points_spare": 58,
+     "stat_points_used": 1264,
+     "stat_points_spare": 9,
      "skills": [
       {
        "id": 28,
@@ -2900,17 +2935,17 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1215,
+    "stat_points_goals_cost": 1264,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 85,
-     "AGI": 80,
+     "AGI": 85,
      "VIT": 50,
      "INT": 1,
      "DEX": 35,
      "LUK": 1
     },
-    "stat_points_spare_at_99": 58,
+    "stat_points_spare_at_99": 9,
     "stat_goals_unreached": [],
     "skill_points_listed": 81,
     "skill_points_reachable": 88,
@@ -4385,12 +4420,12 @@
       "AGI": 30,
       "VIT": 70,
       "INT": 1,
-      "DEX": 55,
+      "DEX": 65,
       "LUK": 1
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1186,
-     "stat_points_spare": 87,
+     "stat_points_used": 1260,
+     "stat_points_spare": 13,
      "skills": [
       {
        "id": 36,
@@ -4482,17 +4517,17 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1186,
+    "stat_points_goals_cost": 1260,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 90,
      "AGI": 30,
      "VIT": 70,
      "INT": 1,
-     "DEX": 55,
+     "DEX": 65,
      "LUK": 1
     },
-    "stat_points_spare_at_99": 87,
+    "stat_points_spare_at_99": 13,
     "stat_goals_unreached": [],
     "skill_points_listed": 84,
     "skill_points_reachable": 88,
@@ -4580,13 +4615,13 @@
       "STR": 30,
       "AGI": 1,
       "VIT": 35,
-      "INT": 80,
+      "INT": 85,
       "DEX": 75,
-      "LUK": 45
+      "LUK": 50
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1177,
-     "stat_points_spare": 96,
+     "stat_points_used": 1256,
+     "stat_points_spare": 17,
      "skills": [
       {
        "id": 36,
@@ -4678,17 +4713,17 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1177,
+    "stat_points_goals_cost": 1256,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 30,
      "AGI": 1,
      "VIT": 35,
-     "INT": 80,
+     "INT": 85,
      "DEX": 75,
-     "LUK": 45
+     "LUK": 50
     },
-    "stat_points_spare_at_99": 96,
+    "stat_points_spare_at_99": 17,
     "stat_goals_unreached": [],
     "skill_points_listed": 84,
     "skill_points_reachable": 88,
@@ -5331,15 +5366,15 @@
      "class_at_end": "Assassin",
      "stats": {
       "STR": 80,
-      "AGI": 80,
+      "AGI": 85,
       "VIT": 30,
       "INT": 1,
-      "DEX": 50,
+      "DEX": 55,
       "LUK": 20
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1189,
-     "stat_points_spare": 84,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
      "skills": [
       {
        "id": 48,
@@ -5411,17 +5446,17 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1189,
+    "stat_points_goals_cost": 1272,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 80,
-     "AGI": 80,
+     "AGI": 85,
      "VIT": 30,
      "INT": 1,
-     "DEX": 50,
+     "DEX": 55,
      "LUK": 20
     },
-    "stat_points_spare_at_99": 84,
+    "stat_points_spare_at_99": 1,
     "stat_goals_unreached": [],
     "skill_points_listed": 88,
     "skill_points_reachable": 88,
@@ -5468,11 +5503,6 @@
      "stat_points_spare": 2,
      "skills": [
       {
-       "id": 48,
-       "name": "Double Attack",
-       "lv": 10
-      },
-      {
        "id": 49,
        "name": "Improve Dodge",
        "lv": 10
@@ -5486,6 +5516,11 @@
        "id": 51,
        "name": "Hiding",
        "lv": 1
+      },
+      {
+       "id": 52,
+       "name": "Envenom",
+       "lv": 10
       }
      ],
      "skill_points_unspent": 0
@@ -5507,11 +5542,6 @@
      "stat_points_used": 550,
      "stat_points_spare": 5,
      "skills": [
-      {
-       "id": 48,
-       "name": "Double Attack",
-       "lv": 10
-      },
       {
        "id": 49,
        "name": "Improve Dodge",
@@ -5548,7 +5578,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 0
+     "skill_points_unspent": 10
     },
     {
      "range": "45-99",
@@ -5557,21 +5587,16 @@
      "class_at_end": "Rogue",
      "stats": {
       "STR": 1,
-      "AGI": 70,
+      "AGI": 80,
       "VIT": 45,
       "INT": 1,
       "DEX": 99,
       "LUK": 20
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1181,
-     "stat_points_spare": 92,
+     "stat_points_used": 1270,
+     "stat_points_spare": 3,
      "skills": [
-      {
-       "id": 48,
-       "name": "Double Attack",
-       "lv": 10
-      },
       {
        "id": 49,
        "name": "Improve Dodge",
@@ -5610,7 +5635,7 @@
       {
        "id": 210,
        "name": "Gank",
-       "lv": 4
+       "lv": 10
       },
       {
        "id": 211,
@@ -5620,24 +5645,29 @@
       {
        "id": 213,
        "name": "Stalk",
-       "lv": 2
+       "lv": 5
+      },
+      {
+       "id": 124,
+       "name": "Remove Trap",
+       "lv": 1
       }
      ],
      "skill_points_unspent": 19
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1181,
+    "stat_points_goals_cost": 1270,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 1,
-     "AGI": 70,
+     "AGI": 80,
      "VIT": 45,
      "INT": 1,
      "DEX": 99,
      "LUK": 20
     },
-    "stat_points_spare_at_99": 92,
+    "stat_points_spare_at_99": 3,
     "stat_goals_unreached": [],
     "skill_points_listed": 69,
     "skill_points_reachable": 88,
@@ -6394,7 +6424,7 @@
       {
        "id": 15,
        "name": "Frost Diver",
-       "lv": 1
+       "lv": 10
       },
       {
        "id": 20,
@@ -6410,19 +6440,9 @@
        "id": 16,
        "name": "Stone Curse",
        "lv": 1
-      },
-      {
-       "id": 21,
-       "name": "Thunderstorm",
-       "lv": 1
-      },
-      {
-       "id": 19,
-       "name": "Fire Bolt",
-       "lv": 1
       }
      ],
-     "skill_points_unspent": 7
+     "skill_points_unspent": 0
     },
     {
      "range": "25-65",
@@ -6449,7 +6469,7 @@
       {
        "id": 15,
        "name": "Frost Diver",
-       "lv": 1
+       "lv": 10
       },
       {
        "id": 20,
@@ -6469,7 +6489,7 @@
       {
        "id": 21,
        "name": "Thunderstorm",
-       "lv": 1
+       "lv": 5
       },
       {
        "id": 19,
@@ -6492,7 +6512,7 @@
        "lv": 10
       }
      ],
-     "skill_points_unspent": 20
+     "skill_points_unspent": 7
     },
     {
      "range": "60-99",
@@ -6519,7 +6539,7 @@
       {
        "id": 15,
        "name": "Frost Diver",
-       "lv": 1
+       "lv": 10
       },
       {
        "id": 20,
@@ -6539,7 +6559,7 @@
       {
        "id": 21,
        "name": "Thunderstorm",
-       "lv": 1
+       "lv": 5
       },
       {
        "id": 19,
@@ -6570,9 +6590,14 @@
        "id": 90,
        "name": "Earth Spike",
        "lv": 3
+      },
+      {
+       "id": 87,
+       "name": "Ice Wall",
+       "lv": 10
       }
      ],
-     "skill_points_unspent": 31
+     "skill_points_unspent": 8
     }
    ],
    "plan_check": {
@@ -6588,7 +6613,7 @@
     },
     "stat_points_spare_at_99": 40,
     "stat_goals_unreached": [],
-    "skill_points_listed": 57,
+    "skill_points_listed": 80,
     "skill_points_reachable": 88,
     "skills_unreached_at_99": []
    },
