@@ -6,6 +6,7 @@ Markers (plain files in the data dir; presence is the signal):
   stack.hold  the owner has the stack stopped: keeper.sh must not start any container.
 Heartbeats (mtime is the heartbeat): sentinel.heartbeat, partycheck.heartbeat, and the dispatcher's own file.
 """
+import atexit
 import json
 import os
 import time
@@ -129,30 +130,94 @@ def lock_owner(name):
         return None
 
 
-def take_lock(name, stale, pid=None):
-    """Single instance. Creates legion/data/<name> exclusively (O_EXCL) holding "<pid> <epoch>". A lock refreshed
-    within `stale` seconds belongs to a live holder: False. An older lock (a crashed holder) is replaced."""
-    p = dpath(name)
-    age = marker_age(name)
-    if age is not None and age <= stale:
-        return False
+_HELD = {}          # lock name -> pid, for the locks this process took; released on exit while the pid still owns them
+_INSTALLED = [False]
+
+
+def lock_owner_is_me(name, pid=None):
+    return lock_owner(name) == (os.getpid() if pid is None else pid)
+
+
+def release_lock(name, pid=None):
+    """Remove legion/data/<name> if this process (or pid) still owns it. Never removes another holder's lock."""
+    me = os.getpid() if pid is None else pid
     try:
-        os.makedirs(data_dir(), exist_ok=True)
-        try:
-            os.remove(p)
-        except OSError:
-            pass
-        fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
-    except OSError:
-        return False
-    with os.fdopen(fd, "w") as f:
-        f.write("%d %d\n" % (os.getpid() if pid is None else pid, int(now())))
-    t = now()
-    try:
-        os.utime(p, (t, t))   # the lock's time is the (fakeable) clock, like every later refresh
+        if lock_owner(name) == me:
+            os.remove(dpath(name))
     except OSError:
         pass
-    return True
+    _HELD.pop(name, None)
+
+
+def _release_held():
+    for name, pid in list(_HELD.items()):
+        release_lock(name, pid)
+
+
+def _install_release():
+    """atexit covers sys.exit (also sentinel's exit 2 wake), normal returns and Ctrl+C. SIGTERM and SIGBREAK become a
+    normal exit so atexit runs too. A hard kill (SIGKILL, power loss) leaves the lock to go stale: take_lock replaces it
+    after `stale` seconds."""
+    if _INSTALLED[0]:
+        return
+    _INSTALLED[0] = True
+    atexit.register(_release_held)
+    import signal
+    import threading
+    if threading.current_thread() is threading.main_thread():
+        for s in ("SIGTERM", "SIGBREAK"):
+            sig = getattr(signal, s, None)
+            if sig is None:
+                continue
+            try:
+                signal.signal(sig, lambda signum, frame: sys.exit(128 + signum))
+            except (ValueError, OSError):
+                pass
+
+
+def take_lock(name, stale, pid=None):
+    """Single instance, atomic. legion/data/<name> is created exclusively (O_EXCL) holding "<pid> <epoch>". A lock
+    refreshed within `stale` seconds belongs to a live holder: False. An older lock (a crashed holder) is first moved
+    aside with one atomic rename, so of two simultaneous starters only one can take it over; the O_EXCL create then
+    decides. The lock is released on exit by this process (see _release_held)."""
+    p = dpath(name)
+    me = os.getpid() if pid is None else pid
+    try:
+        os.makedirs(data_dir(), exist_ok=True)
+    except OSError:
+        return False
+    for _ in range(3):
+        try:
+            fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+        except FileExistsError:
+            age = marker_age(name)
+            if age is None:
+                continue                      # vanished between the calls: try the create again
+            if age <= stale:
+                return False                  # a live holder
+            aside = "%s.stale.%d" % (p, me)
+            try:
+                os.replace(p, aside)          # atomic: only one starter can move the stale lock
+            except OSError:
+                return False                  # another starter moved it first and owns the takeover
+            try:
+                os.remove(aside)
+            except OSError:
+                pass
+            continue
+        except OSError:
+            return False
+        with os.fdopen(fd, "w") as f:
+            f.write("%d %d\n" % (me, int(now())))
+        t = now()
+        try:
+            os.utime(p, (t, t))               # the lock's time is the (fakeable) clock, like every later refresh
+        except OSError:
+            pass
+        _HELD[name] = me
+        _install_release()
+        return True
+    return False
 
 
 def refresh_lock(name, pid=None):

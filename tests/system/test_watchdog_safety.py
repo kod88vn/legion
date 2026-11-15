@@ -372,28 +372,125 @@ class TestSingleInstances(W.Env):
             lock = by[key].get("lock")
             self.assertTrue(lock, key)
             with open(os.path.join(REPO, script), encoding="utf-8") as f:
-                self.assertIn(lock, f.read(), "%s does not take %s" % (script, lock))
+                text = f.read()
+            # the dashboard's lock is per port: its source builds the name, the default port's name is in AGENTS
+            pattern = "dashboard-%d.lock" if key == "dashboard" else lock
+            self.assertIn(pattern, text, "%s does not take %s" % (script, lock))
 
-    def test_partycheck_main_refuses_with_a_fresh_lock(self):
+    def test_partycheck_main_refuses_with_exit_3(self):
         import partycheck
         self.put("partycheck.lock", "77 1", age=10)
-        self.assertEqual(partycheck.main(["--interval", "1"]), 0)     # refused before the loop starts
+        self.assertEqual(partycheck.main(["--interval", "1"]), 3)     # refused before the loop starts
 
-    def test_dashboard_main_refuses_with_a_fresh_lock(self):
+    def test_dashboard_main_refuses_with_exit_3_on_a_free_port(self):
+        import socket
         import dashserve
-        self.put("dashboard.lock", "77 1", age=10)
-        self.assertEqual(dashserve.main(["--port", "1"]), 0)          # refused before the port is bound
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()                                                     # the port is free: the bind succeeds
+        self.put("dashboard-%d.lock" % port, "77 1", age=10)
+        self.assertEqual(dashserve.main(["--port", str(port), "--bind", "127.0.0.1"]), 3)
 
-    def test_sentinel_main_refuses_with_a_fresh_lock(self):
+    def test_dashboard_port_in_use_exits_3_and_takes_no_lock(self):
+        import socket
+        import dashserve
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+        try:
+            self.assertEqual(dashserve.main(["--port", str(port), "--bind", "127.0.0.1"]), 3)
+        finally:
+            s.close()
+        self.assertFalse(os.path.exists(os.path.join(self.d, "dashboard-%d.lock" % port)))   # bind first, lock second
+
+    def test_sentinel_main_refuses_with_exit_3(self):
         import sentinel
         self.put("sentinel.lock", "77 1", age=10)
-        self.assertIsNone(sentinel.main())                             # refused: returns before the loop
+        with self.assertRaises(SystemExit) as cm:
+            sentinel.main()
+        self.assertEqual(cm.exception.code, 3)
 
     def test_dispatch_main_refuses_with_a_fresh_lock(self):
         sys.path.insert(0, os.path.join(REPO, "tools", "puppet"))
         import dispatch
         self.put("dispatch.lock", "77 1", age=10)
         self.assertEqual(dispatch.main([]), 3)
+
+
+def _run_py(code, data_dir):
+    """run python -c code with LEGION_DATA set; returns the completed process"""
+    env = dict(os.environ, LEGION_DATA=data_dir)
+    env.pop("LEGION_FAKE_NOW", None)
+    return subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=120)
+
+
+TAKE = ("import sys; sys.path.insert(0, %r); import common as C; "
+        % os.path.join(REPO, "tools", "system"))
+
+
+class TestLockExitAndAtomicity(W.Env):
+    def test_sentinel_wake_exit_2_releases_and_relaunch_starts_at_once(self):
+        """the sentinel exits 2 after an outage (its wake); the relaunch must not wait for the 300 s stale limit"""
+        r = _run_py(TAKE + "assert C.take_lock('sentinel.lock', 300); sys.exit(2)", self.d)
+        self.assertEqual(r.returncode, 2, r.stderr)
+        self.assertFalse(os.path.exists(os.path.join(self.d, "sentinel.lock")))
+        r = _run_py(TAKE + "print('TOOK' if C.take_lock('sentinel.lock', 300) else 'REFUSED')", self.d)
+        self.assertIn("TOOK", r.stdout, r.stderr)
+
+    def test_crash_without_release_stays_held_until_stale(self):
+        """a hard exit (os._exit) skips atexit: the lock is held until it is stale, then taken over"""
+        r = _run_py(TAKE + "assert C.take_lock('x.lock', 300); import os; os._exit(0)", self.d)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(os.path.exists(os.path.join(self.d, "x.lock")))
+        r = _run_py(TAKE + "print('TOOK' if C.take_lock('x.lock', 300) else 'REFUSED')", self.d)
+        self.assertIn("REFUSED", r.stdout)
+
+    def test_release_removes_only_our_own_lock(self):
+        import common as C
+        self.assertTrue(C.take_lock("mine.lock", 300))
+        C.release_lock("mine.lock")
+        self.assertFalse(os.path.exists(os.path.join(self.d, "mine.lock")))
+        self.put("theirs.lock", "999999 1", age=0)
+        C.release_lock("theirs.lock")                                 # not ours: left alone
+        self.assertTrue(os.path.exists(os.path.join(self.d, "theirs.lock")))
+
+    def test_second_starter_refused_while_first_holds(self):
+        import common as C
+        self.assertTrue(C.take_lock("two.lock", 300))
+        self.assertFalse(C.take_lock("two.lock", 300))
+
+    def test_stale_lock_taken_over_once_only(self):
+        import common as C
+        self.put("old.lock", "999999 1", age=400)
+        self.assertTrue(C.take_lock("old.lock", 300))
+        self.assertEqual(C.lock_owner("old.lock"), os.getpid())
+        self.assertFalse([f for f in os.listdir(self.d) if ".stale." in f])   # the moved-aside copy is removed
+
+    def test_lost_race_for_a_stale_lock_is_refused(self):
+        """another starter moved the stale lock aside first: this one must not also take it"""
+        import common as C
+        from unittest import mock
+        self.put("race.lock", "999999 1", age=400)
+        with mock.patch("common.os.replace", side_effect=FileNotFoundError("moved by someone else")):
+            self.assertFalse(C.take_lock("race.lock", 300))
+
+    def test_sentinel_cannot_import_common_fails_loudly(self):
+        with open(os.path.join(REPO, "tools", "sentinel.py"), encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn("cannot import common", src)
+        self.assertIn("sys.exit('sentinel: cannot import common", src)
+        self.assertNotIn("SYSC = None", src)
+        self.assertNotIn("BUGQ = SYSC = METER = None", src)
+
+    def test_sentinel_refusal_is_exit_3_from_the_command_line(self):
+        self.put("sentinel.lock", "77 1", age=10)
+        env = dict(os.environ, LEGION_DATA=self.d)
+        r = subprocess.run([sys.executable, os.path.join(REPO, "tools", "sentinel.py")], env=env,
+                           capture_output=True, text=True, timeout=120)
+        self.assertEqual(r.returncode, 3, r.stderr + r.stdout)
+        self.assertIn("another copy", r.stdout + r.stderr)
 
 
 class TestUnwall(W.Env):

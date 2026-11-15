@@ -75,7 +75,7 @@ AGENTS = [
     {"key": "keeper", "label": "Ayla keeper", "hb": ["keeper.heartbeat"], "stale": 300,
      "cmd": ["tools/rogui/keeper.sh"], "bash": True, "lock": "keeper.lock", "lock_stale": 150},
     {"key": "dashboard", "label": "Dashboard server", "hb": ["dashboard.heartbeat"], "stale": 120,
-     "cmd": ["tools/dashboard/dashserve.py"], "always": True, "lock": "dashboard.lock", "lock_stale": 120},
+     "cmd": ["tools/dashboard/dashserve.py"], "always": True, "lock": "dashboard-8099.lock", "lock_stale": 120},
 ]
 CONTAINERS = ["ro-db", "ro-rathena", "ro-agency", "ro-openkore-ayla", "ro-legion", "ro-legion-core"]
 

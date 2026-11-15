@@ -750,11 +750,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(503, {"down": True, "source": "engine", "error": err})
 
 
+DASH_LOCK = [None]   # legion/data/dashboard-<port>.lock, set by main() once the port is bound
+
+
+def dash_lock_name(port):
+    return "dashboard-%d.lock" % port
+
+
 def beat():
     while True:
-        if not C.refresh_lock("dashboard.lock"):   # another copy took the lock: this one must not keep serving
+        if DASH_LOCK[0] and not C.refresh_lock(DASH_LOCK[0]):   # another copy took the lock: stop serving
             print("dashboard: lock taken by another copy; exiting", flush=True)
-            os._exit(0)
+            os._exit(3)
         C.heartbeat("dashboard")
         time.sleep(30)
 
@@ -772,10 +779,17 @@ def main(argv=None):
     ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args(argv)
     PAGE, CACHE_DIR = a.page, a.cache
-    if not a.no_heartbeat and not C.take_lock("dashboard.lock", 120):   # single instance (the beat thread keeps it)
-        print("dashboard: another copy holds legion/data/dashboard.lock; not starting", flush=True)
-        return 0
-    srv = ThreadingHTTPServer((a.bind, a.port), Handler)
+    try:   # the port first: the single-instance lock is per port
+        srv = ThreadingHTTPServer((a.bind, a.port), Handler)
+    except OSError as e:
+        print("dashboard: cannot bind %s:%d (%s); not starting" % (a.bind, a.port, e), flush=True)
+        return 3
+    if not a.no_heartbeat:
+        DASH_LOCK[0] = dash_lock_name(a.port)
+        if not C.take_lock(DASH_LOCK[0], 120):   # the beat thread keeps it fresh
+            srv.server_close()
+            print("dashboard: another copy holds legion/data/%s; not starting" % DASH_LOCK[0], flush=True)
+            return 3
     srv.daemon_threads = True
     srv.verbose = a.verbose
     srv.started = time.time()

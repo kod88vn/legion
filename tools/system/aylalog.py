@@ -587,7 +587,7 @@ def run(a):
     locked = not (a.once or a.dry_run)   # single instance for the loop: legion/data/aylalog.lock
     if locked and not C.take_lock("aylalog.lock", 300):
         print("aylalog: another copy holds legion/data/aylalog.lock; not starting", file=sys.stderr)
-        return
+        return 3
     while True:
         now = C.now()
         lines = tail.read()
@@ -614,7 +614,7 @@ def run(a):
                             cell=tracker.cell, map_since=tracker.map_since, last_exp=tracker.last_exp, last_t=tracker.last_t))
             if locked and not C.refresh_lock("aylalog.lock"):
                 print("aylalog: lock taken by another copy; exiting", file=sys.stderr)
-                return
+                return 3
             C.heartbeat("aylalog")
         if a.once:
             return 0
