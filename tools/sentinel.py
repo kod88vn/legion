@@ -32,6 +32,10 @@ try:
     import bugq as BUGQ, common as SYSC, meterlib as METER
 except Exception:          # the queue/meter helpers are optional: the sentinel still works without them
     BUGQ = SYSC = METER = None
+try:
+    import apartwake as APARTWAKE
+except Exception:
+    APARTWAKE = None
 OUTAGE_KEYS = {'legion_api', 'population', 'ayla'}   # these wake the main session; the rest goes to the queue
 URGENT_KEYS = {'party', 'stuck', 'frozen'}            # Ayla's party / stuck bots: filed high + wake (bugq.wake)
 METRIC_OF = {'kills': 'kpm', 'farming': 'kpm', 'trips': 'kpm', 'bad_trips': 'kpm', 'frozen': 'kpm', 'stuck': 'kpm',
@@ -299,17 +303,29 @@ def dispatcher_down(grace_s=180, stale_s=300):
     return 'dispatcher heartbeat %d min old' % (min(ages) // 60) if min(ages) > stale_s else None
 
 
-def file_problem(key, detail):
-    """Put a problem into the bug queue (deduped; a repeat bumps the count at most every 10 min). Returns the id."""
+def file_problem(key, detail, wake=None):
+    """Put a problem into the bug queue (deduped; a repeat bumps the count at most every 10 min). Returns the id.
+    wake: None = by URGENT_KEYS; False/True overrides (the party split wakes only per apartwake)."""
     if BUGQ is None:
         return None
     try:
         i, _ = BUGQ.add('sentinel', 'outage' if key in OUTAGE_KEYS else PRIO_OF.get(key, 'normal'),
                         '[%s] %s' % (key, detail[:300]), evidence=detail[:600], key='sentinel:' + key,
-                        metric=METRIC_OF.get(key), bump_min_secs=600, wake=key in URGENT_KEYS)
+                        metric=METRIC_OF.get(key), bump_min_secs=600,
+                        wake=(key in URGENT_KEYS) if wake is None else bool(wake))
         return i
     except Exception:
         return None
+
+
+def party_split_wake(aw, ap, now):
+    """Is Ayla's split party worth waking main for? Only a member apart > 10 min and not walking back to her, or dead
+    > 2 min (apartwake). Members walking back keep the item in the queue without waking anyone."""
+    ms = [m for m in ap.get('members', []) if m.get('online')]
+    leader = next((m for m in ms if m.get('leader')), None) or next((m for m in ms if m.get('human')), None)
+    away = [m.get('name') for m in ms if not m.get('with_leader') and not m.get('human')]
+    aw.update(ms, leader, away, now)
+    return aw.any_wake()
 
 
 def heartbeat():
@@ -327,6 +343,8 @@ def main():
     last_probe = time.time() - 420
     meter_ok = False
     frozen_share, frozen_ex = 0.0, []
+    AW = APARTWAKE.ApartWake() if APARTWAKE else None
+    party_wake = None   # None = old behaviour (no apartwake module)
     while True:
         found = []
         line = {'t': time.strftime('%H:%M:%S')}
@@ -384,6 +402,8 @@ def main():
                     line.update(party_on=ap['online'], party_tog=ap['together'])
                     away = ['%s(%s: %s)' % (m['name'], m['map'], m['state']) for m in ap['members'] if m['online'] and not m.get('with_leader') and not m.get('human')]
                     found.append(P.check('party', settled and bool(away), 480, "Ayla's party is split for 8+ min: " + '; '.join(away)))
+                    if AW is not None:
+                        party_wake = party_split_wake(AW, ap, time.time())
             except Exception:
                 pass
         # farming time: share of states, trips per bot, unnecessary trips
@@ -433,7 +453,7 @@ def main():
         heartbeat()
         # every problem goes into the bug queue (deduped); only an outage also wakes the main session by exiting
         for k, d in found:
-            file_problem(k, d)
+            file_problem(k, d, wake=party_wake if k == 'party' else None)
         outages = [(k, d) for k, d in found if k in OUTAGE_KEYS]
         if found and not outages:
             line['filed'] = [k for k, _ in found]
