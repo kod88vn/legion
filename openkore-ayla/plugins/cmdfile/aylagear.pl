@@ -494,6 +494,16 @@ sub run_start {
 			}
 		}
 	}
+	# never a cross-map auto-buy trip: any slot still pointing at an NPC outside the run's town is off for this run
+	# (live 2026-11-15: a slot pinned to prontera 146 57 turned a Payon restock into a solo walk to Prontera)
+	for (my $n = 0; exists $config{"buyAuto_$n"}; $n++) {
+		next unless $config{"buyAuto_$n"} && !$config{"buyAuto_${n}_disabled"};
+		my ($nm) = split / /, ($config{"buyAuto_${n}_npc"} || '');
+		next unless defined $nm && $nm ne '';
+		(my $nt = $nm) =~ s/_in\d*$//;
+		$nt = 'payon' if $nt eq 'payon_in'; $nt = 'aldebaran' if $nt eq 'aldeba';
+		$set->("buyAuto_${n}_disabled", 1) if $nt ne $town && hunt_town($nm) ne $town;
+	}
 	if ($KAFRA_ST{$town}) { $set->('storageAuto_npc', $KAFRA_ST{$town}) } else { $set->('storageAuto', 0) }
 	# a plan piece lying in Kafra storage (stored before items_control kept gear in the bag) comes back out on this
 	# run's storage visit (getAuto) and equip_tick wears it
