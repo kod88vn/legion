@@ -2,7 +2,7 @@
 """Server leaderboard (read-only): every character in the rathena DB ranked by base level, then base exp.
 
   leaderboard.py [--top N] [--json]      top N (default 20), Ayla's rank, her party's ranks, each guild leader's rank
-  leaderboard.py --brief                 one line for aylawatch.sh: "rank 12/7818 lv83 | party Zenda 30 ..."
+  leaderboard.py --brief                 one line: "rank 12/7818 lv83 | party Zenda 30 ..." (for the Ayla watch, tools/system/aylawatch.py, which does not call it yet)
 
 Source: ro-db through the existing read-only path (wsl docker exec ro-db mariadb, as wrongbuilds.py); the session is
 set READ ONLY and only the fixed SELECTs below are sent. Ranking is competition ranking (ties share a rank: 1 + how
