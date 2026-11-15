@@ -192,6 +192,29 @@ class ExportTests(unittest.TestCase):
         knight = next(b for b in doc["builds"] if b["id"] == "knight")
         self.assertTrue(all(r["gear"]["source"].startswith("engine milestone gear") for r in knight["milestones"]))
 
+    def test_engine_file_cards_reach_every_milestone_row_of_the_tab(self):
+        # the engine file carries cards: each Builds-tab row keeps every card id of its band, none is lost; a card with
+        # no card_entries keeps its id and name (slot None), the others get their slot, prio and why
+        tmp = tempfile.mkdtemp()
+        path = os.path.join(tmp, "buildmilestones_gear.json")
+        cards = [4006, 4020, 9999]
+        entries = [{"id": 4006, "slot": "weapon", "prio": 7, "why": "ATK for the build"},
+                   {"id": 4020, "slot": "armor", "prio": 3, "why": "DEF"}]
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            json.dump({"builds": {"knight": {"ranges": [
+                {"min": 1, "max": 99, "slots": {"weapon": [1201]}, "cards": cards, "card_entries": entries}]}}}, f)
+        items, skills, _ = buildexport.lookup_names()
+        doc = buildexport.build_export(items, skills, {"ENGINE_GEAR": path})
+        knight = next(b for b in doc["builds"] if b["id"] == "knight")
+        self.assertTrue(knight["milestones"], "knight has no milestone rows")
+        for row in knight["milestones"]:
+            self.assertEqual([c["id"] for c in row["cards"]], cards, row["range"])
+            self.assertEqual(row["cards"][0]["slot"], "weapon", row["range"])
+            self.assertEqual(row["cards"][0]["prio"], 7, row["range"])
+            self.assertEqual(row["cards"][1]["why"], "DEF", row["range"])
+            self.assertIsNone(row["cards"][2]["slot"], row["range"])
+            self.assertEqual(row["gear"]["cards"], row["cards"], row["range"])
+
     def test_the_export_is_the_same_as_a_fresh_run_in_every_value(self):
         # the committed file must equal what the Go source says now: every value, not only the ids and gaps
         items, skills, _ = buildexport.lookup_names()

@@ -1,9 +1,11 @@
-"""Tests for the engine's milestone gear rows in buildexport.py (run: python -m unittest discover -s tools/dashboard)."""
+"""Tests for the engine's milestone gear rows in buildexport.py.
+Run: python -m unittest discover -s tests/dashboard -v   (from the repo root)"""
 import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "..", "tools", "dashboard"))
 
 import buildexport  # noqa: E402
 

@@ -5,18 +5,47 @@
   python tools/system/gatecheck.py --coverage   also: every rule ID of coverage.md appears in its new file
                                                  and in archive.md (the owner's words)
 Both modes also run tools/system/constcheck.py: every AI prompt carries the whole constitution, first, once.
-Exit code 0 = ok, 1 = something is missing. Reads only; changes nothing.
+Every run also runs every Python test suite (each folder with a test_*.py file, found by walking the repo, each in
+its own process); a failing suite fails the check. --no-suites skips them (the suites take about 3 minutes).
+Exit code 0 = ok, 1 = something is missing. Changes nothing.
 """
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+SUITE_SKIP = {"__pycache__", "data", "node_modules"}
 
 
 def read(rel):
     with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
         return f.read()
+
+
+def suite_dirs():
+    """every folder under the repo (relative) that holds a test_*.py file: a new suite is found without listing it"""
+    found = set()
+    for dp, dns, fns in os.walk(ROOT):
+        dns[:] = [d for d in dns if d not in SUITE_SKIP and not d.startswith(".")]
+        if any(re.match(r"test_.*\.py$", f) for f in fns):
+            found.add(os.path.relpath(dp, ROOT).replace(os.sep, "/"))
+    return sorted(found)
+
+
+def run_suites():
+    """run each suite folder in its own process (module names cannot clash); returns the folders that fail"""
+    failed = []
+    for d in suite_dirs():
+        r = subprocess.run([sys.executable, "-W", "ignore", "-m", "unittest", "discover", "-s", d, "-p", "test_*.py"],
+                           cwd=ROOT, capture_output=True, text=True)
+        lines = r.stderr.strip().splitlines()
+        ran = next((l for l in lines if l.startswith("Ran ")), "no tests ran")
+        status = lines[-1] if lines else "no output"
+        print("suite %s: %s, %s" % (d, ran, status))
+        if r.returncode:
+            failed.append(d)
+    return failed
 
 
 def main():
@@ -76,6 +105,11 @@ def main():
         print("WARNING: fields not checked: %s" % e)
     except Exception as e:  # a check that cannot run is a failed check
         bad.append("fieldcheck could not run: %r" % (e,))
+
+    # every Python suite (PR-tests): a suite that fails, or cannot run, fails the check
+    if "--no-suites" not in sys.argv:
+        for d in run_suites():
+            bad.append("python suite failed: %s (run: python -m unittest discover -s %s -p \"test_*.py\")" % (d, d))
 
     for b in bad:
         print("FAIL: " + b)
