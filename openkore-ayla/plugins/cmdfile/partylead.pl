@@ -1820,13 +1820,14 @@ sub lockmap_guard {
 	$lmSet = $config{lockMap} || '';
 }
 our (%leftTown, $prevMap);
+our $regroupTo = ''; # AY22: walking back to the priest - the town she left is no barrier then
 my $tbgLogAt = 0;
 sub town_back_guard {
 	return unless $field && $char;
 	my $here = $field->baseName;
 	$leftTown{$prevMap} = time if defined $prevMap && $prevMap ne $here && is_townmap($prevMap) && !is_townmap($here) && $prevMap !~ /_in\d*$/;
 	$prevMap = $here;
-	return if $rally || is_townmap($here) || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'teleport');
+	return if $rally || $regroupTo ne '' || is_townmap($here) || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'teleport');
 	my ($dm, $nm) = route_maps();
 	foreach my $t ($nm, $dm) {
 		next unless $t ne '' && $leftTown{$t} && time - $leftTown{$t} < 300;
@@ -2146,6 +2147,16 @@ sub pack_decide {
 	my ($pr) = sort { $sameD->($a) <=> $sameD->($b) } grep { $isPr->($_) } @f;
 	my $prNear = $pr && grep({ $_->[0] eq $pr->[0] } @near) ? 1 : 0;
 	my $two = @f >= 2 ? 2 : 1;
+	# AY22 (owner 2026-11-14): with a priest online the priest is the anchor - within 10 cells on her map she goes on;
+	# behind (> 10 or another map) she stops and waits 10 s, then walks back to the priest (goto, until within 5)
+	if ($pr) {
+		my $prD = $pr->[2] eq $here && defined $pr->[3] ? $pr->[3] : undef;
+		my $ok = defined $prD && $prD <= 10 ? 1 : 0;
+		$ok = 0 if $ok && $cross eq 'pre' && @near < $two; # crossing a dangerous map: the priest + one more within 10
+		return ('ok', $pr) if $ok;
+		return ('goto', $pr) if ($s->{waited} || 0) >= 10;
+		return ('wait', $pr);
+	}
 	my $ok;
 	if ($cross eq 'pre') { $ok = $pr && $prNear && @near >= $two ? 1 : 0 } # no known priest: no crossing (live 03:5x)
 	elsif ($cross eq 'on') { $ok = $pr && $prNear ? 1 : 0 }
@@ -2155,8 +2166,7 @@ sub pack_decide {
 	my ($nearest) = sort { $sameD->($a) <=> $sameD->($b) } @f;
 	my $an = $pr || $nearest;
 	return ('ok', $an) if $ok;
-	# owner 2026-11-14 "wait for the party to come over, stop going back": she holds where she is - no walking back
-	# to the priest, no "coming to u" (the party comes to her: engine follow + party commands)
+	# no priest online: she holds where she is until a friend is close (the party comes to her)
 	return ('wait', $an);
 }
 # waiting for the party she fights instead of standing (owner 2026-11-14 "fighting is her main priority"): on the map
@@ -2239,7 +2249,7 @@ sub pack_tick {
 		my $a = $apiPos{$u->{name}};
 		push @fr, [$u->{name}, friend_cls($u->{name}), $m, ($pos && defined $pos->{x}) ? blockDistance($char->{pos_to}, $pos) : undef, $pos];
 	}
-	if (!@fr) { ($pk{waitAt}, $pk{goName}, $pk{wf}) = (0, '', undef); return 0 } # everyone offline: she may farm solo
+	if (!@fr) { ($pk{waitAt}, $pk{goName}, $pk{wf}, $regroupTo) = (0, '', undef, ''); return 0 } # everyone offline: she may farm solo
 	my ($dm, $nm) = route_maps();
 	my $farm = $huntMap ne '' && $here eq $huntMap ? 1 : 0;
 	my $town = is_townmap($here);
@@ -2252,8 +2262,8 @@ sub pack_tick {
 		waited => $pk{waitAt} ? time - $pk{waitAt} : 0});
 	if ($pk{goName} ne '') {
 		my ($g) = grep { $_->[0] eq $pk{goName} } @fr;
-		if ($g && !($g->[2] eq $here && defined $g->[3] && $g->[3] <= 10)) { ($act, $an) = ('goto', $g) }
-		else { $pk{goName} = ''; $pk{waitAt} = 0 }
+		if ($g && !($g->[2] eq $here && defined $g->[3] && $g->[3] <= 5)) { ($act, $an) = ('goto', $g) }
+		else { $pk{goName} = ''; $pk{waitAt} = 0; $regroupTo = ''; message "[partylead] AY22: with the priest again - going on together\n", 'system' if $g }
 	}
 	if (($act eq 'ok' || $act eq 'solo') && $pk{wf}) {
 		$pk{wf} = undef; ($pk{waitAt}, $pk{goName}) = (0, '');
@@ -2270,25 +2280,13 @@ sub pack_tick {
 	if ($act eq 'ok' || $act eq 'solo') {
 		if ($cross eq 'pre' && $pk{crossSaid} ne $nm) { $pk{crossSaid} = $nm; psay("crossing $nm together, stay close", 0, 0); message "[partylead] PT04: crossing $nm with the party\n", 'system' }
 		$pk{crossSaid} = '' if $cross eq '' && !cross_danger($here);
-		($pk{waitAt}, $pk{goName}) = (0, '');
+		($pk{waitAt}, $pk{goName}, $regroupTo) = (0, '', '');
 		return 0;
 	}
 	return 0 if AI::inQueue('attack') && scalar(AI::ai_getAggressives()); # she answers what is on her
 	$pk{waitAt} ||= time;
 	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
 	if (time - $pk{logAt} > 20) { $pk{logAt} = time; message "[partylead] PT04: $act - " . ($cross ? "crossing ($cross) needs the priest within 10, " : '') . "anchor $an->[0] on $an->[2]" . (defined $an->[3] ? " $an->[3] cells" : '') . "\n", 'system' }
-	if (!$town) {
-		if (!$pk{wf}) {
-			my (%tops, %danger);
-			foreach my $m ($here, @{$WAIT_FIELDS{$here} || []}) { $tops{$m} = map_top($m); $danger{$m} = cross_danger($m) }
-			my $wm = pack_wait_map($here, 0, undef, transit_fit_lv(), \%tops, \%danger); # only where she stands
-			if ($wm ne '') {
-				$pk{wf} = {map => $wm, meet => $here, spot => ($wm eq $here ? {x => $cx, y => $cy} : undef), at => time};
-				message "[partylead] PT04: waiting for the party - fighting on $wm meanwhile (meeting point $here)\n", 'system';
-			}
-		}
-		if ($pk{wf}) { return 1 if wait_fight(); }
-	}
 	if ($act eq 'back') {
 		if (time - $pk{routeAt} > 4 && $an->[4]) {
 			$pk{routeAt} = time;
@@ -2301,7 +2299,7 @@ sub pack_tick {
 		my $a = $apiPos{$an->[0]};
 		my ($am, $ax, $ay) = ($an->[2], $an->[4] ? ($an->[4]{x}, $an->[4]{y}) : ($a && time - $a->{at} < 10 && $a->{map} eq $an->[2] ? ($a->{x}, $a->{y}) : (undef, undef)));
 		if ($am ne '') {
-			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; psay("coming to u, $an->[0]", 1, 0) }
+			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; $regroupTo = $am; psay("coming to u, $an->[0]", 1, 0); message "[partylead] AY22: $an->[0] fell behind ($am) - walking back to them\n", 'system' }
 			my ($rdm) = route_maps();
 			if (time - $pk{routeAt} > 10 || !AI::inQueue('route', 'move') || ($rdm ne '' && $rdm ne $am)) { # never onward: only to the friend
 				$pk{routeAt} = time;
@@ -2518,7 +2516,7 @@ sub stick_tick {
 		}
 	}
 	# PT32: a second monster on her with the priest / tank more than 5 cells away: step back toward them (no help call)
-	if ($aggr == 2 && $hpp >= 0.45 && $an && $ad > 5 && time - $stickRunAt > 3 && !AI::inQueue('attack') && !(defined $config{partylead_pt32} && $config{partylead_pt32} eq '0')) {
+	if (0 && $aggr == 2 && $hpp >= 0.45 && $an && $ad > 5 && time - $stickRunAt > 3 && !AI::inQueue('attack') && !(defined $config{partylead_pt32} && $config{partylead_pt32} eq '0')) {
 		$stickRunAt = time;
 		AI::clear('route', 'move');
 		main::ai_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 3, maxRouteTime => 4, noMapRoute => 1, attackOnRoute => 1);
