@@ -575,8 +575,10 @@ sub travel_mode_tick {
 	return unless $char && $field;
 	my $here = $field->baseName;
 	my $dest = $gotoMap ne '' ? $gotoMap : ($rally ? $rally->{town} : ($config{lockMap} || ''));
+	$dest = $homeMap if $dest eq '' && !$rally; # a lockMap cleared for a moment (a wait, a release) is no "travel over"
+	# travel over only on her farm map (live 67546b4: "travel over (gef_fild10): fighting as usual" mid-crossing)
 	my $on = $dest ne '' && $here ne $dest && !is_townmap($here) ? 1 : 0;
-	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here) && !trivial_transit(); # a friend in danger here: she fights for it (no travel mode) - not on a map far below the party (QA: Zombies on pay_dun00 for a level 81)
+	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here) && !trivial_transit() && !cross_danger($here); # a friend in danger here: she fights for it (no travel mode) - not on a map far below the party (QA: Zombies on pay_dun00 for a level 81), never on a dangerous crossing
 	# crossing a map far below her and the party (trivial_transit): no fights at all there, not even OpenKore's own
 	# attackAuto - a level 81 stopped for every pay_dun00 Zombie (12 exp). Saved in a package var: survives a reload.
 	my $triv = trivial_transit() ? 1 : 0;
@@ -593,9 +595,10 @@ sub travel_mode_tick {
 		$config{attackAuto_routeToLock} = 0;
 		$config{attackAuto_party} = 0;
 		$config{itemsTakeAuto} = 0; $config{itemsGatherAuto} = 0; # no loot detours in transit (QA 20:5x: the wipe crossing pay_dun01/02)
-		message "[partylead] travelling to $dest: no new fights on the way (defend only)
+		message "[partylead] travelling to $dest: no farming on the way, only what comes within 6 cells
 ", 'system';
-	} elsif (!$on && %travelSaved) {
+	}
+	if (!$on && %travelSaved) {
 		$config{$_} = $travelSaved{$_} foreach keys %travelSaved;
 		%travelSaved = ();
 		message "[partylead] travel over ($here): fighting as usual
@@ -1498,14 +1501,16 @@ sub trivial_transit {
 	my $here = $field->baseName;
 	my $top = map_top($here);
 	return 0 if !$top || is_townmap($here);
-	return 0 unless ($char->{lv} || 0) >= $top + 15;
-	return 0 unless transit_fit_lv() >= $top + 15; # the party's gear-rated level, not her base level (58 vs 81, live 2026-11-14)
+	return 0 unless ($char->{lv} || 0) >= $top + 20;
+	return 0 unless transit_fit_lv() >= $top + 20; # the party's gear-rated level, not her base level (58 vs 81, live 2026-11-14)
 	foreach my $f (online_friends()) { my $a = $apiPos{$f->[0]}; return 0 if $a && $a->{lv} && $a->{lv} < $top + 8 } # a low friend still needs her here
 	my $dest = $gotoMap ne '' ? $gotoMap : ($config{lockMap} || '');
 	$dest = $homeMap if $dest eq '' && !$rally;
 	return ($dest ne '' && $dest ne $here) || $rally || $depart ? 1 : 0;
 }
-sub route_aor { return trivial_transit() ? 0 : 1 } # attackOnRoute for a map-to-map route
+# attackOnRoute for a map-to-map route: 2 = she fights what comes into reach on the way (stick_target: within 6 cells,
+# pt32_target: one or a few at a time) instead of walking past it into the pack; 0 on a map far below the party
+sub route_aor { return trivial_transit() ? 0 : 2 }
 
 my %crowdedAt; # map -> when it was too crowded to farm (skipped for an hour)
 my $gmRecheck = 0; # gear maps: the measured step changed - fit_tick re-checks at once
@@ -1624,6 +1629,14 @@ sub gm_verdict {
 	return 2 if $kpm >= 2;
 	return 0;
 }
+# a farm map whose route crosses a map with aggressive monsters at or above the party's level - 5 is out (owner
+# 2026-11-14: she ran across gef_fild10's orc packs to orcsdun02 with a party rated 58). $via: map -> transit maps on
+# the way from its town; $danger: map -> top of its aggressive monster band. Returns the unsafe transit map or ''.
+sub gm_route_unsafe {
+	my ($m, $plv, $via, $danger) = @_;
+	foreach my $v (@{$via->{$m} || []}) { return $v if $danger->{$v} && $danger->{$v} >= $plv - 5 }
+	return '';
+}
 # ---- gearmaps end ----
 sub gm_self_lv {
 	my $lv = $char->{lv} || 1;
@@ -1690,13 +1703,15 @@ sub mind_map_far {
 	return '' if defined $config{partylead_mindCheck} && $config{partylead_mindCheck} eq '0';
 	my $lo;
 	foreach my $r (@FIT_MAPS) { $lo = $r->[0] if $r->[2] eq $m && (!defined $lo || $r->[0] < $lo) }
-	return '' unless defined $lo;
 	my $plv = party_fit_lv();
+	if ((my $v = route_unsafe($m, $plv)) ne '') { return "the way to $m crosses $v (aggressive packs up to level $partylead::CROSS_DANGER{$v}), the party is rated $plv" }
+	return '' unless defined $lo;
 	return '' if $plv + 3 >= $lo;
 	return "$m starts at level $lo, the party is rated $plv (gear, kills and deaths)";
 }
 sub map_fits {
 	my ($m, $plv) = @_;
+	return 0 if route_unsafe($m, $plv) ne '';
 	foreach my $r (@FIT_MAPS) { return 1 if $r->[2] eq $m && $plv >= $r->[0] - 2 && $plv <= $r->[1] + 3 }
 	return 0;
 }
@@ -1704,19 +1719,19 @@ sub map_fits {
 sub level_map {
 	my $plv = shift;
 	my $heal = party_has_healer();
-	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) };
+	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && !(time - ($crowdedAt{$r->[2]} || 0) < 3600) && route_unsafe($r->[2], $plv) eq '' };
 	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && $r->[3] == $heal }
 	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) && !$r->[3] } # no healer row: a field
 	foreach my $r (@FIT_MAPS) { return $r->[2] if $ok->($r) }
 	my ($best, $bd);
-	foreach my $r (@FIT_MAPS) { my $d = abs(($r->[0] + $r->[1]) / 2 - $plv); ($best, $bd) = ($r->[2], $d) if !defined $bd || $d < $bd }
+	foreach my $r (@FIT_MAPS) { next if route_unsafe($r->[2], $plv) ne ''; my $d = abs(($r->[0] + $r->[1]) / 2 - $plv); ($best, $bd) = ($r->[2], $d) if !defined $bd || $d < $bd }
 	return $best;
 }
 sub mind_fresh { return $homeBy eq 'mind' && $homeMap ne '' && time - $homeAt < HOME_STALE }
 # where the party should farm now, and why
 sub choose_map {
 	my ($tm, $who) = party_turn();
-	return ($tm, "$who\'s gear turn") if $tm ne '' && !(time - ($crowdedAt{$tm} || 0) < 3600);
+	return ($tm, "$who\'s gear turn") if $tm ne '' && !(time - ($crowdedAt{$tm} || 0) < 3600) && route_unsafe($tm) eq '';
 	my $plv = party_fit_lv();
 	return (level_map($plv), "fits the party (level $plv" . (party_has_healer() ? ', healer' : ', no healer') . ")");
 }
@@ -2002,6 +2017,9 @@ our ($stickFlee, $fleeAA);
 # dropped for 2 h and her own choice picks the next fitting map. No friend online: solo (fit_tick picks a field).
 # conf partylead_pack 0 turns it off.
 our %CROSS_DANGER = (gef_fild10 => 60); # map -> top of its monster band (orc packs, aggressive)
+# farm maps -> the dangerous transit maps on the way from their town (orcsdun01/02: entrance on gef_fild10)
+our %ROUTE_VIA = (orcsdun01 => ['gef_fild10'], orcsdun02 => ['gef_fild10']);
+sub route_unsafe { my ($m, $plv) = @_; return gm_route_unsafe($m, defined $plv ? $plv : transit_fit_lv(), \%ROUTE_VIA, \%CROSS_DANGER) }
 # ---- pack begin (pure: tested offline by tests/ayla/pack_test.pl)
 # $s: {here, friends => [[name, class, map, dist or undef]], farm, leaving, cross ('' | 'pre' | 'on'), waited (s)}
 # returns (action, anchor row): solo | ok | wait | back (walk to the anchor on this map) | goto (go to the anchor)
@@ -2302,9 +2320,10 @@ sub stick_target {
 	my $m = shift;
 	return 1 unless stick_on() && $char->{party} && !is_townmap($field->baseName);
 	return 1 if $m->{dmgToYou} || $m->{missedYou} || $m->{dmgToParty} || $m->{castOnToParty} || $m->{missedToParty};
-	# on the way to another map (travel mode): no new pulls at all - only what hits her or a friend (live 2026-11-14: 6
-	# orcs pulled on gef_fild10 on the way to orcsdun02)
-	return 0 if %travelSaved;
+	# on the way (PT32 clarified 2026-11-14 "how come she cannot just hit the first target she sees?"): no farming
+	# detours, but the first monster that comes within 6 cells is fought right there, nearest first - never walked past
+	# into the middle of the pack (pt32_target still blocks a target behind other aggressive monsters / with 2+ on her)
+	return blockDistance($char->{pos_to}, $m->{pos_to}) <= 6 ? 1 : 0 if %travelSaved;
 	foreach my $f (stick_mates()) {
 		my $now = blockDistance($char->{pos_to}, $f->[1]);
 		next if $now > TOGETHER; # a lost friend: the fetch logic, not the target choice
