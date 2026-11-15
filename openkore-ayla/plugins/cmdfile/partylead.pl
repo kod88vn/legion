@@ -2762,6 +2762,23 @@ sub farm_sweep {
 	return fs_why(0, 'idle under 8 s') if time - $fsIdleSince < 8;
 	# a waypoint leg that brought her no closer within 12 s: that waypoint is unreachable, skipped from now on (queue
 	# b1794726149fx4: "Cannot reach target" on pay_dun02 waypoints)
+	# no progress (bug b1794749416648-572: 'waypoint 8/106' reissued for 300 s at 90,125): a leg with her position unchanged
+	# for 15 s, or not reached in 20 s, skips that waypoint and moves on (never the same waypoint again)
+	if ($fsLeg) {
+		my $here0 = "$me->{x},$me->{y}";
+		if (($fsLeg->{pos} // '') ne $here0) { ($fsLeg->{pos}, $fsLeg->{movedAt}) = ($here0, time) }
+		my $w0 = $sweep[$fsLeg->{idx}];
+		my $stuck = time - ($fsLeg->{movedAt} // $fsLeg->{at}) > 15 || time - $fsLeg->{at} > 20;
+		if ($w0 && $stuck && blockDistance($me, {x => $w0->[0], y => $w0->[1]}) > 3) {
+			$sweepBad{$fsLeg->{idx}} = 1;
+			AI::clear('route', 'move');
+			message sprintf("[partylead] sweep: waypoint %d/%d (%d,%d) no progress - skipped
+", $fsLeg->{idx} + 1, scalar @sweep, @$w0), 'system';
+			$fsLeg = undef; $fsAt = 0;
+			sweep_next();
+			return 1;
+		}
+	}
 	if ($fsLeg && time - $fsLeg->{at} > 12) {
 		my $w = $sweep[$fsLeg->{idx}];
 		if ($w && blockDistance($me, {x => $w->[0], y => $w->[1]}) > $fsLeg->{d0} - 3 && !$sweepBad{$fsLeg->{idx}}) {
@@ -2820,7 +2837,7 @@ sub farm_sweep {
 			($tx, $ty) = (int($me->{x} + $dx * $k), int($me->{y} + $dy * $k));
 			($tx, $ty) = ($w->[0], $w->[1]) unless eval { $field->isWalkable($tx, $ty) };
 			$what = sprintf("waypoint %d/%d", $sweepIdx + 1, scalar @sweep);
-			$fsLeg = {idx => $sweepIdx, d0 => blockDistance($me, {x => $w->[0], y => $w->[1]}), at => time};
+			$fsLeg = {idx => $sweepIdx, d0 => blockDistance($me, {x => $w->[0], y => $w->[1]}), at => time, pos => "$me->{x},$me->{y}", movedAt => time};
 		}
 	}
 	return fs_why(0, 'no walkable leg cell found') unless defined $tx;
