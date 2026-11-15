@@ -230,3 +230,26 @@ func TestMarketWantsFittingArrow(t *testing.T) {
 		t.Fatalf("in town: want %+v, want none", w)
 	}
 }
+
+// a carried stack counts as the fit only from fitStackMin arrows: a stack of 50 Silver Arrows does not stop the market
+// want for more; 100 do
+func TestCarriedStackCountsFromHundred(t *testing.T) {
+	loadFitFixtures(t)
+	bow := func(n int) *Bot {
+		return &Bot{Goal: Goal{Map: "zz_payon_undead"}, MapName: "zz_payon_undead", Zeny: 5000,
+			P:        &Persona{BaseLevel: 80, Chars: []CharSpec{{Name: "stackmin"}}},
+			inv:      map[int]*InvItem{1: {Index: 1, ItemID: 1751, Count: n}},
+			equipped: map[uint32]*InvItem{0x2: {Index: 9, ItemID: 1701, Count: 1, Equipped: true}}}
+	}
+	items[1701] = &Item{ID: 1701, Name: "Bow", Type: "Weapon", Sub: "Bow", Loc: 0x2, Atk: 15}
+	spawnsByMap["zz_payon_undead"] = []Spawn{{Map: "zz_payon_undead", MobID: 1028, Count: 40}}
+	defer mapFitForget("zz_payon_undead")
+	withArrowGain(1, func() {
+		if w := bow(50).fitArrowWant(); w == nil || w.ItemID != 1751 {
+			t.Errorf("50 Silver carried: want %+v, want Silver Arrow still wanted", w)
+		}
+		if w := bow(100).fitArrowWant(); w != nil {
+			t.Errorf("100 Silver carried: want %+v, want none (the stack has the fit)", w)
+		}
+	})
+}

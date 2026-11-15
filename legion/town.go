@@ -128,8 +128,10 @@ var townInteriors = map[string][]string{
 // potPickReserve: zeny kept back from a potion restock (as potBuyPlan keeps it)
 const potPickReserve = 500
 
-// potEmergencyN: strongest-tier potions a bot keeps for emergencies (bought once, not restocked beyond this)
-const potEmergencyN = 3
+// potEmergencyN: the emergency stack a bot keeps (the strongest tier above its bulk tier); potEmergencyMin: the fewest
+// that is worth buying (fewer and the zeny is better as the bulk tier)
+const potEmergencyN = 5
+const potEmergencyMin = 3
 
 // hpPotOrder: the HP potions, strongest first
 var hpPotOrder = []int{itemWhitePotion, itemYellowPotion, itemOrangePotion, itemRedPotion}
@@ -196,18 +198,25 @@ func pickHPPotion(pk []byte, lv, maxHP, zeny, minN int) (id, price int) {
 	return pick(1, false) // not even the minimum is affordable: as many as possible at the best heal per zeny
 }
 
-// emergencyPot: the strongest HP potion the level allows and the shop lists, when it is not the bulk tier bulk
-// (0 when it is the same tier, or nothing is listed). Carried a few at a time for emergencies only.
-func emergencyPot(pk []byte, lv, bulk int) (int, int) {
+// emergencyStack: the emergency potions of this restock. Walk the tiers above the bulk tier strongest first (the level
+// allows and the shop lists them) and take the first that at least potEmergencyMin fit: n up to potEmergencyN less the
+// ones carried, within budget (the potion budget) and zlim (zeny beyond the survival minimum). (QA 2026-11-15, third
+// pass: a lv85 bot at 3,000z gets Yellow when White does not fit.) 0, 0, 0 when none.
+func emergencyStack(b *Bot, pk []byte, lv, bulk, budget, zlim int) (id, price, n int) {
 	for _, c := range hpPotOrder {
-		if pr := listedPrice(pk, c); pr > 0 && potLevelOK(c, lv) {
-			if c == bulk {
-				return 0, 0
-			}
-			return c, pr
+		if potHeal(c) <= potHeal(bulk) {
+			break // not stronger than the bulk tier
+		}
+		pr := listedPrice(pk, c)
+		if pr <= 0 || !potLevelOK(c, lv) {
+			continue
+		}
+		k := min(potEmergencyN-b.countItem(c), budget/pr, zlim/pr, b.potRoom(c))
+		if k >= potEmergencyMin {
+			return c, pr, k
 		}
 	}
-	return 0, 0
+	return 0, 0, 0
 }
 
 // legacyHPPotion: the pre-fit pick (tuning fit_buy_off): the highest level-allowed tier, Red when the bot can't afford an
@@ -1128,6 +1137,12 @@ func itemNPCPrice(id int) int {
 }
 
 func (b *Bot) potBuyPlan(best, price, spBest, spPrice, ap int) (hpN, spN, arrN int) {
+	return b.potBuyPlanEm(best, price, spBest, spPrice, ap, 0)
+}
+
+// potBuyPlanEm: potBuyPlan with emZeny of the potion budget already planned for the emergency stack (the top-up gets
+// the rest of the budget).
+func (b *Bot) potBuyPlanEm(best, price, spBest, spPrice, ap, emZeny int) (hpN, spN, arrN int) {
 	// run 7 (main 20:28Z: xXRinfangXx bought 49 HP potions + 2,233 arrows + 4 Butterfly Wings and stood at 50% weight
 	// one minute later, forcing a whole-party town run): every part of the restock used to measure its room against
 	// the weight BEFORE the purchase. Now one shared weight budget: the bag ends at most at shopCapPct (40%).
@@ -1207,7 +1222,7 @@ func (b *Bot) potBuyPlan(best, price, spBest, spPrice, ap int) (hpN, spN, arrN i
 		}
 		top := max(0, min(budget/price, b.hpPotTarget()-b.realPotCount()-hpN, room-hpN))
 		if fitBuyOn() {
-			top = min(top, b.potBudget()/price) // the top-up above the survival minimum is capped by zeny per hour
+			top = min(top, max(0, b.potBudget()-emZeny)/price) // the top-up above the minimum: zeny per hour, less the emergency stack
 		}
 		hpN += take(top, itemWeight(best))
 	}
@@ -1389,7 +1404,14 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 		// order (potBuyPlan): the survival minimum of real HP potions, arrows, SP potions, then the HP top-up; gear
 		// (tripGear) only gets what is left. One failed total = nothing bought.
 		ap := listedPrice(pk, itemArrow) // plain Arrows only: NPC shops sell no elemental arrows (huntfit.go arrowChoice)
-		hpN, spN, arrN := b.potBuyPlan(best, price, spBest, spPrice, ap)
+		// the emergency stack is planned first (fit_buy_off false): its zeny comes out of the potion budget, the top-up
+		// gets the rest. The survival minimum is not budget, so the zeny check keeps it.
+		var emID, emPr, emN int
+		if fitBuyOn() && best > 0 && price > 0 {
+			survival := max(0, b.potMin()-b.realPotCount()) * price
+			emID, emPr, emN = emergencyStack(b, pk, lv, best, b.potBudget(), b.Zeny-potPickReserve-survival)
+		}
+		hpN, spN, arrN := b.potBuyPlanEm(best, price, spBest, spPrice, ap, emN*emPr)
 		if vendorPots && hpN > 0 {
 			shopPotPick.Store(b, best)
 			econCount("npc potions skipped: cheaper at a vendor")
@@ -1404,9 +1426,10 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 			p.u16(uint16(hpN)).u32(uint32(best))
 			bought++
 		}
-		// a few of the strongest tier for emergencies (not the bulk tier), inside the potion budget
-		if emID, emPr := emergencyPot(pk, lv, best); fitBuyOn() && emID > 0 && emPr > 0 {
-			n := min(potEmergencyN-b.countItem(emID), (b.potBudget()-hpN*price)/emPr, (b.Zeny-potPickReserve-hpN*price)/emPr, b.potRoom(emID))
+		// the emergency stack, from the shared budget: it is already net of the planned arrows and SP and of the bulk
+		// minimum, so the packet total never exceeds zeny (one failed total = nothing bought)
+		if emID > 0 {
+			n := min(emN, (budget-hpN*price)/emPr, b.potRoom(emID))
 			if n > 0 {
 				p.u16(uint16(n)).u32(uint32(emID))
 				bought++
