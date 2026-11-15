@@ -75,6 +75,8 @@ AGENTS = [
      "cmd": ["tools/puppet/dispatch.py"], "lock": "dispatch.lock", "lock_stale": 180},
     {"key": "aylalog", "label": "Ayla log watcher", "hb": ["aylalog.heartbeat"], "stale": 300,
      "cmd": ["tools/system/aylalog.py"], "lock": "aylalog.lock", "lock_stale": 300},
+    {"key": "aylawatch", "label": "Ayla watch", "hb": ["aylawatch.heartbeat"], "stale": 360,
+     "cmd": ["tools/system/aylawatch.py"], "lock": "aylawatch.lock", "lock_stale": 360},
     {"key": "bugq-watch", "label": "Bug queue watch", "hb": ["bugq-watch.heartbeat"], "stale": 300,
      "cmd": ["tools/system/bugq.py", "watch"], "waits": True, "never_start": True},
     {"key": "unwall", "label": "Unwall loop", "hb": ["unwall.heartbeat"], "stale": 600,
