@@ -126,7 +126,7 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | GD03 | Guild leaders always online, look after the guild | behaviour spec | RULES 3b (l.405) | docs/rules/guilds.md | kept (Haiku-mind driver replaced by puppet-master wording) |
 | GD04 | Guild leaders are the server's best players | behaviour spec | RULES 3b (l.408) | docs/rules/guilds.md | kept |
 | GD05 | Guild leaders run the supply chain and dedicated farmers | behaviour spec | RULES 3b (l.411) | docs/rules/guilds.md | kept |
-| GD06 | Every guild sets an EXP tax | behaviour spec | RULES 3b (l.419) | docs/rules/guilds.md | kept |
+| GD06 | Every guild sets an EXP tax | behaviour spec | RULES 3b (l.419) | docs/rules/guilds.md | kept; 2026-11-14 owner: tax applies to humans too (G20 "taxed" removed) |
 | GD07 | Every guild has a merchant | behaviour spec | RULES 3b (l.422) | docs/rules/guilds.md | kept |
 | GD08 | Every bot aims for the Teleport card (Creamy) | behaviour spec | RULES 3b (l.426) | docs/rules/guilds.md | kept |
 | GD09 | Guild loyalty and mutual help | behaviour spec | RULES 3b (l.431) | docs/rules/guilds.md | kept |

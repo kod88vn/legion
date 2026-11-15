@@ -1239,6 +1239,9 @@ Kind: behaviour spec. First date: 2026-11-14.
   and spends them sensibly (Guild Extension for more members first, then the useful guild skills).
 ```
 
+Changed 2026-11-14 (owner): "actually tax everyone, no human exception". The tax applies to every guild member,
+humans included (also removes "taxed" from G20).
+
 ## GD07 - Every guild has a merchant
 
 Kind: behaviour spec. First date: 2026-11-14.
@@ -1689,6 +1692,7 @@ Kind: behaviour spec. First date: undated (2026-11-13 or earlier).
 ## Gates found outside the old RULES.md (sources)
 
 - G20: `docs/design/REDESIGN.md` section 2: "Never Ayla's party for anything destructive (kicks, resets). Humans are never kicked, taxed or auto-traded." (2026-11-14)
+  Changed by the owner 2026-11-14: "actually tax everyone, no human exception" ("taxed" removed; see GD06).
 - G21: `STATUS.md`, owner 2026-11-14: "go ahead and proceed to implement, do not start any server, we will test after I restart this machine"
 - G22: `HANDOVER.md` section 1, owner rules: "Ask before outward-facing or hard-to-reverse actions (installing external tools, deleting data)."
 - G23: `HANDOVER.md` sections 4 and 6f4 (throwaway map-server, never ro-db; keep ~/.wine-ro untouched) and `REDESIGN.md` section 2 (never touch the database or running-state files)
