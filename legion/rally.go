@@ -23,14 +23,15 @@ import (
 )
 
 const (
-	rallySplitAfter   = 45 * time.Second // members on different maps this long -> rally
-	rallySplitForce   = 6 * time.Minute  // ... even when the stragglers look like they're catching up / on a town trip
-	rallyTimeout      = 5 * time.Minute  // a rally never lasts longer
-	rallyCooldown     = 30 * time.Minute // no new rally for the same party within 30 min (after any rally)
-	rallyDoneCooldown = 30 * time.Minute
-	rallyWaitCells    = 4                // members stand this close to the Kafra while waiting
-	rallyAfterArrived = 3 * time.Minute  // all here but someone couldn't save: go anyway after this
-	humanHuntSettle   = 20 * time.Second // (was 3 min) a human's map counts as its hunting map after this long there
+	rallySplitAfter    = 45 * time.Second // members on different maps this long -> rally
+	rallySplitForce    = 6 * time.Minute  // ... even when the stragglers look like they're catching up / on a town trip
+	rallyTimeout       = 5 * time.Minute  // a rally never lasts longer
+	rallyCooldown      = 30 * time.Minute // no new rally for the same party within 30 min (after any rally)
+	rallyDoneCooldown  = 30 * time.Minute
+	rallyWaitCells     = 4                // members stand this close to the Kafra while waiting
+	rallyAfterArrived  = 3 * time.Minute  // all here but someone couldn't save: go anyway after this
+	humanHuntSettle    = 20 * time.Second // (was 3 min) a human's map counts as its hunting map after this long there
+	rallyMirrorTimeout = 12 * time.Minute // a human's rally (mirrored from her status) ends after this, one per call
 )
 
 // rallyState lives on Party (guarded by parties.Mutex).
@@ -56,6 +57,8 @@ type rallyState struct {
 	bestAt time.Time
 	// members that can't route to the rally town: left out, the rally ends without them
 	excluded map[string]bool
+	// human-led party: the key ("town@x,y") of her call whose mirrored rally has ended; cleared when her rally is over
+	MirrorDone string `json:"mirror_done,omitempty"`
 	// where each member stood at the last tick: a member still walking (another map, a big field) is progress too
 	lastPos map[string][3]interface{}
 }
@@ -218,6 +221,9 @@ func (p *Party) endRally(ok bool, why string, now time.Time) {
 		return
 	}
 	town := p.Rally.Town
+	if p.Rally.Why == rallyMirrorWhy { // her call's rally is over: it is not mirrored again (rallysync.go)
+		p.Rally.MirrorDone = rallyMirrorKey(town, p.Rally.X, p.Rally.Y)
+	}
 	p.Rally.Town, p.Rally.AllAt, p.Rally.SplitSince = "", time.Time{}, time.Time{}
 	p.Rally.Last, p.Rally.LastAt = why, now
 	if ok {
@@ -323,6 +329,13 @@ func (p *Party) rallyTick(now time.Time) {
 			p.endRally(false, "rallies switched off", now)
 		}
 		return
+	}
+	if p.Human != "" {
+		// her mirrored rally runs at most rallyMirrorTimeout (checked before the mirror, which may be stale)
+		if r := p.rallyInfo(); r.Town != "" && r.Why == rallyMirrorWhy && now.Sub(r.At) > rallyMirrorTimeout {
+			p.endRally(false, "her rally timed out", now)
+			return
+		}
 	}
 	if p.Human != "" && humanRallySync(p, now) { // rallysync.go: her rally state drives the members' rally
 		return
@@ -591,13 +604,8 @@ func (b *Bot) rallyThink(gm *GameMap, moving bool, now time.Time) bool {
 	if out {
 		return false
 	}
-	// rallyleave.go: the human leader left the rally town - the rally ends, members follow her (the healer first)
-	if p.Human != "" {
-		if h, ok := b.humanState(p.Human, now); ok && humanLeftRally(r.Town, h.Map, r.At, now) {
-			p.endRally(false, p.Human+" left "+r.Town, now)
-			return false
-		}
-	}
+	// a human leader stepping out of the rally town does not end it (live 2026-11-15: the mirror restarted every ~22 s);
+	// the rally ends by arrival, her cancel or the timeout (rallysync.go)
 	if b.rallyID != r.At {
 		b.rallyID, b.rallySaid, b.rallyCell = r.At, false, [2]int{}
 	}
