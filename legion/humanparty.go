@@ -392,11 +392,16 @@ func humanPartyManager(bots []*Bot, stop <-chan struct{}) {
 		}
 	}
 	loadHumanParties(byName)
+	driftAt := time.Time{}
 	for {
 		select {
 		case <-stop:
 			return
 		case <-t.C:
+		}
+		if time.Since(driftAt) > 10*time.Minute { // humanrosterdrift.go
+			driftAt = time.Now()
+			rosterDrift(byName)
 		}
 		parties.Lock()
 		var hps []*Party
