@@ -1810,3 +1810,13 @@ Kind: process rule. First date: 2026-11-14.
 ```text
 "do not run around and get more attackers. Stay back"
 ```
+
+## PT32 (clarified)
+```text
+"no, that's not what I meants. I meant she did not hit the first target, not the sedond, not the 10th, she went straight into the middle of the pack and be swamped on. That's the stupid shit. How come she cannot just hit the first target she sees?"
+```
+
+## PT32 (refined)
+```text
+"only ignore very low level mobs... you stupid shit is too stupid"
+```
