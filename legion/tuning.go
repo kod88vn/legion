@@ -25,6 +25,8 @@ package main
 //   priest_sit_low_sp_pct     40   a standing party healer with nobody hurt sits under this SP % (then rests to 80%, 60% when the party moves)
 //   priest_buff_renew_min_sec 220  a buff on a member is renewed after a random time between min and max seconds
 //   priest_buff_renew_max_sec 260
+//   priest_active_buffs       true PT29 (priestbuff.go): members ask for missing buffs, the priest buffs them on request and before expiry
+//   priest_buff_hold_sp_pct   30   ...down to this SP % (kept for Heal); replaces the 70% floor while priest_active_buffs is on
 //
 //   Solo / general AI (ai.go)
 //   beginner_lv               20   below this base level a bot stays near its home town and Kafra keeps more money
@@ -117,13 +119,15 @@ type Tuning struct {
 	TogetherCells int `json:"together_cells"`
 	// hysteresis: a collect / regroup that started beyond together_cells keeps going until within this many cells
 	// (stopping at 20 too made leaders oscillate at the boundary, QA 2026-11-14 pay_fild04)
-	CollectStopCells  int `json:"collect_stop_cells"`
-	TankPullRadius    int `json:"tank_pull_radius"`
-	TankMaxLvOver     int `json:"tank_max_lv_over"`
-	PriestBuffMinSP   int `json:"priest_buff_min_sp_pct"`
-	PriestSitBelowSP  int `json:"priest_sit_low_sp_pct"` // 2026-11-14: was priest_sit_below_sp_pct (95, "SP not full"); new key so the old file value is ignored
-	PriestBuffRenewLo int `json:"priest_buff_renew_min_sec"`
-	PriestBuffRenewHi int `json:"priest_buff_renew_max_sec"`
+	CollectStopCells  int  `json:"collect_stop_cells"`
+	TankPullRadius    int  `json:"tank_pull_radius"`
+	TankMaxLvOver     int  `json:"tank_max_lv_over"`
+	PriestBuffMinSP   int  `json:"priest_buff_min_sp_pct"`
+	PriestSitBelowSP  int  `json:"priest_sit_low_sp_pct"` // 2026-11-14: was priest_sit_below_sp_pct (95, "SP not full"); new key so the old file value is ignored
+	PriestBuffRenewLo int  `json:"priest_buff_renew_min_sec"`
+	PriestBuffRenewHi int  `json:"priest_buff_renew_max_sec"`
+	PriestActiveBuffs bool `json:"priest_active_buffs"`     // PT29 priestbuff.go: members ask for buffs, the priest buffs down to the hold line
+	PriestBuffHoldSP  int  `json:"priest_buff_hold_sp_pct"` // PT29: no buffs under this SP % (kept for Heal)
 	// AI
 	BeginnerLv          int     `json:"beginner_lv"`
 	StayCrowd           int     `json:"stay_crowd"`
@@ -248,6 +252,7 @@ type Tuning struct {
 var defaultTuning = Tuning{
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
+	PriestActiveBuffs: true, PriestBuffHoldSP: 30,
 
 	BeginnerLv: 20, StayCrowd: 70, TargetLvOver: 2, TargetLvAggression: 6, TargetLvMin: 8,
 	RoamGiveUpSec: 120, CrowdSpawnsPerBot: 5, CrowdRoamPct: 30, RoamCrowdSec: 75, GhostTargetSec: 10, LeaderCollectSec: 90, TripUrgentWeightPct: 90, TripBagPct: 70, TripMinIntervalMin: 45,
