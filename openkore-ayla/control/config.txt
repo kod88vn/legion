@@ -83,14 +83,14 @@ attackAllowStartStorageBuySell 1
 attackDistance 1
 attackDistanceAuto 1
 attackMaxDistance 1
-attackMaxRouteTime 4
+attackMaxRouteTime 3
 attackMinPlayerDistance 2
 attackMinPortalDistance 4
 attackUseWeapon 1
 attackNoGiveup 0
 attackCanSnipe 0
 attackCheckLOS 1
-attackRouteMaxPathDistance 20
+attackRouteMaxPathDistance 10
 attackLooters 0
 attackLooters_dist 1
 attackChangeTarget 1
