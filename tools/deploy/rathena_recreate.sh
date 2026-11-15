@@ -28,6 +28,7 @@ for a in "$@"; do
   esac
 done
 [ "$YES" = 1 ] || DRY_RUN=1
+rathena_gate   # at most one recreate per hour (DRY_RUN only reports)
 
 AYLA_STATUS=/mnt/g/RO/legion/openkore-ayla/logs/status.json
 RATHENA_WAIT=${RATHENA_WAIT:-240}   # s for "Map-server 0 loading complete."
@@ -112,6 +113,7 @@ if [ -n "$DBCHG" ]; then
   fi
 fi
 
+[ "$DRY_RUN" = 1 ] || "$PYTHON" "$SYSDIR/deploylog.py" rathena-record ${RATHENA_HOUR_OVERRIDE:+--override "$RATHENA_HOUR_OVERRIDE"} || true
 run docker compose up -d --no-deps --force-recreate rathena
 
 if [ "$DRY_RUN" != 1 ]; then

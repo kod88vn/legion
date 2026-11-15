@@ -4,12 +4,14 @@ to create a self learning/improving loop").
 
 Runs in WSL as a long-running background command of the engineering session. Every minute it measures the whole
 system; every 10 minutes it also samples random bots for real progress. Each cycle appends one line to
-G:\\RO\\legion\\legion\\data\\health.log. When a problem has lasted past its grace time, it prints a report with the
-evidence and EXITS - a background command that exits wakes the engineering session, which fixes the cause, writes
-the lesson to legion/data/lessons.md and starts the sentinel again. So: observe -> wake -> fix -> record -> observe.
+G:\\RO\\legion\\legion\\data\\health.log. When a problem has lasted past its grace time it is FILED into the bug queue
+(legion/data/bugqueue.jsonl through tools/system/bugq.py, deduped: a repeat only bumps the count). Only an OUTAGE
+(OUTAGE_KEYS: API down, population collapsed, Ayla offline) also prints a report and EXITS, which wakes the main
+session; everything else waits in the queue for the next planning pass. Each cycle writes data/sentinel.heartbeat.
 
 Checks (grace): Legion API / population (4 min after a deploy), kills per bot, frozen-bot share (probe),
-required LLM minds alive, Ayla online, Ayla's party together, watch client + its launcher running, client restart
+puppet-dispatcher heartbeat (only while legion/data/stack.up exists), meter checks from /api/meter (farming share of the
+time budget, stuck share, deaths per bot-hour, API latency), Ayla online, Ayla's party together, watch client + its launcher running, client restart
 loops, chat volume, death rate; farming time: farming share of bot states (>= 85%), town trips per bot (<= 1 per
 45 min) and unnecessary town trips (bag < 70% weight and slots with potions in stock) - main legion + legion-core.
 Usage: python3 /mnt/g/RO/legion/tools/sentinel.py [--once] [--mute KEY[,KEY...]] [--mute-until HH:MM]
@@ -20,8 +22,20 @@ Usage: python3 /mnt/g/RO/legion/tools/sentinel.py [--once] [--mute KEY[,KEY...]]
 import collections, json, os, random, re, subprocess, sys, time, urllib.request
 
 API = 'http://127.0.0.1:8090'
-LOG = '/mnt/g/RO/legion/legion/data/health.log'
-MINDS = ['ayla', 'chat', 'life', 'market', 'watchdog'] + ['guild%02d' % i for i in range(1, 11)]
+DATA = os.environ.get('LEGION_DATA') or os.path.join(ROOT, 'legion', 'data')
+LOG = os.path.join(DATA, 'health.log')
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+sys.path.insert(0, os.path.join(ROOT, 'tools', 'system'))
+try:
+    import bugq as BUGQ, common as SYSC, meterlib as METER
+except Exception:          # the queue/meter helpers are optional: the sentinel still works without them
+    BUGQ = SYSC = METER = None
+OUTAGE_KEYS = {'legion_api', 'population', 'ayla'}   # these wake the main session; the rest goes to the queue
+METRIC_OF = {'kills': 'kpm', 'farming': 'kpm', 'trips': 'kpm', 'bad_trips': 'kpm', 'frozen': 'kpm', 'stuck': 'kpm',
+             'deaths': 'deaths', 'meter_deaths': 'deaths'}
+PRIO_OF = {'kills': 'high', 'farming': 'high', 'deaths': 'high', 'meter_deaths': 'high', 'frozen': 'high',
+           'dispatcher': 'high', 'stuck': 'high'}
+DISPATCH_FILES = ['dispatch.heartbeat', 'dispatcher.heartbeat', 'puppet.heartbeat']
 ONCE = '--once' in sys.argv
 
 
@@ -222,16 +236,103 @@ class FarmWatch:
         return (tot['farming'] / n if n else 1.0), tot, n
 
 
+# ---------------------------------------------------------------- meter-based checks (package M: /api/meter)
+STUCK_MAX = 0.05          # stuck share of online time
+METER_FARM_MIN = 0.85     # fighting + searching share
+DEATHS_PH_MAX = 0.5       # deaths per bot-hour (cohort mean, n-weighted)
+LATENCY_MAX = 4.0         # seconds for /api/overview
+
+
+def meter_findings(meter):
+    """{key: (bad, detail)} from a /api/meter payload; {} when the meter has no usable data (checks then fall back)."""
+    if METER is None or not meter:
+        return {}
+    cs = METER.cohorts(meter)
+    tot = sum(c['n'] for c in cs)
+    if tot < 20:
+        return {}
+    agg = collections.defaultdict(float)
+    w = 0.0
+    dsum = dw = 0.0
+    for c in cs:
+        if c['shares']:
+            for b, v in c['shares'].items():
+                agg[b] += v * c['n']
+            w += c['n']
+        if c['deaths_ph'] is not None:
+            dsum += c['deaths_ph'] * c['n']
+            dw += c['n']
+    out = {}
+    if w:
+        sh = {b: v / w for b, v in agg.items()}
+        farm = sum(sh.get(b, 0.0) for b in METER.PRODUCTIVE)
+        top = ', '.join('%s %.0f%%' % (b, 100 * v) for b, v in sorted(sh.items(), key=lambda x: -x[1])[:6])
+        out['farming'] = (farm < METER_FARM_MIN, 'meter: farming share (fighting+searching) %.0f%% < %.0f%% over %d bots: %s' % (
+            100 * farm, 100 * METER_FARM_MIN, w, top))
+        out['stuck'] = (sh.get('stuck', 0.0) > STUCK_MAX, 'meter: stuck share %.1f%% > %.0f%% over %d bots' % (
+            100 * sh.get('stuck', 0.0), 100 * STUCK_MAX, w))
+    if dw:
+        d = dsum / dw
+        out['meter_deaths'] = (d > DEATHS_PH_MAX, 'meter: %.2f deaths per bot-hour > %.1f (%d bots)' % (d, DEATHS_PH_MAX, dw))
+    return out
+
+
+def dispatcher_down(grace_s=180, stale_s=300):
+    """Dispatcher heartbeat problem text, or None. Only while the stack is marked up (legion/data/stack.up)."""
+    try:
+        now = float(os.environ.get('LEGION_FAKE_NOW') or time.time())
+        if now - os.path.getmtime(os.path.join(DATA, 'stack.up')) < grace_s:
+            return None
+    except OSError:
+        return None
+    ages = []
+    for n in DISPATCH_FILES:
+        try:
+            ages.append(now - os.path.getmtime(os.path.join(DATA, n)))
+        except OSError:
+            pass
+    if not ages:
+        return 'no dispatcher heartbeat file (tools/puppet/dispatch.py not running?)'
+    return 'dispatcher heartbeat %d min old' % (min(ages) // 60) if min(ages) > stale_s else None
+
+
+def file_problem(key, detail):
+    """Put a problem into the bug queue (deduped; a repeat bumps the count at most every 10 min). Returns the id."""
+    if BUGQ is None:
+        return None
+    try:
+        i, _ = BUGQ.add('sentinel', 'outage' if key in OUTAGE_KEYS else PRIO_OF.get(key, 'normal'),
+                        '[%s] %s' % (key, detail[:300]), evidence=detail[:600], key='sentinel:' + key,
+                        metric=METRIC_OF.get(key), bump_min_secs=600)
+        return i
+    except Exception:
+        return None
+
+
+def heartbeat():
+    try:
+        os.makedirs(DATA, exist_ok=True)
+        with open(os.path.join(DATA, 'sentinel.heartbeat'), 'w') as f:
+            f.write(str(int(time.time())))
+    except Exception:
+        pass
+
+
 def main():
     P = Problems()
     F = FarmWatch()
     last_probe = time.time() - 420
+    meter_ok = False
     frozen_share, frozen_ex = 0.0, []
     while True:
         found = []
         line = {'t': time.strftime('%H:%M:%S')}
         try:
+            _t0 = time.time()
             o = get('/api/overview')
+            line['lat'] = round(time.time() - _t0, 2)
+            found.append(P.check('api_latency', line['lat'] > LATENCY_MAX, 300,
+                                 '/api/overview took %.1f s (> %.0f s)' % (line['lat'], LATENCY_MAX)))
         except Exception as e:
             o = None
             found.append(P.check('legion_api', True, 180, 'Legion API unreachable: %s' % e))
@@ -259,14 +360,19 @@ def main():
                 line['frozen'] = round(frozen_share, 2)
             found.append(P.check('frozen', settled and frozen_share > 0.3, 0,
                                  '%.0f%% of sampled bots made no kill and did not move in 90 s: %s' % (100 * frozen_share, '; '.join(frozen_ex[:10]))))
-            # minds
+            # puppet dispatcher heartbeat (only while the stack is marked up)
+            dd = dispatcher_down()
+            line['dispatcher_down'] = int(bool(dd))
+            found.append(P.check('dispatcher', bool(dd), 120, dd or ''))
+            # meter (package M); no endpoint or no data = the older state-sample farming check stays in charge
             try:
-                minds = {m['name']: m for m in get('/api/minds')}
-                down = [n for n in MINDS if n not in minds or minds[n].get('seen_ago_s') is None or not (0 <= minds[n]['seen_ago_s'] <= 420)]
-                line['minds_down'] = len(down)
-                found.append(P.check('minds', bool(down), 120, 'LLM minds down (silent > 7 min): ' + ', '.join(down)))
+                mf = meter_findings(get('/api/meter', timeout=15))
             except Exception:
-                pass
+                mf = {}
+            meter_ok = 'farming' in mf
+            for k, (bad, det) in mf.items():
+                found.append(P.check(k, settled and bad, 300 if k != 'meter_deaths' else 600, det))
+            line['meter'] = int(meter_ok)
             # Ayla's party
             try:
                 p = get('/api/parties/detail')
@@ -289,7 +395,7 @@ def main():
             elif F.sample():
                 share, tot, n = F.share()
                 line['farm'] = round(share, 3)
-                if len(F.samples) == 3:
+                if len(F.samples) == 3 and not meter_ok:
                     found.append(P.check('farming', share < FARM_MIN, 0, 'farming share %.0f%% < %.0f%% over the last 15 min (%d samples): %s' % (
                         100 * share, 100 * FARM_MIN, n, ', '.join('%s %.0f%%' % (k, 100 * v / n) for k, v in tot.most_common(8)))))
             many = sorted(((b, l) for b, l in F.trips.items() if len(l) > 1), key=lambda x: -len(x[1]))
@@ -328,11 +434,24 @@ def main():
                 f.write(json.dumps(line) + '\n')
         except Exception:
             pass
-        if found:
-            print('SENTINEL: %d problem(s) at %s' % (len(found), time.strftime('%F %T')))
-            for k, d in found:
+        heartbeat()
+        # every problem goes into the bug queue (deduped); only an outage also wakes the main session by exiting
+        for k, d in found:
+            file_problem(k, d)
+        outages = [(k, d) for k, d in found if k in OUTAGE_KEYS]
+        if found and not outages:
+            line['filed'] = [k for k, _ in found]
+        if outages:
+            print('SENTINEL OUTAGE: %d outage(s) at %s (%d other problem(s) filed in the bug queue)' % (
+                len(outages), time.strftime('%F %T'), len(found) - len(outages)))
+            for k, d in outages:
                 print(' - [%s] %s' % (k, d))
             print('Last health line:', json.dumps(line))
+            if BUGQ is not None:
+                try:
+                    print(BUGQ.what_to_assign(5))
+                except Exception:
+                    pass
             sys.exit(2)
         if ONCE:
             print(json.dumps(line))

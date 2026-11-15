@@ -9,6 +9,59 @@
 DEPLOY_ALLOWED="legion legion-core"
 DRY_RUN=${DRY_RUN:-0}
 
+# ---- Deploy gate (redesign 2026-11-14, tools/system/deploylog.py) -------------------------------------------------
+# Regular deploys are at least 3 hours apart; `--critical "<reason>"` overrides (a fix that unblocks something).
+# Every regular deploy lists its fixes: `--fix "<what>|<metric kpm|zph|deaths>|<cohort substring>"` (repeatable).
+# Each deploy appends a record to legion/data/deploys.jsonl (tag, fixes, critical or not). LEGION_FAKE_NOW pins the clock.
+GUARD_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SYSDIR=$GUARD_DIR/../system; [ -f "$SYSDIR/deploylog.py" ] || SYSDIR=/mnt/g/RO/legion/tools/system
+PYTHON=${PYTHON:-python3}
+CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=()
+
+# parse_deploy_args "$@": sets HAVE_CRITICAL/CRITICAL_REASON, FIX_ARGS, and POS_ARGS (everything else).
+parse_deploy_args() {
+  CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --critical) HAVE_CRITICAL=1; CRITICAL_REASON="${2:-}"; if [ $# -ge 2 ]; then shift 2; else shift; fi;;
+      --fix) FIX_ARGS+=("${2:-}"); if [ $# -ge 2 ]; then shift 2; else shift; fi;;
+      *) POS_ARGS+=("$1"); shift;;
+    esac
+  done
+}
+
+# deploy_gate [TAG]: exit 5 (nothing deployed) when too soon / no fix list; DRY_RUN only reports it.
+deploy_gate() {
+  local tag=${1:-} out ga=()
+  [ "$HAVE_CRITICAL" = 1 ] && ga+=(--critical "$CRITICAL_REASON")
+  [ -n "$tag" ] && ga+=(--tag "$tag")
+  ga+=(--fixes "${#FIX_ARGS[@]}")
+  if out=$("$PYTHON" "$SYSDIR/deploylog.py" check "${ga[@]}" 2>&1); then echo "gate: $out"; return 0; fi
+  echo "$out"
+  if [ "$DRY_RUN" = 1 ]; then echo "DRY_RUN: this deploy would be refused"; return 0; fi
+  exit 5
+}
+
+# record_deploy TAG SERVICES: append the deploy record (not in dry-run).
+record_deploy() {
+  local tag=$1 svc=$2 ra=() f
+  [ "$DRY_RUN" = 1 ] && return 0
+  [ "$HAVE_CRITICAL" = 1 ] && ra+=(--critical "$CRITICAL_REASON")
+  for f in "${FIX_ARGS[@]}"; do ra+=(--fix "$f"); done
+  "$PYTHON" "$SYSDIR/deploylog.py" record --tag "$tag" --services "$svc" "${ra[@]}" || echo "WARNING: could not record the deploy"
+}
+
+# rathena_gate: one recreate per hour at most (owner rule). RATHENA_HOUR_OVERRIDE="<reason>" for a broken rathena.
+rathena_gate() {
+  local out
+  if out=$("$PYTHON" "$SYSDIR/deploylog.py" rathena-check ${RATHENA_HOUR_OVERRIDE:+--override "$RATHENA_HOUR_OVERRIDE"} 2>&1); then
+    echo "gate: $out"; return 0
+  fi
+  echo "$out"
+  if [ "$DRY_RUN" = 1 ]; then echo "PLAN: a real run would be refused now"; return 0; fi
+  exit 5
+}
+
 # run CMD... : run it, or only print it in dry-run mode.
 run() {
   if [ "$DRY_RUN" = 1 ]; then echo "DRY_RUN would run: $*"; return 0; fi
