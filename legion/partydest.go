@@ -45,14 +45,20 @@ func humanDest(st humanStatus, herMap string, townRun bool) string {
 // humanMemberTarget: the map a friend heads for while the leader travels to dest. On her map: her map (stay with her).
 // A town destination (a meeting point): that town. Open ground for a strong party: the map itself. Otherwise the Kafra
 // town nearest the destination (the meeting point).
+//
+// The meeting point is a target only while she is in a town (in it, or on her way to it through another town): once
+// she has left town for open ground or a dungeon, everyone heads for HER CURRENT map (humanTrailNext keeps them on her
+// road) and stays with her. QA 2026-11-15 03:55Z: all six friends sat "roaming" in geffen (the meeting town for the
+// dungeon orcsdun02) while Ayla walked gef_fild10 alone - nothing ever sent them after her. The strong-party "straight
+// to the map by our own route" is gone too: independent long walks split the party (owner: the priest always elsewhere).
 func humanMemberTarget(dest, herMap, myMap, meetTown string, strong, hostileDest bool) string {
 	if myMap == herMap && herMap != "" {
 		return herMap
 	}
-	if isTown(dest) {
-		return dest
+	if herMap != "" && !isTown(herMap) {
+		return herMap // she left the town: follow her, not a meeting point she is past
 	}
-	if strong && !hostileDest {
+	if isTown(dest) {
 		return dest
 	}
 	if meetTown != "" {
