@@ -2221,7 +2221,8 @@ sub portal_back_guard {
 		($pgFrom, $pgAt, $pgPrev) = ($pgPrev, time, $here);
 		$arrInfo = {map => $here, x => $char->{pos_to}{x}, y => $char->{pos_to}{y}, at => time, from => $pgFrom};
 		# more than 2 crossings of the same portal in 3 min = a loop: hold on the town side for 90 s
-		if ($pgFrom ne '') {
+		# only field / dungeon portals count: not town <-> building, not during a town run or a shop / storage task
+		if ($pgFrom ne '' && !(is_townmap($pgFrom) && is_townmap($here)) && !$errand && !AI::inQueue('sellAuto', 'buyAuto', 'storageAuto', 'NPC') && !status_town_run()) {
 			my $k = join('|', sort ($pgFrom, $here));
 			$pgCross{$k} = [grep { time - $_ < 180 } @{$pgCross{$k} || []}, time];
 			if (@{$pgCross{$k}} > 2) {
