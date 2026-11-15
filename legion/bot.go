@@ -615,6 +615,7 @@ func (b *Bot) handle(pk []byte) {
 	b.auditRecv(op, pk, now) // skillaudit.go: skill answers and the can-act delay
 	b.healRecv(op, pk)       // heal.go
 	b.buffRecv(op, pk, now)  // priestbuff.go PT29
+	b.efstRecv(op, pk, now)  // effects.go: status icons for the party dashboard
 	switch op {
 	case 0x0087: // own walk accepted: tick, movedata
 		x0, y0, x1, y1 := decodeMove(pk[6:12])

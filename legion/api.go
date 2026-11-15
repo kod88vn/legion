@@ -610,6 +610,9 @@ func serveAPI(addr string, bots []*Bot) {
 			out := map[string]interface{}{"party": p.Name, "human": p.Human, "checkpoint": p.Checkpoint,
 				"human_last_seen": map[string]interface{}{"map": h.Map, "x": h.X, "y": h.Y, "ago_s": int(now.Sub(h.At).Seconds())}}
 			out["rally"] = rallyView(p, now)
+			if s, ok := humanStatusOf(p.Human); ok {
+				out["human_effects"] = humanEffectsView(s, now) // effects.go: the human's own buffs/debuffs
+			}
 			var mem []map[string]interface{}
 			for _, m := range p.Members {
 				m.mu.Lock()
@@ -622,6 +625,7 @@ func serveAPI(addr string, bots []*Bot) {
 				if st, known := m.knownSave(); known {
 					row["saved_town"] = st // together.go: Ayla's departure gate waits until every friend saved at the rally Kafra
 				}
+				row["effects"] = m.effectsOf(now) // effects.go: active buffs/debuffs with time left
 				if ok && hs.Map == m.MapName {
 					row["sees_human"] = map[string]interface{}{"x": hs.X, "y": hs.Y, "dist": dist(m.X, m.Y, hs.X, hs.Y),
 						"hp": hs.HPFrac, "target": hs.Target}

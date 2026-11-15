@@ -15,29 +15,30 @@ import (
 var roleNames = map[int]string{roleTank: "tank", roleRanged: "ranged", roleSupport: "support", roleMelee: "melee", roleNone: "-"}
 
 type partyMemberView struct {
-	Name     string    `json:"name"`
-	Class    string    `json:"class"`
-	Level    int       `json:"level"`
-	JobLevel int       `json:"job_level"`
-	Role     string    `json:"role"`
-	Online   bool      `json:"online"`
-	Map      string    `json:"map"`
-	X        int       `json:"x"`
-	Y        int       `json:"y"`
-	HP       float64   `json:"hp"`
-	SP       float64   `json:"sp"`
-	Zeny     int       `json:"zeny"`
-	Weight   int       `json:"weight,omitempty"`     // current weight, raw server units (1/10 of what the client shows)
-	MaxWt    int       `json:"max_weight,omitempty"` // weight limit, same units; 0 = unknown (e.g. a human leader)
-	State    string    `json:"state"`
-	Leader   bool      `json:"leader,omitempty"`
-	Human    bool      `json:"human,omitempty"`
-	HasStats bool      `json:"has_stats,omitempty"` // a human whose own HP/SP/zeny/weight are known (humanstats.go)
-	Waiting  bool      `json:"waiting,omitempty"`   // waiting at the checkpoint town (leader's map too dangerous)
-	WithLead bool      `json:"with_leader"`         // on the same map as the leader
-	Kills    int       `json:"kills"`
-	Deaths   int       `json:"deaths"`
-	GearNext *gearStep `json:"gear_next,omitempty"` // gearpool.go: next gear step, cost, funded by, party turn
+	Name     string       `json:"name"`
+	Class    string       `json:"class"`
+	Level    int          `json:"level"`
+	JobLevel int          `json:"job_level"`
+	Role     string       `json:"role"`
+	Online   bool         `json:"online"`
+	Map      string       `json:"map"`
+	X        int          `json:"x"`
+	Y        int          `json:"y"`
+	HP       float64      `json:"hp"`
+	SP       float64      `json:"sp"`
+	Zeny     int          `json:"zeny"`
+	Weight   int          `json:"weight,omitempty"`     // current weight, raw server units (1/10 of what the client shows)
+	MaxWt    int          `json:"max_weight,omitempty"` // weight limit, same units; 0 = unknown (e.g. a human leader)
+	State    string       `json:"state"`
+	Leader   bool         `json:"leader,omitempty"`
+	Human    bool         `json:"human,omitempty"`
+	HasStats bool         `json:"has_stats,omitempty"` // a human whose own HP/SP/zeny/weight are known (humanstats.go)
+	Waiting  bool         `json:"waiting,omitempty"`   // waiting at the checkpoint town (leader's map too dangerous)
+	WithLead bool         `json:"with_leader"`         // on the same map as the leader
+	Kills    int          `json:"kills"`
+	Deaths   int          `json:"deaths"`
+	GearNext *gearStep    `json:"gear_next,omitempty"` // gearpool.go: next gear step, cost, funded by, party turn
+	Effects  []effectView `json:"effects,omitempty"`   // effects.go: active buffs/debuffs with time left
 }
 
 type partyView struct {
@@ -118,6 +119,7 @@ func registerPartyDash(mux *http.ServeMux) {
 				mv.Weight, mv.MaxWt = m.Weight, m.MaxWeight
 				if m.Online {
 					mv.GearNext = m.gearStepView()
+					mv.Effects = m.effectsOf(now) // effects.go
 				}
 				m.mu.Unlock()
 				mv.WithLead = mv.Online && leadMap != "" && mv.Map == leadMap
