@@ -983,6 +983,11 @@ func (b *Bot) kafraWaitInTown(goal string, now time.Time) bool {
 		b.event("info", "", fmt.Sprintf("waiting in %s for the Kafra toward %s: the walk crosses maps too strong for me", b.MapName, goal))
 	}
 	b.route, b.path = nil, nil
+	if rallyParkOn() { // rallypark.go: one owner of the waiting sit, and a cap on the park
+		b.waitSit(!now.After(b.MoveUntil), now)
+		b.parkTick(goal, now)
+		return true
+	}
 	if !b.Sitting && now.Sub(b.sitSentAt) > 3*time.Second {
 		b.sitSentAt = now
 		go b.sit()

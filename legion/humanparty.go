@@ -340,6 +340,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	} else {
 		b.awaySince = time.Time{}
 	}
+	m = b.parkRedirect(p, m, now) // rallypark.go: a town we parked in front of for the cap -> the party's farm map
 	if b.Goal.Mode != "party" || b.Goal.Map != m || b.Goal.Set != "human" {
 		if b.Goal.Map != m {
 			b.route, b.path = nil, nil

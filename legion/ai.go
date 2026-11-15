@@ -1593,7 +1593,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		b.setState("resting")
 		return
 	}
-	if b.Sitting && !b.wantSit && now.Sub(b.sitSentAt) > 2*time.Second && now.Sub(b.restSitAt) > 1500*time.Millisecond { // stand up if something left us seated (not a party-rest sit: together.go)
+	if b.Sitting && !b.wantSit && now.Sub(b.sitSentAt) > 2*time.Second && now.Sub(b.restSitAt) > 1500*time.Millisecond && !b.waitSitHeld(now) { // stand up if something left us seated (not a party-rest sit: together.go)
 		b.sitSentAt = now
 		go b.stand()
 	}
