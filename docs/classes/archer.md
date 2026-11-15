@@ -81,3 +81,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - Arrows: arrowTarget = min(3000, 1000 + lv x 30), top-up below a quarter, paid from all zeny after the potion minimum.
 - A gear-pool turn item is dropped while a member lacks its class weapon / arrows.
 
+### Build milestones and playstyle (draft for owner review, 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Archer-line build are in `legion/data/buildmilestones.json` (builds hunter, hunter_blitz, hunter_agi, hunter_trap, bard, bard_arrow, dancer, dancer_arrow). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
+- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
+  - `hunter` lists 95 skill points: Blast Mine, Shockwave Trap and Claymore Trap are never learned. `bard` / `dancer` list 105: Musical Strike / Slinging Arrow stay at 0 and the 7th level of Whistle / Fortune's Kiss is the last.

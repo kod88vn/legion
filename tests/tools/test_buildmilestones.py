@@ -1,0 +1,81 @@
+"""legion/data/buildmilestones.json: every build in builds.go has an entry, each range's stats fit the stat points of its
+base level, and the checkpoints follow the plans. Offline, reads only repo files.
+Run: python -m unittest discover -s tests/tools -p "test_buildmilestones.py" -v"""
+import json
+import os
+import sys
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(ROOT, "tools", "design"))
+import planlib  # noqa: E402
+
+DOC = json.load(open(os.path.join(ROOT, "legion", "data", "buildmilestones.json"), encoding="utf-8"))
+GEAR = json.load(open(os.path.join(ROOT, "legion", "data", "buildgear.json"), encoding="utf-8"))["builds"]
+PLANS = planlib.parse_builds()
+
+
+class BuildMilestonesTest(unittest.TestCase):
+    def test_every_build_has_an_entry(self):
+        ids = planlib.build_ids()
+        self.assertGreaterEqual(len(ids), 37)
+        self.assertEqual(sorted(ids), sorted(PLANS), "the plan parser must see every build in builds.go")
+        self.assertEqual(sorted(ids), sorted(DOC["builds"]), "buildmilestones.json must have exactly the builds of builds.go")
+
+    def test_marked_as_draft(self):
+        self.assertEqual(DOC["status"], "draft for owner review")
+        self.assertRegex(DOC["drafted"], r"^\d{4}-\d{2}-\d{2}$")
+        for bid, b in DOC["builds"].items():
+            self.assertEqual(b["status"], "draft for owner review", bid)
+            self.assertEqual(b["drafted"], DOC["drafted"], bid)
+
+    def test_ranges_follow_gear_bands(self):
+        for bid, b in DOC["builds"].items():
+            g = GEAR.get(bid) or GEAR[PLANS[bid]["base"]]
+            want = [f"{x['min']}-{x['max']}" for x in g["bands"]]
+            self.assertEqual([r["range"] for r in b["ranges"]], want, bid)
+
+    def test_stats_fit_the_points_of_the_level(self):
+        for bid, b in DOC["builds"].items():
+            goals = {}
+            for s, v in PLANS[bid]["stats"]:
+                goals[s] = max(goals.get(s, 1), min(v, 99))
+            prev = [1] * 6
+            for r in b["ranges"]:
+                vals = [r["stats"][k] for k in planlib.STATS]
+                self.assertTrue(all(1 <= v <= 99 for v in vals), (bid, r["range"]))
+                used = planlib.spent(vals)
+                avail = planlib.stat_points(r["max"])
+                self.assertLessEqual(used, avail, f"{bid} {r['range']}: {used} points used, {avail} available")
+                self.assertEqual(r["stat_points_available"], avail, (bid, r["range"]))
+                self.assertEqual(r["stat_points_used"], used, (bid, r["range"]))
+                self.assertEqual(r["stat_points_spare"], avail - used, (bid, r["range"]))
+                for i, v in enumerate(vals):  # never past the plan's own goal, never below an earlier range
+                    self.assertLessEqual(v, goals.get(i, 1), (bid, r["range"], planlib.STATS[i]))
+                    self.assertGreaterEqual(v, prev[i], (bid, r["range"], planlib.STATS[i]))
+                prev = vals
+
+    def test_skills_stay_inside_the_plan(self):
+        for bid, b in DOC["builds"].items():
+            cap = {}
+            for sid, lv in PLANS[bid]["skills"]:
+                cap[sid] = max(cap.get(sid, 0), lv)
+            last = {}
+            for r in b["ranges"]:
+                for s in r["skills"]:
+                    self.assertIn(s["id"], cap, f"{bid}: skill {s['name']} is not in the plan")
+                    self.assertTrue(1 <= s["lv"] <= cap[s["id"]], (bid, s))
+                    self.assertGreaterEqual(s["lv"], last.get(s["id"], 0), (bid, r["range"], s["name"]))
+                    last[s["id"]] = s["lv"]
+
+    def test_playstyle_defined_for_solo_mvp_pvp(self):
+        for bid, b in DOC["builds"].items():
+            for k in ("solo", "mvp", "pvp"):
+                lines = b["playstyle"][k]
+                self.assertTrue(1 <= len(lines) <= 3, (bid, k))
+                self.assertTrue(all(isinstance(x, str) and len(x) > 20 for x in lines), (bid, k))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -66,3 +66,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   / Bow of Rogue Master; arrows (Arrow, Silver, Fire, Crystal, Steel). Cards: Archer Skeleton (+10% ranged), Andre,
   race cards, Zerom (DEX+3), DEX+2 / AGI+2 accessories, Raydric, Whisper, Matyr.
 
+### Build milestones and playstyle (draft for owner review, 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Thief-line build are in `legion/data/buildmilestones.json` (builds assassin, assassin_sonic, assassin_dagger, rogue, rogue_bow, rogue_strip). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
+- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
+  - `assassin` and `assassin_sonic` cost 1,390 and 1,359 points: STR ends 77 and 86, VIT 30 (planned 40). `rogue_strip` ends STR 78 (planned 80).
+  - `rogue_bow` takes Gank, Mug and Back Stab 4: Back Stab needs a dagger, which this build does not wield by plan; 146 stat points stay spare at level 99.

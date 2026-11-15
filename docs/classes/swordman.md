@@ -81,3 +81,9 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   the shortfall (peco.go pecoFundRound), Riding 1 first after the Swordman part in every Knight/Crusader plan.
 - Before the 30% key-buff floor, the 60% rule kept Knights from ever casting Two-Hand Quicken.
 
+### Build milestones and playstyle (draft for owner review, 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Swordman-line build are in `legion/data/buildmilestones.json` (builds knight, knight_spear, knight_pierce, crusader, crusader_gc, crusader_spear). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
+- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
+  - `knight`: STR 90 / AGI 85 cost more than the 1,273 points of level 99; a plan-following Knight ends STR 85, AGI 75.
+  - `crusader`, `crusader_gc`: Sacrifice (Devotion) needs Reflect Shield 5 and Grand Cross 4 and is never reached inside the 88 skill points; the boss-role text that promises Devotion on the priest does not happen. `crusader_gc` also ends Holy Cross 6, no Reflect Shield, INT 92.
+  - `knight_spear` lists 101 skill points (Endure 10 and Pierce 10 stay at 1 and 6); `crusader_spear` ends Grand Cross 3 of 5.

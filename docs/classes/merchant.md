@@ -66,3 +66,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   Elder Willow (INT+2), Zerom (DEX+3), DEX+2 accessory, Poring (LUK+2), Drops, Sohee, Raydric. A weak fighter: it
   levels with its party (RULES.md 2 "Gear for classes that can't farm").
 
+### Build milestones and playstyle (draft for owner review, 2026-11-15)
+- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every Merchant-line build are in `legion/data/buildmilestones.json` (builds blacksmith, blacksmith_mace, alchemist, alchemist_battle, alchemist_potion). Draft for owner review, 2026-11-15; the party role stays as above (code). Gear is by band in `buildgear.json`.
+- Findings (the existing plan versus Renewal and the server's limits; plans unchanged):
+  - Cart Revolution (Merchant skill, 1 point, no prerequisite) is in none of the five plans, yet the engine has a rule for it (weaponskill.go) and the rules above expect it. The first-job part has the room: blacksmith lists 46 first-job points for 39.
+  - `alchemist`, `alchemist_battle`, `blacksmith_mace` finish their stat goals with 175-226 points spare at level 99 (no plan tail); `alchemist_potion` needs 1,420 and ends DEX 74, LUK 45.
