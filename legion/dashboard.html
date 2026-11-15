@@ -714,24 +714,24 @@ function effCell(es) {
     `${esc(e.name)}<span style="color:var(--muted)">${t(e.left_s)}</span></span>`).join('') + '</span>';
 }
 // a human leader's intent and recent decisions (partyintent.go, from statusout.pl / partylead.pl status_intent)
-function ago(ts) {
+function agoTs(ts) {
   if (!ts) return '–';
   const s = Math.max(0, Math.round(Date.now() / 1000 - ts));
   return s < 90 ? s + ' s ago' : s < 5400 ? Math.round(s / 60) + ' min ago' : (s / 3600).toFixed(1) + ' h ago';
 }
-function dur(s) { s = Math.max(0, Math.round(s)); return s < 90 ? s + ' s' : s < 5400 ? Math.round(s / 60) + ' min' : (s / 3600).toFixed(1) + ' h'; }
+function durS(s) { s = Math.max(0, Math.round(s)); return s < 90 ? s + ' s' : s < 5400 ? Math.round(s / 60) + ' min' : (s / 3600).toFixed(1) + ' h'; }
 function evLine(label, e, showResult) {
   if (!e || !e.text) return `<div><span style="color:var(--muted)">${label}:</span> –</div>`;
-  return `<div><span style="color:var(--muted)">${label} (${ago(e.ts)}):</span> ${esc(e.text)}` +
+  return `<div><span style="color:var(--muted)">${label} (${agoTs(e.ts)}):</span> ${esc(e.text)}` +
     (showResult ? ` <span style="color:var(--muted)">→</span> ${e.result ? esc(e.result) : '<span style="color:var(--muted)">no reply yet</span>'}` : '') + '</div>';
 }
 function humanDetailBlock(m) {
   const d = m.detail, now = Date.now() / 1000;
-  const stale = !d.fresh ? ` <span style="color:var(--bad, #d9534f)">status.json ${ago(d.status_ts)}: OpenKore down or stuck - last known</span>` : '';
-  const up = d.ok_start ? dur(now - d.ok_start) : '–';
-  const crash = d.restarts_today ? ` <span style="color:var(--warn, #e0a800)">${d.restarts_today} restart(s) today, previous start ${ago(d.prev_start)}</span>` : '';
+  const stale = !d.fresh ? ` <span style="color:var(--bad, #d9534f)">status.json ${agoTs(d.status_ts)}: OpenKore down or stuck - last known</span>` : '';
+  const up = d.ok_start ? durS(now - d.ok_start) : '–';
+  const crash = d.restarts_today ? ` <span style="color:var(--warn, #e0a800)">${d.restarts_today} restart(s) today, previous start ${agoTs(d.prev_start)}</span>` : '';
   return `<div style="border-left:3px solid var(--s1, #4a7fd8);padding:4px 8px;margin:4px 0 6px">` +
-    `<div><b>${esc(m.name)} now:</b> ${esc(d.intent || '(no intent: older statusout.pl)')} <span style="color:var(--muted)">for ${d.intent_since ? dur(now - d.intent_since) : '–'}</span>${stale}</div>` +
+    `<div><b>${esc(m.name)} now:</b> ${esc(d.intent || '(no intent: older statusout.pl)')} <span style="color:var(--muted)">for ${d.intent_since ? durS(now - d.intent_since) : '–'}</span>${stale}</div>` +
     `<div><span style="color:var(--muted)">where:</span> ${esc(d.map || '?')} ${d.x},${d.y} · <span style="color:var(--muted)">lock map</span> ${esc(d.lock_map || '–')} · <span style="color:var(--muted)">dest</span> ${esc(d.dest || '–')}${d.town_run ? ' · town run' : ''}</div>` +
     `<div><span style="color:var(--muted)">exp:</span> base ${d.base_exp_pct || 0}% · job ${d.job_exp_pct || 0}% · ${fmt(d.exp_h || 0)} base exp/h · ${fmt(d.job_exp_h || 0)} job exp/h · ${d.kpm || 0} kills/min <span style="color:var(--muted)">(last ${d.meter_min || 0} min)</span> · deaths today ${d.deaths_today || 0}</div>` +
     evLine('last decision', d.last_decision) + evLine('last watchdog event', d.last_watchdog) + evLine('last order', d.last_order, true) +
