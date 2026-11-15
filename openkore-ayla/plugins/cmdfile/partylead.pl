@@ -62,6 +62,7 @@ my $cmds = Commands::register(['partylead', 'Ayla party lead control: rally canc
 
 my ($holding, $saved, $last, $lastMsg, $lastFetch) = (0, undef, 0, 0, 0);
 my ($lastSay, $nextIdle, $lastLv, $errand, @pending) = (0, time + 60, 0, 0);
+my $townWingAt = 0; # PT22: when she uses the Butterfly Wing of an announced party town run
 my $lastTownRun = 0;
 my ($collect, $collectAt) = (undef, 0);
 my (%awaySince, %helpFrom, %memPos, %sitSince, %farSince, %dangerFrom, %friendSaved);
@@ -1307,7 +1308,7 @@ sub status_dest {
 }
 sub status_town_run {
 	return 1 if $errand || AI::inQueue('sellAuto', 'buyAuto', 'storageAuto');
-	return ($field && is_townmap($field->baseName) && time - $errandEnd < 600) ? 1 : 0;
+	return ($field && is_townmap($field->baseName) && time - $errandEnd < 180) ? 1 : 0;
 }
 
 sub flush_say {
@@ -1497,7 +1498,7 @@ sub goto_tick {
 	# the target: the mind's goto at once; or her lockMap when she has done nothing at all (empty ai_seq) for 15 s
 	# while not holding for the party (the same stall after a rally / town run)
 	my $tgt = $gotoMap;
-	if ($tgt eq '' && is_townmap($field->baseName) && time - $errandEnd < 600) { return } # the promised Kafra regroup after a town run comes first
+	if ($tgt eq '' && is_townmap($field->baseName) && time - $errandEnd < 180) { return } # the promised Kafra regroup after a town run comes first
 	if ($tgt eq '' && !$holding && ($config{lockMap} || '') ne '' && !party_resting() && !own_rest()) {
 		if (AI::action() ne '' && AI::action() ne 'sitting') { $idleSince = 0; return }
 		$idleSince ||= time;
@@ -2877,6 +2878,9 @@ sub tick {
 		if (!$errand) {
 			$errand = 1;
 			$errandStart = time;
+			# PT22 (owner rule): on a party town run everyone uses a Butterfly Wing, shops and meets at the Kafra - she
+			# wings 4 s after announcing it (the no-teleport guard lets exactly this wing through)
+			$townWingAt = (!is_townmap($field->baseName) && $char->inventory->getByName('Butterfly Wing')) ? time + 4 : 0;
 			my $hm = ($saved && $saved->{lockMap}) ? $saved->{lockMap} : ($config{lockMap} || $field->baseName);
 			my $need = AI::inQueue('sellAuto', 'storageAuto') ? 'bag full' : 'low on pots';
 			$need = 'i died and respawned here, regroup at the kafra' if $diedAt && time - $diedAt < 300; # not "bag full" (QA 20:15)
@@ -2914,6 +2918,18 @@ sub tick {
 			}
 		}
 		restore();
+		if ($townWingAt && !is_townmap($field->baseName)) {
+			if (time >= $townWingAt && !AI::inQueue('teleport')) {
+				$townWingAt = 0;
+				$wingOkUntil = time + 10;
+				psay("town run: wing to " . ($config{saveMap} || 'town') . ", meet at the kafra", 0, 0);
+				message "[watchdog] TELEPORT allowed: party town run (Butterfly Wing to " . ($config{saveMap} || '?') . ")\n", 'system';
+				AI::clear('route', 'move');
+				AI::ai_useTeleport(2); # 2 = Butterfly Wing to the save point
+			}
+			return; # no walking out while the wing is due
+		}
+		$townWingAt = 0 if is_townmap($field->baseName);
 		# town runs are done together (owner rule): on the way out she walks at the party's pace - she stops while a friend
 		# on her map is more than 20 cells behind, or still on a field/dungeon she has left (live positions: sight, then
 		# Legion's API), for at most 3 min. QA 2026-11-14 13:33: she went pay_dun00 151,43 -> exit 21,173 in 40 s and
@@ -3005,7 +3021,7 @@ sub tick {
 		}
 		# after shopping everyone meets at ONE point, the town's Kafra (owner 2026-11-14: Butterfly to town, shop, meet at
 		# the Kafra, return together behind her): she walks there once and says so once
-		if (time - $errandEnd < 600 && $KAFRA{$here} && time - $meetRouteAt > 10 && !AI::inQueue('route', 'move', 'NPC', 'attack')) {
+		if (time - $errandEnd < 180 && $KAFRA{$here} && time - $meetRouteAt > 10 && !AI::inQueue('route', 'move', 'NPC', 'attack')) {
 			my ($k) = sort { blockDistance($char->{pos_to}, {x => $a->[0], y => $a->[1]}) <=> blockDistance($char->{pos_to}, {x => $b->[0], y => $b->[1]}) } @{$KAFRA{$here}};
 			if (blockDistance($char->{pos_to}, {x => $k->[0], y => $k->[1]}) > 5) {
 				$meetRouteAt = time;
