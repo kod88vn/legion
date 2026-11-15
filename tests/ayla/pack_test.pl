@@ -38,6 +38,10 @@ ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6)
 ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('gef_fild07', 6), $kn->('gef_fild07', 9)]}) =~ /^ok/, 'pre-cross: both within 10 -> go');
 ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('gef_fild10', 12), $kn->('gef_fild10', 2)]}) eq 'wait:Zen.fox', 'on gef_fild10: priest 12 behind -> stop');
 ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('gef_fild10', 7), $kn->('gef_fild10', 30)]}) =~ /^ok/, 'on gef_fild10: priest at 7 -> go on');
+# crossing: the priest within 10 on the same map, no exceptions (live 03:5x: crossed with the priest 86 cells away)
+ok(act({here => 'gef_fild07', cross => 'pre', friends => [$kn->('gef_fild07', 3), $wz->('gef_fild07', 4)]}) =~ /^wait/, 'no known priest: no crossing');
+ok(act({here => 'gef_fild07', cross => 'pre', friends => [$pr->('geffen', undef), $kn->('gef_fild07', 3), $wz->('gef_fild07', 4)]}) eq 'wait:Zen.fox', 'priest on another map: no crossing');
+ok(act({here => 'gef_fild10', cross => 'on', friends => [$pr->('geffen', undef), $kn->('gef_fild10', 3)]}) =~ /^wait/, 'on gef_fild10, priest left behind: stop');
 # waiting = fighting (owner 2026-11-14): the best safe field next to the town, or the safe map she waits on
 my %tops = (geffen => 1, gef_fild13 => 44, gef_fild07 => 24, gef_fild10 => 60, mjolnir_05 => 82, prt_fild08 => 24);
 my %danger = (gef_fild10 => 1);
