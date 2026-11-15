@@ -2934,6 +2934,7 @@ sub pack_tick {
 	}
 	if ($act eq 'ok' && $pk{goName} ne '') {
 		message "[partylead] AY22: with $pk{goName} again (within 6 cells for 3 s) - going on together\n", 'system';
+		psay("lets go, follow me", 1, 0); # the engine's follow order: the members switch from 'stay put' to following her
 		($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
 	}
 	# gave up collecting (3 min, or the priest stuck far away): she holds and waits for 10 min before trying again
