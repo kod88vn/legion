@@ -701,7 +701,11 @@ sub travel_mode_tick {
 	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here) && !trivial_transit() && !cross_danger($here); # a friend in danger here: she fights for it (no travel mode) - not on a map far below the party (QA: Zombies on pay_dun00 for a level 81), never on a dangerous crossing
 	# crossing a map far below her and the party (trivial_transit): no fights at all there, not even OpenKore's own
 	# attackAuto - a level 81 stopped for every pay_dun00 Zombie (12 exp). Saved in a package var: survives a reload.
-	my $triv = trivial_transit() && !scalar(AI::ai_getAggressives()) ? 1 : 0; # never attackAuto 0 with monsters on her
+	# b1794737139520-016: no fights started on a crossing map (zombies, Storm Gust, Sonic Blow were fought there while it
+	# said "no fights here"). Follow-up (owner: she stood and got hit): attackAuto stays off, but she always fights back
+	# the monster that is attacking her (fight_back below) - so the walk is never a free beating.
+	my $triv = trivial_transit() ? 1 : 0;
+	fight_back() if $triv && nearest_attacker() && !AI::inQueue('attack');
 	if ($triv && !defined $trivSaved) { $trivSaved = $config{attackAuto}; $config{attackAuto} = 0; message "[partylead] crossing $here (far below the party): no fights here
 ", 'system' }
 	elsif (!$triv && defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef; message "[partylead] off the transit map ($here): attackAuto back
@@ -727,6 +731,11 @@ sub travel_mode_tick {
 }
 
 # drives the rally; true while it owns her movement
+# online friends on a map that is neither hers nor the rally town (their map unknown = not counted)
+sub rally_away {
+	my ($r, $here) = @_;
+	return grep { $_->[1] ne '' && $_->[1] ne $here && $_->[1] ne $r->{town} } online_friends();
+}
 sub rally_tick {
 	return 0 unless $rally;
 	my $r = $rally;
@@ -773,6 +782,26 @@ sub rally_tick {
 		AI::clear('route', 'move');
 		AI::ai_useTeleport(2);
 		return 1;
+	}
+	# b1794751481844-856: the walk to the rally town from a field waits up to 90 s for members on another map (not on
+	# this map, not in the town) - said once, then she goes on without them (the walk alone split the party)
+	if ($here ne $r->{town} && !is_townmap($here) && !$r->{goneAt}) {
+		my @away = rally_away($r, $here);
+		if (@away) {
+			$r->{gatherAt} ||= time;
+			my $names = join(', ', map { $_->[0] } @away);
+			if (time - $r->{gatherAt} < 90) {
+				AI::clear('route', 'move') if AI::inQueue('route', 'move');
+				if (($r->{gatherSaid} || '') ne $names) {
+					$r->{gatherSaid} = $names;
+					psay("$names where r u? i wait here, kafra in $r->{town} after", 1, 0);
+					message "[partylead] rally: waiting up to 90 s for $names (not on $here or in $r->{town})\n", 'system';
+				}
+				return 1;
+			}
+			$r->{goneAt} = time;
+			message "[partylead] rally: going to $r->{town} without $names after 90 s\n", 'system';
+		}
 	}
 	if ($here ne $r->{town} || $d > 4) {
 		if (time - $r->{routeAt} > 15 || !AI::inQueue('route', 'move')) {
@@ -1008,12 +1037,28 @@ sub own_rest {
 	return 1 if $char->{sitting} && ($hpp < 0.8 || $spp < 0.4);
 	return 0;
 }
+# a friend's rest holds her only when that friend is on her map within TOGETHER cells (QA 2026-11-15: a rest announced
+# at any distance, or on another map, held her for the full 180 s). Position: fresh Legion API data, else the in-game
+# player list (only players on her screen have a pos_to). Unknown position = not near = no hold.
+sub rest_near {
+	my ($name, $here) = @_;
+	return 0 unless $char && $char->{pos_to} && defined $char->{pos_to}{x};
+	my $a = $apiPos{$name};
+	if ($a && time - $a->{at} < 10) {
+		return 0 unless defined $a->{x} && defined $a->{y} && ($a->{map} || '') eq $here;
+		return blockDistance({x => $a->{x}, y => $a->{y}}, $char->{pos_to}) <= TOGETHER ? 1 : 0;
+	}
+	my $pl = $playersList ? $playersList->getByName($name) : undef;
+	return 0 unless $pl && $pl->{pos_to} && defined $pl->{pos_to}{x};
+	return blockDistance($pl->{pos_to}, $char->{pos_to}) <= TOGETHER ? 1 : 0;
+}
 sub party_resting {
 	return 1 if own_rest();
 	return 0 unless $char && $char->{party} && $char->{party}{users} && $field;
 	foreach my $n (keys %restAnn) { delete $restAnn{$n} if time - $restAnn{$n} > 180 }
-	return 1 if %restAnn; # a friend announced a rest and hasn't said "ready" yet
 	my $here = $field->baseName;
+	# a friend announced a rest and hasn't said "ready" yet - only while that friend is near her (3-min cap above)
+	foreach my $n (keys %restAnn) { return 1 if rest_near($n, $here) }
 	foreach my $id (keys %{$char->{party}{users}}) {
 		my $u = $char->{party}{users}{$id};
 		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name}) || friend_dead($u->{name});
@@ -1022,7 +1067,8 @@ sub party_resting {
 		# a friend sitting BECAUSE she rests ("sitting with the party (Ayla resting)", "guarding Ayla") is not a rest of
 		# its own - counting it kept both sides sitting forever (her sit -> status.json sitting -> they sit -> she sits)
 		next if defined $st && $st =~ /ayla/i;
-		return 1 if defined $st && ($a->{map} || '') eq $here && $st =~ /\b(rest|resting|sit|sitting)\b/i;
+		next unless rest_near($u->{name}, $here);
+		return 1 if defined $st && $st =~ /\b(rest|resting|sit|sitting)\b/i;
 		my $pl = $playersList ? $playersList->getByName($u->{name}) : undef;
 		return 1 if $pl && $pl->{sitting} && !defined $st;
 	}
@@ -2047,10 +2093,43 @@ sub map_fits {
 	return 0;
 }
 # the level / gear choice: the first row (table order = preference) that fits, isn't crowded, matches the healer state
+# ---- map density (b1794735590gts, 2026-11-15): the monster spawns per map from rathena's spawn scripts, written by
+# tools/dev/gen_mapdensity.py to control/mapdensity.txt (stock counts + the server's mob_count_rate). A map with fewer
+# spawns than DENSITY_PER_MEMBER per party member is skipped for the choice (a 6-7 member party drains a small map).
+# No file or a map not in it = no gate. DENSITY_PER_MEMBER 0 switches the gate off.
+use constant DENSITY_PER_MEMBER => 20;
+our (%MAP_SPAWNS_STOCK, $MAP_RATE, $MAP_DENSITY_LOADED);
+sub load_map_density {
+	return if $MAP_DENSITY_LOADED;
+	$MAP_DENSITY_LOADED = 1;
+	open(my $fh, '<', 'control/mapdensity.txt') or return;
+	while (my $l = <$fh>) {
+		chomp $l;
+		next if $l =~ /^\s*(#|$)/;
+		if ($l =~ /^rate\s+(\d+)/) { $MAP_RATE = $1 }
+		elsif ($l =~ /^(\S+)\s+(\d+)\s*$/) { $MAP_SPAWNS_STOCK{$1} = $2 }
+	}
+	close $fh;
+}
+# monsters spawned on a map at this server's rate (undef = unknown map)
+sub map_spawns {
+	my $m = shift || '';
+	load_map_density();
+	return undef unless defined $MAP_SPAWNS_STOCK{$m};
+	return $MAP_SPAWNS_STOCK{$m} * ($MAP_RATE || 100) / 100;
+}
+sub map_dense_enough {
+	my ($m, $size) = @_;
+	return 1 unless DENSITY_PER_MEMBER;
+	my $s = map_spawns($m);
+	return 1 unless defined $s;
+	return $s >= DENSITY_PER_MEMBER * ($size || 1) ? 1 : 0;
+}
+sub party_size { return 1 + scalar(online_friends()) }
 sub level_map {
 	my $plv = shift;
 	my $heal = party_has_healer();
-	my $free = sub { my $m = shift; return !(time - ($crowdedAt{$m} || 0) < 3600) && !(time < ($routeFailAt{$m} || 0)) && !(time - ($farmedAt{$m} || 0) < 1800) && !(time - ($mapDiedAt{$m} || 0) < 7200) && route_unsafe($m, $plv) eq '' };
+	my $free = sub { my $m = shift; return !(time - ($crowdedAt{$m} || 0) < 3600) && !(time < ($routeFailAt{$m} || 0)) && !(time - ($farmedAt{$m} || 0) < 1800) && !(time - ($mapDiedAt{$m} || 0) < 7200) && route_unsafe($m, $plv) eq '' && map_dense_enough($m, party_size()) };
 	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && $free->($r->[2]) };
 	# (2) nearest first: a fitting map of the area she is in / heading to (the same Kafra town) before a far one
 	my $area = town_of_map(plan_map() || $homeMap || ($field ? $field->baseName : ''));
@@ -2438,7 +2517,10 @@ sub portal_back_guard {
 			}
 		}
 	}
+	# b1794736237191-004: an auto-buy / auto-sell / storage task in progress may cross back (the Armor Dealer across the
+	# portal): the hold cleared OpenKore's route every tick, so buyAuto re-routed ~10 times a second
 	return if $pgFrom eq '' || time - $pgAt >= 30 || AI::inQueue('teleport') || pk_retreating();
+	return if AI::inQueue('sellAuto', 'buyAuto', 'storageAuto');
 	return if $char->{hp_max} && $char->{hp} / $char->{hp_max} < 0.2;
 	my ($dm, $nm) = route_maps();
 	return unless $nm eq $pgFrom || ($dm eq $pgFrom && $nm eq '');
@@ -2709,6 +2791,7 @@ sub restore {
 # escape rules (teleportAuto 35% / 6 monsters). Her targets stay within 20 cells of the friends near her
 # (stick_target, from area_target). conf partylead_stick 0 turns it off.
 use constant STICK_DEADLY => 0.20;
+use constant STICK_RUN_MAX => 40; # cells: a fall-back to an anchor further away than this is not run through a pack
 my $stickLowAt = 0; # since when HP reads under STICK_DEADLY
 my ($stickHelpAt, $stickRunAt, $stickWingAt, $stickBossAt, $stickHp, $stickHitAt, $stickDeadly) = (0, 0, 0, 0, 1, 0, undef);
 our $stickWinged; # {town, back, at}: her last announced wing (the town-run line says the same)
@@ -2862,14 +2945,19 @@ sub farm_sweep {
 	return 1;
 }
 # the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
-sub fight_back {
-	return if AI::inQueue('attack');
+# the nearest monster that is attacking her (hit or missed her): the one she fights back (undef = none)
+sub nearest_attacker {
 	my ($best, $bd);
 	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
 		next unless $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead} && ($mo->{dmgToYou} || $mo->{missedYou});
 		my $d = blockDistance($char->{pos_to}, $mo->{pos_to});
 		($best, $bd) = ($mo, $d) if !defined $bd || $d < $bd;
 	}
+	return $best;
+}
+sub fight_back {
+	return if AI::inQueue('attack');
+	my $best = nearest_attacker();
 	return unless $best;
 	AI::clear('route', 'move');
 	main::attack($best->{ID});
@@ -2901,6 +2989,15 @@ sub route_unsafe { my ($m, $plv) = @_; return gm_route_unsafe($m, defined $plv ?
 # ---- pack begin (pure: tested offline by tests/ayla/pack_test.pl)
 # $s: {here, friends => [[name, class, map, dist or undef]], farm, leaving, cross ('' | 'pre' | 'on'), waited (s)}
 # returns (action, anchor row): solo | ok | wait | back (walk to the anchor on this map) | goto (go to the anchor)
+# a wait that ends because a member is on another map is logged once per member per map (b1794751170937-396)
+our %waitEndSaid;
+sub wait_end_log_due {
+	my ($name, $map) = @_;
+	my $key = "$name\@$map";
+	return 0 if ($waitEndSaid{$name} || '') eq $key;
+	$waitEndSaid{$name} = $key;
+	return 1;
+}
 sub pack_decide {
 	my $s = shift;
 	my @f = @{$s->{friends} || []};
@@ -3298,8 +3395,9 @@ sub pack_tick {
 	# 'waiting for Zendancer84' while she was on pay_dun01) ends at once - she goes on, the member is not waited for
 	if ($act eq 'wait' && $an && ($an->[2] // '') ne $here) {
 		$pk{waitAt} = 0; $pk{act} = '';
+		# logged once per member per change of its map (b1794751170937-396: the same line every tick, dozens a minute)
 		message "[partylead] wait on $an->[0] ended: on $an->[2], not on our map
-", 'system';
+", 'system' if wait_end_log_due($an->[0], $an->[2] // '');
 		return 0;
 	}
 	# the wait cap (owner 2026-11-15: 'waiting for Zen.fox (178 s)' for minutes): a wait longer than 3 min goes on for 3 min
@@ -3485,12 +3583,29 @@ sub pt32_target {
 # sat in a Payon rally for minutes and the watchdog said nothing - a rally counted as productive). Reported every
 # 2 min ("[watchdog] IDLE <kind> wait N min ..."), which also wakes her helper.
 my ($wiSince, $wiExp, $wiKind, $wiSaid) = (0, 0, '', 0);
+our (%gatherDist, $gatherMoved);
+# true while a friend on her map came closer to her in the last 30 s (its best distance kept; reset after it drifts away)
+sub gather_closing {
+	my $here = $field ? $field->baseName : '';
+	foreach my $f (online_friends()) {
+		next unless $f->[1] eq $here;
+		my $d = seen_dist($f->[0]);
+		next unless defined $d;
+		my $b = $gatherDist{$f->[0]};
+		if (!defined $b) { $gatherDist{$f->[0]} = $d; next }
+		if ($d < $b) { $gatherDist{$f->[0]} = $d; $gatherMoved = time }
+		elsif ($d > $b + 3) { $gatherDist{$f->[0]} = $d }
+	}
+	return (time - ($gatherMoved || 0) < 30) ? 1 : 0;
+}
 sub wait_idle_check {
 	return unless $char && $field;
 	my $kind = $rally ? "rally ($rally->{town})" : $depart ? "departure ($depart->{town})" : $regroupTo ne '' ? "regroup to $regroupTo"
 		: $pk{waitAt} ? 'party' : $holding ? 'hold' : '';
 	my $exp = ($char->{exp} || 0) + ($char->{exp_job} || 0);
 	if ($kind eq '' || $exp != $wiExp) { ($wiSince, $wiExp, $wiKind, $wiSaid) = ($kind eq '' ? 0 : time, $exp, $kind, 0); return }
+	# b1794749928950-584: a hold (come-here gather) is not idle while the party walks in: a friend on her map came closer lately
+	if (($kind eq 'hold' || $kind eq 'party') && gather_closing()) { $wiSince = time; return }
 	$wiSince ||= time;
 	my $n = time - $wiSince;
 	return if $n < 120 || time - $wiSaid < 120;
@@ -3622,14 +3737,16 @@ sub stick_tick {
 		$stickWingAt = time;
 		$wingOkUntil = time + 8; # tp_guard: this one teleport (the dying Butterfly Wing) is allowed
 		my $town = $config{saveMap} || 'town';
-		my $back = $homeMap ne '' ? $homeMap : $here;
+		# b1794731370342-616: the map that nearly killed her is not the way back (a new spot is picked instead)
+		my $back = ($homeMap ne '' && $homeMap ne $here) ? $homeMap : 'a new spot';
 		$stickWinged = {town => $town, back => $back, at => time};
-		cross_wing($here, $back) if $CROSS_DANGER{$here};
+		cross_wing($here, $back) if $CROSS_DANGER{$here} && $back ne 'a new spot';
 		message sprintf("[partylead] PT31: about to die (HP %d/%d = %d%%, under 20%% for %.1f s, %d monsters on her): Butterfly Wing to %s\n", $char->{hp}, $char->{hp_max}, $hpp * 100, time - $stickLowAt, $aggr, $town), 'system';
 		AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto');
 		AI::ai_useTeleport(2); # 2 = the respawn point (Butterfly Wing), never 1 (a random cell)
 		psay(pick("almost died, winged to $town kafra. meet me there, then we go back to $back",
 			"had to wing to the $town kafra (nearly dead) - regroup there, then back to $back"), 0, 0);
+		drop_map($here, "near-death wing with $aggr monsters on her") if $here ne '' && !is_townmap($here); # 2 h off (b1794731370342-616)
 		return 1;
 	}
 	if ($stickFlee) {
@@ -3685,7 +3802,8 @@ sub stick_tick {
 			$stickHelpAt = time;
 			psay(pick("help, $aggr on me", "help! $aggr on me ($here $cx,$cy)", "$aggr mobs on me, need help"), 0, 0);
 		}
-		if ($an && $ad > 3 && time - $stickRunAt > 3) { # 3+ on her: back toward the priest / tank (attack kept, attackOnRoute 1)
+		# b1794723174711-500: a fall-back to an anchor 40+ cells away (160 cells live, 9 monsters on her) is no retreat
+		if ($an && $ad > 3 && $ad <= STICK_RUN_MAX && time - $stickRunAt > 3) { # 3+ on her: back toward the priest / tank (attack kept, attackOnRoute 1)
 			$stickRunAt = time;
 			Commands::run('stand') if $char->{sitting};
 			AI::clear('route', 'move', 'items_take', 'take', 'items_gather'); # never the attack: she fights back what hits her
@@ -3696,7 +3814,7 @@ sub stick_tick {
 		# swarmed with no friend on this map (she got ahead of them on a crossing): back to the map the friends are on
 		# not across a portal while the priest was within 15 cells in the last 20 s (it is right behind her at the portal:
 		# live 09:14, a fall-back / rejoin loop pay_dun01 <-> pay_dun02) - she fights at the entrance and waits for it
-		if (!$an && $aggr >= 4 && time - $stickRunAt > 5 && !AI::inQueue('attack') && !$stickFlee && !pk_prnear_recent()) {
+		if ((!$an || $ad > STICK_RUN_MAX) && $aggr >= 4 && time - $stickRunAt > 5 && !AI::inQueue('attack') && !$stickFlee && !pk_prnear_recent()) {
 			my %on; $on{$_->[1]}++ foreach grep { $_->[1] ne '' && $_->[1] ne $here } @friends;
 			my ($fm) = sort { $on{$b} <=> $on{$a} } keys %on;
 			if ($fm) {
