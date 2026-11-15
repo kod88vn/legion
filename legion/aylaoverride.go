@@ -553,6 +553,7 @@ type ovView struct {
 	Owner      map[string]*AylaOverride `json:"owner"` // the active override per kind, null when none
 	Overrides  []AylaOverride           `json:"overrides"`
 	Puppet     ovPuppet                 `json:"puppet"`
+	Flags      []OvFlag                 `json:"flags"` // party.go: death-loop "override kept" flags of the last 30 min
 }
 
 type ovPuppet struct {
@@ -574,6 +575,7 @@ func aylaOverridesView(now time.Time) ovView {
 	}
 	return ovView{Now: now, Precedence: "owner > puppet > default", Kinds: ovKinds, Owner: owner,
 		Overrides: s.List(now),
+		Flags:     ovFlagsView(now),
 		Puppet:    ovPuppet{StarveilGuild: dirViewOf(humanGuildID, now), Orders: aylaOrdersView(*dataDir)}}
 }
 

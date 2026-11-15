@@ -1958,8 +1958,11 @@ func (b *Bot) deathLoopCheck(now time.Time) {
 		return
 	}
 	b.deathLog = nil
-	b.badMap, b.badMapUntil = last.m, now.Add(30*time.Minute)
 	p := partyOf(b)
+	// AY25: the owner's map is never marked bad for the party (no away-and-back oscillation)
+	if om, ok := ovPartyMap(p, now); !ok || om != last.m {
+		b.badMap, b.badMapUntil = last.m, now.Add(30*time.Minute)
+	}
 	if p == nil || p.Human != "" {
 		if b.Goal.Set == "auto" || b.Goal.Set == "" {
 			b.Goal, b.route, b.path = Goal{}, nil, nil
@@ -1986,6 +1989,7 @@ func (b *Bot) deathLoopCheck(now time.Time) {
 		pm := p.Map
 		parties.Unlock()
 		if pm == om {
+			ovFlagKept(p.Name, om, now) // the dashboard flag (aylaoverride.go "flags")
 			b.event("party", "", fmt.Sprintf("override kept, party died: twice on %s in 10 min, the owner's map %s stays", last.m, om))
 			return
 		}
@@ -2511,6 +2515,12 @@ func routeCrossesTooHard(from string, x, y int, dest string, minLv int) bool {
 // how parties ended up ~20 levels over their weakest member. Now the party map stays the party's: the current one
 // while it suits the weakest member and is reachable, else the nearest one that does. False: nothing fits.
 func (b *Bot) leaderPartyPick(p *Party) bool {
+	if om, ok := ovPartyMap(p, time.Now()); ok { // AY25: the owner's farm map is the party's map, whatever the pickers say
+		if b.Goal.Map != om || b.Goal.Set != "party-leader" {
+			b.Goal, b.route, b.path = Goal{Mode: "hunt", Map: om, Set: "party-leader"}, nil, nil
+		}
+		return true
+	}
 	if h := huntOf(p); h != nil { // bosshunt.go: the party is on a boss hunt - its map is the boss map
 		if b.Goal.Map != h.Boss.Map {
 			b.Goal, b.route, b.path = Goal{Mode: "hunt", Map: h.Boss.Map, Set: "party-leader"}, nil, nil

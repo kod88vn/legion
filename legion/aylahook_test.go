@@ -187,8 +187,8 @@ func TestOvOrdersFireOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	ovFireOrders(now)
-	if !ovDone(p, ovTownRun+"|"+town.ID) || p.TownRunTown != nearestTown("good_map") {
-		t.Fatalf("town run not fired: done=%v town=%q", ovDone(p, ovTownRun+"|"+town.ID), p.TownRunTown)
+	if !ovFiredDone(p, ovTownRun, town.ID) || p.TownRunTown != nearestTown("good_map") {
+		t.Fatalf("town run not fired: done=%v town=%q", ovFiredDone(p, ovTownRun, town.ID), p.TownRunTown)
 	}
 	parties.Lock()
 	p.TownRunAt, p.TownRunTown = time.Time{}, ""
@@ -203,14 +203,23 @@ func TestOvOrdersFireOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	ovFireOrders(now)
-	if !ovDone(p, ovPartyOrder+"|"+po.ID) {
+	if !ovFiredDone(p, ovPartyOrder, po.ID) {
 		t.Fatal("party order not fired")
 	}
-	// fired: a second round does not call again (the leader's per-round state is not touched either)
+	// fired: a second round does not call again (the town run record stays done, nothing new is started)
+	parties.Lock()
+	p.TownRunAt, p.TownRunTown = time.Time{}, ""
+	parties.Unlock()
 	ovFireOrders(now)
-	if len(p.OvDone) != 2 {
-		t.Fatalf("OvDone %v", p.OvDone)
+	if p.TownRunTown != "" {
+		t.Fatalf("fired order fired again: %q", p.TownRunTown)
 	}
+}
+
+// ovFiredDone: the persisted record for one owner order of p is done.
+func ovFiredDone(p *Party, kind, id string) bool {
+	r, ok := ovFiredGet(p.Name + "|" + kind + "|" + id)
+	return ok && r.Done
 }
 
 // TestOvOffForOtherParties: an ordinary (human-led or non-engine) party never takes an owner override, and with
@@ -232,8 +241,8 @@ func TestOvOffForOtherParties(t *testing.T) {
 		t.Fatal("non-engine party took the owner farm map")
 	}
 	ovFireOrders(now)
-	if other.OvDone != nil || other.TownRunTown != "" {
-		t.Fatalf("non-engine party took an owner order: %v %q", other.OvDone, other.TownRunTown)
+	if other.TownRunTown != "" {
+		t.Fatalf("non-engine party took an owner order: %q", other.TownRunTown)
 	}
 	if _, ok := ovPartyMap(eng, now); !ok {
 		t.Fatal("engine party did not take the owner farm map")
@@ -328,5 +337,176 @@ func TestOvGuildFreeTextDirection(t *testing.T) {
 	gduty.Unlock()
 	if len(act) == 0 || act[0].SetBy != "owner" || act[0].Kind != dirLevel || act[0].Note != text {
 		t.Fatalf("free-text owner direction: %+v", act)
+	}
+}
+
+// TestOvPreMoveNextRound: an owner farm map moves the party on the next fit-check round, though it has just moved
+// (MovedAt now), has just formed and has just arrived: none of the fit-check gates applies.
+func TestOvPreMoveNextRound(t *testing.T) {
+	ovWorld(t)
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	s := ovHookStore(t)
+	p, _, _ := ovHookParty(t, "ovhook-premove", true)
+	now := time.Now()
+	parties.Lock()
+	p.MovedAt, p.ArrivedAt, p.Formed = now, now, now
+	parties.Unlock()
+	if _, err := s.Set(ovFarmMap, "low_map", "test", 1, 0, 0, true, now); err != nil {
+		t.Fatal(err)
+	}
+	partyFitCheck(map[*Party]time.Time{})
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		parties.Lock()
+		m := p.Map
+		parties.Unlock()
+		if m == "low_map" {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("owner map not taken on the next round: party on %s", p.Map)
+}
+
+// TestOvLeaderPickAndGoalSyncHonourOwner: the leader's own pickers (leaderPartyPick, leaderGoalSync) keep the owner's
+// map, even with the owner's map marked bad for the leader.
+func TestOvLeaderPickAndGoalSyncHonourOwner(t *testing.T) {
+	ovWorld(t)
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	s := ovHookStore(t)
+	p, b, mem := ovHookParty(t, "ovhook-pick", true)
+	now := time.Now()
+	if _, err := s.Set(ovFarmMap, "low_map", "test", 1, 0, 0, true, now); err != nil {
+		t.Fatal(err)
+	}
+	b.mu.Lock()
+	b.Goal = Goal{}
+	b.badMap, b.badMapUntil = "low_map", now.Add(time.Hour)
+	ok := b.leaderPartyPick(p)
+	picked := b.Goal.Map
+	b.mu.Unlock()
+	if !ok || picked != "low_map" {
+		t.Fatalf("leaderPartyPick took %q (ok %v), not the owner's map", picked, ok)
+	}
+	b.mu.Lock()
+	b.Goal = Goal{}
+	b.fgoal = &farmGoal{Kind: "zeny", Maps: []string{"good_map"}}
+	b.mu.Unlock()
+	b.leaderGoalSync(p, "low_map", []*Bot{mem}, now)
+	b.mu.Lock()
+	goalMap := b.Goal.Map
+	b.mu.Unlock()
+	if goalMap != "" {
+		t.Fatalf("leaderGoalSync took the party to %s under the owner's map", goalMap)
+	}
+}
+
+// TestOvDeathLoopNoBadMapAndFlag: the death loop keeps the owner's map without marking it bad for the leader, and the
+// dashboard flag shows it.
+func TestOvDeathLoopNoBadMapAndFlag(t *testing.T) {
+	ovWorld(t)
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	s := ovHookStore(t)
+	p, l, _ := ovHookParty(t, "ovhook-flag", true)
+	now := time.Now()
+	if _, err := s.Set(ovFarmMap, "low_map", "test", 2, 0, 0, true, now); err != nil {
+		t.Fatal(err)
+	}
+	p.relocate("good_map", -1, -1, "")
+	l.deathLog = []mapVisit{{m: "low_map", at: now}, {m: "low_map", at: now}}
+	l.deathLoopCheck(now)
+	if l.badMap == "low_map" && time.Now().Before(l.badMapUntil) {
+		t.Fatal("the owner's map was marked bad for the leader")
+	}
+	flags := ovFlagsView(now)
+	found := false
+	for _, f := range flags {
+		if f.Kind == "death_loop_kept" && f.Party == p.Name && f.Map == "low_map" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no death-loop flag: %+v", flags)
+	}
+}
+
+// TestOvFiredSurvivesRestart: an order fired before a restart is not fired again after it.
+func TestOvFiredSurvivesRestart(t *testing.T) {
+	ovWorld(t)
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	s := ovHookStore(t)
+	p, _, _ := ovHookParty(t, "ovhook-restart", true)
+	now := time.Now()
+	o, err := s.Set(ovTownRun, "now", "test", 1, 0, 0, false, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ovFireOrders(now)
+	if !ovFiredDone(p, ovTownRun, o.ID) {
+		t.Fatal("town run not fired before the restart")
+	}
+	ovFiredReset() // a restart: the in-memory record is gone, the file is read again
+	parties.Lock()
+	p.TownRunAt, p.TownRunTown = time.Time{}, ""
+	parties.Unlock()
+	ovFireOrders(now)
+	if p.TownRunTown != "" {
+		t.Fatalf("town run fired again after a restart: %q", p.TownRunTown)
+	}
+}
+
+// TestOvOrderEndsAfterTTL: an order that cannot run within ten minutes ends, and is recorded as ended.
+func TestOvOrderEndsAfterTTL(t *testing.T) {
+	ovWorld(t)
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	s := ovHookStore(t)
+	p, _, _ := ovHookParty(t, "ovhook-ttl", true)
+	now := time.Now()
+	o, err := s.Set(ovTownRun, "now", "test", 1, 0, 0, false, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parties.Lock()
+	p.Map = "" // the town run cannot be placed yet
+	parties.Unlock()
+	ovFireOrders(now)
+	if ovFiredDone(p, ovTownRun, o.ID) {
+		t.Fatal("ended before the TTL")
+	}
+	ovFireOrders(now.Add(ovOrderTTL + time.Second))
+	r, ok := ovFiredGet(p.Name + "|" + ovTownRun + "|" + o.ID)
+	if !ok || !r.Done || r.Note == "" || r.Note == "fired" {
+		t.Fatalf("order not ended after the TTL: %+v", r)
+	}
+}
+
+// TestOvRalliesOffFinishes: with rallies off the rally order finishes (logged) and starts nothing.
+func TestOvRalliesOffFinishes(t *testing.T) {
+	ovWorld(t)
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn"; tn.RallyEnabled = false; tn.RallyBotShare = 0 })
+	s := ovHookStore(t)
+	p, _, _ := ovHookParty(t, "ovhook-raroff", true)
+	now := time.Now()
+	o, err := s.Set(ovRally, "prontera", "test", 1, 0, 0, false, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ovFireOrders(now)
+	if !ovFiredDone(p, ovRally, o.ID) || p.Rally.Town != "" {
+		t.Fatalf("rally with rallies off: done=%v town=%q", ovFiredDone(p, ovRally, o.ID), p.Rally.Town)
+	}
+}
+
+// TestOvFollowMeNeedsSomebodyCalled: follow_me is not done while nobody is far (the leader's call is not spent).
+func TestOvFollowMeNeedsSomebodyCalled(t *testing.T) {
+	ovWorld(t)
+	withTuning(t, func(tn *Tuning) { tn.EngineParties = "AylaOwn" })
+	p, _, mem := ovHookParty(t, "ovhook-near", true)
+	v := &atomic.Value{}
+	v.Store(pubState{Name: mem.P.Name, Map: "good_map", Online: true, Known: true})
+	pubs.Store(mem.P.Name, v)
+	t.Cleanup(func() { pubs.Delete(mem.P.Name) })
+	if ovFireOne(p, ovPartyOrder, "follow_me", time.Now()) {
+		t.Fatal("follow_me reported done with nobody called")
 	}
 }

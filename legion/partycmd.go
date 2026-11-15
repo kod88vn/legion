@@ -402,6 +402,7 @@ func (b *Bot) partyCmdCall(p *Party, now time.Time, owner bool) bool {
 	if b.trip != nil || b.errand != nil || isTown(b.MapName) || townOf(b.MapName) != "" || b.Goal.Map != b.MapName || (!owner && now.Before(b.buffAt["cmdlead"])) {
 		return false
 	}
+	called := 0
 	for _, m := range p.Members {
 		if m == b {
 			continue
@@ -419,6 +420,7 @@ func (b *Bot) partyCmdCall(p *Party, now time.Time, owner bool) bool {
 		if owner {
 			typing, where := b.P.Typing, fmt.Sprintf("%s %d,%d", b.MapName, b.X, b.Y)
 			go b.partySay(styled(typing, pick(s.Name+" come to me, im at "+where, s.Name+" come here, im at "+where, s.Name+" where r u? come to me at "+where)))
+			called++
 			continue
 		}
 		since, seen := b.buffAt[key]
@@ -439,5 +441,5 @@ func (b *Bot) partyCmdCall(p *Party, now time.Time, owner bool) bool {
 		go b.partySay(styled(typing, pick(s.Name+" come to me, im at "+where, s.Name+" come here, im at "+where, s.Name+" where r u? come to me at "+where)))
 		return true
 	}
-	return owner
+	return called > 0 && owner
 }

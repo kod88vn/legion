@@ -5,8 +5,12 @@ package main
 // keeps Blessing / Increase AGI up. Masterminds can also form parties through the API.
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -96,8 +100,8 @@ type Party struct {
 	SaveAskAt   time.Time
 	// party rally at the Kafra nearest the destination (rally.go). Guarded by parties.Mutex.
 	Rally rallyState
-	// AY25 (ovFireOrders): owner order overrides already fired for this engine party, by kind|override id. parties.Mutex.
-	OvDone map[string]bool
+	// AY25 (ovPreMove, ovFireOrders): when the owner map was last asked for this engine party. parties.Mutex.
+	ovMoveAt time.Time
 	// restored from data/parties.json after a Legion restart (partypersist.go): the 90-min refresh counts from here
 	Restored time.Time
 	// map changes (moveTo): when the party last moved and the maps it left, so the pickers don't send it straight
@@ -460,6 +464,7 @@ func fitHold(leaderMap, partyMap string, sinceMove, sinceArrive time.Duration, n
 // Kimchi07's party kept hunting mjolnir_06's Poison Spore swarm while he fled). Called from partyManager.
 func partyFitCheck(last map[*Party]time.Time) {
 	now := time.Now()
+	ovPreMove(now) // AY25: the owner's farm map first, before every fit-check gate
 	ovFireOrders(now)
 	parties.Lock()
 	type fc struct {
@@ -1547,7 +1552,7 @@ func ovEngineParty(p *Party) bool {
 
 // ovPartyMap: the owner's farm map for an engine party (aylaDirective, owner first). The engine holds no puppet farm
 // map (the helper's map orders go to OpenKore), so the puppet value is empty. ok only while an owner override is in
-// force; then the fit check, relocate and the roam give-up keep the party on that map.
+// force.
 func ovPartyMap(p *Party, now time.Time) (string, bool) {
 	if !ovEngineParty(p) {
 		return "", false
@@ -1556,9 +1561,164 @@ func ovPartyMap(p *Party, now time.Time) (string, bool) {
 	return d.Value, d.Source == "owner"
 }
 
-// ovFireOrders: each owner order (town_run, rally, party_order) fires once per engine party, when it is set. An order
-// that cannot run yet (a town run within 6 min, a rally on cooldown, a leader on a trip) is tried again on the next
-// round until it runs or the override ends. Logged when it fires.
+// ovPreMove: an owner farm map takes effect on this round (review of cb4cf4d). Every engine party not on it is moved
+// there now: none of the partyFitCheck gates (5 min, MovedAt 15 min, fitHold, first sight, Formed) applies. A boss hunt
+// and a party still restoring are left alone. One move is asked per party per 30 s while it walks there.
+func ovPreMove(now time.Time) {
+	parties.Lock()
+	var ps []*Party
+	for _, p := range parties.byName {
+		if ovEngineParty(p) {
+			ps = append(ps, p)
+		}
+	}
+	parties.Unlock()
+	for _, p := range ps {
+		om, ok := ovPartyMap(p, now)
+		if !ok || isRestoring(p) || p.bossActive() {
+			continue
+		}
+		parties.Lock()
+		pm := p.Map
+		recent := now.Sub(p.ovMoveAt) < 30*time.Second
+		if pm != om && !recent {
+			p.ovMoveAt = now
+		}
+		parties.Unlock()
+		if pm == om || recent {
+			continue
+		}
+		go p.relocate(pm, -1, -1, "")
+	}
+}
+
+// ovOrderTTL: an owner order (town_run, rally, party_order) that cannot run within this long ends, logged.
+const ovOrderTTL = 10 * time.Minute
+
+// ovFiredRec: one owner order's record in ayla_overrides_fired.json (beside the override store): when it was first
+// tried, and whether it is done (fired, refused or ended). It survives a restart, so an order is not fired twice.
+type ovFiredRec struct {
+	First time.Time `json:"first"`
+	Done  bool      `json:"done"`
+	Note  string    `json:"note,omitempty"`
+}
+
+var ovFired = struct {
+	sync.Mutex
+	path string // the file loaded into m ("" = no store: memory only)
+	m    map[string]ovFiredRec
+}{m: map[string]ovFiredRec{}}
+
+// ovFiredLoadLocked (ovFired held): load the record file for the current store, once per path.
+func ovFiredLoadLocked(path string) {
+	if path == ovFired.path {
+		return
+	}
+	ovFired.path = path
+	ovFired.m = map[string]ovFiredRec{}
+	if path == "" {
+		return
+	}
+	if b, err := os.ReadFile(path); err == nil {
+		if err := json.Unmarshal(b, &ovFired.m); err != nil || ovFired.m == nil {
+			log.Printf("ayla overrides fired record unreadable (%v): starting empty", err)
+			ovFired.m = map[string]ovFiredRec{}
+		}
+	}
+}
+
+// ovFiredPath: the fired record file, beside the override store ("" when there is no store).
+func ovFiredPath() string {
+	s := aylaOv()
+	if s == nil || s.dir == "" {
+		return ""
+	}
+	return filepath.Join(s.dir, "ayla_overrides_fired.json")
+}
+
+// ovFiredGet: the record for key (party|kind|override id).
+func ovFiredGet(key string) (ovFiredRec, bool) {
+	path := ovFiredPath()
+	ovFired.Lock()
+	defer ovFired.Unlock()
+	ovFiredLoadLocked(path)
+	r, ok := ovFired.m[key]
+	return r, ok
+}
+
+// ovFiredPut: store the record for key and write the file atomically (temp file, rename).
+func ovFiredPut(key string, r ovFiredRec) {
+	path := ovFiredPath()
+	ovFired.Lock()
+	defer ovFired.Unlock()
+	ovFiredLoadLocked(path)
+	ovFired.m[key] = r
+	if path == "" {
+		return
+	}
+	b, err := json.MarshalIndent(ovFired.m, "", " ")
+	if err != nil {
+		log.Printf("ayla overrides fired record: %v", err)
+		return
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o644); err != nil {
+		log.Printf("ayla overrides fired record not saved: %v", err)
+		return
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		log.Printf("ayla overrides fired record not saved: %v", err)
+	}
+}
+
+// ovFiredReset: forget the in-memory copy so the next read loads the file again (a restart, for the tests).
+func ovFiredReset() {
+	ovFired.Lock()
+	defer ovFired.Unlock()
+	ovFired.path = "\x00"
+}
+
+// OvFlag: a state the dashboard shows next to the owner overrides (GET /api/ayla/overrides, "flags").
+type OvFlag struct {
+	Kind  string    `json:"kind"`
+	Party string    `json:"party"`
+	Map   string    `json:"map"`
+	At    time.Time `json:"at"`
+	Text  string    `json:"text"`
+}
+
+var ovFlags = struct {
+	sync.Mutex
+	m map[string]OvFlag
+}{m: map[string]OvFlag{}}
+
+// ovFlagKept: the death-loop guard kept the owner's map for party (log "override kept, party died").
+func ovFlagKept(party, m string, now time.Time) {
+	ovFlags.Lock()
+	defer ovFlags.Unlock()
+	ovFlags.m[party] = OvFlag{Kind: "death_loop_kept", Party: party, Map: m, At: now,
+		Text: "override kept, party died: the owner's map " + m + " stays"}
+}
+
+// ovFlagsView: the flags of the last 30 minutes (newest first), for the override GET.
+func ovFlagsView(now time.Time) []OvFlag {
+	ovFlags.Lock()
+	defer ovFlags.Unlock()
+	out := []OvFlag{}
+	for k, f := range ovFlags.m {
+		if now.Sub(f.At) < 30*time.Minute {
+			out = append(out, f)
+		} else {
+			delete(ovFlags.m, k)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].At.After(out[j].At) })
+	return out
+}
+
+// ovFireOrders: each owner order (town_run, rally, party_order) fires once per engine party, when it is set. The
+// record is kept in ayla_overrides_fired.json. An order that cannot run yet (a town run within 6 min, a rally on
+// cooldown, a leader on a trip) is tried again on the next round; after ovOrderTTL it ends and is logged.
 func ovFireOrders(now time.Time) {
 	parties.Lock()
 	var ps []*Party
@@ -1571,34 +1731,36 @@ func ovFireOrders(now time.Time) {
 	for _, p := range ps {
 		for _, kind := range []string{ovTownRun, ovRally, ovPartyOrder} {
 			d := aylaDirective(kind, now, "", "")
-			key := kind + "|" + d.OverrideID
-			if d.Source != "owner" || ovDone(p, key) {
+			if d.Source != "owner" {
 				continue
 			}
+			key := p.Name + "|" + kind + "|" + d.OverrideID
+			rec, seen := ovFiredGet(key)
+			if seen && rec.Done {
+				continue
+			}
+			if !seen {
+				rec = ovFiredRec{First: now}
+				ovFiredPut(key, rec)
+			}
 			if ovFireOne(p, kind, d.Value, now) {
-				parties.Lock()
-				if p.OvDone == nil {
-					p.OvDone = map[string]bool{}
-				}
-				p.OvDone[key] = true
-				parties.Unlock()
+				rec.Done, rec.Note = true, "fired"
+				ovFiredPut(key, rec)
+				continue
+			}
+			if now.Sub(rec.First) >= ovOrderTTL {
+				rec.Done, rec.Note = true, "ended: not run within 10 min"
+				ovFiredPut(key, rec)
+				log.Printf("engine party %s: owner order %s %q ended, not run within %v (the leader was not able to carry it out)",
+					p.Name, kind, d.Value, ovOrderTTL)
 			}
 		}
 	}
 }
 
-// ovDone: the owner order (kind|id) already fired for p.
-func ovDone(p *Party, key string) bool {
-	parties.Lock()
-	defer parties.Unlock()
-	return p.OvDone[key]
-}
-
-// ovRallyTowns: the towns an owner's rally may name (owner panel, package F); the engine has no Kafra for some of them.
-var ovRallyTowns = []string{"prontera", "geffen", "payon", "morocc", "alberta", "izlude", "aldebaran", "comodo", "yuno", "lutie", "umbala", "hugel"}
-
-// ovFireOne runs one owner order now. true = done (fired, or refused for good with a log line); false = try again.
-// Values (owner panel, package F): town_run "now"; rally a town from ovRallyTowns or "cancel"; party_order "follow_me".
+// ovFireOne runs one owner order now. true = done (fired, refused for good, or finished with a log line); false = try
+// again. Values (owner panel, package F): town_run "now"; rally a town from ovRallyTowns or "cancel"; party_order
+// "follow_me".
 func ovFireOne(p *Party, kind, value string, now time.Time) bool {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch kind {
@@ -1635,8 +1797,12 @@ func ovFireOne(p *Party, kind, value string, now time.Time) bool {
 			log.Printf("engine party %s: owner order rally to %s: the engine has no Kafra there: not run", p.Name, value)
 			return true
 		}
+		if !p.rallyOn() {
+			log.Printf("engine party %s: owner order rally to %s not run: rallies are off (tuning)", p.Name, value)
+			return true
+		}
 		if !p.startRallyAt(value, value, "owner order", now) {
-			return false // a rally running or on cooldown, or rallies off: next round
+			return false // a rally running or on cooldown: next round
 		}
 		log.Printf("engine party %s: owner order rally to %s started", p.Name, value)
 	case ovPartyOrder:
@@ -1646,12 +1812,15 @@ func ovFireOne(p *Party, kind, value string, now time.Time) bool {
 		}
 		l := p.Leader
 		l.mu.Lock()
-		acted := l.partyCmdCall(p, now, true)
+		called := l.partyCmdCall(p, now, true) // true only when somebody was called
 		l.mu.Unlock()
-		if !acted {
-			return false // the leader is on a trip, in town or not hunting here: next round
+		if !called {
+			return false // nobody far, or the leader on a trip / in town / not hunting here: next round
 		}
 		log.Printf("engine party %s: owner order party_order follow_me: members called to the leader", p.Name)
 	}
 	return true
 }
+
+// ovRallyTowns: the towns an owner's rally may name (owner panel, package F); the engine has no Kafra for some of them.
+var ovRallyTowns = []string{"prontera", "geffen", "payon", "morocc", "alberta", "izlude", "aldebaran", "comodo", "yuno", "lutie", "umbala", "hugel"}
