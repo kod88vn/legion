@@ -649,11 +649,13 @@ sub start_rally {
 }
 
 # $how: 1 = everyone met (she says so), 0 = gave up, 2 = the friends said everyone met (no extra line)
+our %rallyEndedAt; # town -> when a rally there ended (the meeting-point rule stays off there for 10 min)
 sub end_rally {
 	my ($why, $how) = @_;
 	return unless $rally;
 	message "[partylead] rally in $rally->{town} over: $why\n", 'system';
 	my $town = $rally->{town};
+	$rallyEndedAt{$town} = time;
 	my $stay = $rally->{mind} && ($rally->{dest} || '') eq '' && !($saved && ($saved->{lockMap} || '') ne '');
 	$rally = undef;
 	if ($stay && $how && $field && $field->baseName eq $town) {
@@ -809,7 +811,7 @@ sub rally_tick {
 		$all = 0 if $f->[1] ne $r->{town} || !$pl || !$pl->{pos_to} || !defined $pl->{pos_to}{x}
 			|| blockDistance({x => $r->{x}, y => $r->{y}}, $pl->{pos_to}) > 12;
 		my $sv = $friendSaved{$f->[0]};
-		push @unsaved, $f->[0] unless $r->{friendsDone} || ($sv && $sv->[0] eq $r->{town} && $sv->[1] >= $r->{at} - 60);
+		push @unsaved, $f->[0] unless $r->{friendsDone} || ($sv && $sv->[0] eq $r->{town} && $sv->[1] >= ($r->{at} - 60 < time - 900 ? $r->{at} - 60 : time - 900));
 	}
 	$r->{allAt} = $all ? ($r->{allAt} || time) : 0;
 	my $mineOk = $r->{saved} || ($r->{saveTries} >= 3 && time - $r->{saveAt} > 15);
@@ -2838,13 +2840,15 @@ sub pack_tick {
 	# her own meeting point in this town (announced in the last 15 min), or the party gathered at a Kafra here: she goes
 	# to that Kafra and the rally (60 s cap, then AY22) takes over - the collect never holds her away from it (live:
 	# "waiting for Zendancer84 (payon 22 cells)" while the priest waited at the Payon Kafra she had named)
-	if ($town && !$errand && !$rally && $KAFRA{$here} && time - ($pk{meetRallyAt} || 0) > 300 && (($meetTown eq $here && time - $meetTownAt < 900) || gathered_kafra($here, \@fr))) {
+	my $atKafraWithPriest = $KAFRA{$here} && priest_dist() <= 6 && grep({ blockDistance(my_pos(), {x => $_->[0], y => $_->[1]}) <= 6 } @{$KAFRA{$here} || []});
+	if ($town && !$errand && !$rally && $KAFRA{$here} && time - ($pk{meetRallyAt} || 0) > 300 && time - ($rallyEndedAt{$here} || 0) > 600 && !$atKafraWithPriest && (($meetTown eq $here && time - $meetTownAt < 900) || gathered_kafra($here, \@fr))) {
 		my $k = gathered_kafra($here, \@fr) || $KAFRA{$here}[0];
 		$rallyNext = 0;
 		start_rally($here, $k->[0], $k->[1], "her meeting point", 0);
 		$pk{meetRallyAt} = time; # one meeting-point rally per 5 min (it ends after 60 s at the Kafra)
 		if ($rally) {
 			$rally->{saved} = 1; $rally->{dest} = plan_map() || $homeMap || ''; $rally->{mind} = 1;
+			$rally->{said} = 1; $rally->{friendsDone} = 1; # a meeting, not a save stop: no "save here pls"
 			($meetTown, $meetTownAt) = ('', 0);
 			message "[partylead] going to the meeting Kafra in $here ($k->[0],$k->[1])\n", 'system';
 			return 0;
