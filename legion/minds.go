@@ -36,7 +36,7 @@ const (
 )
 
 // Minds the session normally runs; listed even before they first check in so the owner can leave orders.
-var knownMinds = []string{"ayla", "chat", "life", "market", "guild01", "guild02", "guild03", "guild04", "guild05",
+var knownMinds = []string{"ayla", "chat", "life", "market", "build", "guild01", "guild02", "guild03", "guild04", "guild05",
 	"guild06", "guild07", "guild08", "guild09", "guild10"}
 
 type mindThought struct {

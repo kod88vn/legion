@@ -23,7 +23,8 @@ package main
 //   After       a kicked bot is independent: 24 h cool-down (refuses every invitation), then it seeks a guild with
 //               room, preferring rank, wealth and friends (guildrank.go), and that guild's leader invites it.
 //   Never       guild leaders, guild alchemists, traders / vendors, Ayla's party (core instance, -exclude /
-//               LEGION_CORE names, pinned friends, kept accounts) and humans are never warned or kicked.
+//               LEGION_CORE names, pinned friends, kept accounts) are never warned or kicked. No human exemption
+//               (gate G25); the ledger only measures engine-run characters so far (STATUS.md, equal-treatment gaps).
 //
 // Behaviour (blocks, warnings, kicks, invitations) needs tuning guild_duty_on (default off). The ledger, rank,
 // wealth and relations are computed regardless. Only the main instance runs this; the core instance (Ayla's party)
@@ -1013,20 +1014,28 @@ func dutyActions(snaps []*dutySnap, now time.Time, starveil string) {
 
 // dutyWarn: the leader warns the member in guild chat; the member answers
 func dutyWarn(l *Bot, s *dutySnap, m dutyMember) {
+	reply, scripted := "", false
 	l.mu.Lock()
 	if l.Online && l.GuildName != "" && l.guildMaster {
 		line := pick(fmt.Sprintf("%s, havent seen u do anything for the guild in days. ~2h a day pls or ill have to let u go", m.Char),
 			fmt.Sprintf("hey %s, guild needs u too. do a guild shift today ok? otherwise im kicking", m.Char),
 			fmt.Sprintf("%s pls help with the guild stuff, its been %d days. last warning", m.Char, m.Short))
-		l.guildSay(styled(l.P.Typing, line))
+		reply = styled(s.b.P.Typing, pick("sorry, will do", "ok ok, ill help more", "my bad, been busy. will do a shift", "yeah sorry"))
+		if scripted = dutyChatWarn(l, m.Char, styled(l.P.Typing, line), reply, m.Short); !scripted { // guildchat.go
+			l.guildSay(styled(l.P.Typing, line))
+		}
 		l.event("guild", m.Char, "duty warning to "+m.Char)
 	}
 	l.mu.Unlock()
-	time.Sleep(time.Duration(4+crand(8)) * time.Second)
+	if !scripted {
+		time.Sleep(time.Duration(4+crand(8)) * time.Second)
+	}
 	b := s.b
 	b.mu.Lock()
 	if b.Online && b.GuildName != "" {
-		b.guildSay(styled(b.P.Typing, pick("sorry, will do", "ok ok, ill help more", "my bad, been busy. will do a shift", "yeah sorry")))
+		if !scripted {
+			b.guildSay(reply)
+		}
 		b.remember("got warned by my guild leader for not helping the guild")
 	}
 	b.mu.Unlock()
@@ -1038,16 +1047,21 @@ func dutyExpel(l *Bot, s *dutySnap, m dutyMember) {
 	l.mu.Lock()
 	ok := l.Online && l.GuildName != "" && l.guildMaster && l.GuildID != 0 && l.GuildID == s.gid
 	gid := l.GuildID
+	wait := 0
 	if ok {
-		l.guildSay(styled(l.P.Typing, pick(fmt.Sprintf("sorry %s, u havent helped the guild in ages. making room for active ppl", m.Char),
-			fmt.Sprintf("removing %s, no guild work for days. no hard feelings", m.Char))))
+		line := styled(l.P.Typing, pick(fmt.Sprintf("sorry %s, u havent helped the guild in ages. making room for active ppl", m.Char),
+			fmt.Sprintf("removing %s, no guild work for days. no hard feelings", m.Char)))
+		var used bool
+		if wait, used = dutyChatKick(l, m.Char, line, m.KickWhy); !used { // guildchat.go
+			l.guildSay(line)
+		}
 		l.event("guild", m.Char, "expelling "+m.Char+" (guild duty: "+m.KickWhy+")")
 	}
 	l.mu.Unlock()
 	if !ok {
 		return // retried after the 3-minute confirmation window
 	}
-	time.Sleep(time.Duration(4+crand(6)) * time.Second)
+	time.Sleep(time.Duration(wait+4+crand(6)) * time.Second)
 	l.send(dutyExpelPacket(gid, s.aid, s.cid, "not helping the guild"))
 	log.Printf("guild duty: %s expels %s from %s (%s)", l.charName(), m.Char, m.Guild, m.KickWhy)
 }

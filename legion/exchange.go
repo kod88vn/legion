@@ -185,7 +185,8 @@ func exFavourOK(times []time.Time, limit int, now time.Time) ([]time.Time, bool)
 	return out, len(out) < limit
 }
 
-// Ayla keeps at least 10,000 zeny (RULES.md 5). Nothing in this package moves a human's zeny; a price is only quoted
+// Ayla keeps at least 10,000 zeny (gate G12). A human gets the same relationship prices as any player (gate G25); the
+// engine cannot move a human's zeny or items, so a human pays or hands over by its own action. A price is only quoted
 // to Ayla when paying it leaves her at or above the floor (her purse from status.json), and only gifts when her purse
 // is unknown.
 const aylaName = "Ayla"

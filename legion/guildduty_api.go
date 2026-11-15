@@ -259,8 +259,11 @@ func dutyAnnounce(guild string, d *GuildDirection) {
 	time.Sleep(time.Duration(2+crand(6)) * time.Second)
 	l.mu.Lock()
 	if l.Online && l.GuildName != "" {
-		l.guildSay(styled(l.P.Typing, pick("guild focus for today: "+what+". do ur 2h when u can",
-			"new guild plan: "+what+", help out when u can pls", "everyone: "+what+" is what we need rn")))
+		line := styled(l.P.Typing, pick("guild focus for today: "+what+". do ur 2h when u can",
+			"new guild plan: "+what+", help out when u can pls", "everyone: "+what+" is what we need rn"))
+		if !dutyChatDirection(l, line, d) { // guildchat.go
+			l.guildSay(line)
+		}
 	}
 	l.mu.Unlock()
 }

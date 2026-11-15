@@ -155,7 +155,7 @@ func TestDutyExempt(t *testing.T) {
 	if dutyExempt(dutyExemptIn{}) != "" {
 		t.Fatal("plain member exempt")
 	}
-	for i, e := range []dutyExemptIn{{Leader: true}, {Alchemist: true}, {Trader: true}, {AylaParty: true}, {Human: true}} {
+	for i, e := range []dutyExemptIn{{Leader: true}, {Alchemist: true}, {Trader: true}, {AylaParty: true}} {
 		if dutyExempt(e) == "" {
 			t.Errorf("case %d not exempt", i)
 		}
@@ -309,5 +309,75 @@ func TestDutyGuildParam(t *testing.T) {
 	if dutyGuildID("crimson oath", "Starveil") != "guild01" || dutyGuildID("starveil ", "Starveil") != humanGuildID ||
 		dutyGuildID("Other", "Starveil") != "" {
 		t.Fatal("dutyGuildID")
+	}
+}
+
+// The meter's duty flag follows the guild block (guildmeter.go) and needs no lock beyond the bot's own.
+func TestGuildDutyMeterHook(t *testing.T) {
+	old := tune()
+	defer curTuning.Store(old)
+	if meterDutyHook == nil {
+		t.Fatal("meterDutyHook not wired")
+	}
+	on := *old
+	on.GuildDutyOn = true
+	curTuning.Store(&on)
+	b := &Bot{MapName: "pay_fild04"}
+	if meterDutyHook(b) {
+		t.Fatal("no goal: not on duty")
+	}
+	b.fgoal = &farmGoal{Kind: "gear", Maps: []string{"pay_fild04"}}
+	if meterDutyHook(b) {
+		t.Fatal("a gear goal is not guild duty")
+	}
+	b.fgoal = &farmGoal{Kind: "guild", Maps: []string{"pay_fild04", "pay_fild08"}}
+	if !meterDutyHook(b) {
+		t.Fatal("guild block on its map: on duty")
+	}
+	b.MapName = "payon"
+	if meterDutyHook(b) {
+		t.Fatal("off the block's maps: not on duty")
+	}
+	b.MapName, b.Dead = "pay_fild08", true
+	if meterDutyHook(b) {
+		t.Fatal("dead: not on duty")
+	}
+	b.Dead = false
+	off := *old
+	off.GuildDutyOn = false
+	curTuning.Store(&off)
+	if meterDutyHook(b) {
+		t.Fatal("flag off: not on duty")
+	}
+}
+
+// Guild lines go through chat jobs when chat_jobs_on is set (guildchat.go); off -> the caller's old guildSay path.
+func TestGuildChatJobs(t *testing.T) {
+	l := &Bot{P: &Persona{Chars: []CharSpec{{Name: "LeaderX"}}}, GuildName: "Iron Wolves"}
+	rec := setupChatJobs(t, false)
+	if dutyChatWarn(l, "MemberY", "do ur shift", "sorry", 3) {
+		t.Fatal("chat jobs off: the caller must say the lines itself")
+	}
+	if _, used := dutyChatKick(l, "MemberY", "bye", "short days"); used {
+		t.Fatal("chat jobs off: kick line is the caller's")
+	}
+	rec = setupChatJobs(t, true) // on, no agent polling: templates go out at once
+	if !dutyChatWarn(l, "MemberY", "do ur shift", "sorry", 3) {
+		t.Fatal("chat jobs on: warning handled")
+	}
+	got := rec.wait(t, 1)
+	if len(got[0]) != 2 || got[0][0].Speaker != "LeaderX" || got[0][1].Speaker != "MemberY" || got[0][1].Channel != "guild" {
+		t.Fatalf("warning template: %+v", got[0])
+	}
+	if w, used := dutyChatKick(l, "MemberY", "bye", "short days"); !used || w != 0 {
+		t.Fatalf("kick with no agent: said at once, no wait (w=%d used=%v)", w, used)
+	}
+	if !dutyChatDirection(l, "guild focus: elu", &GuildDirection{Kind: "stock", Item: "Elunium"}) {
+		t.Fatal("direction handled")
+	}
+	rec.wait(t, 3)
+	chatJobsPolled(time.Now()) // an agent is polling: the kick line waits, the expel waits for its deadline
+	if w, _ := dutyChatKick(l, "MemberY", "bye", "short days"); w < 40 {
+		t.Fatalf("kick with an agent: expel waits past the job deadline, got %d", w)
 	}
 }

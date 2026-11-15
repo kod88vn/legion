@@ -251,14 +251,15 @@ type dutyExemptIn struct {
 	Alchemist bool // the guild's alchemist
 	Trader    bool // the guild's trader, or any vendor character (its shop is the guild's stock)
 	AylaParty bool // Ayla's party: core instance, LEGION_CORE / -exclude names, pinned to a human party, kept accounts
-	Human     bool
 }
+
+// No human exemption (owner 2026-11-14, gate G25: no in-world difference between humans and other players). The
+// ledger measures only engine-run characters so far; a human member's duty is open work (STATUS.md "Equal
+// treatment of humans: gaps").
 
 // dutyExempt: the reason a member is exempt ("" = not exempt)
 func dutyExempt(e dutyExemptIn) string {
 	switch {
-	case e.Human:
-		return "human"
 	case e.AylaParty:
 		return "Ayla's party"
 	case e.Leader:

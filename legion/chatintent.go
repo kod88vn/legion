@@ -14,7 +14,8 @@ package main
 //     (humanwant.go sale record). Otherwise it becomes a market human want (humanwant.go), as if said on #trade.
 //   - offer: a bot that wants the item (or a kin bot that would use it) answers in a whisper; the human hands it over
 //     by its own action (a trade window with a party / guild mate, or mail).
-// Humans are never charged or traded without their own action. Ayla keeps 10,000z: a price is quoted to her only if
+// A human gets the same tiers as any player (gate G25); the engine cannot act for it, so it pays or hands over only by
+// its own action (trade window, mail). Ayla keeps 10,000z (G12): a price is quoted to her only if
 // her purse (status.json) stays at or above the floor after paying it; with her purse unknown only gifts reach her.
 // When main runs with a core instance, a human need is first offered to the core instance (Ayla's party), which claims
 // it when one of the human's own party members holds a spare.
