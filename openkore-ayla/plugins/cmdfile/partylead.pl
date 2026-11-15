@@ -581,7 +581,7 @@ sub travel_mode_tick {
 	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here) && !trivial_transit() && !cross_danger($here); # a friend in danger here: she fights for it (no travel mode) - not on a map far below the party (QA: Zombies on pay_dun00 for a level 81), never on a dangerous crossing
 	# crossing a map far below her and the party (trivial_transit): no fights at all there, not even OpenKore's own
 	# attackAuto - a level 81 stopped for every pay_dun00 Zombie (12 exp). Saved in a package var: survives a reload.
-	my $triv = trivial_transit() ? 1 : 0;
+	my $triv = trivial_transit() && !scalar(AI::ai_getAggressives()) ? 1 : 0; # never attackAuto 0 with monsters on her
 	if ($triv && !defined $trivSaved) { $trivSaved = $config{attackAuto}; $config{attackAuto} = 0; message "[partylead] crossing $here (far below the party): no fights here
 ", 'system' }
 	elsif (!$triv && defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef; message "[partylead] off the transit map ($here): attackAuto back
@@ -968,6 +968,7 @@ sub area_target {
 	if (!stick_target($m)) { $args->{return} = 0; return } # PT04/PT06: not beyond 20 cells of the friends near her
 	if (!pt32_target($m)) { $args->{return} = 0; return }  # PT32: in place, one or a few at a time
 	return unless $huntMap ne '' && $field->baseName eq $huntMap;
+	return if $m->{dmgToYou} || $m->{missedYou}; # what hits her is always fought back
 	$args->{return} = 0 if near_portal($field->baseName, $m->{pos_to}{x}, $m->{pos_to}{y});
 }
 sub area_tick { } # (the grinding anchor is gone: the sweep replaced it)
@@ -2004,6 +2005,34 @@ our $stickWinged; # {town, back, at}: her last announced wing (the town-run line
 # route was re-made every 5 s and attackAuto / the rest of the tick put a fight on top of it. Now the flight is a
 # commitment: attackAuto off, attacks cleared every tick, the route kept, until she is off that map (90 s at most).
 our ($stickFlee, $fleeAA);
+my ($mvPos, $mvAt) = ('', 0);
+# her cell changed within the last 2 s (a fall-back only runs while she really moves)
+sub moved_recently {
+	my $k = "$char->{pos_to}{x},$char->{pos_to}{y}";
+	if ($k ne $mvPos) { ($mvPos, $mvAt) = ($k, time) }
+	return time - $mvAt < 2 ? 1 : 0;
+}
+# the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
+sub fight_back {
+	return if AI::inQueue('attack');
+	my ($best, $bd);
+	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
+		next unless $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead} && ($mo->{dmgToYou} || $mo->{missedYou});
+		my $d = blockDistance($char->{pos_to}, $mo->{pos_to});
+		($best, $bd) = ($mo, $d) if !defined $bd || $d < $bd;
+	}
+	return unless $best;
+	AI::clear('route', 'move');
+	main::attack($best->{ID});
+	message "[partylead] PT31: not moving with monsters on her - fighting back ($best->{name})
+", 'system';
+}
+# a fall-back step is allowed only while she moves; stuck 2 s -> she fights the nearest attacker instead
+sub moved_recently_or_fight {
+	return 1 if moved_recently() || $mvAt == 0;
+	fight_back();
+	return 0;
+}
 
 # ---- PT04 as a hard invariant (owner 2026-11-14: "Ayla is still wandering around without her party"): with friends
 # online she never travels or farms with no friend within 20 cells. Leaving town for a hunt: only with the priest
@@ -2152,7 +2181,8 @@ sub pack_tick {
 		message "[partylead] PT04: the party is with her - setting off together" . ($go ne '' ? " for $go" : '') . "\n", 'system';
 		if ($go ne '' && $go ne $here) {
 			$config{lockMap} = $go if ($config{lockMap} || '') eq '' && !is_townmap($go);
-			AI::clear('attack', 'route', 'move'); main::ai_route($go, undef, undef, attackOnRoute => route_aor());
+			AI::clear('route', 'move'); AI::clear('attack') unless scalar(AI::ai_getAggressives());
+			main::ai_route($go, undef, undef, attackOnRoute => route_aor());
 		}
 		return 1;
 	}
@@ -2352,6 +2382,7 @@ sub stick_tick {
 	# deadly must hold on readings at least 0.4 s apart (live 2026-11-14: a wing "nearly dead" at ~53% HP)
 	if ($hpp < STICK_DEADLY) { $stickLowAt ||= time } else { $stickLowAt = 0 }
 	my $aggr = scalar(AI::ai_getAggressives());
+	moved_recently(); # keeps her last-move time current (fall-backs only while she moves)
 	my @mates = stick_mates();
 	my $an = stick_anchor(@mates);
 	my $ad = $an ? blockDistance($char->{pos_to}, $an->[1]) : -1;
@@ -2376,12 +2407,17 @@ sub stick_tick {
 			$config{attackAuto} = $fleeAA if defined $fleeAA;
 			($stickFlee, $fleeAA) = (undef, undef);
 		} else {
-			AI::clear('attack', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto') if AI::inQueue('attack', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto');
+			# she ALWAYS fights back what hits her (live: 90 s of "Orc Warrior attacks you" with the old flight); the
+			# flight only moves her while she is really moving - standing still for 2 s with monsters on her: fight
+			$config{attackAuto} = $fleeAA if defined $fleeAA; $fleeAA = undef;
+			AI::clear('items_take', 'take', 'items_gather') if AI::inQueue('items_take', 'take', 'items_gather');
 			Commands::run('stand') if $char->{sitting};
+			return 0 if AI::inQueue('attack');
+			if ($aggr && !moved_recently()) { fight_back(); return 1 }
 			my ($rdm) = route_maps();
 			if (!AI::inQueue('route', 'move') || ($rdm ne '' && $rdm ne $stickFlee->{map})) {
 				AI::clear('route', 'move');
-				main::ai_route($stickFlee->{map}, undef, undef, attackOnRoute => 0);
+				main::ai_route($stickFlee->{map}, undef, undef, attackOnRoute => 1);
 			}
 			return 1;
 		}
@@ -2405,7 +2441,7 @@ sub stick_tick {
 		}
 	}
 	# PT32: a second monster on her with the priest / tank more than 5 cells away: step back toward them (no help call)
-	if ($aggr == 2 && $hpp >= 0.45 && $an && $ad > 5 && time - $stickRunAt > 3 && !(defined $config{partylead_pt32} && $config{partylead_pt32} eq '0')) {
+	if ($aggr == 2 && $hpp >= 0.45 && $an && $ad > 5 && time - $stickRunAt > 3 && !AI::inQueue('attack') && !(defined $config{partylead_pt32} && $config{partylead_pt32} eq '0')) {
 		$stickRunAt = time;
 		AI::clear('route', 'move');
 		main::ai_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 3, maxRouteTime => 4, noMapRoute => 1, attackOnRoute => 1);
@@ -2418,24 +2454,23 @@ sub stick_tick {
 			$stickHelpAt = time;
 			psay(pick("help, $aggr on me", "help! $aggr on me ($here $cx,$cy)", "$aggr mobs on me, need help"), 0, 0);
 		}
-		if ($an && $ad > 3 && time - $stickRunAt > 2) {
+		if ($an && $ad > 3 && time - $stickRunAt > 2 && !AI::inQueue('attack') && moved_recently_or_fight()) {
 			$stickRunAt = time;
 			Commands::run('stand') if $char->{sitting};
-			AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
-			main::ai_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 0);
+			AI::clear('route', 'move', 'items_take', 'take', 'items_gather'); # never the attack: she fights back what hits her
+			main::ai_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 1);
 			message sprintf("[partylead] PT31: falling back to %s (%d cells; HP %d%%, %d monsters on her)\n", $an->[0], $ad, $hpp * 100, $aggr), 'system';
 			return 1;
 		}
 		# swarmed with no friend on this map (she got ahead of them on a crossing): back to the map the friends are on
-		if (!$an && $aggr >= 4 && time - $stickRunAt > 5) {
+		if (!$an && $aggr >= 4 && time - $stickRunAt > 5 && !AI::inQueue('attack') && !$stickFlee) {
 			my %on; $on{$_->[1]}++ foreach grep { $_->[1] ne '' && $_->[1] ne $here } @friends;
 			my ($fm) = sort { $on{$b} <=> $on{$a} } keys %on;
 			if ($fm) {
 				$stickRunAt = time;
 				$stickFlee = {map => $fm, from => $here, at => time};
-				if (!defined $fleeAA) { $fleeAA = $config{attackAuto}; $config{attackAuto} = 0 }
-				AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
-				main::ai_route($fm, undef, undef, attackOnRoute => 0);
+				AI::clear('route', 'move', 'items_take', 'take', 'items_gather'); # never the attack (she fights back)
+				main::ai_route($fm, undef, undef, attackOnRoute => 1);
 				psay(pick("too many here, falling back to u in $fm", "$aggr on me on $here, coming back to $fm"), 0, 20);
 				message sprintf("[partylead] PT31: %d monsters on her on %s with no friend here (HP %d%%): falling back to the friends on %s\n", $aggr, $here, $hpp * 100, $fm), 'system';
 				return 1;
