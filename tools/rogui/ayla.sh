@@ -11,9 +11,9 @@
 #   rally cancel   drop a Kafra rally at once (no new one for 30 min)  |  rally TOWN [MAP]  meet + save at TOWN's Kafra,
 #                  then the party goes to MAP (no MAP: they wait at the Kafra for a "map" order; the old lockMap is dropped)
 #   lead           what the party-lead plugin is doing (holding / rally / fetching / lockMap)
-#   townrun [TOWN] party town run (PT22, idleerrands.pl): wing (save town) or walk, sell / store / restock, meet at the
-#                  TOWN Kafra (default: the town she is in, else her save town); the members come along
-#   errands        idle-errand status (EC36: she sells / restocks while the party waits)
+#   townrun [TOWN] party town run (PT22, idleerrands.pl): in a town that town on foot, else the save town by partylead's wing; sell / store / restock, meet at the
+#                  Kafra; the members come along
+#   errands        errand status (EC36: she sells / restocks while the party gathers at a Kafra)
 #   guild-create NAME   found her guild (OpenKore `guild create`; no Emperium needed on this server)
 #   recruit [N]    invite up to N (default 3) recruits Legion suggests (GET /api/guild-recruits: her party friends, then
 #                  one unguilded player per job the guild lacks) via plugin guildrecruit.pl `ginvite <aid> <name>`

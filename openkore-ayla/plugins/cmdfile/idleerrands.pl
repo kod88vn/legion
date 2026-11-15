@@ -1,35 +1,34 @@
-# idleerrands - Ayla uses waiting time for errands (EC36, owner 2026-11-14: "if they have nothing to do at least go sell
-# their stuff. It's almost full. Stop doing nothing useful.") and runs party town runs (PT22) on order or on her own (AY19).
+# idleerrands - Ayla uses the party's Kafra gathering for errands and runs party town runs.
+# EC36 (rewritten 2026-11-14): "A solo bot, or a party gathering at a Kafra before setting out, uses idle time for
+# errands (sell, store, restock). A party member does errands only on the party town run (PT22/PT24) or at 50% weight
+# (EC28); otherwise it farms near the party (PT18)." So:
 #
-# 1. Idle errand. She stands waiting (partylead's hold, a rally wait at the Kafra, waiting for a member: no fight, no
-#    shop, no NPC, no loot, within 8 cells of one spot) for idleErrands_wait (45 s) in a town with a Tool Dealer, or on
-#    a map with a portal straight into one, and her bag is at idleErrands_weight (40%) or idleErrands_slots (85 entries)
-#    with something to sell / store, or a buyAuto stock (potions, wings) is under half: she runs OpenKore's own
-#    sellAuto -> buyAuto -> storageAuto chain at THAT town's Tool Dealer and Kafra, walking (no Butterfly Wing for a
-#    short errand). items_control.txt decides what goes (cards, gear, potions, wings, gear-plan items are kept: sell 0).
-#    partylead.pl sees the chain like any town run (announces it, Legion's members shop too, everyone meets at the town's
-#    Kafra afterwards - its normal after-run regroup). A job that started on a field next to town is called off while
-#    she is still walking (no NPC yet) once every online member stands on that field with her: the party is ready.
-# 2. 'idleerrands townrun [town]' (ayla.sh townrun [town]): a party town run on order (PT22). The town defaults to the
-#    town she is in, else her save town. A Butterfly Wing takes her when the town is her save point and she is not in
-#    it, otherwise she walks. partylead announces "town run to <town> ... meet at the <town> kafra" (Legion's core parses
-#    it, rally.go townRunLineRe, and the members wing / sell / restock / meet there). After shopping she waits at the
-#    Kafra (partylead); after townrun_meet (300 s) still in town she sets off for her hunting map (partylead goto), and
-#    the members follow.
-# 3. AY19: waiting idleErrands_partyWait (90 s) away from towns while at least half of the online party (her included,
-#    Legion's /api/human-party weights) is at idleErrands_partyWeight (45%): she calls the town run herself (to her save
-#    town, by wing; one per 20 min).
+# 1. Kafra-gathering errand. She stands waiting IN a town (never a field: no walking away from the party) within
+#    KAFRA_NEAR cells of one of that town's Kafras (the party's gathering point: a rally, the meet after a town run)
+#    for idleErrands_wait (45 s) - no fight, no loot, no NPC, no shop, within 8 cells of one spot - and her bag is at
+#    idleErrands_weight (40%) or idleErrands_slots (85 entries) with something to sell / store, or a buyAuto stock
+#    (potions, wings) is under half: she runs OpenKore's own sellAuto -> buyAuto -> storageAuto chain at THAT town's
+#    Tool Dealer and Kafra, on foot inside the town. items_control.txt decides what goes (cards, gear, potions, wings,
+#    gear-plan items are kept: sell 0). partylead.pl sees the chain like any town run (it announces it - the members
+#    shop too, Legion rally.go townRunLineRe - and everyone meets at the Kafra afterwards).
+# 2. 'idleerrands townrun [town]' (ayla.sh townrun): a party town run on order (PT22). In a town: that town, on foot.
+#    Outside a town: her save town - partylead.pl does the one allowed wing (its PT22 party town-run Butterfly Wing,
+#    let through by its no-teleport guard); this plugin never wings and never touches the teleport settings. After
+#    shopping she waits at the Kafra (partylead); after idleErrands_meet (300 s) still in town she sets off for her
+#    hunting map (partylead goto) and the members follow.
+# 3. AY19 / EC28: waiting idleErrands_partyWait (90 s) away from towns while at least half of the online party (her
+#    included, Legion's /api/human-party weights) is at idleErrands_partyWeight (50%): she calls the party town run
+#    herself (as 2; one per 20 min).
 #
 # How the town is forced: partylead calls aylagear::run_start(<hunting map>) on every town run, which points the sell /
 # buy / storage NPCs at the hunting map's town. While a job of this plugin runs, a thin wrapper passes the job's town
-# instead (and nothing else changes); outside a job it calls the original unchanged. Config changes are in memory only
-# (saveMap_warpToBuyOrSell, restored at the end). Zeny is never sent anywhere (G12): selling earns, buyAuto keeps its own
-# zeny lines. Nothing here touches partylead.pl's state.
+# instead; outside a job it calls the original unchanged. Zeny is never sent anywhere (G12): selling earns, buyAuto
+# keeps its own zeny lines. Nothing here touches partylead.pl's state or settings.
 package idleerrands;
 
 use strict;
 use Plugins;
-use Globals qw($char $field %config $net %portals_lut);
+use Globals qw($char $field %config $net);
 use AI;
 use Commands;
 use Log qw(message);
@@ -38,21 +37,27 @@ use Time::HiRes qw(time);
 use IO::Socket::INET;
 use JSON::PP;
 
+use constant KAFRA_NEAR => 15;
+
 # towns with a Tool Dealer (aylagear.pl %TOOL) and the shop buildings that belong to them
 our %TOOLTOWN = map { $_ => 1 } qw(prontera payon geffen morocc alberta aldebaran izlude yuno comodo umbala);
 our %SHOPTOWN = (alberta_in => 'alberta', aldeba_in => 'aldebaran', prt_in => 'prontera', izlude_in => 'izlude',
 	payon_in01 => 'payon', payon_in02 => 'payon', morocc_in => 'morocc', geffen_in => 'geffen', cmd_in01 => 'comodo',
 	um_in => 'umbala', yuno_in01 => 'yuno');
+# Kafra cells (partylead.pl %KAFRA)
+our %KAFRA = (prontera => [[152,326],[151,29],[29,207],[282,200],[146,89]], payon => [[181,104],[175,226]],
+	geffen => [[120,62],[203,123]], morocc => [[156,97]], alberta => [[28,229],[113,60]], aldebaran => [[143,119]],
+	yuno => [[152,187],[327,108],[277,221]], comodo => [[195,150]], umbala => [[87,160]], izlude => [[134,88]]);
 
-Plugins::register('idleerrands', 'Ayla sells / stores / restocks while she waits; party town runs', \&unload);
+Plugins::register('idleerrands', 'Ayla sells / stores / restocks at the Kafra gathering; party town runs', \&unload);
 my $hooks = Plugins::addHooks(['AI_pre', \&tick]);
 my $cmds = Commands::register(['idleerrands', 'idle errands: status | townrun [town] | on | off', \&cmd]);
 
-our $job;                  # {kind => idle|townrun|auto, town, at, set => {k => v}, saved => {k => old}, anchor => {map,x,y}, field, phase, doneAt}
+our $job;                  # {kind => idle|townrun|auto, town, at, phase => shop|meet, doneAt, why}
 our ($anchor, $idleSince) = (undef, 0); # where she stands still and since when
-our $nextAt = time + 60;   # no idle errand before this (cooldown)
+our $nextAt = time + 60;   # no Kafra errand before this (cooldown)
 our $nextAuto = time + 300;# no self-called town run before this
-my ($last, $lastLog, $apiAt, %apiW) = (0, 0, 0);
+my ($last, $apiAt, %apiW) = (0, 0);
 my $origRunStart;          # aylagear::run_start before the wrapper
 
 sub unload {
@@ -70,18 +75,13 @@ sub log_m { message "[idleerrands] $_[0]\n", 'system' }
 # the town a map belongs to for shopping: the town itself, its shop building's town, else ''
 sub shop_town_of { my $m = shift || ''; return $m if $TOOLTOWN{$m}; return $SHOPTOWN{$m} || '' }
 
-# a town reachable through one portal from map $m (portals_lut-shaped hash), else ''
-sub adjacent_town {
-	my ($m, $lut) = @_;
-	foreach my $k (sort keys %$lut) {
-		my $p = $lut->{$k};
-		next unless ref $p eq 'HASH' && ref $p->{source} eq 'HASH' && ($p->{source}{map} || '') eq $m;
-		foreach my $d (values %{$p->{dest} || {}}) {
-			my $t = $TOOLTOWN{$d->{map} || ''} ? $d->{map} : '';
-			return $t if $t;
-		}
+# standing at a Kafra of town map $m (the party's gathering point)? only the town map itself counts
+sub at_kafra {
+	my ($m, $pos) = @_;
+	foreach my $k (@{$KAFRA{$m} || []}) {
+		return 1 if blockDistance({x => $k->[0], y => $k->[1]}, $pos) <= KAFRA_NEAR;
 	}
-	return '';
+	return 0;
 }
 
 # why an errand is worth it, or '': $s = {wpct, slots, sellable, storable, low => [names], zeny}, $c = thresholds
@@ -94,15 +94,14 @@ sub need_reason {
 	return '';
 }
 
-# every online friend on map $m within $r cells of $pos? $friends = [{map, x, y, online}]
-sub party_ready {
-	my ($friends, $m, $pos, $r) = @_;
-	foreach my $f (@$friends) {
-		next unless $f->{online};
-		return 0 if ($f->{map} || '') ne $m;
-		return 0 if !defined $f->{x} || blockDistance({x => $f->{x}, y => $f->{y}}, $pos) > $r;
-	}
-	return 1;
+# the town of a party town run: in a town that town (on foot); outside one only the save town (partylead's wing).
+# returns (town, note)
+sub townrun_town {
+	my ($here, $want, $save) = @_;
+	my $t = shop_town_of($here);
+	my $base = $t ne '' ? $t : ($save || '');
+	return ($base, '') if !$want || $want eq $base;
+	return ($base, "$want is not this town / the save town: no walking off, the run goes to $base");
 }
 
 # AY19: at least half of the weights (fractions 0..1) at the line, with at least 2 counted
@@ -139,19 +138,9 @@ sub bag_state {
 
 sub thresholds { return {weight => cv('idleErrands_weight', 40), slots => cv('idleErrands_slots', 85)} }
 
-sub friends {
-	my @f;
-	foreach my $u (values %{($char->{party} && $char->{party}{users}) || {}}) {
-		next if !$u || $u->{name} eq $char->{name};
-		my $m = $u->{map} || ''; $m =~ s/\.gat$//;
-		push @f, {name => $u->{name}, online => $u->{online} ? 1 : 0, map => $m, x => ($u->{pos} ? $u->{pos}{x} : undef), y => ($u->{pos} ? $u->{pos}{y} : undef)};
-	}
-	return @f;
-}
-
 sub busy {
 	return 1 if AI::inQueue('attack', 'take', 'items_take', 'items_gather', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto',
-		'teleport', 'skill_use', 'deal', 'dead'); # route / move: partylead's few-cell unstick steps; the 8-cell spot covers walks
+		'teleport', 'skill_use', 'deal', 'dead'); # route / move: partylead's few-cell steps; the 8-cell spot covers walks
 	return 1 if defined &aylagear::busy && aylagear::busy();
 	return 1 if $aylagear::run || $aylagear::mailjob || $aylagear::dealjob;
 	return 0;
@@ -183,35 +172,24 @@ sub install_wrap {
 }
 
 # ---------------------------------------------------------------- jobs
-sub set_tmp { my ($k, $v) = @_; $job->{saved}{$k} = $config{$k} unless exists $job->{saved}{$k}; $config{$k} = $v; $job->{set}{$k} = $v }
-
 sub start_job {
 	my ($kind, $town, $why) = @_;
 	return 0 unless town_ok($town);
 	return 0 unless install_wrap(); # without the wrapper the run would go to the hunting town: no errand
 	my $here = $field->baseName;
-	my $inTown = shop_town_of($here) eq $town;
-	$job = {kind => $kind, town => $town, at => time, set => {}, saved => {}, phase => 'shop', why => $why,
-		anchor => {map => $here, x => $char->{pos_to}{x}, y => $char->{pos_to}{y}}, field => ($inTown ? 0 : 1)};
-	# a Butterfly Wing only for a real town run to her save town from outside it; an errand next door is a walk
-	my $wing = $kind ne 'idle' && !$inTown && ($config{saveMap} || '') eq $town && ($config{saveMap_warpToBuyOrSell} || 0) ? 1 : 0;
-	set_tmp('saveMap_warpToBuyOrSell', $wing);
+	$job = {kind => $kind, town => $town, at => time, phase => 'shop', why => $why};
 	Commands::run('stand') if $char->{sitting};
 	AI::clear('move', 'route', 'mapRoute', 'items_take', 'take', 'items_gather', 'sitAuto', 'sitting');
 	my $bs = bag_state();
 	my $first = $kind ne 'idle' || $bs->{sellable} ? 'sellAuto' : $bs->{storable} ? 'storageAuto' : 'buyAuto';
-	AI::queue($first); # OpenKore chains sell -> buy -> storage itself
-	log_m("$kind: $why -> $first at $town (" . ($wing ? 'butterfly wing' : 'walking') . ", from $here)");
+	AI::queue($first); # OpenKore chains sell -> buy -> storage itself; partylead announces it as the party town run
+	log_m("$kind: $why -> $first at $town (from $here" . (shop_town_of($here) eq $town ? ', on foot' : ', partylead\'s town-run wing') . ")");
 	return 1;
 }
 
 sub finish {
 	my $why = shift;
 	return unless $job;
-	foreach my $k (keys %{$job->{saved}}) {
-		next if ($config{$k} // '') ne ($job->{set}{$k} // ''); # changed meanwhile by someone else: keep it
-		$config{$k} = $job->{saved}{$k};
-	}
 	log_m("$job->{kind} in $job->{town} over: $why");
 	$job = undef;
 	($anchor, $idleSince) = (undef, 0);
@@ -223,19 +201,9 @@ sub job_tick {
 	my $shopping = AI::inQueue('sellAuto', 'buyAuto', 'storageAuto');
 	if ($job->{phase} eq 'shop') {
 		if (!$shopping && time - $job->{at} > 3) {
-			if ($job->{kind} eq 'idle') { finish('done, back to the party'); return }
-			$job->{phase} = 'meet'; $job->{doneAt} = time;
-			# the NPC settings go back now; the job stays for the Kafra wait
-			foreach my $k (keys %{$job->{saved}}) { $config{$k} = $job->{saved}{$k} if ($config{$k} // '') eq ($job->{set}{$k} // '') }
-			$job->{saved} = {};
-			log_m("townrun: shopping done, waiting at the $job->{town} kafra for the party");
-			return;
-		}
-		# an errand from a field next to town: the party gathered there while she is still on her way -> call it off
-		if ($job->{kind} eq 'idle' && $job->{field} && !AI::inQueue('NPC') && $field->baseName ne $job->{town}
-			&& shop_town_of($field->baseName) eq '' && party_ready([friends()], $job->{anchor}{map}, $job->{anchor}, 20)) {
-			AI::clear('sellAuto', 'buyAuto', 'storageAuto', 'route', 'move', 'mapRoute');
-			finish('party ready, errand called off');
+			if ($job->{kind} eq 'idle') { finish('done, back at the kafra with the party'); return }
+			($job->{phase}, $job->{doneAt}) = ('meet', time);
+			log_m("$job->{kind}: shopping done, waiting at the $job->{town} kafra for the party");
 			return;
 		}
 		my $cap = $job->{kind} eq 'idle' ? 240 : 600;
@@ -246,13 +214,12 @@ sub job_tick {
 		return;
 	}
 	# meet: partylead holds her at the Kafra until everyone is there and then leaves with them. Still in town after
-	# townrun_meet seconds: she sets off for the hunting map, the members follow (a mind-style goto, her own decision).
-	my $here = $field->baseName;
-	if (shop_town_of($here) ne $job->{town}) { finish('left town with the party'); return }
+	# idleErrands_meet seconds: she sets off for the hunting map, the members follow (her own decision, a goto).
+	if (shop_town_of($field->baseName) ne $job->{town}) { finish('left town with the party'); return }
 	if (time - $job->{doneAt} > cv('idleErrands_meet', 300)) {
 		my $hm = $partylead::homeMap || $partylead::huntMap || '';
 		if ($hm ne '' && defined &partylead::cmd_partylead) {
-			log_m("townrun: waited " . int(time - $job->{doneAt}) . " s at the kafra, heading back to $hm");
+			log_m("$job->{kind}: waited " . int(time - $job->{doneAt}) . " s at the kafra, heading back to $hm");
 			Commands::run("partylead goto $hm");
 		}
 		finish('meet time over');
@@ -300,19 +267,20 @@ sub tick {
 	}
 	my $idle = time - $idleSince;
 	return if $idle < cv('idleErrands_wait', 45);
-	my $town = shop_town_of($here);
-	$town = adjacent_town($here, \%portals_lut) if $town eq '' && cv('idleErrands_nearTown', 1);
-	if ($town ne '' && time >= $nextAt) {
+	# 1. the party gathers at a Kafra in this town: errand in this town
+	if ($TOOLTOWN{$here}) {
+		return unless time >= $nextAt && at_kafra($here, $pos);
 		my $why = need_reason(bag_state(), thresholds());
-		if ($why ne '') { start_job('idle', $town, "waited " . int($idle) . " s, $why") or ($nextAt = time + 120); return }
+		start_job('idle', $here, "waited " . int($idle) . " s at the kafra, $why") or ($nextAt = time + 120) if $why ne '';
 		return;
 	}
-	# AY19: the whole party waits far from town with heavy bags: her own town run (save town, by wing)
-	if ($town eq '' && $char->{party} && $idle >= cv('idleErrands_partyWait', 90) && time >= $nextAuto) {
+	return if shop_town_of($here) ne ''; # inside a shop building: partylead walks her out
+	# 3. AY19 / EC28: the whole party waits far from town with heavy bags: her own party town run (save town)
+	if ($char->{party} && $idle >= cv('idleErrands_partyWait', 90) && time >= $nextAuto) {
 		my $st = $config{saveMap} || '';
-		my $line = cv('idleErrands_partyWeight', 45) / 100;
+		my $line = cv('idleErrands_partyWeight', 50) / 100;
 		my @w = (api_weights(), ($char->{weight_max} ? $char->{weight} / $char->{weight_max} : undef));
-		if (town_ok($st) && party_heavy(\@w, $line) && (eval { $char->inventory->sumByName('Butterfly Wing') } || 0) > 0) {
+		if (town_ok($st) && party_heavy(\@w, $line)) {
 			$nextAuto = time + 1200;
 			start_job('auto', $st, sprintf('party waiting %d s with heavy bags', $idle));
 		}
@@ -323,12 +291,9 @@ sub cmd {
 	my (undef, $args) = @_;
 	$args ||= '';
 	if ($args =~ /^\s*townrun\b\s*([a-z]*)/i) {
-		my $t = lc($1 || '');
-		if ($t eq '') {
-			$t = shop_town_of($field ? $field->baseName : '');
-			$t = $config{saveMap} || '' if $t eq '';
-		}
 		if ($job) { log_m("busy: a $job->{kind} job in $job->{town} runs"); return }
+		my ($t, $note) = townrun_town($field ? $field->baseName : '', lc($1 || ''), $config{saveMap} || '');
+		log_m("townrun: $note") if $note;
 		if (!town_ok($t)) { log_m("townrun: no shop town '$t'"); return }
 		start_job('townrun', $t, 'ordered') or log_m('townrun: could not start (aylagear.pl not loaded?)');
 	} elsif ($args =~ /^\s*off/i) { $config{idleErrands} = 0; log_m('idle errands off (in memory)') }

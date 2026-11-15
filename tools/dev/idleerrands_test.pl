@@ -26,10 +26,16 @@ sub is { my ($got, $want, $name) = @_; if (($got // '') eq ($want // '')) { $ok+
 is(idleerrands::shop_town_of('geffen'), 'geffen', 'town itself');
 is(idleerrands::shop_town_of('geffen_in'), 'geffen', 'shop building');
 is(idleerrands::shop_town_of('gef_fild07'), '', 'field is no town');
-my %lut = ('gef_fild07 330 190' => {source => {map => 'gef_fild07', x => 330, y => 190}, dest => {'geffen 26 119' => {map => 'geffen', x => 26, y => 119}}},
-	'gef_fild08 10 10' => {source => {map => 'gef_fild08'}, dest => {a => {map => 'gef_fild09'}}});
-is(idleerrands::adjacent_town('gef_fild07', \%lut), 'geffen', 'field next to geffen');
-is(idleerrands::adjacent_town('gef_fild08', \%lut), '', 'field not next to a town');
+is(idleerrands::at_kafra('geffen', {x => 118, y => 66}), 1, 'at the geffen kafra');
+is(idleerrands::at_kafra('geffen', {x => 30, y => 119}), 0, 'geffen west gate is no kafra');
+is(idleerrands::at_kafra('gef_fild07', {x => 120, y => 62}), 0, 'a field never counts');
+
+# town run town: this town on foot, else the save town (partylead's wing); never walking off elsewhere
+is(join('|', idleerrands::townrun_town('geffen', '', 'geffen')), 'geffen|', 'in town, default');
+is((idleerrands::townrun_town('payon', '', 'geffen'))[0], 'payon', 'in another town: that town');
+is((idleerrands::townrun_town('gef_fild07', '', 'geffen'))[0], 'geffen', 'field: save town');
+is((idleerrands::townrun_town('gef_fild07', 'payon', 'geffen'))[0], 'geffen', 'field, other town asked: save town');
+is((idleerrands::townrun_town('geffen_in', '', 'payon'))[0], 'geffen', 'shop building: its town');
 
 # need
 my $c = {weight => 40, slots => 85};
@@ -40,13 +46,6 @@ is(idleerrands::need_reason({wpct => 20, slots => 90, sellable => 1, low => []},
 is(idleerrands::need_reason({wpct => 20, slots => 30, sellable => 1, low => ['orange potions'], zeny => 34912}, $c), 'low on orange potions', 'low potions');
 is(idleerrands::need_reason({wpct => 20, slots => 30, sellable => 1, low => ['orange potions'], zeny => 2000}, $c), '', 'low potions, no money');
 is(idleerrands::need_reason({wpct => 20, slots => 30, sellable => 1, low => []}, $c), '', 'nothing to do');
-
-# party ready
-my $here = {x => 100, y => 100};
-is(idleerrands::party_ready([{online => 1, map => 'gef_fild07', x => 105, y => 98}], 'gef_fild07', $here, 20), 1, 'friend close');
-is(idleerrands::party_ready([{online => 1, map => 'pay_dun01', x => 5, y => 5}], 'gef_fild07', $here, 20), 0, 'friend elsewhere');
-is(idleerrands::party_ready([{online => 1, map => 'gef_fild07', x => 150, y => 100}], 'gef_fild07', $here, 20), 0, 'friend far');
-is(idleerrands::party_ready([{online => 0, map => 'pay_dun01'}, {online => 1, map => 'gef_fild07', x => 99, y => 99}], 'gef_fild07', $here, 20), 1, 'offline ignored');
 
 # AY19
 is(idleerrands::party_heavy([0.5, 0.6, 0.2, 0.1], 0.45), 1, 'half heavy');

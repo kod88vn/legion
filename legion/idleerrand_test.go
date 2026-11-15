@@ -6,17 +6,25 @@ import (
 )
 
 func TestIdleWaitState(t *testing.T) {
-	for s, want := range map[string]bool{
-		"waiting for Zen.fox":                   true,
-		"waiting in geffen":                     true,
-		"waiting outside for Ayla":              true,
-		"rally: waiting at the Kafra in geffen": true,
-		"town trip: go":                         false,
-		"farming":                               false,
-		"":                                      false,
-	} {
-		if got := idleWaitState(s); got != want {
-			t.Errorf("idleWaitState(%q) = %v, want %v", s, got, want)
+	cases := []struct {
+		s       string
+		inParty bool
+		want    bool
+	}{
+		{"rally: waiting at the Kafra in geffen", true, true}, // the party gathers at a Kafra: errands ok
+		{"rally: waiting at the Kafra in geffen", false, true},
+		{"waiting for Zen.fox", true, false}, // a party member farms near the party instead (PT18)
+		{"waiting in geffen for Ayla", true, false},
+		{"waiting outside for Ayla", true, false},
+		{"waiting for Zen.fox", false, true}, // solo: any wait
+		{"waiting in geffen: escort", false, true},
+		{"town trip: go", false, false},
+		{"farming", true, false},
+		{"", false, false},
+	}
+	for _, c := range cases {
+		if got := idleWaitState(c.s, c.inParty); got != c.want {
+			t.Errorf("idleWaitState(%q, party=%v) = %v, want %v", c.s, c.inParty, got, c.want)
 		}
 	}
 }

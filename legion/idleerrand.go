@@ -1,13 +1,16 @@
 package main
 
-// idleerrand.go (EC36, owner 2026-11-14: "if they have nothing to do at least go sell their stuff. It's almost full.
-// Stop doing nothing useful."): a bot that stands waiting in a town with a Tool Dealer - for its party, a rally at the
-// Kafra, a late member, its leader - for idle_errand_wait_sec (45 s) uses the time: with the bag at
-// idle_errand_weight_pct (35%) or idle_errand_slots (85 entries) and loot to sell, or short of potions with the zeny
-// for them, it walks to that town's Tool Dealer (a normal town trip: sell junk, restock), then the rally / party logic
-// takes it back to the meeting point. Over the 50% regen line needTrip already sends it ("selling in town"); this
-// covers the band below and the slot-full bag. It says "brb" in party chat (Ayla's plugin then doesn't wait for it,
-// and the trip's "back" line ends that). One errand per idle_errand_cooldown_min (10) per bot.
+// idleerrand.go (EC36 as rewritten 2026-11-14: "A solo bot, or a party gathering at a Kafra before setting out, uses idle
+// time for errands (sell, store, restock). A party member does errands only on the party town run (PT22/PT24) or at 50%
+// weight (EC28); otherwise it farms near the party (PT18)."):
+//   - a SOLO bot standing in any waiting state for idle_errand_wait_sec (45 s) in a town with a Tool Dealer;
+//   - a PARTY member only while its party gathers at a Kafra before setting out (the rally wait at the Kafra,
+//     rally.go "rally: waiting at the Kafra in <town>") - never from a field, never away from the party;
+// with the bag at idle_errand_weight_pct (35%) or idle_errand_slots (85 entries) and loot to sell, or short of potions
+// with the zeny for them, walks to that town's Tool Dealer (a normal town trip: sell junk, restock); then the rally /
+// party logic takes it back to the Kafra. The party town run (ai.go townRun join) and the 50% line (needTrip, EC28)
+// stay as they are. A party member says "brb" in party chat (Ayla's plugin then doesn't wait for it, and the trip's
+// "back" line ends that). One errand per idle_errand_cooldown_min (10) per bot.
 // Switch: tuning.json idle_errand_off (default false = on).
 
 import (
@@ -15,11 +18,18 @@ import (
 	"time"
 )
 
-// idleWaitState: the states in which the bot is only waiting for others (party.go, humanparty.go, rally.go,
-// together.go). Trade meetings ("waiting for <buyer>") never reach the trip block: marketThink owns the bot first.
-func idleWaitState(s string) bool {
+// idleWaitState: the states in which the bot may use the wait for an errand. A party member: only the party's
+// gathering at a Kafra (rally.go). A solo bot: any wait (party.go, humanparty.go, together.go leftovers, the rally).
+// Trade meetings ("waiting for <buyer>") never reach the trip block: marketThink owns the bot first.
+func idleWaitState(s string, inParty bool) bool {
+	if strings.HasPrefix(s, "rally: waiting at the Kafra") {
+		return true
+	}
+	if inParty {
+		return false
+	}
 	return strings.HasPrefix(s, "waiting for ") || strings.HasPrefix(s, "waiting in ") ||
-		strings.HasPrefix(s, "waiting outside for ") || strings.HasPrefix(s, "rally: waiting")
+		strings.HasPrefix(s, "waiting outside for ")
 }
 
 // idleErrandWhy: the errand worth doing in the wait, or "" (pure: unit tested)
@@ -43,11 +53,12 @@ func (b *Bot) idleErrand(p *Party, now time.Time) {
 		return
 	}
 	// how long it has been waiting: the state is the last tick's; a gap in the calls (fighting, moving) restarts it
-	if !idleWaitState(b.State) || now.Sub(b.buffAt["idlewait:seen"]) > 5*time.Second {
+	waiting := idleWaitState(b.State, p != nil)
+	if !waiting || now.Sub(b.buffAt["idlewait:seen"]) > 5*time.Second {
 		b.buffAt["idlewait:since"] = now
 	}
 	b.buffAt["idlewait:seen"] = now
-	if !idleWaitState(b.State) || now.Before(b.buffAt["idlewait:next"]) {
+	if !waiting || now.Before(b.buffAt["idlewait:next"]) {
 		return
 	}
 	town := townOf(b.MapName)
