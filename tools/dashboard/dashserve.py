@@ -39,6 +39,7 @@ import common as C  # noqa: E402
 import bugq  # noqa: E402
 sys.path.insert(0, HERE)
 import dbsnap  # noqa: E402
+import buildexport  # noqa: E402  (DB09: the Builds tab)
 import offline  # noqa: E402
 
 PAGE = os.path.join(REPO, "legion", "dashboard.html")
@@ -707,6 +708,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(200, self.server.players.char(int(cid) if cid.isdigit() else None, g("name") or None))
             except Exception as e:
                 return self.send_json(500, {"error": repr(e)[:300]})
+        if route == "/api/builds":   # DB09: the build plans (builds.json, exported from legion/builds.go) + live counts
+            try:
+                return self.send_json(200, buildexport.view(snap_dir=SNAP_DIR))
+            except (OSError, ValueError) as e:
+                return self.send_json(500, {"error": "builds export unreadable (run tools/dashboard/buildexport.py): %s" % e})
         if route == "/favicon.ico":
             return self.send(204, "image/x-icon", b"")
         if route.startswith("/api/"):
