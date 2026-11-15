@@ -87,6 +87,9 @@ tr:last-child td { border-bottom: 0; }
 /* minds */
 #mindsCard { margin-bottom: 12px; }
 .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
+.mretired { margin-top: 10px; }
+.mretired > summary { cursor: pointer; color: var(--text-2); font-size: 13px; padding: 4px 0; }
+.mretired .mgrid { margin-top: 8px; }
 @media (max-width: 760px) { .mgrid { grid-template-columns: 1fr; } }
 .mind { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .mind.hl { border-color: var(--s5); }
@@ -151,6 +154,7 @@ a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; }
   <div class="card" id="mindsCard">
     <h2>Minds <small id="mindsNote">what the LLM minds are thinking · type an order to talk to one (refreshes every 5 s)</small></h2>
     <div class="mgrid" id="minds"><div class="empty">loading minds...</div></div>
+    <details class="mretired" id="mindsRetired"><summary>Retired (7)</summary><div class="mgrid" id="mindsRetiredGrid"></div></details>
     <div class="chips" id="mindChips"></div>
   </div>
 
@@ -482,6 +486,17 @@ function mindCard(name) {
   return c;
 }
 
+// minds retired by the owner (DB04): shown under the collapsed "Retired" section, nothing removed
+const RETIRED = new Set(['watcher', 'watchdog', 'qa', 'qa-travel', 'chat', 'life', 'market']);
+function placeCards(container, list) {
+  const typing = container.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
+  const want = list.map(m => M.cards.get(m.name).el);
+  const have = [...container.children];
+  if (!typing && (want.length !== have.length || want.some((e, i) => e !== have[i]))) want.forEach(e => container.appendChild(e));
+  else if (typing) want.forEach(e => { if (!e.parentNode) container.appendChild(e); });
+  for (const e of have) if (!want.includes(e) && e.classList.contains('mind') && !typing) e.remove();
+}
+
 function renderMinds() {
   const msgBy = {}, thBy = {};
   for (const m of M.messages.values()) (msgBy[m.mind] = msgBy[m.mind] || []).push(m);
@@ -493,7 +508,8 @@ function renderMinds() {
   }
   const active = M.list.filter(m => m.status === 'active').length;
   $('mindsNote').textContent = `${active} active · ${vis.length - active} idle/quiet · ${M.list.reduce((s, m) => s + (m.unread || 0), 0)} unread orders · refreshes every 5 s`;
-  const grid = $('minds');
+  const grid = $('minds'), retGrid = $('mindsRetiredGrid');
+  const mainVis = vis.filter(m => !RETIRED.has(m.name)), retVis = vis.filter(m => RETIRED.has(m.name));
   if (!vis.length) grid.innerHTML = '<div class="empty">no mind has checked in yet. Minds post here with <code>legionctl think &lt;mind&gt; "..."</code>; you can leave orders for one below before it starts.</div>';
   else if (grid.querySelector('.empty')) grid.innerHTML = '';
   for (const m of vis) {
@@ -521,12 +537,8 @@ function renderMinds() {
     more.textContent = big ? 'show less' : `show all (${items.length})`;
   }
   // order cards like the list (active first); don't move nodes while someone is typing in one
-  const typing = grid.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
-  const want = vis.map(m => M.cards.get(m.name).el);
-  const have = [...grid.children];
-  if (!typing && (want.length !== have.length || want.some((e, i) => e !== have[i]))) want.forEach(e => grid.appendChild(e));
-  else if (typing) want.forEach(e => { if (!e.parentNode) grid.appendChild(e); });
-  for (const e of have) if (!want.includes(e) && e.classList.contains('mind') && !typing) e.remove();
+  placeCards(grid, mainVis);
+  placeCards(retGrid, retVis);
   $('mindChips').innerHTML = (hidden.length ? 'closed or not started (click to open):' + hidden.map(m => `<button class="chip" type="button" data-mind="${esc(m.name)}" title="${esc(m.status)}${m.unread ? ', ' + m.unread + ' unread' : ''}">${m.status === 'active' ? '&#9679; ' : ''}${esc(m.name)}</button>`).join('') : '') +
     (vis.length > 1 ? ' <button class="chip" type="button" data-closeall="1">close all</button>' : '') +
     (M.closed.size ? ' <button class="chip" type="button" data-openall="1">open all</button>' : '');
@@ -544,6 +556,7 @@ function openMind(name) {
   renderMinds();
   const c = M.cards.get(name);
   if (!c) return;
+  if (RETIRED.has(name)) $('mindsRetired').open = true; // a reopened retired mind sits in the collapsed section
   c.el.scrollIntoView({behavior: 'smooth', block: 'center'});
   c.el.classList.add('hl'); setTimeout(() => c.el.classList.remove('hl'), 2500);
   c.el.querySelector('input').focus({preventScroll: true});
