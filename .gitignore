@@ -54,6 +54,7 @@ tools/rogui/tmp/
 legion/data/puppet_calls.jsonl
 legion/data/puppet_heartbeat.json*
 legion/data/puppet.pause
+legion/data/ayla_orders.jsonl
 legion/data/bugqueue.jsonl
 legion/data/neo.wake
 legion/data/build.wake

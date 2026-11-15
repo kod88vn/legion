@@ -20,6 +20,11 @@ on bots; briefings in `qabrief.py` digest the class files `docs/classes/*.md` be
   against the class files and the meter.
 - `qa` every 3 hours and once after each deploy (a new record in `legion/data/deploys.jsonl`, 10 min after it, not
   for deploys older than 6 h): samples two online bots of every class, files what looks wrong.
+
+Owner orders for Ayla (AY20): `bash tools/rogui/ayla.sh tell "do a town run with the party"` (Windows:
+`toolsogui	ell-ayla.cmd "..."`) appends to `legion/data/ayla_orders.jsonl` (`orders.py`); the loop wakes the `ayla`
+role within ~1 s with trigger `owner` (past min_gap and the hourly cap, at most one call per 30 s), the order heads
+her briefing, and the result goes back to the file and to `openkore-ayla/logs/owner_orders.log` (`ayla.sh orders`).
 Files: `legion/data/puppet_calls.jsonl` (call log), `puppet_heartbeat.json` (each loop, details) and
 `dispatch.heartbeat` (epoch; the session gate and the sentinel read it), `bugqueue.jsonl` (bug/neo
 queue written by `legionctl bug|neo`), `tools/puppet/notes/<role>.md` (each mind's notes, git-ignored).
