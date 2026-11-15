@@ -181,6 +181,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
       <button type="button" data-tab="leaderboard">Leaderboard<span class="tb" id="tb-leaderboard" hidden></span></button>
       <button type="button" data-tab="players">Players<span class="tb" id="tb-players" hidden></span></button>
       <button type="button" data-tab="system">System<span class="tb" id="tb-system" hidden></span></button>
+      <button type="button" data-tab="builds">Builds<span class="tb" id="tb-builds" hidden></span></button>
     </nav>
   </div>
 </div>
@@ -290,6 +291,15 @@ td.wrapc { white-space: normal; max-width: 640px; }
       <div class="card"><h2>Logs</h2><div id="sysLogs"><div class="empty">loading...</div></div></div>
       <div class="card"><h2>Dashboard server and markers</h2><div class="kvs" id="dashsrv" style="grid-template-columns:auto 1fr"><span class="empty">loading...</span></div></div>
     </div>
+  </section>
+
+  <!-- ============ Builds (DB09): every build path, end goal first, then the engine's middle steps ============ -->
+  <section class="tab" id="tab-builds">
+    <div class="card"><h2>Builds <small id="bdNote"></small> <button type="button" id="bdReload" class="lnk" style="font-size:12px">reload</button></h2>
+      <div id="bdAge" style="font-size:12.5px;color:var(--muted)"></div>
+      <div style="font-size:12.5px;margin-top:6px">Each card leads with the end goal (the 2nd job, with its gear and cards, stats, skills and playstyle). The middle steps the engine uses to get there are below it. Where the code or the docs say nothing, the part reads "not defined". Source: legion/builds.go, legion/data/buildgear.json, docs/classes/*.md.</div>
+    </div>
+    <div id="bdCards"><div class="empty">loading builds...</div></div>
   </section>
 </div>
 <div id="tip" hidden></div>
@@ -430,7 +440,7 @@ const downMsg = (res, what) => `<div class="empty">${SRC.engine === false ? 'Eng
 const staleSfx = res => res && res.stale != null ? ` · saved data, ${ageTxt(res.stale)} old` : '';
 
 // ======================= tabs (DB05) =======================
-const TABS = ['ayla', 'legion', 'economy', 'puppet', 'leaderboard', 'players', 'system'];
+const TABS = ['ayla', 'legion', 'economy', 'puppet', 'leaderboard', 'players', 'system', 'builds'];
 let curTab = 'ayla';
 const onShow = {};  // tab -> function that redraws what depends on the visible width
 function showTab(t, keepHash) {
@@ -1508,6 +1518,57 @@ $('plDetail').addEventListener('click', ev => {
   if (a) { PL.sel = {id: '', name: a.dataset.player}; const hit = PL.res && PL.res.rows.find(r => r.name === a.dataset.player); if (hit) PL.sel.id = hit.char_id ?? ''; loadPlayer(true); }
 });
 onShow.players = () => { if (!PL.res) refreshPlayers(); };
+
+// ======================= Builds tab (DB09): end goal first, middle steps below =======================
+let BD = null;
+const bdPart = (label, p) => p.status === 'gap'
+  ? `<div class="bd-part"><b>${esc(label)}:</b> <span class="st-down">not defined</span> <span style="color:var(--muted)">(gap: ${esc(p.note)})</span></div>`
+  : `<div class="bd-part"><b>${esc(label)}:</b> ${p.lines.map(l => `${esc(l.text)} <span style="color:var(--muted)">[${esc(l.source)}]</span>`).join('<br>')}</div>`;
+const bdGear = slots => Object.entries(slots || {}).map(([s, n]) => `${esc(s)}: ${esc(n)}`).join(' · ') || '–';
+function bdCard(b, live) {
+  const L = live && live.per_build ? live.per_build[b.id] : null;
+  const e = b.end, cards = e.gear.cards.map(c => `${esc(c.name)} <span style="color:var(--muted)">(${esc(c.slot)}, prio ${esc(c.prio)}: ${esc(c.why)})</span>`).join('<br>') || 'none in the gear table';
+  const pl = b.playstyle;
+  const counts = L ? `${fmt(L.bots)} bots on this build (${fmt(L.online)} online)` : 'bot counts not available';
+  const steps = L ? `<ol>${b.steps.stats.map((s, i) => `<li>${esc(s.label)} <span style="color:var(--muted)">· ${fmt(L.stat_steps[i].bots)} bots on this step now</span></li>`).join('')}</ol>` : '';
+  const sks = L ? `<ol>${b.steps.skills.map((s, i) => `<li>${esc(s.name)} ${s.lv} <span style="color:var(--muted)">· ${fmt(L.skill_steps[i].bots)} bots now</span></li>`).join('')}</ol>` : '';
+  const gearSteps = L ? Object.entries(L.gear_steps).map(([k, n]) => `${esc(k)}: ${fmt(n)}`).join(' · ') : '';
+  const ms = b.milestones.map(m => `<tr><td>${esc(m.range)}</td><td>${bdGear(m.gear.slots)}</td><td>${m.cards.map(c => esc(c.name)).join(', ') || '–'}</td>` +
+    `<td class="bd-gap">gap: ${esc(m.stats.note)}</td><td class="bd-gap">gap: ${esc(m.skills.note)}</td></tr>`).join('');
+  return `<div class="card sec bd-card" id="bd-${esc(b.id)}">
+    <h2>${esc(b.name)} <small>${esc(b.class.line)} · plan <code>${esc(b.id)}</code>${b.base ? ' · variant of ' + esc(b.base) : ''}</small></h2>
+    <div style="font-size:12.5px">${esc(b.summary)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px">${counts}</div>
+    <h3>End goal (${esc(b.class.name)})</h3>
+    <div class="bd-part"><b>Equipment:</b> ${bdGear(e.gear.slots)}</div>
+    <div class="bd-part"><b>Cards:</b><br>${cards}</div>
+    <div class="bd-part"><b>Stats:</b> ${e.stats.map(s => `${esc(s.stat)} ${s.value}`).join(' · ')}</div>
+    <div class="bd-part"><b>Skills:</b> ${e.skills.map(s => `${esc(s.name)} ${s.lv}`).join(' · ') || '–'}</div>
+    <div class="bd-part"><b>Playstyle</b></div>
+    <div style="margin-left:12px">${bdPart('Solo farming', pl.solo)}${bdPart('Party', pl.party)}${bdPart('MVP', pl.mvp)}${bdPart('PvP', pl.pvp)}</div>
+    <details class="more"><summary>Middle steps the engine uses, with bots now</summary>
+      <div class="in">
+        <div class="bd-part"><b>Stat steps (in order):</b>${steps || ' –'}</div>
+        <div class="bd-part"><b>Skill steps (in order):</b>${sks || ' –'}</div>
+        <div class="bd-part"><b>Weapon route, highest equipped now:</b> ${gearSteps || '–'}</div>
+        <div class="bd-part"><b>Milestones by level range (gear bands of the engine's table):</b>
+          <div class="tbl"><table><thead><tr><th>Levels</th><th>Gear</th><th>Cards</th><th>Stats</th><th>Skills</th></tr></thead><tbody>${ms}</tbody></table></div></div>
+      </div>
+    </details>
+  </div>`;
+}
+async function refreshBuilds() {
+  const r = await eget('/api/builds');
+  if (!r.ok) { $('bdCards').innerHTML = `<div class="empty">Builds not available: ${esc(r.err || '')}</div>`; return; }
+  BD = r.data;
+  const lv = BD.live || {};
+  const ageS = BD.generated_epoch ? Date.now() / 1000 - BD.generated_epoch : null;
+  $('bdNote').textContent = `${BD.builds.length} build paths · ${BD.gaps.length} not-defined gaps`;
+  $('bdAge').textContent = `Build data exported ${BD.generated} (${ageTxt(ageS)} old, tools/dashboard/buildexport.py) · bot counts from ${lv.snapshot || 'no DB snapshot'}${lv.snapshot_t ? ' (' + ageTxt(Date.now() / 1000 - lv.snapshot_t) + ' old)' : ''}${lv.error ? ' · ' + lv.error : ''}`;
+  $('bdCards').innerHTML = BD.builds.map(b => bdCard(b, lv)).join('');
+}
+$('bdReload').addEventListener('click', () => refreshBuilds());
+onShow.builds = () => { if (!BD) refreshBuilds(); };
 
 // ======================= From files (DB08): /offline on the dashboard server =======================
 // Fills what the engine would show when it is down: the sentinel's last health line, the level book, the economy
