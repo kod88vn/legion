@@ -36,6 +36,10 @@ type humanStatus struct {
 	JobID       int           `json:"job_id"`   // statusout.pl: her job (class id) - humanguild.go recruits the jobs she lacks
 	Dest        string        `json:"dest"`     // statusout.pl: where she is heading (goto map, rally town, lockMap; "" = there) - partydest.go
 	TownRun     bool          `json:"town_run"` // statusout.pl: she is on a town run (sell/buy/storage, the Kafra meet after it)
+	RallyTown   string        `json:"rally_town"` // statusout.pl: her rally (meeting Kafra) right now, "" = none - rallysync.go
+	RallyX      int           `json:"rally_x"`
+	RallyY      int           `json:"rally_y"`
+	Departing   bool          `json:"departing"` // statusout.pl: she is setting out from the meeting town with the party
 	Effects     []humanEffect `json:"effects"`  // statusout.pl: OpenKore $char->{statuses} (effects.go)
 	humanExtras               // statusout.pl dashboard extras: intent, last decision / order, meter (partyintent.go)
 }
