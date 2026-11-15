@@ -16,7 +16,8 @@ Rank: outage first, then Neo requests (Ayla's direct line), then the owner's, th
   bugq.py add ... --wake                                      urgent: also touches data/bugq.wake (the watcher exits)
   bugq.py watch [--interval 15] [--lead-min 20] [--once]     exits (= wakes main) for an outage, a Neo request, an
                                                               urgent item (Ayla's party, stuck bots: wake flag or
-                                                              data/bugq.wake) or the pre-deploy planning time;
+                                                              data/bugq.wake; at most once per 15 min, state in
+                                                              data/bugq.wake.state) or the pre-deploy planning time;
                                                               prints "what to assign".
 """
 import argparse
@@ -78,7 +79,9 @@ def _t(e):
 
 def is_outage(e):
     p = str(e.get("priority", "")).lower()
-    return p in ("outage", "critical") or bool(e.get("outage")) or str(e.get("text", "")).upper().startswith("OUTAGE")
+    txt = str(e.get("text", "")).upper()
+    return (p in ("outage", "critical") or bool(e.get("outage")) or txt.startswith("OUTAGE")
+            or txt.startswith("[OUTAGE"))
 
 
 def is_neo(e):
@@ -134,6 +137,8 @@ def update(i, **fields):
 
 
 WAKE_FILE = "bugq.wake"
+WAKE_STATE = "bugq.wake.state"   # {"last_urgent": epoch}: the watcher's last exit that showed urgent items
+URGENT_GAP = 15 * 60             # urgent items (party, stuck) wake main at most this often; outages/Neo/plan always
 
 
 def touch_wake(reason=""):
@@ -272,8 +277,27 @@ def _wake_mtime():
         return None
 
 
-def wake_reasons(lead_min=20):
-    """Pure check: what should wake the main session right now? [(kind, text, entry-id or None)]."""
+def wake_state():
+    try:
+        with open(C.dpath(WAKE_STATE)) as f:
+            s = json.load(f)
+        return s if isinstance(s, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_wake_state(s):
+    try:
+        with open(C.dpath(WAKE_STATE), "w") as f:
+            json.dump(s, f)
+    except OSError:
+        pass
+
+
+def wake_reasons(lead_min=20, urgent_gap=URGENT_GAP):
+    """Pure check: what should wake the main session right now? [(kind, text, entry-id or None)].
+    Urgent items alone wake at most once per urgent_gap s (data/bugq.wake.state); held back, they stay un-woken and
+    show at the next allowed wake. An outage, a Neo request or the planning time always wakes (and shows them too)."""
     out = []
     for e in rank(list(load().values())):
         if e.get("woke"):
@@ -295,6 +319,10 @@ def wake_reasons(lead_min=20):
     if d and C.now() >= d + DEPLOY_EVERY - lead_min * 60 and st.get("plan_for") != d:
         out.append(("plan", "pre-deploy planning time: the 3-hour window since the last deploy (%s) is about to end; "
                     "run league.py --compare-deploy, then one planning pass for the next batch" % C.iso(d), None))
+    if out and all(k == "urgent" for k, _, _ in out):
+        last = wake_state().get("last_urgent", 0)
+        if isinstance(last, (int, float)) and 0 <= C.now() - last < urgent_gap:
+            return []
     return out
 
 
@@ -313,11 +341,15 @@ def mark_woken(reasons):
     if w is not None:
         st["wake_seen"] = w   # every wake shows the whole queue, so a pending wake file is covered too
     save_watch_state(st)
+    if any(k == "urgent" for k, _, _ in reasons):
+        ws = wake_state()
+        ws["last_urgent"] = int(C.now())
+        save_wake_state(ws)
 
 
 def cmd_watch(a):
     while True:
-        r = wake_reasons(a.lead_min)
+        r = wake_reasons(a.lead_min, a.urgent_gap_min * 60)
         if r:
             mark_woken(r)
             print("BUGQ WAKE at %s: %s" % (C.iso(), ", ".join(sorted(set(k for k, _, _ in r)))))
@@ -361,6 +393,8 @@ def main(argv=None):
     s.add_argument("--interval", type=float, default=15)
     s.add_argument("--lead-min", type=float, default=20)
     s.add_argument("--once", action="store_true")
+    s.add_argument("--urgent-gap-min", type=float, default=URGENT_GAP / 60,
+                   help="urgent items (party, stuck) wake at most this often; outages always wake")
     a = ap.parse_args(argv)
     if a.cmd == "add":
         i, new = add(a.frm, a.priority, a.text, a.evidence, a.key, a.bots, a.metric, a.impact, wake=a.wake)

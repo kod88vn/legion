@@ -10,7 +10,8 @@ town), long sitting (leader, or half the party, resting > 5 min), back-and-forth
 two maps in 15 min). A member on an announced errand / party town run is excused from "apart".
 Data: GET /api/parties/detail (party with human == "Ayla"), GET /api/events (deaths). Field names are read
 defensively (x, y, save_map|save|respawn, with_leader, dist_leader). Every violation is about Ayla's party, so it is
-filed at least "high" with the wake flag: bugq touches data/bugq.wake and the bug-queue watcher (bugq.py watch) exits on
+filed at least "high" with the wake flag (an "apart" item only after 10 min apart and not walking back to the
+leader, or dead > 2 min: apartwake.py): bugq touches data/bugq.wake and the bug-queue watcher (bugq.py watch) exits on
 it, waking the main session within minutes. Dedupe stays: one entry per kind+member, a repeat only bumps its count and
 does not wake again.
 """
@@ -23,6 +24,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import apartwake
 import bugq
 import common as C
 
@@ -60,6 +62,7 @@ class PartyCheck:
         self.maps = collections.defaultdict(list)    # name -> [(t, map)] changes
         self.deaths = collections.defaultdict(list)  # name -> [t]
         self.seen_events = set()
+        self.aw = apartwake.ApartWake(self.k)  # which "apart" items are worth waking main for (10 min, not walking back)
 
     def _timer(self, kind, name, bad, need, now):
         key = (kind, name)
@@ -77,6 +80,7 @@ class PartyCheck:
         out = []
         leader = next((m for m in ms if m.get("leader")), None) or next((m for m in ms if m.get("human")), None)
         errand_run = any(any(e in str(m.get("state", "")).lower() for e in EXCUSE) for m in ms)
+        apart_names = []
         for m in ms:
             name, st, mp = m.get("name", "?"), str(m.get("state", "")).lower(), m.get("map")
             # map change history
@@ -97,6 +101,8 @@ class PartyCheck:
                     apart = max(abs(dx - leader["x"]), abs(dy - leader["y"])) > TOGETHER
                 if any(e in st for e in EXCUSE) or errand_run:
                     apart = False
+            if apart:
+                apart_names.append(name)
             if self._timer("apart", name, apart, APART_S, now):
                 since = now - self.since[("apart", name)]
                 out.append(("apart", name, "high" if since > 600 else "normal",
@@ -113,6 +119,7 @@ class PartyCheck:
             if len(maps) >= FLIP_CHANGES + 1 and len(set(maps)) == 2 and not errand_run:
                 out.append(("flip", name, "normal", "%s changed map %d times in %d min between %s" % (
                     name, len(maps) - 1, FLIP_WIN // 60, " and ".join(sorted(set(maps))))))
+        self.aw.update(ms, leader, apart_names, now)
         # long sitting: leader, or at least half the party
         sitting = [m for m in ms if str(m.get("state", "")).lower().startswith(SIT_STATES)]
         big = bool(ms) and (len(sitting) * 2 >= len(ms) or (leader in sitting if leader else False))
@@ -160,11 +167,20 @@ def file_priority(prio):
     return prio if bugq.PRIO_W.get(str(prio), 0) >= bugq.PRIO_W["high"] or prio == "outage" else "high"
 
 
-def file_violations(vios):
+def wants_wake(kind, name, pc=None):
+    """every party item wakes main, except "apart": only when the member has been apart > 10 min and is not walking
+    back to the leader, or is dead > 2 min (apartwake; needs the PartyCheck that saw it)"""
+    if kind != "apart":
+        return True
+    return pc is not None and pc.aw.wake(name)
+
+
+def file_violations(vios, pc=None):
     ids = []
     for kind, name, prio, text in vios:
         i, new = bugq.add("partycheck", file_priority(prio), "[party %s] %s" % (kind, text), evidence=text,
-                          key="partycheck:%s:%s" % (kind, name), metric="kpm", bump_min_secs=900, wake=True)
+                          key="partycheck:%s:%s" % (kind, name), metric="kpm", bump_min_secs=900,
+                          wake=wants_wake(kind, name, pc))
         ids.append((i, new, text))
     return ids
 
@@ -189,7 +205,7 @@ def main(argv=None):
             for kind, name, prio, text in vios:
                 print("%s party %s (%s): %s" % (C.iso(), kind, prio, text))
             if vios and not a.dry_run:
-                file_violations(vios)
+                file_violations(vios, pc)
             if not vios and a.once:
                 print("party ok (%d members checked)" % len(snap.get("members", [])))
         except Exception as e:
