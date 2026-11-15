@@ -29,6 +29,14 @@ The rules that define it are in `RULES.md`:
 - **Leftover processes stopped**: about 100 orphan `tail`/`grep` monitors from the previous session, the watch
   client keeper loop, x11vnc and Xvfb (they held the old folder open).
 
+## Things that start the stack by themselves (know these before testing)
+- `tools/rogui/keeper.sh` starts `ro-openkore-ayla` (and with it rathena and the db) whenever Ayla's container is not
+  running. During Phase 1 a leftover keeper loop restarted those three 26 seconds after the stop; the loop was killed
+  and they were stopped again. Do not start keeper.sh until the owner wants Ayla online.
+- The game client launcher `G:\RO\kRO-210607\client\Play-AILab.cmd` (desktop shortcut "RO-English") runs
+  `docker compose up -d` in this folder when the server ports are closed. Its path was updated to the new folder, so
+  launching the client starts the whole stack.
+
 ## First start after the move (only on the owner's word)
 - Start from this folder: `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d"`.
 - Every container will be **recreated**, because the bind-mount paths changed with the folder. That is expected.
