@@ -1,0 +1,33 @@
+window 2026-11-14 20:43:00 - 2026-11-15 09:07:00, 744 minutes; Ayla map known in 645 minutes
+Ayla                 minutes with activity 336 (45% of window): on her map 306, on another hunting map   0, in town  30; map switches between active minutes 80
+Priest Zendancer84   minutes with activity 204 (27% of window): on her map 163, on another hunting map  15, in town  23; map switches between active minutes 62
+Wizard Zen.fox       minutes with activity 122 (16% of window): on her map  77, on another hunting map  13, in town  29; map switches between active minutes 58
+Hunter xXRinfangXx   minutes with activity 298 (40% of window): on her map 242, on another hunting map  31, in town  21; map switches between active minutes 76
+Crusader vex_x18     minutes with activity 197 (26% of window): on her map 153, on another hunting map  18, in town  23; map switches between active minutes 65
+== A2 11-14 12:23-20:00
+Zendancer84(Priest)    events=  917 same=  90% (n=870, unk=47) arrows=0 pots=182 flywing=0 bwing=14 shop=72 pick=721 top=[('pay_dun00', 482), ('pay_dun01', 313), ('pay_dun02', 68), ('payon', 20), ('payon_in01', 15)]
+Zen.fox(Wizard)        events=  773 same=  84% (n=736, unk=37) arrows=0 pots=181 flywing=47 bwing=0 shop=67 pick=545 top=[('pay_dun00', 495), ('pay_dun01', 175), ('pay_fild10', 28), ('pay_dun02', 27), ('payon', 25)]
+xXRinfangXx(Hunter)    events= 4057 same=  92% (n=3781, unk=276) arrows=3348 pots=163 flywing=25 bwing=5 shop=90 pick=516 top=[('pay_dun00', 2113), ('pay_dun01', 1368), ('pay_dun02', 241), ('pay_fild10', 164), ('payon', 111)]
+vex_x18(Crusader)      events=  887 same=  80% (n=808, unk=79) arrows=0 pots=233 flywing=42 bwing=5 shop=79 pick=607 top=[('pay_dun00', 563), ('pay_dun01', 160), ('pay_dun02', 67), ('payon', 45), ('gef_fild07', 16)]
+Echo.0783(Bard)        events= 3103 same=   0% (n=2796, unk=307) arrows=1974 pots=226 flywing=16 bwing=7 shop=73 pick=873 top=[('mjolnir_08', 1936), ('moc_fild03', 509), ('prt_fild09', 411), ('pay_fild10', 236), ('prt_in', 7)]
+LilLilyblade(Monk)     events=  443 same=   0% (n=285, unk=158) arrows=0 pots=99 flywing=4 bwing=3 shop=68 pick=330 top=[('prt_fild09', 273), ('mjolnir_08', 89), ('moc_fild03', 40), ('geffen', 28), ('prt_in', 7)]
+Echobunny(Knight)      events= 1298 same=  90% (n=1240, unk=58) arrows=0 pots=171 flywing=7 bwing=13 shop=91 pick=1106 top=[('pay_dun00', 954), ('pay_dun01', 190), ('payon', 66), ('pay_dun02', 36), ('pay_fild10', 29)]
+Silent rogue           events=  843 same=  80% (n=807, unk=36) arrows=0 pots=184 flywing=30 bwing=13 shop=72 pick=616 top=[('pay_dun00', 582), ('pay_dun01', 101), ('payon', 79), ('mjolnir_12', 29), ('pay_dun02', 17)]
+== B 11-14 20:00-11-15 07:00
+Zendancer84(Priest)    events=  840 same=  92% (n=838, unk=2) arrows=0 pots=72 flywing=4 bwing=14 shop=135 pick=746 top=[('pay_dun01', 415), ('pay_dun00', 211), ('pay_dun02', 100), ('gef_fild10', 62), ('gef_dun00', 28)]
+Zen.fox(Wizard)        events=  354 same=  76% (n=354, unk=0) arrows=0 pots=164 flywing=3 bwing=9 shop=73 pick=176 top=[('pay_dun00', 130), ('pay_dun01', 74), ('payon', 50), ('gef_fild10', 41), ('pay_dun02', 33)]
+xXRinfangXx(Hunter)    events= 3471 same=  90% (n=3471, unk=0) arrows=3060 pots=137 flywing=21 bwing=9 shop=80 pick=242 top=[('pay_dun01', 1737), ('pay_dun02', 791), ('pay_dun00', 385), ('gef_fild10', 264), ('mjolnir_12', 116)]
+vex_x18(Crusader)      events=  489 same=  78% (n=487, unk=2) arrows=0 pots=132 flywing=23 bwing=14 shop=100 pick=318 top=[('pay_dun00', 182), ('pay_dun01', 140), ('pay_dun02', 56), ('gef_fild10', 35), ('mjolnir_12', 32)]
+Silversage13(Rogue)    events= 2629 same=   9% (n=2579, unk=50) arrows=0 pots=226 flywing=27 bwing=16 shop=122 pick=2324 top=[('gef_fild02', 1762), ('mjolnir_08', 256), ('mjolnir_12', 237), ('pay_dun00', 78), ('pay_dun02', 76)]
+Echo.0783(Bard)        events= 2278 same=   0% (n=2273, unk=5) arrows=1897 pots=223 flywing=22 bwing=18 shop=38 pick=118 top=[('yuno_fild01', 1843), ('mjolnir_07', 281), ('mjolnir_12', 90), ('aldeba_in', 27), ('aldebaran', 16)]
+LilLilyblade(Monk)     events=  658 same=  49% (n=630, unk=28) arrows=0 pots=48 flywing=3 bwing=11 shop=85 pick=596 top=[('prt_fild09', 251), ('pay_dun00', 185), ('pay_dun01', 81), ('mjolnir_07', 57), ('pay_dun02', 45)]
+Echobunny(Knight)      events=  383 same=  89% (n=381, unk=2) arrows=0 pots=94 flywing=3 bwing=11 shop=66 pick=271 top=[('pay_dun00', 154), ('pay_dun01', 101), ('gef_fild10', 40), ('pay_dun02', 32), ('geffen', 23)]
+Silent rogue           events=  564 same=  13% (n=556, unk=8) arrows=0 pots=234 flywing=23 bwing=5 shop=76 pick=291 top=[('mjolnir_07', 229), ('mjolnir_08', 156), ('pay_fild10', 44), ('gef_fild10', 40), ('pay_dun01', 24)]
+== C 11-15 07:00-09:08
+Zendancer84(Priest)    events=  217 same=  93% (n=217, unk=0) arrows=0 pots=11 flywing=0 bwing=2 shop=13 pick=203 top=[('pay_dun02', 157), ('pay_dun01', 44), ('pay_dun00', 14), ('pay_dun03', 2)]
+Zen.fox(Wizard)        events=  100 same=  41% (n=100, unk=0) arrows=0 pots=59 flywing=3 bwing=3 shop=25 pick=35 top=[('pay_dun01', 31), ('pay_dun02', 28), ('pay_dun00', 22), ('payon', 16), ('pay_dun03', 3)]
+xXRinfangXx(Hunter)    events= 1164 same=  90% (n=1164, unk=0) arrows=1074 pots=44 flywing=0 bwing=3 shop=14 pick=43 top=[('pay_dun02', 789), ('pay_dun01', 202), ('pay_dun03', 106), ('pay_dun00', 37), ('payon', 30)]
+vex_x18(Crusader)      events=  233 same=  54% (n=233, unk=0) arrows=0 pots=111 flywing=5 bwing=2 shop=24 pick=115 top=[('pay_dun02', 116), ('pay_dun01', 69), ('pay_dun03', 36), ('pay_dun00', 12)]
+Silversage13(Rogue)    events=  162 same=  23% (n=162, unk=0) arrows=0 pots=80 flywing=5 bwing=3 shop=18 pick=74 top=[('pay_dun02', 69), ('mjolnir_07', 30), ('prontera', 30), ('pay_dun01', 13), ('pay_dun00', 11)]
+Echo.0783(Bard)        events=  229 same=   0% (n=229, unk=0) arrows=0 pots=60 flywing=5 bwing=0 shop=14 pick=164 top=[('mjolnir_07', 157), ('mjolnir_10', 20), ('mjolnir_08', 19), ('geffen', 11), ('payon', 10)]
+Silent rogue           events=   70 same=   0% (n=70, unk=0) arrows=0 pots=20 flywing=0 bwing=0 shop=0 pick=50 top=[('mjolnir_08', 41), ('prontera', 17), ('mjolnir_07', 12)]

@@ -1,0 +1,111 @@
+2026/11/15 13:27:13 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 37  heap 223MB
+2026/11/15 13:27:46 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 37  heap 235MB
+2026/11/15 13:28:20 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 37  heap 289MB
+2026/11/15 13:28:53 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 37  heap 300MB
+2026/11/15 13:29:26 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 37  heap 224MB
+2026/11/15 13:30:00 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 36  heap 235MB
+2026/11/15 13:30:33 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 36  heap 291MB
+2026/11/15 13:31:03 online 4/4  kills 0  deaths 0  loots 0  loginfail 0  goroutines 36  heap 307MB
+2026/11/15 13:31:37 online 4/4  kills 3  deaths 0  loots 3  loginfail 0  goroutines 37  heap 240MB
+2026/11/15 13:32:10 online 4/4  kills 5  deaths 0  loots 3  loginfail 0  goroutines 36  heap 259MB
+2026/11/15 13:32:44 online 4/4  kills 5  deaths 0  loots 3  loginfail 0  goroutines 36  heap 323MB
+2026/11/15 13:33:17 online 4/4  kills 9  deaths 0  loots 3  loginfail 0  goroutines 36  heap 380MB
+2026/11/15 13:33:50 online 4/4  kills 9  deaths 0  loots 3  loginfail 0  goroutines 36  heap 232MB
+2026/11/15 13:34:23 online 4/4  kills 9  deaths 0  loots 3  loginfail 0  goroutines 36  heap 285MB
+2026/11/15 13:34:57 online 4/4  kills 13  deaths 0  loots 4  loginfail 0  goroutines 36  heap 312MB
+2026/11/15 13:35:08 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=122,112 target=0 state=dead
+2026/11/15 13:35:12 TRACE Zendancer84 RECV 08c8 dmg 2102745 -> 0 dmg=0 type=3 me=122,112 target=0 state=dead
+2026/11/15 13:35:30 online 4/4  kills 13  deaths 2  loots 7  loginfail 0  goroutines 36  heap 376MB
+2026/11/15 13:36:03 online 4/4  kills 15  deaths 2  loots 7  loginfail 0  goroutines 36  heap 244MB
+2026/11/15 13:36:37 online 4/4  kills 18  deaths 3  loots 9  loginfail 0  goroutines 36  heap 316MB
+2026/11/15 13:37:10 online 4/4  kills 18  deaths 3  loots 9  loginfail 0  goroutines 36  heap 344MB
+2026/11/15 13:37:44 online 4/4  kills 18  deaths 3  loots 9  loginfail 0  goroutines 36  heap 417MB
+2026/11/15 13:38:17 online 4/4  kills 23  deaths 3  loots 9  loginfail 0  goroutines 36  heap 260MB
+2026/11/15 13:38:47 online 4/4  kills 32  deaths 3  loots 10  loginfail 0  goroutines 36  heap 272MB
+2026/11/15 13:39:21 online 4/4  kills 35  deaths 3  loots 10  loginfail 0  goroutines 37  heap 325MB
+2026/11/15 13:39:42 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=2 me=161,58 target=0 state=waiting in payon: restocking potions before going in
+2026/11/15 13:40:12 online 4/4  kills 4  deaths 0  loots 0  loginfail 1  goroutines 35  heap 433MB
+2026/11/15 13:40:46 online 4/4  kills 5  deaths 0  loots 0  loginfail 1  goroutines 36  heap 324MB
+2026/11/15 13:41:19 online 4/4  kills 6  deaths 0  loots 0  loginfail 1  goroutines 36  heap 422MB
+2026/11/15 13:41:53 online 4/4  kills 7  deaths 0  loots 0  loginfail 1  goroutines 36  heap 250MB
+2026/11/15 13:42:26 online 4/4  kills 7  deaths 0  loots 0  loginfail 1  goroutines 36  heap 340MB
+2026/11/15 13:42:37 TRACE Zendancer84 RECV 08c8 dmg 2102745 -> 0 dmg=0 type=3 me=257,204 target=0 state=dead
+2026/11/15 13:42:56 online 4/4  kills 8  deaths 1  loots 0  loginfail 1  goroutines 37  heap 369MB
+2026/11/15 13:43:30 online 4/4  kills 9  deaths 1  loots 0  loginfail 1  goroutines 36  heap 241MB
+2026/11/15 13:44:03 online 4/4  kills 9  deaths 2  loots 0  loginfail 1  goroutines 37  heap 273MB
+2026/11/15 13:44:37 online 4/4  kills 11  deaths 2  loots 0  loginfail 1  goroutines 36  heap 338MB
+2026/11/15 13:45:09 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=226,117 target=0 state=dead
+2026/11/15 13:45:11 online 4/4  kills 11  deaths 3  loots 0  loginfail 1  goroutines 37  heap 368MB
+2026/11/15 13:45:44 online 4/4  kills 12  deaths 3  loots 1  loginfail 1  goroutines 36  heap 234MB
+2026/11/15 13:46:18 online 4/4  kills 12  deaths 3  loots 1  loginfail 1  goroutines 36  heap 249MB
+2026/11/15 13:46:26 TRACE Zendancer84 teleport skill (losing: 35 monsters on me)
+2026/11/15 13:46:51 online 4/4  kills 12  deaths 3  loots 1  loginfail 1  goroutines 36  heap 306MB
+2026/11/15 13:47:25 online 4/4  kills 12  deaths 3  loots 1  loginfail 1  goroutines 37  heap 364MB
+2026/11/15 13:47:58 online 4/4  kills 12  deaths 3  loots 1  loginfail 1  goroutines 36  heap 230MB
+2026/11/15 13:48:25 TRACE Zendancer84 teleport skill (losing: lost 40% HP in seconds)
+2026/11/15 13:48:31 online 4/4  kills 13  deaths 3  loots 1  loginfail 1  goroutines 36  heap 287MB
+2026/11/15 13:49:05 online 4/4  kills 14  deaths 3  loots 2  loginfail 1  goroutines 36  heap 304MB
+2026/11/15 13:49:38 online 4/4  kills 14  deaths 3  loots 2  loginfail 1  goroutines 36  heap 368MB
+2026/11/15 13:50:12 online 4/4  kills 14  deaths 3  loots 2  loginfail 1  goroutines 37  heap 233MB
+2026/11/15 13:50:42 online 4/4  kills 14  deaths 3  loots 2  loginfail 1  goroutines 36  heap 289MB
+2026/11/15 13:51:15 online 4/4  kills 14  deaths 3  loots 2  loginfail 1  goroutines 36  heap 366MB
+2026/11/15 13:51:40 TRACE Zendancer84 teleport skill (losing: 3 monsters on me)
+2026/11/15 13:51:49 online 4/4  kills 14  deaths 3  loots 2  loginfail 1  goroutines 36  heap 388MB
+2026/11/15 13:52:14 TRACE Zendancer84 teleport skill (losing: 3 monsters on me)
+2026/11/15 13:52:22 online 4/4  kills 14  deaths 3  loots 2  loginfail 1  goroutines 37  heap 236MB
+2026/11/15 13:52:40 TRACE Zendancer84 teleport skill (losing: 3 monsters on me)
+2026/11/15 13:52:55 online 4/4  kills 15  deaths 3  loots 3  loginfail 1  goroutines 36  heap 266MB
+2026/11/15 13:52:57 TRACE Zendancer84 teleport skill (losing: 3 monsters on me)
+2026/11/15 13:53:10 TRACE Zendancer84 RECV 01de skill 171 110425082 -> 2102745 dmg=0 me=150,104 target=0 state=fled to town (lost 49% HP in seconds)
+2026/11/15 13:53:29 online 4/4  kills 15  deaths 3  loots 3  loginfail 1  goroutines 36  heap 348MB
+2026/11/15 13:54:02 online 4/4  kills 15  deaths 3  loots 3  loginfail 1  goroutines 37  heap 390MB
+2026/11/15 13:54:36 online 4/4  kills 16  deaths 3  loots 3  loginfail 1  goroutines 36  heap 241MB
+2026/11/15 13:55:09 online 4/4  kills 23  deaths 3  loots 3  loginfail 1  goroutines 38  heap 275MB
+2026/11/15 13:55:42 online 4/4  kills 23  deaths 3  loots 3  loginfail 1  goroutines 37  heap 337MB
+2026/11/15 13:56:15 online 4/4  kills 23  deaths 3  loots 3  loginfail 1  goroutines 36  heap 366MB
+2026/11/15 13:56:49 online 4/4  kills 23  deaths 4  loots 3  loginfail 1  goroutines 36  heap 239MB
+2026/11/15 13:57:13 TRACE Zendancer84 RECV 08c8 dmg 2102745 -> 0 dmg=0 type=3 me=262,174 target=0 state=dead
+2026/11/15 13:57:22 online 4/4  kills 23  deaths 5  loots 3  loginfail 1  goroutines 36  heap 270MB
+2026/11/15 13:57:56 online 4/4  kills 23  deaths 5  loots 3  loginfail 1  goroutines 36  heap 339MB
+2026/11/15 13:58:16 TRACE Zen.fox RECV 08c8 dmg 110330369 -> 2101589 dmg=139 type=0 me=253,55 target=0 state=fled to town (10 monsters on me)
+2026/11/15 13:58:16 TRACE Zen.fox RECV 08c8 dmg 110330348 -> 2101589 dmg=126 type=0 me=253,55 target=0 state=fled to town (10 monsters on me)
+2026/11/15 13:58:16 TRACE Zen.fox RECV 01de skill 171 110330073 -> 2101589 dmg=50 me=253,55 target=0 state=fled to town (10 monsters on me)
+2026/11/15 13:58:16 TRACE Zen.fox RECV 08c8 dmg 110330240 -> 2101589 dmg=47 type=0 me=253,55 target=0 state=fled to town (10 monsters on me)
+2026/11/15 13:58:26 online 4/4  kills 24  deaths 5  loots 4  loginfail 1  goroutines 36  heap 419MB
+2026/11/15 13:58:59 online 4/4  kills 26  deaths 5  loots 4  loginfail 1  goroutines 36  heap 238MB
+2026/11/15 13:59:33 online 4/4  kills 27  deaths 5  loots 5  loginfail 1  goroutines 36  heap 302MB
+2026/11/15 14:00:06 online 4/4  kills 29  deaths 5  loots 5  loginfail 1  goroutines 36  heap 326MB
+2026/11/15 14:00:40 online 4/4  kills 29  deaths 5  loots 5  loginfail 1  goroutines 36  heap 391MB
+2026/11/15 14:01:13 online 4/4  kills 29  deaths 5  loots 5  loginfail 1  goroutines 36  heap 240MB
+2026/11/15 14:01:47 online 4/4  kills 29  deaths 5  loots 5  loginfail 1  goroutines 36  heap 261MB
+2026/11/15 14:02:08 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:02:20 online 4/4  kills 32  deaths 5  loots 5  loginfail 1  goroutines 36  heap 334MB
+2026/11/15 14:02:29 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:02:54 online 4/4  kills 38  deaths 5  loots 5  loginfail 1  goroutines 37  heap 356MB
+2026/11/15 14:02:54 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:03:18 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:03:27 online 4/4  kills 45  deaths 5  loots 9  loginfail 1  goroutines 36  heap 237MB
+2026/11/15 14:03:39 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:04:01 online 4/4  kills 53  deaths 5  loots 14  loginfail 1  goroutines 36  heap 251MB
+2026/11/15 14:04:04 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:04:29 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:04:35 online 4/4  kills 55  deaths 6  loots 16  loginfail 1  goroutines 36  heap 325MB
+2026/11/15 14:04:50 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:05:08 online 4/4  kills 56  deaths 6  loots 16  loginfail 1  goroutines 37  heap 368MB
+2026/11/15 14:05:14 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:05:35 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:05:42 online 4/4  kills 57  deaths 6  loots 16  loginfail 1  goroutines 36  heap 243MB
+2026/11/15 14:05:59 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=185,106 target=0 state=waiting in payon: restocking potions before going in
+2026/11/15 14:05:59 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=185,106 target=0 state=waiting in payon: restocking potions before going in
+2026/11/15 14:06:00 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:06:15 online 4/4  kills 57  deaths 6  loots 16  loginfail 1  goroutines 36  heap 254MB
+2026/11/15 14:06:24 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:06:45 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=177,107 target=0 state=waiting in payon: restocking potions before going in
+2026/11/15 14:06:45 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=177,107 target=0 state=waiting in payon: restocking potions before going in
+2026/11/15 14:06:45 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:06:45 online 4/4  kills 58  deaths 6  loots 16  loginfail 1  goroutines 37  heap 313MB
+2026/11/15 14:07:09 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=177,107 target=0 state=waiting in payon: restocking potions before going in
+2026/11/15 14:07:09 TRACE Zen.fox RECV 08c8 dmg 2101589 -> 0 dmg=0 type=3 me=177,107 target=0 state=waiting in payon: restocking potions before going in
+2026/11/15 14:07:10 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
+2026/11/15 14:07:19 online 4/4  kills 59  deaths 6  loots 16  loginfail 1  goroutines 37  heap 349MB
+2026/11/15 14:07:34 party Ayla pt: Ayla rallies at the payon Kafra (181,104) - members wait there
