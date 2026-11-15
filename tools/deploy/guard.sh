@@ -16,23 +16,32 @@ DRY_RUN=${DRY_RUN:-0}
 GUARD_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SYSDIR=$GUARD_DIR/../system; [ -f "$SYSDIR/deploylog.py" ] || SYSDIR=/mnt/g/RO/legion/tools/system
 PYTHON=${PYTHON:-python3}
-CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=()
+CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=(); REVIEW_ARGS=()
 
-# parse_deploy_args "$@": sets HAVE_CRITICAL/CRITICAL_REASON, FIX_ARGS, and POS_ARGS (everything else).
+# parse_deploy_args "$@": sets HAVE_CRITICAL/CRITICAL_REASON, FIX_ARGS, REVIEW_ARGS (--reviewed COMMIT, one per fix) and
+# POS_ARGS (everything else).
 parse_deploy_args() {
-  CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=()
+  CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=(); REVIEW_ARGS=()
   while [ $# -gt 0 ]; do
     case "$1" in
       --critical) HAVE_CRITICAL=1; CRITICAL_REASON="${2:-}"; if [ $# -ge 2 ]; then shift 2; else shift; fi;;
       --fix) FIX_ARGS+=("${2:-}"); if [ $# -ge 2 ]; then shift 2; else shift; fi;;
+      --reviewed) REVIEW_ARGS+=("${2:-}"); if [ $# -ge 2 ]; then shift 2; else shift; fi;;
       *) POS_ARGS+=("$1"); shift;;
     esac
   done
 }
 
-# deploy_gate [TAG]: exit 5 (nothing deployed) when too soon / no fix list; DRY_RUN only reports it.
+# deploy_gate [TAG]: exit 5 (nothing deployed) when a fix has no merge review (Constitution 4.2, critical deploys too),
+# when too soon, or with no fix list; DRY_RUN only reports it.
 deploy_gate() {
-  local tag=${1:-} out ga=()
+  local tag=${1:-} out ga=() ra=() r
+  for r in "${REVIEW_ARGS[@]}"; do ra+=(--reviewed "$r"); done
+  if out=$("$PYTHON" "$SYSDIR/reviewcheck.py" check --fixes "${#FIX_ARGS[@]}" "${ra[@]}" 2>&1); then echo "review: $out"
+  else
+    echo "$out"
+    if [ "$DRY_RUN" = 1 ]; then echo "DRY_RUN: this deploy would be refused (review)"; else exit 5; fi
+  fi
   [ "$HAVE_CRITICAL" = 1 ] && ga+=(--critical "$CRITICAL_REASON")
   [ -n "$tag" ] && ga+=(--tag "$tag")
   ga+=(--fixes "${#FIX_ARGS[@]}")
