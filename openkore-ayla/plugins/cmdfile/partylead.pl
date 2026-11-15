@@ -691,11 +691,6 @@ sub end_rally {
 # for Zombies the friends pulled. The two switches are changed in memory only and put back on arrival.
 my %travelSaved;
 our $trivSaved; # attackAuto saved while crossing a trivial map (no assignment: a plugin reload keeps it)
-# no fights on a crossing map while she is at half HP or more (b1794737139520-016)
-sub transit_hp_ok {
-	return 0 unless $char && $char->{hp_max} && defined $char->{hp};
-	return $char->{hp} / $char->{hp_max} >= 0.5 ? 1 : 0;
-}
 sub travel_mode_tick {
 	return unless $char && $field;
 	my $here = $field->baseName;
@@ -706,9 +701,11 @@ sub travel_mode_tick {
 	$on = 0 if $on && $gotoMap eq '' && friend_in_danger($here) && !trivial_transit() && !cross_danger($here); # a friend in danger here: she fights for it (no travel mode) - not on a map far below the party (QA: Zombies on pay_dun00 for a level 81), never on a dangerous crossing
 	# crossing a map far below her and the party (trivial_transit): no fights at all there, not even OpenKore's own
 	# attackAuto - a level 81 stopped for every pay_dun00 Zombie (12 exp). Saved in a package var: survives a reload.
-	# b1794737139520-016: monsters on her no longer put the fights back on a crossing map (zombies, Storm Gust, Sonic Blow
-	# were fought there while it said "no fights here"): she walks on to the portal; fights only below 50% HP
-	my $triv = trivial_transit() && transit_hp_ok() ? 1 : 0;
+	# b1794737139520-016: no fights started on a crossing map (zombies, Storm Gust, Sonic Blow were fought there while it
+	# said "no fights here"). Follow-up (owner: she stood and got hit): attackAuto stays off, but she always fights back
+	# the monster that is attacking her (fight_back below) - so the walk is never a free beating.
+	my $triv = trivial_transit() ? 1 : 0;
+	fight_back() if $triv && nearest_attacker() && !AI::inQueue('attack');
 	if ($triv && !defined $trivSaved) { $trivSaved = $config{attackAuto}; $config{attackAuto} = 0; message "[partylead] crossing $here (far below the party): no fights here
 ", 'system' }
 	elsif (!$triv && defined $trivSaved) { $config{attackAuto} = $trivSaved; $trivSaved = undef; message "[partylead] off the transit map ($here): attackAuto back
@@ -2096,10 +2093,43 @@ sub map_fits {
 	return 0;
 }
 # the level / gear choice: the first row (table order = preference) that fits, isn't crowded, matches the healer state
+# ---- map density (b1794735590gts, 2026-11-15): the monster spawns per map from rathena's spawn scripts, written by
+# tools/dev/gen_mapdensity.py to control/mapdensity.txt (stock counts + the server's mob_count_rate). A map with fewer
+# spawns than DENSITY_PER_MEMBER per party member is skipped for the choice (a 6-7 member party drains a small map).
+# No file or a map not in it = no gate. DENSITY_PER_MEMBER 0 switches the gate off.
+use constant DENSITY_PER_MEMBER => 20;
+our (%MAP_SPAWNS_STOCK, $MAP_RATE, $MAP_DENSITY_LOADED);
+sub load_map_density {
+	return if $MAP_DENSITY_LOADED;
+	$MAP_DENSITY_LOADED = 1;
+	open(my $fh, '<', 'control/mapdensity.txt') or return;
+	while (my $l = <$fh>) {
+		chomp $l;
+		next if $l =~ /^\s*(#|$)/;
+		if ($l =~ /^rate\s+(\d+)/) { $MAP_RATE = $1 }
+		elsif ($l =~ /^(\S+)\s+(\d+)\s*$/) { $MAP_SPAWNS_STOCK{$1} = $2 }
+	}
+	close $fh;
+}
+# monsters spawned on a map at this server's rate (undef = unknown map)
+sub map_spawns {
+	my $m = shift || '';
+	load_map_density();
+	return undef unless defined $MAP_SPAWNS_STOCK{$m};
+	return $MAP_SPAWNS_STOCK{$m} * ($MAP_RATE || 100) / 100;
+}
+sub map_dense_enough {
+	my ($m, $size) = @_;
+	return 1 unless DENSITY_PER_MEMBER;
+	my $s = map_spawns($m);
+	return 1 unless defined $s;
+	return $s >= DENSITY_PER_MEMBER * ($size || 1) ? 1 : 0;
+}
+sub party_size { return 1 + scalar(online_friends()) }
 sub level_map {
 	my $plv = shift;
 	my $heal = party_has_healer();
-	my $free = sub { my $m = shift; return !(time - ($crowdedAt{$m} || 0) < 3600) && !(time < ($routeFailAt{$m} || 0)) && !(time - ($farmedAt{$m} || 0) < 1800) && !(time - ($mapDiedAt{$m} || 0) < 7200) && route_unsafe($m, $plv) eq '' };
+	my $free = sub { my $m = shift; return !(time - ($crowdedAt{$m} || 0) < 3600) && !(time < ($routeFailAt{$m} || 0)) && !(time - ($farmedAt{$m} || 0) < 1800) && !(time - ($mapDiedAt{$m} || 0) < 7200) && route_unsafe($m, $plv) eq '' && map_dense_enough($m, party_size()) };
 	my $ok = sub { my $r = shift; return $plv >= $r->[0] && $plv <= $r->[1] && $free->($r->[2]) };
 	# (2) nearest first: a fitting map of the area she is in / heading to (the same Kafra town) before a far one
 	my $area = town_of_map(plan_map() || $homeMap || ($field ? $field->baseName : ''));
@@ -2487,7 +2517,10 @@ sub portal_back_guard {
 			}
 		}
 	}
+	# b1794736237191-004: an auto-buy / auto-sell / storage task in progress may cross back (the Armor Dealer across the
+	# portal): the hold cleared OpenKore's route every tick, so buyAuto re-routed ~10 times a second
 	return if $pgFrom eq '' || time - $pgAt >= 30 || AI::inQueue('teleport') || pk_retreating();
+	return if AI::inQueue('sellAuto', 'buyAuto', 'storageAuto');
 	return if $char->{hp_max} && $char->{hp} / $char->{hp_max} < 0.2;
 	my ($dm, $nm) = route_maps();
 	return unless $nm eq $pgFrom || ($dm eq $pgFrom && $nm eq '');
@@ -2912,14 +2945,19 @@ sub farm_sweep {
 	return 1;
 }
 # the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
-sub fight_back {
-	return if AI::inQueue('attack');
+# the nearest monster that is attacking her (hit or missed her): the one she fights back (undef = none)
+sub nearest_attacker {
 	my ($best, $bd);
 	foreach my $mo (@{$monstersList ? $monstersList->getItems() : []}) {
 		next unless $mo->{pos_to} && defined $mo->{pos_to}{x} && !$mo->{dead} && ($mo->{dmgToYou} || $mo->{missedYou});
 		my $d = blockDistance($char->{pos_to}, $mo->{pos_to});
 		($best, $bd) = ($mo, $d) if !defined $bd || $d < $bd;
 	}
+	return $best;
+}
+sub fight_back {
+	return if AI::inQueue('attack');
+	my $best = nearest_attacker();
 	return unless $best;
 	AI::clear('route', 'move');
 	main::attack($best->{ID});
