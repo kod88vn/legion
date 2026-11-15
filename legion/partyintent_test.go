@@ -6,7 +6,43 @@ import (
 	"time"
 )
 
+// partyChatReset points the chat at a temp data dir (never the live legion/data, G23).
+func partyChatReset(t *testing.T) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	t.Cleanup(func() { time.Sleep(2500 * time.Millisecond); *dataDir = old }) // let a scheduled save land in the temp dir
+	partyChat.Lock()
+	partyChat.byHuman, partyChat.loaded = nil, false
+	partyChat.Unlock()
+}
+
+func TestPartyChatPersists(t *testing.T) {
+	partyChatReset(t)
+	partyChatHeard("PersistHuman", "Zen : saved line", time.Unix(2000, 0))
+	time.Sleep(2500 * time.Millisecond)
+	partyChat.Lock()
+	partyChat.byHuman, partyChat.loaded = nil, false // a restart
+	partyChat.Unlock()
+	l := partyChatOf("persisthuman")
+	if len(l) != 1 || l[0].Text != "saved line" || l[0].From != "Zen" {
+		t.Fatalf("after reload: %+v", l)
+	}
+}
+
+func TestLeadPosSource(t *testing.T) {
+	now := time.Unix(10000, 0)
+	m, x, y := "pay_dun00", 0, 0 // party packets: map, no cell
+	d := &humanDetail{Map: "pay_dun00", X: 166, Y: 42, StatusTS: now.Unix() - 45}
+	if src := leadPosSource(d, &m, &x, &y, now); src != "status_old" || x != 166 || y != 42 {
+		t.Fatalf("src %s %d,%d", src, x, y)
+	}
+	if !sameMap("pay_dun00.gat", "PAY_DUN00") {
+		t.Fatal("sameMap")
+	}
+}
+
 func TestPartyChatDedupeAndOrder(t *testing.T) {
+	partyChatReset(t)
 	now := time.Unix(1000, 0)
 	partyChatHeard("TestHuman", "Zen : hi", now)
 	partyChatHeard("TestHuman", "Zen : hi", now.Add(time.Second)) // the same line via another friend
