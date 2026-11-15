@@ -493,6 +493,121 @@ class TestLockExitAndAtomicity(W.Env):
         self.assertIn("another copy", r.stdout + r.stderr)
 
 
+class TestTakeoverRecheck(W.Env):
+    """item 4: after the stale lock is moved aside, the moved file must really be stale; a Windows PermissionError
+    on the move counts as held"""
+
+    def test_moved_file_that_turned_fresh_is_put_back_and_refused(self):
+        import common as C
+        from unittest import mock
+        path = os.path.join(self.d, "race.lock")
+        self.put("race.lock", "999999 1", age=400)                   # stale on disk
+        real_replace = os.replace
+        aside_suffix = ".stale.%d" % os.getpid()
+
+        def replace_then_fresh(src, dst):
+            real_replace(src, dst)
+            if dst.endswith(aside_suffix):                           # another starter's fresh lock, moved by mistake
+                os.utime(dst, (T0, T0))
+        with mock.patch("common.os.replace", side_effect=replace_then_fresh):
+            self.assertFalse(C.take_lock("race.lock", 300))
+        self.assertTrue(os.path.exists(path))                        # restored at the lock's own name
+        self.assertEqual(C.lock_owner("race.lock"), 999999)          # and still the other starter's
+        self.assertFalse([f for f in os.listdir(self.d) if ".stale." in f])
+
+    def test_windows_permission_error_on_the_move_counts_as_held(self):
+        import common as C
+        from unittest import mock
+        self.put("held.lock", "999999 1", age=400)
+        with mock.patch("common.os.replace", side_effect=PermissionError("open in another process")):
+            self.assertFalse(C.take_lock("held.lock", 300))
+        self.assertEqual(C.lock_owner("held.lock"), 999999)          # left exactly as it was
+
+    def test_fresh_lock_still_refuses_without_moving_it(self):
+        import common as C
+        from unittest import mock
+        self.put("fresh.lock", "999999 1", age=10)
+        with mock.patch("common.os.replace") as rep:
+            self.assertFalse(C.take_lock("fresh.lock", 300))
+            rep.assert_not_called()
+
+
+class TestKeeperLockAndExitCodes(W.Env):
+    """items 1-3: keep.cmd stops on exit 3; unwall and keeper.sh refuse with 3; the keeper lock is taken atomically and
+    released on exit (EXIT and TERM), only while it still names the shell"""
+
+    def test_keep_cmd_stops_on_exit_3_and_is_crlf(self):
+        path = os.path.join(REPO, "tools", "dashboard", "keep.cmd")
+        with open(path, "rb") as f:
+            raw = f.read()
+        self.assertEqual(raw.count(b"\n"), raw.count(b"\r\n"))         # CRLF throughout: cmd needs it
+        txt = raw.decode("ascii").replace("\r\n", "\n")
+        self.assertIn("if errorlevel 3 (echo dashboard: another copy", txt)
+        self.assertIn("exit /b 0)", txt)
+        after = txt.split("if errorlevel 3", 1)[1]
+        self.assertLess(after.index("exit /b 0"), after.index("timeout /t 3"))   # stop, not sleep and retry
+
+    def test_unwall_and_keeper_refusals_exit_3_in_text(self):
+        with open(os.path.join(REPO, "tools", "rogui", "keeper.sh"), encoding="utf-8") as f:
+            sh = f.read()
+        self.assertIn("another keeper holds $KEEPER_LOCK (fresh); this copy exits\"; exit 3", sh)
+        self.assertNotIn("exit 0; }", sh)
+
+    def test_keeper_sh_refusal_exits_3(self):
+        if not have_bash():
+            self.skipTest("no bash here")
+        lock = os.path.join(self.d, "keeper.lock")
+        with open(lock, "w") as f:
+            f.write("1234 1\n")
+        os.utime(lock, None)                                         # a live keeper refreshed just now
+        script = bash_path(os.path.join(REPO, "tools", "rogui", "keeper.sh"))
+        bash = _SETUP["found"][0]
+        env = dict(os.environ, KEEPER_LOCK=bash_path(lock), KEEPER_LOCK_STALE="150")
+        r = subprocess.run([bash, script], env=env, capture_output=True, text=True, timeout=120)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("another keeper holds", r.stdout + r.stderr)
+
+    def test_stale_takeover_is_held_for_the_shell_and_released_on_exit(self):
+        if not have_bash():
+            self.skipTest("no bash here")
+        lock = os.path.join(self.d, "keeper.lock")
+        with open(lock, "w") as f:
+            f.write("999999 1\n")
+        os.utime(lock, (1_000_000, 1_000_000))                       # stale: the takeover is allowed
+        lk = bash_path(lock)
+        r = bash_lib('keeper_take_lock && echo "TOOK $$" || echo REFUSED', {"KEEPER_LOCK": lk})
+        self.assertIn("TOOK", r.stdout, r.stderr)
+        self.assertFalse(os.path.exists(lock), "the EXIT trap must remove the lock")   # released when the shell exited
+        self.assertFalse([f for f in os.listdir(self.d) if ".stale." in f])
+
+    def test_term_releases_the_lock_too(self):
+        if not have_bash():
+            self.skipTest("no bash here")
+        lock = os.path.join(self.d, "keeper.lock")
+        bash_lib("keeper_take_lock; kill -TERM $$; sleep 5", {"KEEPER_LOCK": bash_path(lock)})
+        self.assertFalse(os.path.exists(lock))
+
+    def test_exit_does_not_remove_a_lock_taken_by_another_pid(self):
+        if not have_bash():
+            self.skipTest("no bash here")
+        lock = os.path.join(self.d, "keeper.lock")
+        bash_lib("keeper_take_lock && echo 999999 1 > \"$KEEPER_LOCK\"", {"KEEPER_LOCK": bash_path(lock)})
+        self.assertTrue(os.path.exists(lock))
+        with open(lock) as f:
+            self.assertEqual(f.read().split()[0], "999999")
+
+    def test_fresh_lock_refuses_and_is_left_alone(self):
+        if not have_bash():
+            self.skipTest("no bash here")
+        lock = os.path.join(self.d, "keeper.lock")
+        with open(lock, "w") as f:
+            f.write("1234 1\n")
+        os.utime(lock, None)
+        r = bash_lib('keeper_take_lock && echo TOOK || echo REFUSED', {"KEEPER_LOCK": bash_path(lock)})
+        self.assertIn("REFUSED", r.stdout, r.stderr)
+        self.assertTrue(os.path.exists(lock))
+
+
 class TestUnwall(W.Env):
     def setUp(self):
         super().setUp()
@@ -534,9 +649,11 @@ class TestUnwall(W.Env):
         sys.argv = ["unwall.py", "--loop"]
         try:
             with redirect_stdout(io.StringIO()) as out:
-                self.unwall.main()
+                with self.assertRaises(SystemExit) as cm:
+                    self.unwall.main()
         finally:
             self.unwall.load_maps, sys.argv = orig_load, orig_argv
+        self.assertEqual(cm.exception.code, 3)                        # a refusal exits 3, never 0
         self.assertIn("another copy holds", out.getvalue())
 
 

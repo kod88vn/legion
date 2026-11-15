@@ -15,10 +15,10 @@ strikes=0; restarts=0
 log() { echo "$(date '+%F %T') keeper: $*" | tee -a "$LOG"; }
 # every loop (and after each long docker step) refreshes the heartbeat and the lock; a keeper whose lock was taken exits
 beat() {
-  keeper_refresh_lock || { log "keeper lock now held by another keeper; this copy exits"; exit 0; }
+  keeper_refresh_lock || { log "keeper lock now held by another keeper; this copy exits"; exit 3; }
   echo "$(date +%s) $*" > "$HB" 2>/dev/null
 }
-keeper_take_lock || { log "another keeper holds $KEEPER_LOCK (fresh); this copy exits"; exit 0; }
+keeper_take_lock || { log "another keeper holds $KEEPER_LOCK (fresh); this copy exits"; exit 3; }
 while true; do
   if [ -e "$HOLD" ]; then
     beat "idle: stack.hold present"

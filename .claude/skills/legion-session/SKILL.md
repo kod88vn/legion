@@ -17,7 +17,7 @@ Constitution Article 1; it starts and stops nothing itself, and the harness bloc
 - Wake `watcher` on `partycheck` violations and for its 30-minute review; `qa` for class sampling.
 
 ## Startup order (reference for the agent the main session assigns, on the owner's word; stop in reverse)
-The owner decides what starts, part by part (G21). Check what runs first: exactly one copy of each loop.
+The owner decides what starts, part by part (G21). Check what runs first: exactly one copy of each loop. Exit code 2 from a loop is its wake (restart it); exit code 3 means another copy already runs (do not restart it). The codes are set in `tools/system/common.py`.
 1. **Stack**: `python tools/system/stackctl.py up` (removes `stack.hold`, writes `stack.up`), then
    `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d"`; wait about 2 minutes
    (`python tools/legionctl.py status`). The first start after a folder move recreates every container; that is expected.

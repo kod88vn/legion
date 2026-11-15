@@ -128,7 +128,7 @@ def main():
     if loop:
         if not C.take_lock(UNWALL_LOCK, UNWALL_LOCK_STALE):
             print('unwall: another copy holds legion/data/unwall.lock; not starting', flush=True)
-            return
+            sys.exit(3)
         LOOP_LOCK = True
     maps = load_maps()
     while True:
