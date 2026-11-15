@@ -443,6 +443,12 @@ func (b *Bot) think() {
 				// party run: out of potions" and died twice on gef_fild10; kiraknight likewise on prt_fild10): no trip
 				// interval, the short party-run gap, and alone when the party can't go now
 				potNeed := why == "out of potions"
+				// PT24 for the healer (healerstick.go): no solo town trip while the leader is out farming - only a bag at
+				// the urgent weight line goes alone; the rest waits for the party's run
+				healerStays := p != nil && healerStickOn() && healerTripBlocked(b.isHealer(), b.leaderOut(p, now), b.MaxWeight > 0 && b.Weight*100/b.MaxWeight >= tune().TripUrgentWeightPct)
+				if healerStays {
+					urgent, potNeed = false, false
+				}
 				switch {
 				case p != nil && (classW && !bowless || noArrows) && !urgent && b.errandCanLeave(p, now) && errandFieldMap(b.MapName):
 					// economy run 8: a short errand buys it right after this (errand.go "weapon"), no waiting line
@@ -466,7 +472,7 @@ func (b *Bot) think() {
 								"can i grab a "+it.Name+" on our next town run?", "still using a knife, need a "+it.Name+" when we go to town")))
 						}
 					}
-				case p.Human != "" && realNeed && !b.humanAskAt.IsZero() && now.Sub(b.humanAskAt) > 10*time.Minute:
+				case p.Human != "" && realNeed && !healerStays && !b.humanAskAt.IsZero() && now.Sub(b.humanAskAt) > 10*time.Minute:
 					// asked for 10+ min and the human leader never took the party to town: a real need (no potions, bag
 					// full) can't wait forever - a short solo trip, said in party chat (startTrip announces it), back after
 					b.humanAskAt = time.Time{}

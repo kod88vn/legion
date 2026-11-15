@@ -1188,6 +1188,9 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 		if hostileTransit(b.MapName, b.powerLv()) {
 			catchUp = 8 // a dungeon / hostile map: stay right with her (QA 19:00Z Sphinx: spread out, three died)
 		}
+		if support && healerStickOn() { // healerstick.go: the healer stays within ~8 cells of the leader
+			catchUp, followSlack = min(catchUp, healerFollowCells), min(followSlack, healerFollowCells-2)
+		}
 		if d > catchUp && !moving && gm != nil {
 			b.setState("catching up with " + lead.Name)
 			b.stepAlong(gm, lead.X, lead.Y)
