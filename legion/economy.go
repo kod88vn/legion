@@ -710,6 +710,7 @@ func econRound(bots []*Bot, now time.Time) {
 	}
 
 	lootFlowRound(snaps, now) // lootflow.go (run 10): interesting loot goes to party / guild / guild stock before a sale
+	exchangePrepare(snaps, now) // exchange.go: party / guild / friend relations and spares (exchange_tiers_on)
 
 	// 2. update the boards
 	online := map[string]*econSnap{}
@@ -798,6 +799,9 @@ func econRound(bots []*Bot, now time.Time) {
 	// #trade lines: wants first (that's how bots ask), then a few offers
 	for _, w := range econ.wants {
 		s := online[w.Name]
+		if exchangeAsk(w, s, now) { // exchange.go: asked in party / guild chat first
+			continue
+		}
 		if s == nil || w.InDeal || now.Sub(econ.posted[w.Name]) < econPostEvery || now.Sub(econ.lastLine) < econLineGap {
 			continue
 		}
@@ -900,7 +904,7 @@ func econRound(bots []*Bot, now time.Time) {
 			}
 		}
 		for _, s := range sellers {
-			if s == buyer || used[s.name] || now.Before(econ.noPair[s.name+"|"+w.Name]) {
+			if s == buyer || used[s.name] || now.Before(econ.noPair[s.name+"|"+w.Name]) || !exchangeEligible(w, buyer, s, now) {
 				continue
 			}
 			var h holding
@@ -917,7 +921,8 @@ func econRound(bots []*Bot, now time.Time) {
 			gift := guildMate && (s.brewer && buyer.leaderParty || s.keeper) && (isHealPotionOrSP(w.ItemID) || healItem(w.ItemID)) &&
 				now.After(giftNext[w.Name])
 			guildEach := roundPrice(h.Ask * 7 / 10)
-			if h.ItemID == 0 || (!gift && h.Ask > w.Each && !(guildMate && guildEach <= w.Each)) {
+			tierEach, tier := exchangeTier(s, buyer, h) // exchange.go: party / kin price ("" = market)
+			if h.ItemID == 0 || (!gift && h.Ask > w.Each && !(guildMate && guildEach <= w.Each) && !(tier != "" && tierEach <= w.Each)) {
 				stage = max(stage, 1)
 				continue
 			}
@@ -968,6 +973,9 @@ func econRound(bots []*Bot, now time.Time) {
 			if guildMate {
 				each = min(each, guildEach)
 			}
+			if tier != "" {
+				each = min(each, tierEach)
+			}
 			if gift {
 				count, each = min(count, 5), 0
 			}
@@ -977,6 +985,12 @@ func econRound(bots []*Bot, now time.Time) {
 			bestMate := best != nil && best.seller.guild != "" && best.seller.guild == buyer.guild
 			if best == nil || best.mail && !c.mail || c.mail && !best.mail && best != nil {
 				if best == nil || best.mail { // in person beats a mail sale (no fee); among mail sales the rules below
+					best = c
+				}
+				continue
+			}
+			if r := exchangePrefer(buyer, s, h.ItemID, best.seller, best.h.ItemID); r != 0 { // exchange.go: party, then kin
+				if r > 0 {
 					best = c
 				}
 				continue
@@ -1000,6 +1014,7 @@ func econRound(bots []*Bot, now time.Time) {
 			used[best.seller.name], used[w.Name] = true, true
 			w.InDeal = true
 			matches = append(matches, *best)
+			exchangeChosen(best.seller, best.buyer, best.h.ItemID, best.count, best.price, now) // exchange.go
 			slots--
 		}
 	}
@@ -1053,7 +1068,7 @@ func econRound(bots []*Bot, now time.Time) {
 		startVendBuy(m.buyer.b, m.buyer.name, m.vendor.b, m.vendor.name, m.itemID, m.count, m.price, now)
 	}
 	for _, p := range posts {
-		go p.b.channelSay("#trade", p.text)
+		go exchangeTradePost(p.b, p.text) // exchange.go: channelSay("#trade"), or a chat job (chat_jobs_on)
 	}
 	pecoFundRound(snaps, now)   // peco.go: guild / party mates pay a rider's Peco Peco first
 	katarFundRound(snaps, now)  // peco.go: ... and part of an Assassin's katar
@@ -1062,6 +1077,7 @@ func econRound(bots []*Bot, now time.Time) {
 	guildPoolRound(snaps, now)  // guildpool.go: guilds pool zeny for boss-only items
 	guildStockRound(snaps, now) // guildstock.go: guild stock vs member needs, guild farmers
 	traderFundRound(snaps, now) // guildstock.go: the guild trader pays a member's stuck gear turn
+	exchangeRound(snaps, now)   // chatintent.go: humans' needs / offers registered by the chat agent
 	humanWantRound(snaps, now)  // humanwant.go: a human's B> on #trade gets an offer
 	for _, m := range matches {
 		if m.mail {
@@ -1273,6 +1289,9 @@ func startDeal(seller, buyer *econSnap, itemID, count, price int, meet, deliver,
 	buyer.b.event("info", seller.name, fmt.Sprintf("agreed to buy %s from %s for %dz (%s)", item, seller.name, price, bWhere))
 	// the conversation, in character
 	go func() {
+		if exchangeDealTalk(seller, buyer, itemID, count, price, meet, deliver, fetch) { // exchange.go: tier deal lines
+			return
+		}
 		st, bt := seller.typing, buyer.typing
 		if price == 0 && itemID != 0 { // the guild alchemist hands potions to its guild leader's party
 			seller.b.whisper(buyer.name, styled(st, pick(fmt.Sprintf("got %s for u, on the guild", item),
@@ -1807,6 +1826,7 @@ func (b *Bot) marketDone(s *marketSide, now time.Time) {
 	if d.Count > 1 {
 		item = fmt.Sprintf("%dx %s", d.Count, item)
 	}
+	exchangeDealDone(d, s.seller) // exchange.go: tier deal counters, thanks
 	memoryOf(b.P).meet(s.partner, "acquaintance", b.MapName, !allChars[s.partner])
 	typing := b.P.Typing
 	if s.seller {

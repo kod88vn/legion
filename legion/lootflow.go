@@ -338,6 +338,9 @@ func lootGive(b, rb *Bot, to string, c *lootCand, x *Item, kind string, now time
 		return true
 	}
 	go func() {
+		if lootTalkJob(b, rb, kind, item, to, typing) { // exchange.go: as a chat job (chat_jobs_on)
+			return
+		}
 		ask := pick("anyone need a "+item+"?", "got a "+item+", anyone use it?", "who needs "+item+"?")
 		say := b.partySay
 		if kind == "guild" {
