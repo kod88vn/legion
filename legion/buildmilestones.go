@@ -375,6 +375,28 @@ func (b *Bot) gearPlan() *Build {
 	return b.plan()
 }
 
+// gatedGearShop (b.mu held): while the gate holds, the failing piece is the purchase before anything else on the
+// list: an NPC shop sells it, the bot can pay its price with its budget, and a shop is near enough (gearShopNear,
+// else gearShopAny when the price leaves room for the trip). Returns nil when there is no such purchase.
+func (b *Bot) gatedGearShop(budget int) (*Item, *Shop) {
+	_, goal := b.gearGate(b.BaseLvOr())
+	if goal == nil {
+		return nil, nil
+	}
+	it := items[goal.Item]
+	if it == nil || it.Buy <= 0 || it.Buy > budget || !b.canEquip(it) || b.gearFailed[goal.Item] {
+		return nil, nil
+	}
+	sh := b.gearShopNear(goal.Item)
+	if sh == nil && it.Buy+2*200+100 <= budget {
+		sh = b.gearShopAny(goal.Item)
+	}
+	if sh == nil {
+		return nil, nil
+	}
+	return it, sh
+}
+
 // gearGoalPiece (b.mu held): the failing piece as a build piece for the picker: a shop piece (zeny goal, the NPC
 // price), else a drop piece with its farm maps, else a trade piece.
 func gearGoalPiece(g gearGoal, lv int) *buildPiece {

@@ -304,3 +304,45 @@ func TestMilestoneFileFormat(t *testing.T) {
 		t.Fatal("ranges lack the weapon_atk / cards fields")
 	}
 }
+
+// a gated bot with enough zeny buys its failing armor piece first; once worn, the gate lifts and its ceiling moves up
+func TestGatedBotBuysFailingPieceFirst(t *testing.T) {
+	withMsItems(t)
+	// Sword III (ATK 120) with Armor I (DEF 20): the armor fails, its goal is the milestone armor of band 21-40
+	b := msBot("ec39buy", 60, 9103, 9201)
+	b.MapName = "prontera"
+	b.Zeny = 50000
+	p := msBuild()
+	builds[p.ID] = p // the bot's plan (gearGate reads it through the character spec)
+	t.Cleanup(func() { delete(builds, p.ID) })
+
+	gate0, goal0 := gearGateOf(b, p, 60)
+	if goal0 == nil || goal0.Slot != "armor" || goal0.Item != 9202 {
+		t.Fatalf("before: gate %d goal %+v, want the armor Armor II (9202)", gate0, goal0)
+	}
+	// the goal armor is sold by an NPC shop at 2000z (the item table is restored by withMsItems)
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 2000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+
+	it, sh := b.gatedGearShop(b.Zeny - b.gearReserve())
+	if it == nil || it.ID != 9202 || sh == nil {
+		t.Fatalf("gated buy: item %v shop %v, want Armor II from a shop", it, sh)
+	}
+	// nextGear puts it first, before the plan's own list
+	if got, _ := b.nextGear(); got == nil || got.ID != 9202 {
+		t.Fatalf("nextGear = %v, want the gated Armor II first", got)
+	}
+	// bought and worn: the gate lifts (armor 37 -> gear level ~28 + band = 48) and the goal moves to Armor III
+	b.equipped = gsEquip(gsPiece{9103, 0x2, 0, nil}, gsPiece{9202, 0x10, 0, nil})
+	gate1, goal1 := gearGateOf(b, p, 60)
+	if gate1 <= gate0 {
+		t.Fatalf("after buying: gate %d, want above %d", gate1, gate0)
+	}
+	if goal1 == nil || goal1.Item != 9203 {
+		t.Fatalf("after buying: goal %+v, want Armor III (9203)", goal1)
+	}
+	if got := b.gearGatedLv(p, 60, 60); got != gate1 {
+		t.Fatalf("maps: gated level %d, want the new ceiling %d", got, gate1)
+	}
+}

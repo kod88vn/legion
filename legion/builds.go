@@ -678,6 +678,9 @@ func (b *Bot) realUpgrade(it *Item, cur *Item) bool {
 // nextGear: the best affordable upgrade on the plan's routes that this character can use now and doesn't own.
 func (b *Bot) nextGear() (*Item, *Shop) {
 	budget := b.Zeny - b.gearReserve()
+	if it, sh := b.gatedGearShop(budget); it != nil { // buildmilestones.go (EC39): the failing piece is bought first
+		return it, sh
+	}
 	// economy run 7 (owner: each bot works to perfect its build): when the build's next piece is a shop item the bot
 	// can't afford yet but soon could (<= 3x its budget, or <= 5,000z), it saves toward it instead of buying lesser gear
 	if pc := b.nextBuildPiece(); pc != nil && pc.Source == "shop" && pc.NPC > budget && pc.Gain > 0 &&
