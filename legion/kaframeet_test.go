@@ -18,3 +18,12 @@ func TestPartyWingStock(t *testing.T) {
 		t.Fatal("party members keep 2 wings ahead of gear savings")
 	}
 }
+
+func TestNoAheadOfLeader(t *testing.T) {
+	if !noAheadOfLeader("pay_arche", "pay_dun00") {
+		t.Fatal("on her field, the next dungeon is ahead of her: stay")
+	}
+	if noAheadOfLeader("pay_arche", "pay_arche") || noAheadOfLeader("payon", "pay_arche") {
+		t.Fatal("same map, or she is in town: no override")
+	}
+}

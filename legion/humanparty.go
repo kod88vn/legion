@@ -366,6 +366,11 @@ func (b *Bot) humanPartySync(now time.Time) {
 			m, b.escortHold = t, why
 		}
 	}
+	// never ahead of her (live 01:26: the priest went into pay_dun00 while she and the party waited on pay_arche): a
+	// member standing on her map stays on her map while she travels on open ground - the destination only with her
+	if ok && !waiting && b.MapName == h.Map && noAheadOfLeader(h.Map, m) {
+		m = h.Map
+	}
 	if b.Goal.Mode != "party" || b.Goal.Map != m || b.Goal.Set != "human" {
 		if b.Goal.Map != m {
 			b.route, b.path = nil, nil
