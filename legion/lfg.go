@@ -438,6 +438,9 @@ func (b *Bot) goalStatus(g *farmGoal, now time.Time) string {
 	if g == nil {
 		return "changed"
 	}
+	if g.Kind == "guild" {
+		return b.guildBlockStatus(g, now) // guildduty.go: a guild duty block
+	}
 	switch g.Kind {
 	case "gear":
 		if b.hasItem(g.ItemID) {

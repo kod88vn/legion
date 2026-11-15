@@ -48,3 +48,5 @@ legion/legion.exe
 # watch-view screenshots and temp files
 tools/rogui/shots/
 tools/rogui/tmp/
+legion/data/guild_duty.json
+legion/data/guild_rank.json

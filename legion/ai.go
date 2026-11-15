@@ -736,6 +736,9 @@ func (b *Bot) chooseHuntingGround() {
 	}
 	// lfg.go: a solo bot with an item goal (its build's next gear piece / card) farms on that goal's map while it is
 	// safe for it (owner 2026-11-14: "each class need to have a priority ... then it goes to farm where it needs to")
+	if b.guildBlockHunt() { // guildduty.go: a solo member on its guild duty block hunts on the block's map
+		return
+	}
 	if g := b.fgoal; g != nil && g.mapped() && goalPartiesOn() && partyOf(b) == nil {
 		for _, m := range g.Maps {
 			if b.soloMapOK(m) {

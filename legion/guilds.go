@@ -288,7 +288,11 @@ func (b *Bot) guildThink(now time.Time) {
 		gid, name := b.guildInvite, b.guildInviteName
 		b.guildInvite = 0
 		ans := uint32(0)
-		if acc, ok := b.humanGuildAnswer(name); ok { // humanguild.go: Ayla's guild / her party friends
+		if acc, ok := b.dutyGuildAnswer(name); ok { // guildduty.go: a kicked bot's cool-down / the guild it chose
+			if acc {
+				ans = 1
+			}
+		} else if acc, ok := b.humanGuildAnswer(name); ok { // humanguild.go: Ayla's guild / her party friends
 			if acc {
 				ans = 1
 			}
@@ -416,6 +420,7 @@ func registerGuilds(mux *http.ServeMux, bots []*Bot) {
 	registerBossHunt(mux)           // bosshunt.go: /api/boss-hunt (guild boss hunts), /api/boss-hunt/bosses
 	registerGuildLeaders(mux, bots) // guildlead.go: /api/leaderboard, /api/guild-leaders, leader parties
 	registerHumanGuild(mux, bots)   // humanguild.go: /api/guild-recruits (Ayla's guild)
+	registerGuildDuty(mux, bots)    // guildduty_api.go: guild directions, duty, rank, relations
 	mux.HandleFunc("/api/guilds/detail", func(w http.ResponseWriter, r *http.Request) {
 		type member struct {
 			Name  string `json:"name"`

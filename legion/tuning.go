@@ -44,6 +44,14 @@ package main
 //   pot_hp_acolyte            8    HP potions the acolyte line keeps (they heal themselves; zeny/weight go to SP pots)
 //   pot_sp_target             15   SP potions an SP user (acolyte/mage line, skill users) tries to carry
 //
+//   Guild duty (guildduty.go)
+//   guild_duty_on             false guild blocks, duty warnings, kicks, kicked bots' guild search (ledger always on)
+//   guild_duty_min_per_day    120  minutes a member owes its guild per played day (at most half its time online)
+//   guild_duty_warn_days      3    short days before the leader's warning (/ the guild's strictness)
+//   guild_duty_kick_days      2    short days after the warning before the kick (/ strictness)
+//   guild_kicks_per_hour      2    server-wide expel cap (15 min between two, 2 h per guild)
+//   guild_kick_cooldown_h     24   hours a kicked bot refuses every guild invitation
+//
 //   Kafra (kafra.go)
 //   kafra_min_saving          3    teleport only if it saves at least this many map changes
 //   kafra_keep_zeny_beginner  1000 zeny a beginner (below beginner_lv) keeps after paying for a teleport
@@ -153,6 +161,14 @@ type Tuning struct {
 	// Off by default; mail_trade_test_bots (comma-separated names, seller or buyer) for a live test first.
 	MailTrades        bool   `json:"mail_trades"`
 	MailTradeTestBots string `json:"mail_trade_test_bots"`
+	// guildduty.go (redesign G): guild_duty_on switches on guild blocks, warnings, kicks and the kicked bots' search
+	// (default off; the ledger, rank, wealth and relations run regardless)
+	GuildDutyOn        bool `json:"guild_duty_on"`
+	GuildDutyMinPerDay int  `json:"guild_duty_min_per_day"` // minutes a member owes per played day (never more than half its time online)
+	GuildDutyWarnDays  int  `json:"guild_duty_warn_days"`   // short days before the warning (divided by the guild's strictness)
+	GuildDutyKickDays  int  `json:"guild_duty_kick_days"`   // short days after the warning before the kick (same)
+	GuildKicksPerHour  int  `json:"guild_kicks_per_hour"`   // server-wide expel cap (plus 15 min between two, 2 h per guild)
+	GuildKickCooldownH int  `json:"guild_kick_cooldown_h"`  // hours a kicked bot refuses every guild invitation
 	// Kafra
 	KafraMinSaving    int `json:"kafra_min_saving"`
 	KafraKeepBeginner int `json:"kafra_keep_zeny_beginner"`
@@ -211,6 +227,8 @@ var defaultTuning = Tuning{
 	BeginnerLv: 20, StayCrowd: 70, TargetLvOver: 2, TargetLvAggression: 6, TargetLvMin: 8,
 	RoamGiveUpSec: 120, CrowdSpawnsPerBot: 5, CrowdRoamPct: 30, RoamCrowdSec: 75, GhostTargetSec: 10, LeaderCollectSec: 90, TripUrgentWeightPct: 90, TripBagPct: 70, TripMinIntervalMin: 45,
 	WeightRegenPct: 50, PotWeightCapPct: 45, PotHPAcolyte: 8, PotSPTarget: 15,
+
+	GuildDutyMinPerDay: 120, GuildDutyWarnDays: 3, GuildDutyKickDays: 2, GuildKicksPerHour: 2, GuildKickCooldownH: 24,
 
 	KafraMinSaving: 3, KafraKeepBeginner: 1000, KafraKeep: 200, KafraCooldownMin: 50, KafraMaxPerHour: 3, KafraMinSaveSec: 120,
 
@@ -278,6 +296,11 @@ func (t *Tuning) sanitize() {
 	pos(&t.GearReserveZenyDiv, d.GearReserveZenyDiv)
 	pos(&t.MaxGearHops, d.MaxGearHops)
 	pos(&t.GearTurnMaxMin, d.GearTurnMaxMin)
+	pos(&t.GuildDutyMinPerDay, d.GuildDutyMinPerDay)
+	pos(&t.GuildDutyWarnDays, d.GuildDutyWarnDays)
+	pos(&t.GuildDutyKickDays, d.GuildDutyKickDays)
+	pos(&t.GuildKicksPerHour, d.GuildKicksPerHour)
+	pos(&t.GuildKickCooldownH, d.GuildKickCooldownH)
 	posF(&t.ChatGlobalDiv, d.ChatGlobalDiv)
 	posF(&t.ChatLocalDiv, d.ChatLocalDiv)
 	posF(&t.ChatPartyDiv, d.ChatPartyDiv)
