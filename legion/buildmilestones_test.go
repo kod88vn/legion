@@ -283,9 +283,10 @@ func TestMilestoneFileFormat(t *testing.T) {
 	var doc struct {
 		Builds map[string]struct {
 			Ranges []struct {
-				Min   int              `json:"min"`
-				Max   int              `json:"max"`
-				Slots map[string][]int `json:"slots"`
+				Min       int              `json:"min"`
+				Max       int              `json:"max"`
+				Slots     map[string][]int `json:"slots"`
+				Milestone map[string]int   `json:"milestone"`
 			} `json:"ranges"`
 		} `json:"builds"`
 	}
@@ -297,8 +298,13 @@ func TestMilestoneFileFormat(t *testing.T) {
 		t.Fatalf("build %s: %d ranges, want %d", msBuild().ID, len(b.Ranges), len(bandEdges))
 	}
 	r := b.Ranges[1]
-	if r.Min != 21 || r.Max != 40 || len(r.Slots["weapon"]) != 1 || r.Slots["weapon"][0] != 9102 || r.Slots["armor"][0] != 9202 {
-		t.Fatalf("band 21-40 = %+v, want weapon 9102 and armor 9202", r)
+	if r.Min != 21 || r.Max != 40 || r.Milestone["weapon"] != 9102 || r.Milestone["armor"] != 9202 {
+		t.Fatalf("band 21-40 = %+v, want milestone weapon 9102 and armor 9202", r)
+	}
+	for _, name := range []string{"weapon", "shield", "armor", "garment", "shoes", "headgear", "accessory"} {
+		if _, ok := r.Slots[name]; !ok {
+			t.Fatalf("band 21-40 has no %s slot (the dashboard keeps every slot)", name)
+		}
 	}
 	if !strings.Contains(string(raw), `"weapon_atk"`) || !strings.Contains(string(raw), `"cards"`) {
 		t.Fatal("ranges lack the weapon_atk / cards fields")
@@ -378,5 +384,60 @@ func TestGatedBotWantsOnlyTheGatedPiece(t *testing.T) {
 	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
 	if w := b.econWant(); w != nil && w.ItemID != 9202 {
 		t.Fatalf("econWant = item %d, want nothing or the gated Armor II (9202)", w.ItemID)
+	}
+}
+
+// save-hold: the gated piece costs more than the purse allows: nothing else is bought meanwhile
+func TestGatedBotSavesForItsPiece(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39save", 60, 9103, 9201)
+	b.MapName = "prontera"
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 2000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+	b.Zeny = 1000
+	if it, _ := b.nextGear(); it != nil {
+		t.Fatalf("saving for Armor II (2000z) with 1000z: nextGear bought %d", it.ID)
+	}
+	b.Zeny = 50000
+	if it, _ := b.nextGear(); it == nil || it.ID != 9202 {
+		t.Fatalf("with enough zeny nextGear = %v, want Armor II", it)
+	}
+}
+
+// the reserve never swallows the gated piece's price: a purse just above the price still buys it
+func TestGearReserveLetsTheGatedPriceThrough(t *testing.T) {
+	withMsItems(t)
+	b := msBot("ec39reserve", 60, 9103, 9201)
+	b.MapName = "prontera"
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	items[9202] = &Item{ID: 9202, Name: "Armor II", Type: "Armor", Loc: 0x10, Def: 37, MinLv: 21, Buy: 2000}
+	gearShopsCache[9202] = []*Shop{{Map: "prontera", Items: []int{9202}}}
+	t.Cleanup(func() { delete(gearShopsCache, 9202); delete(items, 9202) })
+	b.Zeny = 2100
+	if it, _ := b.gatedGearShop(b.Zeny - b.gearReserve()); it == nil || it.ID != 9202 {
+		t.Fatalf("2100z, Armor II 2000z: reserve %d leaves no budget for the gated piece", b.gearReserve())
+	}
+}
+
+// the legacy power path (gear_score_on off) is gated too: Sword III rates 56 by weapon and armor I drops it to 45
+func TestLegacyPowerLvIsGated(t *testing.T) {
+	withMsItems(t)
+	saved := *tune()
+	off := saved
+	off.GearScoreOn = false
+	curTuning.Store(&off)
+	t.Cleanup(func() { curTuning.Store(&saved) })
+	b := msBot("ec39legacy", 60, 9103, 9201)
+	p := msBuild()
+	builds[p.ID] = p
+	t.Cleanup(func() { delete(builds, p.ID) })
+	if got := b.powerLv(); got > 45 {
+		t.Fatalf("legacy powerLv %d for Sword III + Armor I at lv60, want <= 45", got)
 	}
 }

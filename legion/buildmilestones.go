@@ -177,6 +177,25 @@ func registerBuildMilestones(mux *http.ServeMux) {
 	go milestoneFileLoop()
 }
 
+// gatedPrice (b.mu held): the price of the gated piece when an NPC shop sells it (ok = a saving goal).
+func (b *Bot) gatedPrice() (int, bool) {
+	_, goal := b.gearGate(b.BaseLvOr())
+	if goal == nil {
+		return 0, false
+	}
+	it := items[goal.Item]
+	if it == nil || it.Buy <= 0 || len(gearShops(goal.Item)) == 0 || !b.canEquip(it) {
+		return 0, false
+	}
+	return it.Buy, true
+}
+
+// gatedSaveHold (b.mu held): the gated piece is a shop piece that costs more than the budget: buy nothing else.
+func (b *Bot) gatedSaveHold(budget int) bool {
+	price, ok := b.gatedPrice()
+	return ok && price > budget
+}
+
 // milestoneFileLoop: writes data/buildmilestones_gear.json now and every 5 min (the Builds tab's format:
 // {"builds": {id: {"ranges": [{"min", "max", "slots": {slot: [item ids]}, "weapon_atk", "armor_def", "cards", "magic"}]}}}).
 // Runs only from the server (registerBuildMilestones), never from tests.
@@ -190,28 +209,41 @@ func milestoneFileLoop() {
 }
 
 type milestoneRangeJSON struct {
-	Min       int              `json:"min"`
-	Max       int              `json:"max"`
-	Slots     map[string][]int `json:"slots"`
-	WeaponATK int              `json:"weapon_atk"`
-	ArmorDEF  int              `json:"armor_def"`
-	Cards     int              `json:"cards"`
-	Magic     bool             `json:"magic"`
+	Min           int              `json:"min"`
+	Max           int              `json:"max"`
+	Slots         map[string][]int `json:"slots"`     // every slot of the band's gear table (buildgear.go), for the dashboard rows
+	Cards         []int            `json:"cards"`     // the band's card list (buildgear.go)
+	Milestone     map[string]int   `json:"milestone"` // the gate's items: the weapon and armor milestone ids
+	WeaponATK     int              `json:"weapon_atk"`
+	ArmorDEF      int              `json:"armor_def"`
+	CardsRequired int              `json:"cards_required"`
+	Magic         bool             `json:"magic"`
 }
 
-// milestoneFileJSON: the milestone table in the dashboard's format.
+// milestoneFileJSON: the milestone table in the dashboard's format. Slots and cards come from the build's gear table
+// (buildGearTable, the same bands), so every row is kept; weapon and armor are also the gate's inputs.
 func milestoneFileJSON() map[string]interface{} {
 	builds := map[string]interface{}{}
+	table := buildGearTable()
 	for id, ms := range milestoneTable() {
+		bands := table[id]
 		var ranges []milestoneRangeJSON
-		for _, m := range ms {
-			r := milestoneRangeJSON{Min: m.Min, Max: m.Max, WeaponATK: m.Weapon, ArmorDEF: m.Armor, Cards: m.Cards, Magic: m.Magic,
-				Slots: map[string][]int{"weapon": {}, "armor": {}}}
-			if m.WeaponItem > 0 {
-				r.Slots["weapon"] = []int{m.WeaponItem}
+		for i, m := range ms {
+			r := milestoneRangeJSON{Min: m.Min, Max: m.Max, WeaponATK: m.Weapon, ArmorDEF: m.Armor, CardsRequired: m.Cards,
+				Magic: m.Magic, Slots: map[string][]int{}, Cards: []int{},
+				Milestone: map[string]int{"weapon": m.WeaponItem, "armor": m.ArmorItem}}
+			for _, sl := range gearSlots {
+				r.Slots[sl.Name] = []int{}
 			}
-			if m.ArmorItem > 0 {
-				r.Slots["armor"] = []int{m.ArmorItem}
+			if i < len(bands) {
+				for name, list := range bands[i].Slots {
+					for _, e := range list {
+						r.Slots[name] = append(r.Slots[name], e.ID)
+					}
+				}
+				for _, c := range bands[i].Cards {
+					r.Cards = append(r.Cards, c.ID)
+				}
 			}
 			ranges = append(ranges, r)
 		}
