@@ -180,6 +180,9 @@ func (b *Bot) guideSpotsFor(level int) []GuideSpot {
 			mapReadsEmpty(g.Map) { // seen.go: bots there see no monsters
 			continue
 		}
+		if !inParty && !fairSpotOK(g.Map, b.BaseLvOr()) { // fairgate.go: a solo spot must hold fair kills for the base level
+			continue
+		}
 		if g.Aggro && b.P.Risk < 0.35 && level < g.Max && !inParty { // cautious solo players avoid aggressive spots early
 			continue
 		}

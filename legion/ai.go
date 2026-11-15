@@ -534,7 +534,7 @@ func (b *Bot) think() {
 	// pick a goal if the mastermind hasn't set one - staggered after login (0-40 s per bot): after a mass login every
 	// bot judged the same crowd counts at once and herded onto the same few maps (QA 12:33: gef_fild02 139 bots)
 	if (b.Goal.Mode == "" || (b.Goal.Mode == "hunt" && b.Goal.Map == "") ||
-		(b.Goal.Mode == "idle" && b.Goal.Set == "auto (nowhere reachable)" && now.After(b.buffAt["huntRetry"]))) &&
+		huntRetryDue(b.Goal, b.buffAt["huntRetry"], now)) &&
 		now.Sub(b.ConnectedAt) >= time.Duration(b.P.Index%41)*time.Second {
 		b.chooseHuntingGround()
 	}
@@ -666,7 +666,7 @@ func (b *Bot) goodHere() bool {
 		}
 	}
 	if !fits {
-		for _, s := range SpotsFor(lv, b.P.Risk) {
+		for _, s := range b.spotsFor(lv) {
 			if s.Map == m {
 				fits = true
 				break
@@ -710,6 +710,12 @@ func (b *Bot) nearHome(m string) int {
 		return 99
 	}
 	return mapHops(home, sp[0], sp[1], m)
+}
+
+// huntRetryDue: a goal that chooseHuntingGround must pick again - an idle or hunt goal marked "nowhere reachable" whose
+// retry time (buffAt huntRetry, one minute after the failed pick) has come.
+func huntRetryDue(g Goal, retryAt, now time.Time) bool {
+	return (g.Mode == "idle" || g.Mode == "hunt") && g.Set == "auto (nowhere reachable)" && now.After(retryAt)
 }
 
 func (b *Bot) chooseHuntingGround() {
@@ -877,9 +883,12 @@ func (b *Bot) chooseHuntingGround() {
 			return
 		}
 	}
-	spots := SpotsFor(b.powerLv(), b.P.Risk)
+	spots := b.spotsFor(b.powerLv())
 	if len(spots) == 0 {
-		b.Goal = Goal{Mode: "idle", Map: b.MapName}
+		// no spot fits this level: idle, and think() picks again in a minute. An idle goal with no retry marker
+		// stayed idle for good (bugq b1794735068469-692: Crusader lv63, izlude, idle goal with no hunt map)
+		b.Goal = Goal{Mode: "idle", Map: b.MapName, Set: "auto (nowhere reachable)"}
+		b.buffAt["huntRetry"] = time.Now().Add(time.Minute)
 		return
 	}
 	// prefer emptier maps; bigger maps hold more bots
@@ -941,7 +950,10 @@ func (b *Bot) chooseHuntingGround() {
 			b.buffAt["huntRetry"] = time.Now().Add(time.Minute) // think() picks again in a minute
 			return
 		}
+		// hunting where it stands with no monsters in reach: picked again in a minute (bugq b1794733252795-688: an
+		// Alchemist roamed gef_fild02 without finding monsters; this goal never re-planned)
 		b.Goal = Goal{Mode: "hunt", Map: b.MapName, Set: "auto (nowhere reachable)"}
+		b.buffAt["huntRetry"] = time.Now().Add(time.Minute)
 		return
 	}
 	b.Goal = Goal{Mode: "hunt", Map: best.Map, Set: "auto"}
