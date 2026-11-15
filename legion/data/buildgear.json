@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-14 | run 6: Clip[1] (unobtainable) -> Belt[1] 2627 as the Teleport-card accessory",
+ "updated": "2026-11-15 | build audit fixes (F2-F9, F19): class-wearable gear only, shield clear with two-hander, bard/dancer instrument or whip, cards fit band, card text from scripts",
  "format": "keys = builds.go plan ids; bands by base level (may overlap); lists weakest first; ids = rAthena re item ids; card prio 1-3",
  "builds": {
   "hunter": {
@@ -17,8 +17,7 @@
       1705
      ],
      "armor": [
-      2306,
-      2322
+      2306
      ],
      "shield": [],
      "headgear": [
@@ -34,7 +33,7 @@
       2404
      ],
      "accessory": [
-      2627
+      2679
      ],
      "ammo": [
       1750,
@@ -49,12 +48,6 @@
        "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
       },
       {
-       "id": 4094,
-       "slot": "weapon",
-       "prio": 3,
-       "why": "+10% ranged damage"
-      },
-      {
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
@@ -67,22 +60,10 @@
        "why": "ATK+20"
       },
       {
-       "id": 4060,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+20% vs Brute"
-      },
-      {
        "id": 4063,
        "slot": "weapon",
        "prio": 2,
        "why": "+20% vs Insect"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
       },
       {
        "id": 4021,
@@ -109,46 +90,16 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4102,
-       "slot": "garment",
-       "prio": 2,
-       "why": "FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
        "id": 4009,
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
       },
       {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
-      },
-      {
        "id": 4034,
        "slot": "accessory",
        "prio": 2,
        "why": "DEX+2"
-      },
-      {
-       "id": 4027,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "AGI+2"
       }
      ],
      "note": "Archer: Double Strafe single, Arrow Shower on 3+; Silver Arrows vs undead, Fire Arrows vs earth/plants"
@@ -161,7 +112,6 @@
       1711
      ],
      "armor": [
-      2322,
       2311
      ],
      "shield": [],
@@ -170,8 +120,7 @@
       2202
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2404
@@ -254,12 +203,6 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
@@ -276,12 +219,6 @@
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
-      },
-      {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
       },
       {
        "id": 4034,
@@ -316,7 +253,7 @@
       2285
      ],
      "garment": [
-      2506
+      2586
      ],
      "shoes": [
       2406
@@ -456,12 +393,12 @@
      "min": 1,
      "max": 20,
      "weapon": [
+      1905,
       1702,
       1705
      ],
      "armor": [
-      2306,
-      2322
+      2306
      ],
      "shield": [],
      "headgear": [
@@ -477,7 +414,7 @@
       2404
      ],
      "accessory": [
-      2627
+      2679
      ],
      "ammo": [
       1750,
@@ -492,12 +429,6 @@
        "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
       },
       {
-       "id": 4094,
-       "slot": "weapon",
-       "prio": 3,
-       "why": "+10% ranged damage"
-      },
-      {
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
@@ -510,22 +441,10 @@
        "why": "ATK+20"
       },
       {
-       "id": 4060,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+20% vs Brute"
-      },
-      {
        "id": 4063,
        "slot": "weapon",
        "prio": 2,
        "why": "+20% vs Insect"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
       },
       {
        "id": 4021,
@@ -552,46 +471,16 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4102,
-       "slot": "garment",
-       "prio": 2,
-       "why": "FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
        "id": 4009,
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
       },
       {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
-      },
-      {
        "id": 4034,
        "slot": "accessory",
        "prio": 2,
        "why": "DEX+2"
-      },
-      {
-       "id": 4027,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "AGI+2"
       }
      ],
      "note": "Archer: Double Strafe single, Arrow Shower on 3+; Silver Arrows vs undead, Fire Arrows vs earth/plants"
@@ -600,11 +489,11 @@
      "min": 18,
      "max": 40,
      "weapon": [
+      1907,
       1708,
       1711
      ],
      "armor": [
-      2322,
       2311
      ],
      "shield": [],
@@ -613,8 +502,7 @@
       2202
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2404
@@ -697,12 +585,6 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
@@ -719,12 +601,6 @@
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
-      },
-      {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
       },
       {
        "id": 4034,
@@ -745,9 +621,9 @@
      "min": 33,
      "max": 99,
      "weapon": [
+      1918,
       1716,
-      1715,
-      1726
+      1715
      ],
      "armor": [
       2311,
@@ -759,7 +635,7 @@
       2285
      ],
      "garment": [
-      2506
+      2586
      ],
      "shoes": [
       2406
@@ -899,12 +775,12 @@
      "min": 1,
      "max": 20,
      "weapon": [
+      1954,
       1702,
       1705
      ],
      "armor": [
-      2306,
-      2322
+      2306
      ],
      "shield": [],
      "headgear": [
@@ -920,7 +796,7 @@
       2404
      ],
      "accessory": [
-      2627
+      2679
      ],
      "ammo": [
       1750,
@@ -935,12 +811,6 @@
        "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
       },
       {
-       "id": 4094,
-       "slot": "weapon",
-       "prio": 3,
-       "why": "+10% ranged damage"
-      },
-      {
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
@@ -953,22 +823,10 @@
        "why": "ATK+20"
       },
       {
-       "id": 4060,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+20% vs Brute"
-      },
-      {
        "id": 4063,
        "slot": "weapon",
        "prio": 2,
        "why": "+20% vs Insect"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
       },
       {
        "id": 4021,
@@ -995,46 +853,16 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4102,
-       "slot": "garment",
-       "prio": 2,
-       "why": "FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
        "id": 4009,
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
       },
       {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
-      },
-      {
        "id": 4034,
        "slot": "accessory",
        "prio": 2,
        "why": "DEX+2"
-      },
-      {
-       "id": 4027,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "AGI+2"
       }
      ],
      "note": "Archer: Double Strafe single, Arrow Shower on 3+; Silver Arrows vs undead, Fire Arrows vs earth/plants"
@@ -1043,11 +871,11 @@
      "min": 18,
      "max": 40,
      "weapon": [
+      1969,
       1708,
       1711
      ],
      "armor": [
-      2322,
       2311
      ],
      "shield": [],
@@ -1056,8 +884,7 @@
       2202
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2404
@@ -1140,12 +967,6 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
@@ -1162,12 +983,6 @@
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
-      },
-      {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
       },
       {
        "id": 4034,
@@ -1188,9 +1003,9 @@
      "min": 33,
      "max": 99,
      "weapon": [
+      1974,
       1716,
-      1715,
-      1726
+      1715
      ],
      "armor": [
       2311,
@@ -1202,7 +1017,7 @@
       2285
      ],
      "garment": [
-      2506
+      2586
      ],
      "shoes": [
       2406
@@ -1402,12 +1217,6 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4141,
-       "slot": "armor",
-       "prio": 2,
-       "why": "Undead armor: undead dungeons"
-      },
-      {
        "id": 4012,
        "slot": "shield",
        "prio": 2,
@@ -1420,40 +1229,10 @@
        "why": "-35% ranged damage"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
        "why": "FLEE+10"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
-       "id": 4070,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "SP regen +15%"
-      },
-      {
-       "id": 4077,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "cast not interrupted"
       }
      ],
      "note": "support Acolyte: Heal (also on undead), Blessing, Increase AGI; INT/VIT/DEX gear"
@@ -1475,8 +1254,7 @@
       2217
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2404
@@ -1536,12 +1314,6 @@
        "why": "-35% ranged damage"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
@@ -1591,10 +1363,10 @@
       2217
      ],
      "garment": [
-      2506
+      2586
      ],
      "shoes": [
-      2406
+      2408
      ],
      "accessory": [
       2627,
@@ -1754,24 +1526,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -1790,40 +1544,16 @@
        "why": "MaxHP+700"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
        "why": "FLEE+10"
       },
       {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
        "id": 4107,
        "slot": "shoes",
        "prio": 2,
        "why": "MaxHP/SP+8%"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Swordman/Knight 2H sword: Katana -> Slayer/Bastard Sword; Two-Hand Quicken needs a two-handed SWORD (not a spear)"
@@ -1889,12 +1619,6 @@
        "why": "+15% vs Large, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4085,
        "slot": "weapon",
        "prio": 1,
@@ -1919,12 +1643,6 @@
        "why": "MaxHP+700"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
@@ -1947,12 +1665,6 @@
        "slot": "accessory",
        "prio": 3,
        "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Two-Handed Sword / Claymore; Peco Peco from Cavalier Mastery 5; refine the weapon"
@@ -2152,24 +1864,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
-      },
-      {
        "id": 4012,
        "slot": "shield",
        "prio": 3,
@@ -2179,7 +1873,7 @@
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "-30% Demi-Human damage"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       },
       {
        "id": 4045,
@@ -2194,40 +1888,10 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4141,
-       "slot": "armor",
-       "prio": 2,
-       "why": "Undead armor vs undead maps"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
        "id": 4022,
        "slot": "accessory",
        "prio": 2,
        "why": "VIT+2"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+3"
       }
      ],
      "note": "VIT/STR shield crusader: one-handed sword + shield (Auto Guard, Holy Cross)"
@@ -2296,12 +1960,6 @@
        "why": "+15% vs Large, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4085,
        "slot": "weapon",
        "prio": 1,
@@ -2317,7 +1975,7 @@
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "-30% Demi-Human damage"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       },
       {
        "id": 4045,
@@ -2330,18 +1988,6 @@
        "slot": "armor",
        "prio": 3,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4141,
-       "slot": "armor",
-       "prio": 2,
-       "why": "Undead armor vs undead maps"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       },
       {
        "id": 4097,
@@ -2453,7 +2099,7 @@
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "-30% Demi-Human damage"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       },
       {
        "id": 4045,
@@ -2530,8 +2176,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -2592,46 +2237,16 @@
        "why": "LUK+2"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
        "why": "FLEE+20"
       },
       {
-       "id": 4159,
-       "slot": "garment",
-       "prio": 2,
-       "why": "AGI+2 FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
-      },
-      {
        "id": 4027,
        "slot": "accessory",
        "prio": 2,
        "why": "AGI+2"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+3"
       }
      ],
      "note": "Thief: dagger (Main Gauche/Dirk/Stiletto) until the katar"
@@ -2650,8 +2265,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -2712,12 +2326,6 @@
        "why": "LUK+2"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
@@ -2727,19 +2335,13 @@
        "id": 4159,
        "slot": "garment",
        "prio": 2,
-       "why": "AGI+2 FLEE+20"
+       "why": "AGI+2; FLEE+20 at refine above +8"
       },
       {
        "id": 4097,
        "slot": "shoes",
        "prio": 3,
        "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       },
       {
        "id": 4027,
@@ -2769,8 +2371,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -2846,7 +2447,7 @@
        "id": 4159,
        "slot": "garment",
        "prio": 2,
-       "why": "AGI+2 FLEE+20"
+       "why": "AGI+2; FLEE+20 at refine above +8"
       },
       {
        "id": 4097,
@@ -2898,8 +2499,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -2960,46 +2560,16 @@
        "why": "LUK+2"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
        "why": "FLEE+20"
       },
       {
-       "id": 4159,
-       "slot": "garment",
-       "prio": 2,
-       "why": "AGI+2 FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
-      },
-      {
        "id": 4027,
        "slot": "accessory",
        "prio": 2,
        "why": "AGI+2"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+3"
       }
      ],
      "note": "dagger + Double Attack"
@@ -3018,8 +2588,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -3095,7 +2664,7 @@
        "id": 4159,
        "slot": "garment",
        "prio": 2,
-       "why": "AGI+2 FLEE+20"
+       "why": "AGI+2; FLEE+20 at refine above +8"
       },
       {
        "id": 4097,
@@ -3146,8 +2715,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -3190,18 +2758,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -3212,30 +2768,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "STR+1 ATK+10"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Merchant: Axe[4] / Battle Axe[4]"
@@ -3255,8 +2787,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -3305,12 +2836,6 @@
        "why": "+15% vs Large"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -3323,12 +2848,6 @@
        "why": "STR+1 ATK+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral"
-      },
-      {
        "id": 4097,
        "slot": "shoes",
        "prio": 3,
@@ -3339,12 +2858,6 @@
        "slot": "accessory",
        "prio": 3,
        "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Battle Axe -> Hammer -> Buster; Adrenaline Rush needs an axe or mace"
@@ -3363,8 +2876,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -3479,8 +2991,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -3523,18 +3034,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -3545,30 +3044,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "STR+1 ATK+10"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Merchant: axe"
@@ -3587,8 +3062,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -3697,24 +3171,19 @@
       1802
      ],
      "armor": [
-      2306,
-      2313,
-      2315
+      2306
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2402,
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -3747,18 +3216,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -3769,30 +3226,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "STR+1 ATK+10"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Acolyte: Mace[4] / Waghnak[4]"
@@ -3811,18 +3244,15 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2402,
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -3953,7 +3383,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -3978,24 +3408,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP+10% AGI+1"
       }
      ],
      "note": "Rod[4] with Drops cards; the starter Hood/Sandals/Silk Robe from NPCs"
@@ -4015,7 +3427,6 @@
       2102
      ],
      "headgear": [
-      2217,
       2232
      ],
      "garment": [
@@ -4042,7 +3453,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -4069,12 +3480,6 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4100,
        "slot": "shoes",
        "prio": 3,
@@ -4098,8 +3503,7 @@
       1618
      ],
      "armor": [
-      2334,
-      2326
+      2334
      ],
      "shield": [
       2102
@@ -4108,12 +3512,10 @@
       2232
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -4131,7 +3533,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -4226,7 +3628,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -4251,24 +3653,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP+10% AGI+1"
       }
      ],
      "note": "Rod[4] with Drops cards; the starter Hood/Sandals/Silk Robe from NPCs"
@@ -4288,7 +3672,6 @@
       2102
      ],
      "headgear": [
-      2217,
       2232
      ],
      "garment": [
@@ -4315,7 +3698,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -4342,12 +3725,6 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4100,
        "slot": "shoes",
        "prio": 3,
@@ -4371,8 +3748,7 @@
       1618
      ],
      "armor": [
-      2334,
-      2326
+      2334
      ],
      "shield": [
       2102
@@ -4381,12 +3757,10 @@
       2232
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -4404,7 +3778,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -4515,24 +3889,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -4551,40 +3907,16 @@
        "why": "MaxHP+700"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
        "why": "FLEE+10"
       },
       {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
        "id": 4107,
        "slot": "shoes",
        "prio": 2,
        "why": "MaxHP/SP+8%"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Knight spear: Javelin -> Spear -> Pike -> Guisarme -> Glaive; Brandish Spear needs a spear and a Peco (Riding)"
@@ -4650,12 +3982,6 @@
        "why": "+15% vs Large, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4085,
        "slot": "weapon",
        "prio": 1,
@@ -4680,12 +4006,6 @@
        "why": "MaxHP+700"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
@@ -4708,12 +4028,6 @@
        "slot": "accessory",
        "prio": 3,
        "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Knight spear: Javelin -> Spear -> Pike -> Guisarme -> Glaive; Brandish Spear needs a spear and a Peco (Riding)"
@@ -4913,24 +4227,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
-      },
-      {
        "id": 4012,
        "slot": "shield",
        "prio": 3,
@@ -4940,7 +4236,7 @@
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "-30% Demi-Human damage"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       },
       {
        "id": 4045,
@@ -4955,40 +4251,10 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4141,
-       "slot": "armor",
-       "prio": 2,
-       "why": "Undead armor vs undead maps"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
        "id": 4022,
        "slot": "accessory",
        "prio": 2,
        "why": "VIT+2"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+3"
       }
      ],
      "note": "Grand Cross Crusader: INT/VIT; Grand Cross (ATK+MATK holy) on undead/demon crowds; 1H sword + shield"
@@ -5057,12 +4323,6 @@
        "why": "+15% vs Large, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4085,
        "slot": "weapon",
        "prio": 1,
@@ -5078,7 +4338,7 @@
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "-30% Demi-Human damage"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       },
       {
        "id": 4045,
@@ -5091,18 +4351,6 @@
        "slot": "armor",
        "prio": 3,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4141,
-       "slot": "armor",
-       "prio": 2,
-       "why": "Undead armor vs undead maps"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       },
       {
        "id": 4097,
@@ -5214,7 +4462,7 @@
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "-30% Demi-Human damage"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       },
       {
        "id": 4045,
@@ -5284,8 +4532,7 @@
       1705
      ],
      "armor": [
-      2306,
-      2322
+      2306
      ],
      "shield": [],
      "headgear": [
@@ -5301,7 +4548,7 @@
       2404
      ],
      "accessory": [
-      2627
+      2679
      ],
      "ammo": [
       1750,
@@ -5316,12 +4563,6 @@
        "why": "Teleport lv1: travel fast and escape danger (owner rule 2026-11-14)"
       },
       {
-       "id": 4094,
-       "slot": "weapon",
-       "prio": 3,
-       "why": "+10% ranged damage"
-      },
-      {
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
@@ -5334,22 +4575,10 @@
        "why": "ATK+20"
       },
       {
-       "id": 4060,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+20% vs Brute"
-      },
-      {
        "id": 4063,
        "slot": "weapon",
        "prio": 2,
        "why": "+20% vs Insect"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
       },
       {
        "id": 4021,
@@ -5376,46 +4605,16 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4102,
-       "slot": "garment",
-       "prio": 2,
-       "why": "FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
        "id": 4009,
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
       },
       {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
-      },
-      {
        "id": 4034,
        "slot": "accessory",
        "prio": 2,
        "why": "DEX+2"
-      },
-      {
-       "id": 4027,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "AGI+2"
       }
      ],
      "note": "Blitz Hunter: falcon Blitz Beat scales with INT/DEX; bow route as the DEX hunter"
@@ -5428,7 +4627,6 @@
       1711
      ],
      "armor": [
-      2322,
       2311
      ],
      "shield": [],
@@ -5437,8 +4635,7 @@
       2202
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2404
@@ -5521,12 +4718,6 @@
        "why": "FLEE+10"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
@@ -5543,12 +4734,6 @@
        "slot": "shoes",
        "prio": 1,
        "why": "AGI+1 FLEE+2"
-      },
-      {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
       },
       {
        "id": 4034,
@@ -5583,7 +4768,7 @@
       2285
      ],
      "garment": [
-      2506
+      2586
      ],
      "shoes": [
       2406
@@ -5784,12 +4969,6 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4141,
-       "slot": "armor",
-       "prio": 2,
-       "why": "Undead armor: undead dungeons"
-      },
-      {
        "id": 4012,
        "slot": "shield",
        "prio": 2,
@@ -5802,40 +4981,10 @@
        "why": "-35% ranged damage"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
        "why": "FLEE+10"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
-       "id": 4070,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "SP regen +15%"
-      },
-      {
-       "id": 4077,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "cast not interrupted"
       }
      ],
      "note": "Magnus Exorcismus Priest: INT/DEX; Blue Gemstones for ME; same gear as the support priest"
@@ -5857,8 +5006,7 @@
       2217
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2404
@@ -5918,12 +5066,6 @@
        "why": "-35% ranged damage"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
@@ -5973,10 +5115,10 @@
       2217
      ],
      "garment": [
-      2506
+      2586
      ],
      "shoes": [
-      2406
+      2408
      ],
      "accessory": [
       2627,
@@ -6134,30 +5276,6 @@
        "why": "DEX+1 HIT+3"
       },
       {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
-       "id": 4077,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "cast not interrupted"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -6188,7 +5306,6 @@
       2102
      ],
      "headgear": [
-      2217,
       2232
      ],
      "garment": [
@@ -6248,12 +5365,6 @@
        "why": "cast not interrupted"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -6277,8 +5388,7 @@
       1552
      ],
      "armor": [
-      2334,
-      2326
+      2334
      ],
      "shield": [
       2102
@@ -6287,12 +5397,10 @@
       2232
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -6379,24 +5487,19 @@
       1802
      ],
      "armor": [
-      2306,
-      2313,
-      2315
+      2306
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2402,
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -6435,28 +5538,10 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
        "id": 4052,
        "slot": "headgear",
        "prio": 2,
        "why": "INT+2"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
       },
       {
        "id": 4008,
@@ -6469,12 +5554,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       }
      ],
      "note": "Acolyte: Mace[4] / Waghnak[4]"
@@ -6494,18 +5573,15 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2402,
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -6610,8 +5686,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -6660,52 +5735,16 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
        "id": 4092,
        "slot": "weapon",
        "prio": 2,
        "why": "+15% vs Medium, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
       },
       {
        "id": 4008,
@@ -6730,8 +5769,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -6859,8 +5897,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -6891,12 +5928,6 @@
        "why": "INT+2"
       },
       {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
-      },
-      {
        "id": 4034,
        "slot": "accessory",
        "prio": 2,
@@ -6913,24 +5944,6 @@
        "slot": "weapon",
        "prio": 2,
        "why": "DEX+1 HIT+3"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP+10% AGI+1"
       }
      ],
      "note": "Merchant: Axe[4]; Vending sells its potions"
@@ -6949,8 +5962,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7047,8 +6059,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7097,52 +6108,16 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
        "id": 4092,
        "slot": "weapon",
        "prio": 2,
        "why": "+15% vs Medium, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
       },
       {
        "id": 4022,
@@ -7174,8 +6149,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7234,18 +6208,6 @@
        "slot": "weapon",
        "prio": 2,
        "why": "+15% vs Medium, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       },
       {
        "id": 4097,
@@ -7301,8 +6263,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7436,8 +6397,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7486,34 +6446,10 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
        "id": 4092,
        "slot": "weapon",
        "prio": 2,
        "why": "+15% vs Medium, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "DEX+3"
       },
       {
        "id": 4008,
@@ -7528,22 +6464,10 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
        "why": "FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
       }
      ],
      "note": "Thief: dagger until the katar"
@@ -7562,8 +6486,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7624,12 +6547,6 @@
        "why": "+15% vs Medium, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4079,
        "slot": "accessory",
        "prio": 3,
@@ -7652,12 +6569,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       },
       {
        "id": 4102,
@@ -7687,8 +6598,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7822,8 +6732,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -7872,28 +6781,10 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
        "id": 4092,
        "slot": "weapon",
        "prio": 2,
        "why": "+15% vs Medium, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
       },
       {
        "id": 4027,
@@ -7914,22 +6805,10 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
        "why": "FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
       }
      ],
      "note": "Thief: Main Gauche[4] / Dirk[3] / Stiletto[3]"
@@ -7949,8 +6828,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -8011,12 +6889,6 @@
        "why": "+15% vs Medium, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4079,
        "slot": "accessory",
        "prio": 3,
@@ -8039,12 +6911,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       },
       {
        "id": 4102,
@@ -8074,8 +6940,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -8208,8 +7073,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -8268,18 +7132,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
-       "id": 4064,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "DEX+3"
-      },
-      {
        "id": 4034,
        "slot": "accessory",
        "prio": 2,
@@ -8304,22 +7156,10 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
        "why": "FLEE+20"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
       }
      ],
      "note": "Thief: Bow[4] / Composite Bow[4] + Arrows (Double Strafe needs Vulture's Eye 10)"
@@ -8337,8 +7177,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -8434,12 +7273,6 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4102,
        "slot": "garment",
        "prio": 2,
@@ -8469,8 +7302,7 @@
      ],
      "shield": [],
      "headgear": [
-      2221,
-      2229
+      2221
      ],
      "garment": [
       2502,
@@ -8654,24 +7486,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -8690,22 +7504,10 @@
        "why": "MaxHP+700"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
        "why": "FLEE+10"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
       },
       {
        "id": 4107,
@@ -8714,22 +7516,10 @@
        "why": "MaxHP/SP+8%"
       },
       {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
-      },
-      {
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "MaxHP+400 (Thief Bug Egg)"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       }
      ],
      "note": "Pierce lancer: one-hand spear (Javelin / Spear / Pike) + shield, two-hand Guisarme / Glaive later; on a Peco"
@@ -8746,10 +7536,7 @@
       2313,
       2315
      ],
-     "shield": [
-      2103,
-      2105
-     ],
+     "shield": [],
      "headgear": [
       2229
      ],
@@ -8798,12 +7585,6 @@
        "why": "+15% vs Large, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4085,
        "slot": "weapon",
        "prio": 1,
@@ -8826,12 +7607,6 @@
        "slot": "armor",
        "prio": 1,
        "why": "MaxHP+700"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       },
       {
        "id": 4015,
@@ -8858,16 +7633,10 @@
        "why": "STR+3"
       },
       {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
-      },
-      {
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "MaxHP+400 (Thief Bug Egg)"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       }
      ],
      "note": "Pierce lancer: one-hand spear (Javelin / Spear / Pike) + shield, two-hand Guisarme / Glaive later; on a Peco"
@@ -8884,10 +7653,7 @@
       2315,
       2317
      ],
-     "shield": [
-      2105,
-      2107
-     ],
+     "shield": [],
      "headgear": [
       2229
      ],
@@ -9003,7 +7769,7 @@
        "id": 4058,
        "slot": "shield",
        "prio": 2,
-       "why": "MaxHP+400 (Thief Bug Egg)"
+       "why": "-30% damage from Demi-Human and Player-Human monsters"
       }
      ],
      "note": "Pierce lancer: one-hand spear (Javelin / Spear / Pike) + shield, two-hand Guisarme / Glaive later; on a Peco"
@@ -9073,24 +7839,6 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
-       "id": 4085,
-       "slot": "weapon",
-       "prio": 1,
-       "why": "+20% vs Holy"
-      },
-      {
        "id": 4031,
        "slot": "armor",
        "prio": 2,
@@ -9109,40 +7857,16 @@
        "why": "MaxHP+700"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
        "why": "FLEE+10"
       },
       {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxHP+10% AGI+1"
-      },
-      {
        "id": 4107,
        "slot": "shoes",
        "prio": 2,
        "why": "MaxHP/SP+8%"
-      },
-      {
-       "id": 4079,
-       "slot": "accessory",
-       "prio": 3,
-       "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Spear Crusader: a two-handed spear (Guisarme / Glaive / Trident) for Spear Quicken and a stronger Holy Cross; Grand Peco"
@@ -9207,12 +7931,6 @@
        "why": "+15% vs Large, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4085,
        "slot": "weapon",
        "prio": 1,
@@ -9237,12 +7955,6 @@
        "why": "MaxHP+700"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
@@ -9265,12 +7977,6 @@
        "slot": "accessory",
        "prio": 3,
        "why": "STR+3"
-      },
-      {
-       "id": 4091,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "STR+1 CRIT+4"
       }
      ],
      "note": "Spear Crusader: a two-handed spear (Guisarme / Glaive / Trident) for Spear Quicken and a stronger Holy Cross; Grand Peco"
@@ -9473,22 +8179,10 @@
        "why": "+20% vs Insect"
       },
       {
-       "id": 4126,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Large, ATK+5"
-      },
-      {
        "id": 4092,
        "slot": "weapon",
        "prio": 2,
        "why": "+15% vs Medium, ATK+5"
-      },
-      {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
       },
       {
        "id": 4052,
@@ -9515,12 +8209,6 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4141,
-       "slot": "armor",
-       "prio": 2,
-       "why": "Undead armor: undead dungeons"
-      },
-      {
        "id": 4012,
        "slot": "shield",
        "prio": 2,
@@ -9533,40 +8221,10 @@
        "why": "-35% ranged damage"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4015,
        "slot": "garment",
        "prio": 1,
        "why": "FLEE+10"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4107,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP/SP+8%"
-      },
-      {
-       "id": 4070,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "SP regen +15%"
-      },
-      {
-       "id": 4077,
-       "slot": "accessory",
-       "prio": 2,
-       "why": "cast not interrupted"
       }
      ],
      "note": "Battle priest: Mace[4] -> Smasher / Chain -> Morning Star with race cards; Saint's Robe, shield"
@@ -9589,8 +8247,7 @@
       2217
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
       2404
@@ -9644,12 +8301,6 @@
        "why": "+15% vs Medium, ATK+5"
       },
       {
-       "id": 4082,
-       "slot": "weapon",
-       "prio": 2,
-       "why": "+15% vs Small, ATK+5"
-      },
-      {
        "id": 4052,
        "slot": "headgear",
        "prio": 3,
@@ -9690,12 +8341,6 @@
        "slot": "shield",
        "prio": 2,
        "why": "-35% ranged damage"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
       },
       {
        "id": 4015,
@@ -9748,10 +8393,10 @@
       2217
      ],
      "garment": [
-      2506
+      2586
      ],
      "shoes": [
-      2406
+      2408
      ],
      "accessory": [
       2627,
@@ -9936,7 +8581,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -9961,24 +8606,6 @@
        "slot": "armor",
        "prio": 2,
        "why": "MaxHP+10%"
-      },
-      {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
-       "id": 4100,
-       "slot": "shoes",
-       "prio": 3,
-       "why": "MaxSP+15%"
-      },
-      {
-       "id": 4097,
-       "slot": "shoes",
-       "prio": 2,
-       "why": "MaxHP+10% AGI+1"
       }
      ],
      "note": "Hindsight Sage: Book[3] -> Bible[2] -> Tablet / Book of Billows; Study 10 makes books fast"
@@ -9998,7 +8625,6 @@
       2102
      ],
      "headgear": [
-      2217,
       2232
      ],
      "garment": [
@@ -10025,7 +8651,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,
@@ -10052,12 +8678,6 @@
        "why": "MaxHP+10%"
       },
       {
-       "id": 4133,
-       "slot": "garment",
-       "prio": 3,
-       "why": "-20% Neutral damage"
-      },
-      {
        "id": 4100,
        "slot": "shoes",
        "prio": 3,
@@ -10081,8 +8701,7 @@
       1553
      ],
      "armor": [
-      2334,
-      2326
+      2334
      ],
      "shield": [
       2102
@@ -10091,12 +8710,10 @@
       2232
      ],
      "garment": [
-      2504,
-      2506
+      2504
      ],
      "shoes": [
-      2404,
-      2406
+      2404
      ],
      "accessory": [
       2627,
@@ -10114,7 +8731,7 @@
        "id": 4004,
        "slot": "weapon",
        "prio": 2,
-       "why": "DEX+1 HIT+3: faster casts"
+       "why": "DEX+1 HIT+3"
       },
       {
        "id": 4052,

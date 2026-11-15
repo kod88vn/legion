@@ -68,9 +68,9 @@ var (
 	armorThief  = []int{2301, 2305, 2307, 2309, 2312, 2314} // ... mantle, coat, padded, chain mail (Thief Clothes is Comodo-only)
 	armorRobe   = []int{2301, 2305, 2321, 2332}             // ... silk robe, silver robe (mage line)
 	armorHoly   = []int{2301, 2305, 2321, 2325}             // ... silk robe, Saint's Robe (prt_church; acolyte line)
-	extrasMelee = []int{2220, 2226, 2228, 2501, 2503, 2505, 2401, 2403, 2405, 2627, 2607, 2608}
-	extrasCast  = []int{2220, 2226, 2232, 2501, 2503, 2505, 2401, 2403, 2405, 2627, 2607, 2608}
-	extrasHoly  = []int{2220, 2216, 2501, 2503, 2401, 2403, 2405, 2627, 2607, 2608} // Biretta, Rosary (prt_church)
+	extrasMelee = []int{2220, 2226, 2228, 2501, 2503, 2505, 2401, 2403, 2405, 2627, 2608}
+	extrasCast  = []int{2220, 2226, 2232, 2501, 2503, 2505, 2401, 2403, 2405, 2627, 2608}
+	extrasHoly  = []int{2220, 2216, 2501, 2503, 2401, 2403, 2405, 2627, 2608} // Biretta, Rosary (prt_church)
 	shields     = []int{2101, 2103, 2105}
 )
 

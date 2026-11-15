@@ -25,6 +25,7 @@ import argparse, json, os, pathlib, re, subprocess, sys, tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import planlib as pl
+import gearalts as ga
 
 OUT = pl.ROOT / "legion" / "data" / "buildmilestones.json"
 BEFORE = pl.ROOT / "tests" / "tools" / "fixtures" / "builds_before_rebalance.go"
@@ -48,6 +49,7 @@ def fetch_db(dst):
         out = subprocess.run(["wsl.exe", "docker", "exec", "ro-rathena", "cat", f"/rathena/db/re/{f}.yml"],
                              capture_output=True, check=True, env=env).stdout
         (pathlib.Path(dst) / f"{f}.yml").write_bytes(out)
+    ga.fetch_extra(dst)   # items, refine chances, monster drops, spawns, shops, drop rates (EC40-EC43)
 
 
 def stage_label(plan, base_level):
@@ -107,14 +109,29 @@ def build_line(bid, plan, old, new):
             f"not reached now: {unreached_text(new)}.")
 
 
-def class_body(group, old_checks, new_checks, plans):
+def gear_line(bid, build):
+    """one prose bullet: the end band's best piece per slot (with its alternative count) and the card plan's status"""
+    end = build["ranges"][-1]
+    parts = []
+    for slot in ga.SLOT_ORDER:
+        g = end["gear"].get(slot) or {}
+        if g.get("best"):
+            parts.append(f"{slot} {g['best']['name']} ({len(g['alternatives'])} alternative{'s' if len(g['alternatives']) != 1 else ''})")
+    st = [c["status"] for c in end["cards"]]
+    return (f"  - `{bid}` gear at the end band {end['range']} (EC40): {', '.join(parts) or 'none'}; cards (EC41): "
+            f"{st.count('use_now')} usable now, {st.count('use_at_target')} at the refine target, {st.count('fallback')} fallback.")
+
+
+def class_body(group, old_checks, new_checks, plans, builds):
     lines = [
         "- Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every "
         f"build of this line are in `legion/data/buildmilestones.json` ({', '.join(f'`{b}`' for b in group)}). "
-        "Gear is by band in `buildgear.json`; the party role stays in code.",
+        "Gear is by band in `buildgear.json` (curated) and with its alternatives, refine and card plan in the same file as the stats (EC40-EC43); the party role stays in code.",
         "- Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:",
     ]
     lines += [build_line(b, plans[b], old_checks.get(b), new_checks[b]) for b in group]
+    lines.append("- Gear and cards at each build's end band (`legion/data/buildmilestones.json`, the Builds tab shows every band):")
+    lines += [gear_line(b, builds[b]) for b in group]
     lines.append("- Existing characters: a changed plan keeps the earlier goals in `Legacy` / `LegacyStats` (builds.go), so they "
                  "are not wrong builds; `tests/tools/test_wrongbuilds_replay.py` replays the pre-rebalance plans through the "
                  "wrongbuilds.py rules.")
@@ -132,7 +149,7 @@ def all_body(old_checks, new_checks):
         f"- `legion/data/buildmilestones.json` holds, for every build in `builds.go`, the stats and skills reached by the end of each "
         "gear band (replay of the ordered plans, `tools/design/gen_milestones.py`) and the solo / MVP / PvP playstyle. Tests: "
         "`tests/tools/test_buildmilestones.py` (budgets, reach) and `tests/tools/test_wrongbuilds_replay.py` (old plans flag nothing). "
-        "Gear stays in `buildgear.json`; the party role stays in code.",
+        "Gear: the curated lists stay in `buildgear.json`; each range's alternatives, refine and card plan are here (EC40-EC43); the party role stays in code.",
         "- Limits that shape every plan: 1,273 stat points at level 99; skill points 9 (Novice, Basic Skill, outside the plan) + "
         "39 (first job, changes at job 40) + 49 (every second job caps at job level 50 here) = 88 for the plan.",
         f"- Before the 2026-11-15 rebalance {len(over_stat)} plans listed stat goals above 1,273 points, {len(over_skill)} listed more "
@@ -166,6 +183,7 @@ def main():
     import yaml
     desc = {s["Name"]: s.get("Description", s["Name"]) for s in
             yaml.load(open(f"{db}/skill_db.yml", encoding="utf-8"), Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))["Body"]}
+    cat = ga.Catalog(db)
     plans = pl.parse_builds()
     old_plans = pl.parse_builds(str(BEFORE))
     gear = json.load(open(pl.ROOT / "legion" / "data" / "buildgear.json", encoding="utf-8"))["builds"]
@@ -201,6 +219,10 @@ def main():
                 "skills": skills,
                 "skill_points_unspent": sum(pools.values()),
             })
+        gear_rows = ga.build_gear(cat, ga.job_keys_for(job2, pl.FIRST_JOB[plan["first"]]), g["bands"])
+        for rng, gr in zip(ranges, gear_rows):
+            rng["gear"] = gr["gear"]     # EC40: best piece and alternatives per slot, from the band's curated lists
+            rng["cards"] = gr["cards"]   # EC41: refine target, cost, tier and insert level per card
         builds[bid] = {
             "name": plan["name"], "base": plan["base"], "class": job2, "first_job": pl.FIRST_JOB[plan["first"]],
             "status": STATUS, "drafted": DATE,
@@ -224,6 +246,18 @@ def main():
             "vendors": "vendor characters learn vendorFirst (Enlarge Weight Limit 5, Pushcart 3, Vending 3) before the plan's skills (builds.go planSkill). Merchant-line plans already start with these goals, so for them the replay is the same; a vendor of another line is not modelled (vendors are Merchant-line)",
             "ranges": "gear bands from legion/data/buildgear.json (variants use their main plan's bands); a bands overlap, so "
                       "'by the end of the range' is the max level of the band",
+            "gear": "per range and slot: the curated best piece (last of the band's list) and up to %d alternatives "
+                    "(affordable first, then fallback), each with its shop price or its drops (monster, rate at the server's "
+                    "item_rate multipliers, maps); affordable = shop price <= %d z per band level, or a drop <= %d levels above "
+                    "the band top at %.1f %% or more. Source: the item, refine, mob and spawn tables of the running server."
+                    % (ga.MAX_ALTS, ga.GEAR_LV_BUDGET, ga.FARM_LV_GAP, ga.FARM_RATE_PCT),
+            "refine": "target +7 for every refineable piece, +8 for weapon grades 2 and 5 (+7 for grades 1, 3, 4). Cost = the "
+                      "cheapest material per level that cannot break the piece (zeny + NPC-shop price of the material), "
+                      "weighed by its chance; break_risk_pct is what remains when a breaking material is the only one. Estimate.",
+            "cards": "one-time bound: a card goes in at insert_at, the highest refine level the band pays for (budget %d z per "
+                     "band level). Tier from the non-MVP monster drops: popular (3+ monsters at %.1f %% or more), uncommon "
+                     "(%.1f %%+, usable at any band), rare (the rest). Rare cards only at band tops of 60+ with the full refine affordable, else "
+                     "the popular fallback in the same slot." % (ga.REFINE_LV_BUDGET, ga.POPULAR_PCT, ga.UNCOMMON_PCT),
             "stats_keys": pl.STATS,
         },
         "builds": builds,
@@ -241,7 +275,7 @@ def main():
     for fname, group in sorted(by_file.items()):
         path = DOCS / f"{fname}.md"
         replace_section(path, HEAD_PROSE, HEAD_PROSE + " (rebalanced 2026-11-15)",
-                        class_body(sorted(group, key=lambda b: list(plans).index(b)), old_checks, new_checks, plans))
+                        class_body(sorted(group, key=lambda b: list(plans).index(b)), old_checks, new_checks, plans, builds))
         print("prose", path)
     replace_section(DOCS / "all.md", HEAD_ALL, HEAD_ALL + " (rebalanced 2026-11-15; EC39)", all_body(old_checks, new_checks))
     print("prose", DOCS / "all.md")

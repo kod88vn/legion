@@ -522,6 +522,8 @@ def build_export(items, skills, paths=None):
                 solo = {"status": "defined", "lines": solo["lines"], "note": ""}
         playstyle = {"solo": solo, "party": party, "mvp": mvp, "pvp": pvp}
         draft = ms_builds.get(bid) or {}
+        # EC40-EC43: the top gear band of the design draft is the end build's plan (upgrades and alternatives)
+        end_range = (draft.get("ranges") or [{}])[-1].get("range") if draft.get("ranges") else None
         for part in ("solo", "mvp", "pvp"):
             # a gap is filled by the design draft's text, labelled draft; the doc or code line always wins
             if playstyle[part]["status"] == "gap" and (draft.get("playstyle") or {}).get(part):
@@ -567,6 +569,9 @@ def build_export(items, skills, paths=None):
                     "range": rng, "min": r["min"], "max": r["max"], "class_at_end": r.get("class_at_end", ""),
                     "gear": gear,
                     "cards": bd["cards"] if bd else [],
+                    # EC40-EC43 (the design draft's gear plan): best piece and alternatives per slot, and the card plan
+                    "gear_plan": r.get("gear") or None,
+                    "card_plan": r.get("cards") or [],
                     "stats": {"status": "draft", "note": DRAFT_NOTE, "values": {s: (r.get("stats") or {}).get(s) for s in STAT_ORDER_OUT},
                               "points": {"available": r.get("stat_points_available"), "used": r.get("stat_points_used"),
                                          "spare": r.get("stat_points_spare")},
@@ -580,7 +585,7 @@ def build_export(items, skills, paths=None):
                 rng = "%s-%s" % (bd["min"], bd["max"])
                 milestones.append({
                     "range": rng, "min": bd["min"], "max": bd["max"], "class_at_end": "",
-                    "gear": dict(gear_of(bd), status="ok"), "cards": bd["cards"],
+                    "gear": dict(gear_of(bd), status="ok"), "cards": bd["cards"], "gear_plan": None, "card_plan": [],
                     "stats": {"status": "gap", "value": None,
                               "note": "no level milestone for stats in the design draft or the engine"},
                     "skills": {"status": "gap", "value": None,
@@ -594,7 +599,8 @@ def build_export(items, skills, paths=None):
                       "first_id": f.get("First", 0), "branch": f.get("Branch", 0),
                       "line": "%s (1st job) -> %s (2nd job, end goal)" % (cname(f.get("First", 0)), cname(cls))},
             "end": {
-                "gear": {"slots": end_gear, "cards": cards, "source": gear_src},
+                "gear": {"slots": end_gear, "cards": cards, "source": gear_src,
+                         "plan_range": end_range},   # the top band's gear_plan and card_plan are in milestones[-1]
                 "stats_note": "stat goals are reached in order (see steps.stats); the top goal is the end",
                 "stats": [{"stat": s, "value": end_stats[s]} for s in stat_order if s in end_stats],
                 "skills": [{"id": sid, "name": skills.get(sid, "skill %d" % sid), "lv": lv}
