@@ -132,6 +132,7 @@ func guildRankRound(snaps []*dutySnap, now time.Time, starveil string) {
 	}
 	// funds: leaders' and vendors' purses (offline ones keep the last seen purse for a day)
 	charGuild := map[string]string{}
+	hName, hZeny, hTS, hOK := humanGuildPurse(starveil) // guildrank_human.go: Starveil's master is played outside the engine
 	grank.Lock()
 	for _, s := range snaps {
 		charGuild[s.name] = s.guild
@@ -139,6 +140,9 @@ func guildRankRound(snaps []*dutySnap, now time.Time, starveil string) {
 			grank.funds[s.name] = [2]int{s.zeny, int(now.Unix())}
 			grank.fundGuild[s.name] = s.guild
 		}
+	}
+	if hOK {
+		grank.funds[hName], grank.fundGuild[hName] = [2]int{hZeny, int(hTS)}, humanGuildID
 	}
 	funds := map[string]int{}
 	for c, f := range grank.funds {

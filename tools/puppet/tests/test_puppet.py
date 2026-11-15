@@ -451,7 +451,7 @@ class IntegrationTests(unittest.TestCase):
             self.assertIn(f"Bash({dispatch.ayla_cmd()} {a}:*)", tl)
         self.assertTrue(any("bugq.py add:*" in t for t in tl))
         denied = " ".join(dispatch.denied_tools("python", "ayla"))
-        for c in ("party-say:*", "say:*", "chat-jobs:*", "guild-direction-set:*", "goal:*"):
+        for c in ("party-say:*", "say:*", "guild-say:*", "chat-jobs:*", "guild-direction-set:*", "goal:*"):
             self.assertIn(c, denied)
         self.assertNotIn("party-say:*", " ".join(dispatch.denied_tools("python", "chat")))
         self.assertNotIn(" ai off`", dispatch.load_brief("ayla").replace("never `ai`, `ai off`", ""))
