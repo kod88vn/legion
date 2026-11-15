@@ -193,11 +193,15 @@ func (b *Bot) lowHPGuard(gm *GameMap, moving bool, now time.Time) bool {
 	// setting out for another map or a party elsewhere: back to 90% HP (and 90% SP for a caster) first, in town too.
 	spOK := true
 	if b.rejoinAfterDeath(now) {
-		entry, done = 0.9, 0.9
-		spOK = b.MaxSP <= 0 || b.SP*10 >= b.MaxSP*9 || !b.spUser()
+		entry, done = postDeathEntry, 0.9 // restsplit.go
+		spOK = b.postDeathSPOK()
 	}
 	b.rejoinSay(now)
-	if hp >= done && spOK || (!resting && hp >= entry && spOK) {
+	hpOK := hp >= done || (!resting && hp >= entry)
+	if hpOK && !spOK && b.buffAt != nil {
+		return b.spRestBeforeMoving(moving, now) // restsplit.go: HP is fine, only SP is short
+	}
+	if hpOK && spOK {
 		if resting {
 			delete(b.buffAt, "lowrest")
 			rally := false

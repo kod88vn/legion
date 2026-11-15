@@ -22,3 +22,20 @@ func kafraChainHop(l kafraHop, dest, goal string, n10 int) bool {
 	}
 	return true
 }
+
+// kafraChainOK (b.mu held): kafraChainHop, or the next leg of a party follow whose goal moved. QA 2026-11-15 (core):
+// Zendancer84 sat "waiting in aldebaran for the Kafra (the walk to payon is too dangerous)" while Ayla was in Payon:
+// its earlier hops in the last 10 min chased Ayla's previous towns (another goal each time, or a goal-less hop read
+// back from the diary after a restart), so the same-goal chain test failed, the 3-in-10-min cap held every
+// destination and the aldebaran -> geffen/izlude -> payon chain was never planned. A member following its leader
+// (kafraPartyMove: a human leader's leg, a bot party move) chains on to the leader's current map; never straight back
+// (the X -> Y -> X block) and never past kafraChainMax hops in 10 min.
+func (b *Bot) kafraChainOK(l kafraHop, dest, goal string, n10 int) bool {
+	if kafraChainHop(l, dest, goal, n10) {
+		return true
+	}
+	if tune().KafraChainOff || n10 >= kafraChainMax || goal == "" || !b.kafraPartyMove() {
+		return false
+	}
+	return dest == "" || dest != l.From && nearestTown(dest) != l.From
+}
