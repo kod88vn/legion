@@ -1358,9 +1358,10 @@ my @FIT_MAPS = ( # preference order: the highest band she qualifies for first (a
 	# lv89-95; gl_chyard: Dark Priest lv98 + Dark Lord MVP)
 	[92, 99, 'gl_chyard', 1], [86, 99, 'gl_prison', 1], [84, 95, 'alde_dun02', 1], [72, 89, 'gl_church', 1],
 	[76, 92, 'c_tower2', 1], [72, 86, 'c_tower1', 1], [64, 75, 'mjolnir_11', 1], [60, 71, 'gef_dun01', 1], [58, 68, 'orcsdun02', 1],
-	# 58-99 with no healer online: passive / open fields (Juno, Mt. Mjolnir) a party clears without heals
-	[80, 99, 'yuno_fild04', 0], [76, 92, 'yuno_fild07', 0], [72, 86, 'yuno_fild11', 0], [70, 84, 'yuno_fild08', 0],
-	[62, 75, 'yuno_fild01', 0], [62, 75, 'yuno_fild12', 0], [58, 69, 'mjolnir_12', 0],
+	# 58-99 with no healer online: open fields near Geffen / Al De Baran (no Juno: OpenKore routed Payon -> Juno through
+	# the Izlude airship and stuck on izlude 24,98, an unwalkable cell in its field data - live 2026-11-15)
+	[80, 99, 'gef_fild06', 0], [72, 90, 'gef_fild08', 0], [66, 82, 'mjolnir_05', 0], [64, 80, 'mjolnir_03', 0],
+	[58, 74, 'mjolnir_12', 0],
 	# under 60 (pay_dun03: Sohee lv64 but mean monster level 44 - only to 65)
 	[52, 65, 'pay_dun03', 0], [50, 61, 'prt_fild09', 0], [50, 61, 'pay_fild10', 0], [45, 59, 'pay_dun02', 1],
 	[40, 51, 'moc_fild03', 0], [40, 49, 'gef_fild03', 1], [32, 47, 'pay_dun01', 1], [25, 39, 'pay_fild09', 0],
@@ -1455,10 +1456,15 @@ sub auto_goto {
 	cmd_partylead(undef, "goto $m");
 }
 my $fitAt = 0;
+my $fitLoadAt = time;
 sub fit_tick {
 	return if time - $fitAt < FIT_EVERY;
 	$fitAt = time;
 	return if mind_fresh();
+	# the party's levels and classes come from Legion's API: no choice before they are in (live 2026-11-15: the first
+	# pick right after a reload saw no friends - "level 81, no healer" - with a Priest in the party); 5 min at most
+	my @fr = online_friends();
+	return if @fr && !grep({ $apiPos{$_->[0]} && $apiPos{$_->[0]}{lv} } @fr) && time - $fitLoadAt < 300;
 	return if $rally || $depart || $holding || $collect || $fetchMap ne '' || $char->{dead};
 	return if (defined &aylagear::busy && aylagear::busy()) || AI::inQueue('NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal');
 	my ($m, $why) = choose_map();
@@ -1487,6 +1493,7 @@ sub crowd_move {
 # on, else a level-fitting field, and farm there (the sweep: walk to monsters, fight). One map, one step; no mass action.
 use constant WD_IDLE => 60;
 my ($wdProdAt, $wdExp, $wdPos, $wdAct, $wdFired) = (time, 0, '', 0, 0);
+my ($wdStuckSince, $wdStuckMap, %wdStuckN) = (time, '');
 sub wd_target {
 	return $homeMap if mind_fresh();
 	my ($tm) = party_turn();
@@ -1511,6 +1518,25 @@ sub watchdog_tick {
 		$busy = 1 if $rm ne '' && $rm ne $here;
 	}
 	$busy = 1 if $exp != $wdExp && $wdExp; # she is gaining exp: she kills
+	# stuck on one cell while a rally / route to another map keeps failing ("Cannot calculate a route from izlude
+	# (24,98)", live 2026-11-15: 12 min until the rally timed out, then the same route again): after 3 min she gives the
+	# destination up for 2 h (unless the mind ordered it), drops the rally and flies to her save point (Butterfly Wing)
+	if ($pos ne $wdPos || $here ne ($wdStuckMap || '')) { ($wdStuckSince, $wdStuckMap) = ($now, $here) }
+	elsif (($rally && $here ne $rally->{town} || AI::inQueue('route', 'move')) && !AI::inQueue('attack', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal')
+		&& !$char->{sitting} && !own_rest() && $now - $wdStuckSince > 180) {
+		my $dest = $rally ? ($rally->{thenGoto} || $rally->{dest} || $rally->{town}) : ($gotoMap || $config{lockMap} || '');
+		message "[partylead] stuck on $here $pos for " . int($now - $wdStuckSince) . " s (no route to " . ($dest || '?') . "): dropping it, back to the save point
+", 'system';
+		# the second time for the same destination it is skipped for 2 h (the first may be just a bad start cell)
+		if ($dest ne '' && ++$wdStuckN{$dest} >= 2 && !mind_fresh()) { $crowdedAt{$dest} = $now + 3600; $wdStuckN{$dest} = 0 }
+		end_rally("can't find a way there", 0) if $rally;
+		$depart = undef; $gotoMap = '';
+		AI::clear('route', 'move');
+		Commands::run('respawn');
+		$wdStuckSince = $now;
+		$wdProdAt = $now; $wdAct = $now;
+		return;
+	}
 	$wdExp = $exp; $wdPos = $pos;
 	if ($busy) { $wdProdAt = $now; return }
 	return if $now - $wdProdAt < WD_IDLE;
