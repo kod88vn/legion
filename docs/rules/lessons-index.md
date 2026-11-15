@@ -94,3 +94,4 @@ with `sed -n 'A,Bp' legion/data/lessons.md`. Line 1 is the file title; entries s
 ## Other (1)
 
 - 793-810: 2026-11-14 05:45 - regression: an empty-map fallback sent Novices into Payon Cave
+- (end of file): 2026-11-15 02:45 - a docker cp fix is not permanent until the image is rebuilt or the file is bind-mounted

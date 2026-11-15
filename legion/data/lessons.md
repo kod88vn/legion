@@ -2199,3 +2199,13 @@ base/job exp rate 500 (5x).
 - 16:30 run 8: a restock's ORDER is a priority list - survival first (HP minimum, escape wings), then class needs
   (SP potions, arrows), then comfort (HP top-up). Arrows sat second with "everything above 300z" and a 3,000 cap from
   lv67, so a lv74 Hunter left town with 3,000 arrows and no potions or wings.
+
+## 2026-11-15 02:45 - a docker cp fix is not permanent until the image is rebuilt or the file is bind-mounted
+- Evidence: the Renewal Izlude fields/portals fix (openkore/fields-re, fix_re_portals.sh, fix_kafra_portals.py) was in
+  openkore/Dockerfile and docker-cp'd into ro-openkore-ayla, but ro-openkore:latest (built 2026-11-12) was never
+  rebuilt. The 20:43 recreate (with rathena) put the classic izlude field back (md5 4a569f48 vs repo 6b51347c) and Ayla
+  looped "Cannot calculate a route from izlude (24,98) to yuno" at 02:39; the stock portals.txt also sent her to a
+  prontera 98,120 "Juno" NPC that does not exist here (5 failed tries).
+- Rule: a docker cp fix is not permanent until the image is rebuilt or the file is bind-mounted. openkore-ayla now
+  bind-mounts ./openkore read-only and runs openkore/overlay.sh on every start (copies fields-re, patches portals.txt,
+  logs "FIELD MISMATCH"/"PORTAL MISMATCH" to logs/overlay.log and logs/alerts.log when anything still differs).
