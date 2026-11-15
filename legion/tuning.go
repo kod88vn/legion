@@ -272,6 +272,9 @@ type Tuning struct {
 	// on the map (party_stick_escape_on): run to the party, call for help, Butterfly Wing only when about to die. Both ON.
 	PartyStickOn       bool `json:"party_stick_on"`
 	PartyStickEscapeOn bool `json:"party_stick_escape_on"`
+	// pt32.go (PT32/PR16, 2026-11-14): a party member fights in place - a new target within 8 cells of it or a party
+	// mate, no other aggressive monster on the way, none while 2+ monsters are on it. ON (owner rule).
+	PartyFightInPlaceOn bool `json:"party_fight_in_place_on"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -302,7 +305,7 @@ var defaultTuning = Tuning{
 	LfgGlobalPerMin: 6,
 	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 20, ChatJobWaitMaxSec: 40,
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
-	PartyStickOn: true, PartyStickEscapeOn: true,
+	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
 }
 
 var curTuning atomic.Value // *Tuning

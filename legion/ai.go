@@ -1752,6 +1752,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	bt := b.bossHuntTarget()       // bosshunt.go: the party hunts this boss here - everyone goes for it on sight
 	tRefs, tOK := b.stickRefs(now) // partystick.go: no pull beyond together_cells of the party (what hits us still counts)
 	tx0, ty0 := b.livePos(now)
+	fip := b.fightInPlace(now, tRefs) // pt32.go: PT32 in-place filter for party members (nil = off / solo)
 	for _, e := range b.ents {
 		if e.Type != objMob {
 			continue
@@ -1770,6 +1771,9 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 			break
 		}
 		if tOK && !stickAllows(tx0, ty0, ex, ey, tRefs, togetherCells()) {
+			continue
+		}
+		if fip != nil && !fip.allows(e.ID, ex, ey) {
 			continue
 		}
 		mb := mobs[e.Class]
