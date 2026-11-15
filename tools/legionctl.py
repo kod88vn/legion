@@ -27,6 +27,8 @@ Strategy
   leader-party <guildNN> [map] [--members a,b,c]   form the leader's party (members auto-picked: tank/priest/ranged
                                  within 10 levels; map default: best guide spot for the party)
   leaderboard [N]                server top N by level (default 20) + every guild leader's rank
+  leaderboard --server [N]       the whole server from the rathena DB (read-only): top N, Ayla's rank, her party's
+                                 ranks, every guild leader's rank (tools/system/leaderboard.py; --brief one line)
   boss-list <guildNN>            bosses (MVPs / mini-bosses) the guild leader's party could hunt: level, map, respawn,
                                  party needed, ready or what is missing
   boss-check <guildNN> <boss>    readiness of the leader's party for that boss (full build, top gear, pots, wings, roles)
@@ -411,7 +413,9 @@ def meter_cmd(args):
         if a:
             aw = a["windows"].get(r["window"], {})
             print(f"Ayla: {a['name']} {a['class']} lv{a['lv']} {a['map']} online={a['online']} zeny {a['zeny']}  cohort {a['cohort']}")
-            print(f"  {r['window']}: {aw.get('min')}m  purse z/h {int(aw.get('zph_purse', 0))} (cohort par z/h {int(aw.get('par_zph', 0))}, par kpm {aw.get('par_kpm')})  time: {_shares(aw.get('shares'))}")
+            print(f"  {r['window']}: {aw.get('min')}m  kpm {aw.get('kpm', 0)} ({aw.get('kills', 0)} kills from exp gains, par kpm {aw.get('par_kpm')})"
+                  f"{'' if aw.get('counted') else ' (not counted)'}  purse z/h {int(aw.get('zph_purse', 0))} (cohort par z/h {int(aw.get('par_zph', 0))})  "
+                  f"exp/h {a.get('exp_h', 0)} (10 min)  time: {_shares(aw.get('shares'))}")
             print(f"  ({a['note']})")
         else:
             print("Ayla: no status.json")
@@ -540,6 +544,12 @@ def main(argv):
         ms = opt(args, "--members", "")
         body = {"map": args[1] if len(args) > 1 else "", "members": [m.strip() for m in ms.split(",") if m.strip()]}
         out(call(f"/api/guild-leaders/{q(args[0])}/party", body))
+    elif cmd == "leaderboard" and "--server" in args:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "system"))
+        import leaderboard as LB  # noqa: E402  read-only: rathena DB through the existing SELECT path
+        rest = [x for x in args if x != "--server"]
+        n = next((x for x in rest if x.isdigit()), "20")
+        sys.exit(LB.main(["--top", n] + [x for x in rest if x in ("--json", "--brief")]))
     elif cmd == "leaderboard":
         d = call(f"/api/leaderboard?limit={int(args[0]) if args else 20}")
         for t in d["top"]:

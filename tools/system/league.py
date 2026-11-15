@@ -33,6 +33,10 @@ def render(meter, neo, now_s):
     L = ["# League report %s" % now_s, ""]
     L.append("Par = p75 of the cohort. Prize = (par - mean) x n. Score = n x mean relative gap over kills/min and zeny/h.")
     L.append("")
+    if srv["n"] is not None and srv["n"] == 0:
+        L.append("**Warning: no bot counted in this window (n=0).** A bot counts after 25% of the window online; "
+                 "right after an engine restart without a meter snapshot (meter_state.json.gz) the window is empty.")
+        L.append("")
     if srv["kpm"]["mean"] is not None or srv["zph"]["mean"] is not None:
         L.append("Server: kills/min mean %s, zeny/h mean %s, farming share %s, deaths/h %s" % (
             f(srv["kpm"]["mean"]), f(srv["zph"]["mean"], 0),
@@ -77,8 +81,10 @@ def neo_section(neo, cs):
     if isinstance(neo, dict) and isinstance(neo.get("party"), list):  # engine shape: ayla, party[], starveil[], summaries
         a = neo.get("ayla") or {}
         aw = (a.get("windows") or {}).get(neo.get("window") or "1h") or {}
-        if aw:
-            entries.append(("Ayla (purse z/h, OpenKore)", {"zph": aw.get("zph_purse"), "par_zph": aw.get("par_zph")}))
+        in_party = any(isinstance(x, dict) and x.get("instance") == "openkore" for x in neo.get("party") or [])
+        if aw and not in_party:  # an older engine: Ayla only in the header (newer: her own row in party[])
+            entries.append(("Ayla (purse z/h, OpenKore)", {"zph": aw.get("zph_purse"), "par_zph": aw.get("par_zph"),
+                                                           "kpm": aw.get("kpm"), "par_kpm": aw.get("par_kpm")}))
         for grp in ("party", "starveil"):
             for x in neo.get(grp) or []:
                 if isinstance(x, dict):
