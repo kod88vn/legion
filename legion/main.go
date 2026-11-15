@@ -179,7 +179,8 @@ func main() {
 		if *onlyNames != "" || *excludeNames != "" {
 			log.Printf("profiles: %d (only %q, exclude %q)", len(ps), *onlyNames, *excludeNames)
 		}
-		startTuning(nil) // tuning.go: data/tuning.json, re-read every 30 s
+		startTuning(nil)   // tuning.go: data/tuning.json, re-read every 30 s
+		meterRestoreLoad() // meterpersist.go: kills/min, zeny/h and time budgets from before the restart
 		loginGate = make(chan struct{}, *logins)
 		onlineSlots = make(chan struct{}, slotCapacity(*maxOnline, *reserve)) // leaderroom.go
 		memDir = filepath.Join(*dataDir, "memory")
