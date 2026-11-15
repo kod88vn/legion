@@ -3,7 +3,8 @@
 
 Record: id, t (epoch s; ISO also read), from, priority, text, evidence, status (open|assigned|closed|duplicate).
 Optional: key (dedupe key), count, bots (bots affected), metric (kpm|zph|deaths|...), impact (explicit weight),
-assigned_to, note, woke, last_t.
+assigned_to, note, woke, last_t, wake (urgent: wakes the main session; set by sentinel / partycheck for Ayla's
+party and stuck bots).
 The file is append-only so several writers never clash (package P's legionctl appends the same way): a later line
 with the same id is an UPDATE and merges over the earlier ones; the newest value of each field wins.
 
@@ -12,8 +13,11 @@ Rank: outage first, then Neo requests (Ayla's direct line), then the owner's, th
 
   bugq.py add --from sentinel --priority high --text "..." [--key K] [--bots N] [--metric kpm] [--evidence ...]
   bugq.py list [--all] | rank | show ID | close ID [--note ...] | assign ID NAME | dedupe | summary
-  bugq.py watch [--interval 15] [--lead-min 20] [--once]     exits (= wakes main) only for an outage, a Neo request,
-                                                              or the pre-deploy planning time; prints "what to assign".
+  bugq.py add ... --wake                                      urgent: also touches data/bugq.wake (the watcher exits)
+  bugq.py watch [--interval 15] [--lead-min 20] [--once]     exits (= wakes main) for an outage, a Neo request, an
+                                                              urgent item (Ayla's party, stuck bots: wake flag or
+                                                              data/bugq.wake) or the pre-deploy planning time;
+                                                              prints "what to assign".
 """
 import argparse
 import json
@@ -129,8 +133,24 @@ def update(i, **fields):
     C.append_jsonl(qpath(), dict(id=i, **fields))
 
 
-def add(frm, priority, text, evidence="", key=None, bots=None, metric=None, impact=None, bump_min_secs=0):
-    """File a bug; if an open entry with the same dedupe key exists, bump its count instead. Returns (id, is_new)."""
+WAKE_FILE = "bugq.wake"
+
+
+def touch_wake(reason=""):
+    """data/bugq.wake: the watcher exits on a newer mtime than it has seen (an urgent item arrived). Never raises."""
+    try:
+        with open(C.dpath(WAKE_FILE), "w", encoding="utf-8") as f:
+            f.write("%d %s\n" % (int(C.now()), str(reason)[:200]))
+        t = C.now()
+        os.utime(C.dpath(WAKE_FILE), (t, t))
+    except OSError:
+        pass
+
+
+def add(frm, priority, text, evidence="", key=None, bots=None, metric=None, impact=None, bump_min_secs=0, wake=False):
+    """File a bug; if an open entry with the same dedupe key exists, bump its count instead. Returns (id, is_new).
+    wake=True (urgent: Ayla's party, stuck bots) marks the entry and touches data/bugq.wake so the watcher wakes the
+    main session; a repeat of an entry that already woke it does not wake it again (dedupe)."""
     k = dedupe_key({"from": frm, "text": text, "key": key})
     for e in load().values():
         if str(e.get("status", "open")) in ("open", "assigned") and dedupe_key(e) == k:
@@ -143,8 +163,12 @@ def add(frm, priority, text, evidence="", key=None, bots=None, metric=None, impa
                 upd["bots"] = bots
             if str(priority) == "outage" or PRIO_W.get(str(priority), 0) > PRIO_W.get(str(e.get("priority")), 0):
                 upd["priority"] = priority
-            if t - last >= bump_min_secs:
+            if wake and not e.get("wake"):
+                upd["wake"] = True
+            if t - last >= bump_min_secs or upd.get("wake"):
                 update(e["id"], **upd)
+            if wake and not e.get("woke") and not e.get("wake"):
+                touch_wake("%s: %s" % (frm, text))
             return e["id"], False
     i = new_id()
     rec = {"id": i, "t": int(C.now()), "from": frm, "priority": priority, "text": text, "evidence": evidence,
@@ -155,7 +179,11 @@ def add(frm, priority, text, evidence="", key=None, bots=None, metric=None, impa
         rec["metric"] = metric
     if impact is not None:
         rec["impact"] = impact
+    if wake:
+        rec["wake"] = True
     C.append_jsonl(qpath(), rec)
+    if wake:
+        touch_wake("%s: %s" % (frm, text))
     return i, True
 
 
@@ -237,6 +265,13 @@ def _neo_mtime():
         return None
 
 
+def _wake_mtime():
+    try:
+        return os.path.getmtime(C.dpath(WAKE_FILE))
+    except OSError:
+        return None
+
+
 def wake_reasons(lead_min=20):
     """Pure check: what should wake the main session right now? [(kind, text, entry-id or None)]."""
     out = []
@@ -247,7 +282,12 @@ def wake_reasons(lead_min=20):
             out.append(("outage", fmt(e), e["id"]))
         elif is_neo(e):
             out.append(("neo", fmt(e), e["id"]))
+        elif e.get("wake"):
+            out.append(("urgent", fmt(e), e["id"]))
     st = watch_state()
+    w = _wake_mtime()
+    if w is not None and w > st.get("wake_seen", 0) and not any(k == "urgent" for k, _, _ in out):
+        out.append(("urgent", "bugq.wake touched (an urgent item arrived; see the queue)", None))
     m = _neo_mtime()
     if m is not None and m > st.get("neo_wake_seen", 0) and not any(k == "neo" for k, _, _ in out):
         out.append(("neo", "neo.wake touched (a Neo request arrived; see the queue)", None))
@@ -269,6 +309,9 @@ def mark_woken(reasons):
         m = _neo_mtime()
         if m is not None:
             st["neo_wake_seen"] = m
+    w = _wake_mtime()
+    if w is not None:
+        st["wake_seen"] = w   # every wake shows the whole queue, so a pending wake file is covered too
     save_watch_state(st)
 
 
@@ -301,6 +344,7 @@ def main(argv=None):
     s.add_argument("--bots", type=int)
     s.add_argument("--metric")
     s.add_argument("--impact", type=float)
+    s.add_argument("--wake", action="store_true", help="urgent: wake the main session (bugq.wake)")
     for n in ("list", "rank", "summary"):
         s = sub.add_parser(n)
         s.add_argument("--all", action="store_true")
@@ -319,7 +363,7 @@ def main(argv=None):
     s.add_argument("--once", action="store_true")
     a = ap.parse_args(argv)
     if a.cmd == "add":
-        i, new = add(a.frm, a.priority, a.text, a.evidence, a.key, a.bots, a.metric, a.impact)
+        i, new = add(a.frm, a.priority, a.text, a.evidence, a.key, a.bots, a.metric, a.impact, wake=a.wake)
         print("%s %s" % (i, "added" if new else "duplicate: count bumped"))
     elif a.cmd in ("list", "rank", "summary"):
         es = list(load().values())
