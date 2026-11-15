@@ -11,6 +11,9 @@
 #   rally cancel   drop a Kafra rally at once (no new one for 30 min)  |  rally TOWN [MAP]  meet + save at TOWN's Kafra,
 #                  then the party goes to MAP (no MAP: they wait at the Kafra for a "map" order; the old lockMap is dropped)
 #   lead           what the party-lead plugin is doing (holding / rally / fetching / lockMap)
+#   townrun [TOWN] party town run (PT22, idleerrands.pl): in a town that town on foot, else the save town by partylead's wing; sell / store / restock, meet at the
+#                  Kafra; the members come along
+#   errands        errand status (EC36: she sells / restocks while the party gathers at a Kafra)
 #   guild-create NAME   found her guild (OpenKore `guild create`; no Emperium needed on this server)
 #   recruit [N]    invite up to N (default 3) recruits Legion suggests (GET /api/guild-recruits: her party friends, then
 #                  one unguilded player per job the guild lacks) via plugin guildrecruit.pl `ginvite <aid> <name>`
@@ -59,6 +62,8 @@ case "$a" in
   give) [ -n "$2" ] || { echo 'usage: ayla.sh give NAME ZENY [WHY]  (quote names with spaces)'; exit 1; }; to=$1; z=$2; shift 2; send "give \"$to\" $z $*"; sleep 12; docker logs --tail 80 ro-openkore-ayla 2>&1 | clean | grep -aE "\[aylagear\]|rodex mail|Party\] Ayla : sent" | tail -4;;
   deals) tail -n "${1:-15}" /mnt/g/RO/legion/openkore-ayla/logs/deals.log 2>/dev/null || echo "(no deals yet)";;
   gear) send "gear ${*}"; sleep 3; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | grep -a "\[aylagear\]" | tail -15;;
+  townrun) send "idleerrands townrun ${1:-}"; sleep 3; docker logs --tail 40 ro-openkore-ayla 2>&1 | clean | grep -a "\[idleerrands\]" | tail -3;;
+  errands) send "idleerrands status"; sleep 1.5; docker logs --tail 30 ro-openkore-ayla 2>&1 | clean | grep -a "\[idleerrands\]" | tail -3;;
   lead) send "partylead status"; sleep 1.5; docker logs --tail 30 ro-openkore-ayla 2>&1 | clean | grep "\[partylead\]" | tail -3;;
-  *) echo "usage: ayla.sh log|chat|status|cmd|say|party|whisper|map|rally|lead|guild|guild-create|guild-fund|recruit|recruits|global|trade|guildchat|guild-tax|guild-skill|guild-info|give|gear|deals ..."; exit 1;;
+  *) echo "usage: ayla.sh log|chat|status|cmd|say|party|whisper|map|rally|lead|townrun|errands|guild|guild-create|guild-fund|recruit|recruits|global|trade|guildchat|guild-tax|guild-skill|guild-info|give|gear|deals ..."; exit 1;;
 esac
