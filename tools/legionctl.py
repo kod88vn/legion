@@ -51,6 +51,15 @@ Minds bus (the owner watches these on the dashboard and can send orders)
   orders <mind>                  owner's unread messages to this mind (marks them read); "(no new orders)" if none
   think <mind> <text...> [--kind thought|decision|action|summary] [--status "short status line"]
   minds                          every mind: active/idle, last seen, unread orders, latest thought
+Puppet masters (need the redesign engine endpoints; tools/puppet/)
+  guild-direction get [guildNN] | set <guildNN> --kind K [--item X --map M --min-lv N --max-lv N --classes a,b --note T --hours H --replace ID]
+  guild-duty [guildNN] | guild-duty pardon|kick <guildNN> <name>      guild-rank      guild-relations
+  exchange                       relationship-priced trades: counters and recent
+  chat-jobs list | chat-jobs answer <id> --speaker N --channel C --text T [...]     chat-intent --from N --kind need|offer --item I
+  meter [bots [--cohort C --sort S --limit N] | bot <name> | neo]     kills/min, zeny/hour, cohorts, par
+  bug "<text>" [--from role] [--priority P] [--evidence T]   append to the bug queue (legion/data/bugqueue.jsonl)
+  neo "<request>"                Ayla's line: top-priority queue entry with her evidence attached + neo.wake
+  notes <role> [--set T | --append T]   a puppet master's small notes file between calls
 Misc
   events --role ROLE [--kinds k1,k2]    raw events since this role's last call
   wait <seconds>                 sleep (use between agent cycles)
@@ -230,6 +239,172 @@ def lookup_cmd(cmd, args):
     if others:
         names = [o if isinstance(o, str) else f"{o['name']} ({o['id']})" for o in others]
         print("  other matches: " + "; ".join(names[:7]))
+
+
+# ---------------------------------------------------------------- puppet-master commands (tools/puppet)
+DATA_DIR = os.environ.get("LEGION_DATA") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "legion", "data")
+NOTES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "puppet", "notes")
+BUGQUEUE = "bugqueue.jsonl"
+PUPPET_CMDS = {"guild-direction", "guild-duty", "guild-rank", "guild-relations", "exchange", "chat-jobs",
+               "chat-intent", "meter", "bug", "neo", "notes"}
+
+
+def try_call(path, body=None):
+    """like call() but returns None instead of exiting (evidence gathering must never fail a report)"""
+    try:
+        return call(path, body)
+    except SystemExit:
+        return None
+
+
+def queue_entry(source, text, priority="normal", evidence=None, data_dir=None):
+    """one bug-queue entry (the format tools/system/bugq.py reads): id, t, from, priority, text, evidence, status"""
+    now = time.time()
+    return {"id": "b%d-%03d" % (int(now * 1000), os.getpid() % 1000),
+            "t": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
+            "from": source, "priority": priority, "text": text, "evidence": evidence if evidence is not None else [],
+            "status": "open"}
+
+
+def queue_append(entry, data_dir=None):
+    d = data_dir or DATA_DIR
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, BUGQUEUE), "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def neo_evidence():
+    """Ayla's recent evidence from the API: meter view, her party, her latest events"""
+    ev = {}
+    m = try_call("/api/meter/neo")
+    if m is not None:
+        ev["meter_neo"] = m
+    pt = try_call("/api/parties")
+    if isinstance(pt, list):
+        ev["party"] = [p for p in pt if "ayla" in json.dumps(p, default=str).lower()][:1]
+    e = try_call("/api/events?since=0")
+    if isinstance(e, dict):
+        rows = [x for x in (e.get("events") or []) if "ayla" in json.dumps(x, default=str).lower()]
+        ev["recent_events"] = rows[-15:]
+    b = try_call("/api/bots/Ayla")
+    if b is not None:
+        ev["ayla"] = {k: b.get(k) for k in ("map", "level", "class", "state", "zeny", "x", "y") if isinstance(b, dict) and k in b}
+    return ev
+
+
+def puppet_cmd(cmd, args):
+    if cmd == "guild-direction":
+        sub = args[0] if args else ""
+        if sub == "get":
+            out(call(f"/api/guild-direction/{q(args[1])}" if len(args) > 1 else "/api/guild-direction"))
+        elif sub == "set":
+            g = args[1]
+            rest = args[2:]
+            body = {"kind": opt(rest, "--kind"), "item": opt(rest, "--item"), "map": opt(rest, "--map"),
+                    "min_lv": int(opt(rest, "--min-lv", 0) or 0), "max_lv": int(opt(rest, "--max-lv", 0) or 0),
+                    "classes": [c for c in (opt(rest, "--classes", "") or "").split(",") if c],
+                    "note": opt(rest, "--note", ""), "set_by": "leader"}
+            rep = opt(rest, "--replace")
+            if rep:
+                body["replace"] = rep
+            hrs = opt(rest, "--hours")
+            if hrs:
+                body["hours"] = float(hrs)
+            if not body["kind"]:
+                sys.exit("usage: guild-direction set <guildNN> --kind stock|gear|carry|level|supply|wealth [--item X] [--map M] [--min-lv N] [--max-lv N] [--classes a,b] [--note T] [--replace ID] [--hours H]")
+            out(call(f"/api/guild-direction/{q(g)}", {k: v for k, v in body.items() if v not in (None, "", 0, [])}))
+        else:
+            sys.exit("usage: guild-direction get [guildNN] | set <guildNN> --kind ...")
+    elif cmd == "guild-duty":
+        if args and args[0] in ("pardon", "kick"):
+            if len(args) < 3:
+                sys.exit(f"usage: guild-duty {args[0]} <guildNN> <member name>")
+            out(call(f"/api/guild-duty/{q(args[1])}/{args[0]}", {"name": " ".join(args[2:])}))
+        else:
+            out(call("/api/guild-duty" + (f"?guild={q(args[0])}" if args else "")))
+    elif cmd == "guild-rank":
+        out(call("/api/guild-rank"))
+    elif cmd == "guild-relations":
+        out(call("/api/guild-relations"))
+    elif cmd == "exchange":
+        out(call("/api/exchange"))
+    elif cmd == "chat-jobs":
+        sub = args[0] if args else "list"
+        if sub == "list":
+            out(call("/api/chat-jobs"))
+        elif sub == "answer":
+            # chat-jobs answer <id> --speaker N --channel C --text T [--speaker N2 --channel C2 --text T2 ...]
+            if len(args) < 2:
+                sys.exit('usage: chat-jobs answer <id> --speaker "<name>" --channel party|guild|global|trade|local --text "..." [repeat the triple]')
+            jid, rest = args[1], args[2:]
+            lines = []  # each --speaker starts a new line; --channel and --text fill the current one
+            for i in range(0, len(rest) - 1):
+                k = rest[i]
+                if k == "--speaker":
+                    lines.append({"speaker": rest[i + 1], "channel": "local"})
+                elif k in ("--channel", "--text") and lines:
+                    lines[-1][k[2:]] = rest[i + 1]
+            lines = [l for l in lines if l.get("text")]
+            if not lines:
+                sys.exit("no complete line (need --speaker and --text)")
+            out(call(f"/api/chat-jobs/{q(jid)}/lines", lines))
+        else:
+            sys.exit("usage: chat-jobs list | answer <id> ...")
+    elif cmd == "chat-intent":
+        body = {"from": opt(args, "--from"), "kind": opt(args, "--kind"), "item": opt(args, "--item"),
+                "price": opt(args, "--price"), "text": opt(args, "--text")}
+        if not body["from"] or body["kind"] not in ("need", "offer") or not body["item"]:
+            sys.exit('usage: chat-intent --from "<name>" --kind need|offer --item "<item>" [--price N] [--text "..."]')
+        if body["price"]:
+            body["price"] = int(body["price"])
+        out(call("/api/chat-intent", {k: v for k, v in body.items() if v}))
+    elif cmd == "meter":
+        sub = args[0] if args else ""
+        if sub == "bots":
+            rest = args[1:]
+            qs = "&".join(f"{k}={q(v)}" for k, v in (("cohort", opt(rest, "--cohort")), ("sort", opt(rest, "--sort")),
+                                                    ("limit", opt(rest, "--limit"))) if v)
+            out(call("/api/meter/bots" + ("?" + qs if qs else "")))
+        elif sub == "bot":
+            out(call(f"/api/meter/bot/{q(args[1])}"))
+        elif sub == "neo":
+            out(call("/api/meter/neo"))
+        else:
+            out(call("/api/meter"))
+    elif cmd == "bug":
+        source = opt(args, "--from", "unknown")
+        prio = opt(args, "--priority", "normal")
+        evid = opt(args, "--evidence", "")
+        if not args:
+            sys.exit('usage: bug "<text>" [--from role] [--priority normal|high] [--evidence "..."]')
+        e = queue_entry(source, " ".join(args), prio, [evid] if evid else [])
+        queue_append(e)
+        print(f"queued {e['id']} ({prio})")
+    elif cmd == "neo":
+        source = opt(args, "--from", "ayla")
+        if not args:
+            sys.exit('usage: neo "<request>"')
+        e = queue_entry(source, " ".join(args), "neo", neo_evidence())
+        queue_append(e)
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(os.path.join(DATA_DIR, "neo.wake"), "w") as f:
+            f.write(e["t"])
+        print(f"queued {e['id']} (neo, main session will be woken)")
+    elif cmd == "notes":
+        if not args:
+            sys.exit('usage: notes <role> [--set "text" | --append "text"]')
+        role = re.sub(r"[^a-z0-9_-]", "", args[0].lower())
+        path = os.path.join(NOTES_DIR, role + ".md")
+        rest = args[1:]
+        new, add = opt(rest, "--set"), opt(rest, "--append")
+        if new or add:
+            os.makedirs(NOTES_DIR, exist_ok=True)
+            text = new if new else (open(path, encoding="utf-8").read() if os.path.exists(path) else "") + "\n" + add
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text.strip()[-2000:] + "\n")
+            print("notes saved")
+        else:
+            print(open(path, encoding="utf-8").read() if os.path.exists(path) else "(no notes)")
 
 
 def main(argv):
@@ -481,6 +656,9 @@ def main(argv):
             ago = f"{m['seen_ago_s']}s ago" if "seen_ago_s" in m else "never"
             lt = (m.get("last_thought") or {}).get("text", "")
             print(f"{m['name']:<10} {m['status']:<7} seen {ago:<10} unread {m['unread']:<3} {lt[:90]}")
+
+    elif cmd in PUPPET_CMDS:
+        puppet_cmd(cmd, args)
 
     elif cmd == "wait":
         time.sleep(float(args[0]))

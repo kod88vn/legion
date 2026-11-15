@@ -48,3 +48,11 @@ legion/legion.exe
 # watch-view screenshots and temp files
 tools/rogui/shots/
 tools/rogui/tmp/
+
+# puppet harness runtime
+legion/data/puppet_calls.jsonl
+legion/data/puppet_heartbeat.json*
+legion/data/puppet.pause
+legion/data/bugqueue.jsonl
+legion/data/neo.wake
+legion/data/build.wake
