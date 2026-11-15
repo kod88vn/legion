@@ -3123,7 +3123,9 @@ sub pack_tick {
 	# stops, 10 s for it to come, then walks to it (re-routed every 5 s). It ends when the member is within 20 cells,
 	# or after 180 s (logged FETCH, then the other rules run for 3 min).
 	if (!is_townmap($here) && time - ($pk{fetchGaveUp} || 0) > 180) {
-		my @far = grep { $_->[2] eq $here && (!defined $_->[3] || $_->[3] > 20) && !friend_dead($_->[0]) } @fr;
+		# (4) a member on a town run / in town is not fetched (its map is not this one); (3) a member just collected is
+		# not fetched again for 60 s (no bouncing back and forth)
+		my @far = grep { $_->[2] eq $here && !is_townmap($_->[2]) && (!defined $_->[3] || $_->[3] > 20) && !friend_dead($_->[0]) && time - ($pk{fetchDone}{$_->[0]} || 0) >= 60 } @fr;
 		my $fightNear = grep { $_->{pos_to} && defined $_->{pos_to}{x} && !$_->{dead} && fightable($_) && blockDistance(my_pos(), $_->{pos_to}) <= 8 } @{$monstersList ? $monstersList->getItems() : []};
 		if (@far && !$fightNear) {
 			my ($m) = sort { ($b->[3] // 9999) <=> ($a->[3] // 9999) } @far;
@@ -3132,6 +3134,7 @@ sub pack_tick {
 			if (time - $fw->{at} > 180) {
 				wd_report('FETCH', $here, "$fw->{name} still " . ($m->[3] // '?') . " cells back after 3 min", 'continuing without it');
 				($pk{fetchGaveUp}, $pk{fetch}) = (time, undef);
+				$pk{fetchDone}{$fw->{name}} = time;
 			} elsif (time - $fw->{at} < 10 || !$m->[4]) {
 				AI::clear('route', 'move') if AI::inQueue('route', 'move');
 				pk_say(!$m->[4] ? "$m->[0] where r u? waiting here" : "waiting for $m->[0], $m->[3] cells back");
@@ -3147,7 +3150,11 @@ sub pack_tick {
 				@pk{qw(act an seenAt)} = ('goto', $m, time);
 				return 1;
 			}
-		} else { $pk{fetch} = undef }
+		} else {
+			# the member is back within 20 cells (or nothing far): the collect is done - no fetch of it for 60 s
+			if (!@far && $pk{fetch}) { $pk{fetchDone}{$pk{fetch}{name}} = time }
+			$pk{fetch} = undef if !@far || !$fightNear;
+		}
 	}
 	my ($act, $an) = pack_decide({here => $here, friends => \@fr, farm => $farm, leaving => ($leaving || $pk{wf} ? 1 : 0), cross => $cross,
 		waited => $pk{waitAt} ? time - $pk{waitAt} : 0, shrinking => $shrinking, collecting => ($pk{goName} ne '' ? 1 : 0),
