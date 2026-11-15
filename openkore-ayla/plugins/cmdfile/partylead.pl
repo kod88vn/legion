@@ -2395,6 +2395,7 @@ sub respawn_guard {
 # more than 10 cells away; never toward a group (another monster within 5 cells of the spot); not the same spot twice
 my ($fsIdleSince, $fsAt, @fsLast) = (0, 0);
 my ($fsWhyAt, $fsWhy) = (0, '');
+my $fsFightAt = 0; # her last fight on the farm map (the sweep then goes on from the nearest waypoint)
 # why no leg (debug, every 30 s when it repeats): "[partylead] sweep waits: <reason>"
 sub fs_why { my ($r, $w) = @_; if ($w ne $fsWhy || time - $fsWhyAt > 30) { ($fsWhy, $fsWhyAt) = ($w, time); message "[partylead] sweep waits: $w\n", 'system' if $w !~ /^idle under/ } return $r }
 # a monster she attacks (mon_control attack flag not 0: plants / mushrooms are 0)
@@ -2410,13 +2411,14 @@ sub farm_sweep {
 	my $here = $field->baseName;
 	return 0 if ($huntMap || '') eq '' || $here ne $huntMap || $char->{sitting} || $char->{dead} || $holding || $rally;
 	if (AI::inQueue('attack', 'take', 'items_take', 'items_gather', 'NPC', 'sitting', 'sitAuto', 'sellAuto', 'buyAuto', 'storageAuto', 'teleport') || party_resting() || own_rest()) {
+		$fsFightAt = time if AI::inQueue('attack');
 		return fs_why(0, 'busy: ' . join(',', grep { AI::inQueue($_) } qw(attack take items_take items_gather NPC sitting sitAuto sellAuto buyAuto storageAuto teleport)) . (party_resting() ? ' party resting' : '') . (own_rest() ? ' own rest' : ''));
 	}
 	my $me = my_pos();
 	# only monsters she would attack count (live 76bbce6: a Red Plant 2 cells away - mon_control attack 0 - kept her
 	# frozen for 4 min: "something to fight here" that she never fights)
 	my @mons = grep { $_->{pos_to} && defined $_->{pos_to}{x} && !$_->{dead} && fightable($_) } @{$monstersList ? $monstersList->getItems() : []};
-	if (grep { blockDistance($me, $_->{pos_to}) <= 8 } @mons) { $fsIdleSince = 0; return fs_why(0, 'a monster within 8 cells') }
+	if (grep { blockDistance($me, $_->{pos_to}) <= 8 } @mons) { $fsIdleSince = 0; $fsFightAt = time; return fs_why(0, 'a monster within 8 cells') }
 	$fsIdleSince ||= time;
 	return fs_why(0, 'idle under 8 s') if time - $fsIdleSince < 8;
 	return 1 if AI::inQueue('route', 'move') && time - $fsAt < 12; # a leg under way
@@ -2433,19 +2435,39 @@ sub farm_sweep {
 		return 0 if $grp >= 2; # a group there: not toward it
 		return 1;
 	};
-	my ($tx, $ty);
-	if (my $t = mob_target($here, $me->{x}, $me->{y})) { # nearest seen monster spot: a leg of at most 15 cells toward it
+	# a fightable monster on screen within 15 (not in a group): a leg toward it; otherwise the map's sweep loop in order
+	# (owner 2026-11-15: random legs kept the party in one corner of pay_dun02, 2 kills in 5 min)
+	my ($tx, $ty, $what);
+	my ($near) = sort { blockDistance($me, $a->{pos_to}) <=> blockDistance($me, $b->{pos_to}) } grep { blockDistance($me, $_->{pos_to}) <= 15 } @mons;
+	if ($near) {
+		my $t = [$near->{pos_to}{x}, $near->{pos_to}{y}];
 		my ($dx, $dy) = ($t->[0] - $me->{x}, $t->[1] - $me->{y});
 		my $n = (abs($dx) > abs($dy) ? abs($dx) : abs($dy)) || 1;
-		my $k = $n > 15 ? 15 / $n : 1;
+		my $k = $n > 10 ? 10 / $n : 1;
 		($tx, $ty) = (int($me->{x} + $dx * $k), int($me->{y} + $dy * $k));
-		($tx, $ty) = () unless $ok->($tx, $ty);
+		if ($ok->($tx, $ty)) { $what = "toward $near->{name}" } else { ($tx, $ty) = () }
 	}
-	if (!defined $tx) { # unexplored: a random cell 10-15 cells away
-		for (1 .. 30) {
-			my ($a, $d) = (rand(6.2832), 10 + int(rand(6)));
-			my ($x, $y) = (int($me->{x} + cos($a) * $d), int($me->{y} + sin($a) * $d));
-			if ($ok->($x, $y)) { ($tx, $ty) = ($x, $y); last }
+	if (!defined $tx) {
+		sweep_build($me->{x}, $me->{y}) if !@sweep || ($sweepMap || '') ne $here;
+		if (@sweep) {
+			if ($fsFightAt > $fsAt) { # after a fight: on from the nearest waypoint
+				my ($bi, $bd) = (0, 1e9);
+				for my $q (0 .. $#sweep) { my $d = blockDistance($me, {x => $sweep[$q][0], y => $sweep[$q][1]}); ($bi, $bd) = ($q, $d) if $d < $bd }
+				$sweepIdx = $bi;
+			}
+			for (1 .. scalar @sweep) { # the next waypoint: not reached yet, no group at it
+				my $w = $sweep[$sweepIdx];
+				my $grp = grep { blockDistance({x => $w->[0], y => $w->[1]}, $_->{pos_to}) <= 5 } @mons;
+				last unless blockDistance($me, {x => $w->[0], y => $w->[1]}) <= 3 || $grp >= 2 || $sweepBad{$sweepIdx};
+				sweep_next();
+			}
+			my $w = $sweep[$sweepIdx];
+			my ($dx, $dy) = ($w->[0] - $me->{x}, $w->[1] - $me->{y});
+			my $n = (abs($dx) > abs($dy) ? abs($dx) : abs($dy)) || 1;
+			my $k = $n > 10 ? 10 / $n : 1; # legs of at most 10 cells: the priest stays within 20
+			($tx, $ty) = (int($me->{x} + $dx * $k), int($me->{y} + $dy * $k));
+			($tx, $ty) = ($w->[0], $w->[1]) unless eval { $field->isWalkable($tx, $ty) };
+			$what = sprintf("waypoint %d/%d", $sweepIdx + 1, scalar @sweep);
 		}
 	}
 	return fs_why(0, 'no walkable leg cell found') unless defined $tx;
@@ -2453,7 +2475,7 @@ sub farm_sweep {
 	$fsAt = time; $fsIdleSince = time;
 	AI::clear('route', 'move');
 	safe_route($here, $tx, $ty, distFromGoal => 2, maxRouteTime => 10, noMapRoute => 1, attackOnRoute => 2);
-	message "[partylead] sweep: nothing near for 8 s - a short leg to $tx,$ty" . ($an ? " ($an->[0] " . blockDistance($me, $ap) . " cells)" : '') . "\n", 'system';
+	message "[partylead] sweep: " . ($what || 'leg') . " -> $tx,$ty" . ($an ? " ($an->[0] " . blockDistance($me, $ap) . " cells)" : '') . "\n", 'system';
 	return 1;
 }
 # the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
