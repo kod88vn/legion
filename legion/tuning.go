@@ -293,6 +293,8 @@ type Tuning struct {
 	// chatjobs_wait.go: a listed job's grace, and the kinds the code says by itself (comma list)
 	ChatJobListedGraceSec int    `json:"chat_job_listed_grace_sec"`
 	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
+	// party / guild get first refusal on a want for this long in all (split over the buyer's kin stages), then anyone
+	ExchangeFirstRefusalSec int  `json:"exchange_first_refusal_sec"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -321,7 +323,7 @@ var defaultTuning = Tuning{
 	ChatGlobalTrade: 0.45, ChatGlobalLFP: 0.80, ChatLocalReply: 0.6, ChatPartyReply: 0.5, ChatPartyHuman: 0.3,
 	ChatGuildLeader: 0.5, ChatReactBase: 0.25, ChatReactChattiness: 0.5, ChatReactJobChange: 0.25, ChatReactDeath: 0.3,
 	LfgGlobalPerMin: 6,
-	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ChatJobWaitMinSec: 45, ChatJobWaitMaxSec: 90,
+	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ExchangeFirstRefusalSec: 40, ChatJobWaitMinSec: 45, ChatJobWaitMaxSec: 90,
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
 	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
 	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept",

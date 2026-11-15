@@ -262,6 +262,7 @@ func marketTalkLocked(rows []oppItem, now time.Time) (line string, item int) {
 		}
 		// 2. a spike: the market price far above the item's standard, with some on sale
 		if r.Price >= 2*r.Standard && r.Price >= 200 && listed[r.ID] > 0 {
+			opps.rumor[r.ID] = now.Add(oppRumorLife) // EC33: hearers may farm it too (heardRumor: only on a map safe for them)
 			return pick(r.Name+" "+fmt.Sprint(r.Price/r.Standard)+"x price today??", "wow "+r.Name+" got expensive",
 				r.Name+" prices are crazy rn"), r.ID
 		}
@@ -327,7 +328,7 @@ func (b *Bot) heardRumor(now time.Time) *moneyGoal {
 		opps.at = time.Time{}
 		opps.n["rumors taken up"]++
 		opps.Unlock()
-		b.event("market", "", fmt.Sprintf("heard on #trade that nobody sells %s - farming it on %s (%s)", g.Item, ms[0], mob))
+		b.event("market", "", fmt.Sprintf("heard on #trade that %s is short / pricey - farming it on %s (%s)", g.Item, ms[0], mob))
 		return g
 	}
 	return nil
