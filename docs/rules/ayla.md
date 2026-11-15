@@ -3,6 +3,8 @@
 One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates for Ayla (G05, G12, G13, G19, G20) are in
 `RULES.md`.
 
+- AY24. Ayla is played by the Legion engine, with the same code and features as every bot; OpenKore is retired for her. She is a test subject: her only extra is a Haiku watcher that studies her and her party closely and has their code improved first, and every improvement goes to the whole Legion (Constitution 2.8). OpenKore-specific lines (SA05/G05, AY05 "guarded commands", AY16, AY17, AY21 "plugin reload") apply only until the switch is live, then read as engine equivalents. (2026-11-15)
+- AY25. The owner can override any puppet-master directive for Ayla (farm map, guild direction, party orders and the like) from a dashboard tool. The owner's override wins over the daily puppet-master directive until he clears it or it expires; every override and clear is logged. (2026-11-15)
 - AY01. Ayla is Neo: she, her party and her guild Starveil perform better than the rest, measured on the two key metrics against
   comparable bots. (2026-11-14)
 - AY02. Ayla has a direct, instant line to the system (`legionctl neo`, which arrives with the puppet package) to say how to improve her own, her party's and her guild's
