@@ -3281,9 +3281,19 @@ sub pack_tick {
 		psay("lets go, follow me", 1, 0); # the engine's follow order: the members switch from 'stay put' to following her
 		($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
 	}
+	# owner (AY23, 2026-11-15): a wait only holds for members on OUR map. A wait on a member on another map (live 315 s:
+	# 'waiting for Zendancer84' while she was on pay_dun01) ends at once - she goes on, the member is not waited for
+	if ($act eq 'wait' && $an && ($an->[2] // '') ne $here) {
+		$pk{waitAt} = 0; $pk{act} = '';
+		message "[partylead] wait on $an->[0] ended: on $an->[2], not on our map
+", 'system';
+		return 0;
+	}
 	# the wait cap (owner 2026-11-15: 'waiting for Zen.fox (178 s)' for minutes): a wait longer than 3 min goes on for 3 min
 	# (the others follow or are fetched by the fetch rule); a wait for a member 20+ cells back is never kept open longer
 	if ($act eq 'wait' && time < ($pk{capUntil} || 0)) { return 0 }
+	if ($act eq 'wait' && $pk{waitAt} && time - $pk{waitAt} > 180) { $pk{waitAt} = 0; $pk{capUntil} = time + 180; message "[partylead] wait cap: 3 min - going on
+", 'system'; return 0 }
 	if ($act eq 'wait' && $pk{waitAt} && time - $pk{waitAt} > 180) {
 		$pk{capUntil} = time + 180; $pk{waitAt} = 0;
 		message "[partylead] wait cap: $an->[0] still " . ($an->[3] // '?') . " cells back after 3 min - going on
