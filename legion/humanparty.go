@@ -144,6 +144,7 @@ func (b *Bot) humanState(name string, now time.Time) (pubState, bool) {
 		if hp, ok := b.partyHP[s.AID]; ok && hp[1] > 0 {
 			s.HPFrac = float64(hp[0]) / float64(hp[1])
 		}
+		s.HPFrac = humanHPFrac(name, b.MapName, s.HPFrac, now) // healreach.go: her own fresh HP when we have it
 	}
 	humanTrailNote(name, s.Map, now) // together.go: her road map by map, for her friends to follow
 	if s.X >= 1000 || s.Y >= 1000 {  // a bogus party-list position (65535,65535: "no path ... to 65535,65535")

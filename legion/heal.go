@@ -28,7 +28,8 @@ const (
 var healStats = struct {
 	sync.Mutex
 	n, hp map[string]int
-}{n: map[string]int{}, hp: map[string]int{}}
+	at    map[string]time.Time // last confirmed heal per caster (healreach.go healedLately)
+}{n: map[string]int{}, hp: map[string]int{}, at: map[string]time.Time{}}
 
 // healFirst (b.mu held): true when this think was spent healing (or standing up to heal).
 func (b *Bot) healFirst(moving bool, now time.Time) bool {
@@ -46,13 +47,16 @@ func (b *Bot) healFirst(moving bool, now time.Time) bool {
 	}
 	// candidates: ourselves, and party members (bots + a human leader) on this map within Heal's range that we see
 	type cand struct {
-		name string
-		id   uint32
-		frac float64
+		name  string
+		id    uint32
+		frac  float64
+		x, y  int
+		reach bool // healreach.go: the server will take a Heal from where we stand
 	}
+	gm := maps[b.MapName]
 	var worst *cand
 	if hp < healSelfBelow {
-		worst = &cand{b.charName(), b.aid, hp}
+		worst = &cand{b.charName(), b.aid, hp, b.X, b.Y, true}
 	}
 	if p := partyOf(b); p != nil {
 		_, _, members := b.partyView(p, now)
@@ -71,14 +75,32 @@ func (b *Bot) healFirst(moving bool, now time.Time) bool {
 			if e := b.ents[id]; e != nil {
 				x, y = e.X, e.Y
 			}
-			if dist(b.X, b.Y, x, y) > healRange {
+			if dist(b.X, b.Y, x, y) > 14 { // beyond sight
 				continue
 			}
-			worst = &cand{s.Name, id, s.HPFrac}
+			if now.Before(b.buffAt["healskip:"+s.Name]) && dist(b.X, b.Y, x, y) >= 2 {
+				// 3 heals to it got no reply (healreach.go): walk next to it, no more blind sends
+				if b.healApproach(s.Name, x, y, true, now) {
+					return true
+				}
+				continue
+			}
+			worst = &cand{s.Name, id, s.HPFrac, x, y, healReachable(gm, b.X, b.Y, x, y, healRange)}
 		}
 	}
 	if worst == nil {
 		return b.cureParty(now) // poison.go: nobody to heal, a poisoned party mate gets Cure
+	}
+	if !worst.reach { // a wall on the line or out of range: rAthena drops the cast silently - move first
+		if b.healApproach(worst.name, worst.x, worst.y, false, now) || b.healApproach(worst.name, worst.x, worst.y, true, now) {
+			return true
+		}
+		return b.cureParty(now)
+	}
+	if worst.id != b.aid && healUnacked(b.charName(), worst.id) {
+		healResetPend(b.charName())
+		b.buffAt["healskip:"+worst.name] = now.Add(5 * time.Second)
+		return b.healApproach(worst.name, worst.x, worst.y, true, now)
 	}
 	cost := max(si.SP, 10+3*si.Lv)
 	if b.SP < cost {
@@ -97,6 +119,7 @@ func (b *Bot) healFirst(moving bool, now time.Time) bool {
 	}
 	b.skillReady = now.Add(900 * time.Millisecond)
 	b.setState(fmt.Sprintf("healing %s (%d%%)", worst.name, int(worst.frac*100)))
+	healSent(b.charName(), worst.id)
 	go b.useSkill(alHeal, si.Lv, worst.id)
 	return true
 }
@@ -128,6 +151,7 @@ func (b *Bot) healRecv(op uint16, pk []byte) {
 	if dst != b.aid && who != fmt.Sprint(dst) {
 		go friendNote(b.charName(), who, fkHeal) // friends.go
 	}
+	healAcked(b.charName())
 	healStats.Lock()
 	healStats.n[b.charName()]++
 	healStats.hp[b.charName()] += amount
