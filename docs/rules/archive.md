@@ -1369,7 +1369,7 @@ Kind: behaviour spec. First date: undated (2026-11-13 or earlier).
 - Ayla is a true party leader: protects, guides, waits for the party and talks.
 ```
 
-## AY05 - Ayla's mind makes the grinding decisions
+## AY05 (history; see later AY05 entries)
 
 Kind: behaviour spec. First date: undated (2026-11-13 or earlier).
 
@@ -1820,3 +1820,52 @@ Kind: process rule. First date: 2026-11-14.
 ```text
 "only ignore very low level mobs... you stupid shit is too stupid"
 ```
+
+## DB03
+```text
+"dashboard should not be blocked, deploy right away"
+```
+
+## CL17
+```text
+"the priest can fucking heal itself, why resting. So dumb"
+```
+
+## CL17 (added)
+```text
+"priest should cast kyrie on itself always"
+```
+
+## AY22
+```text
+"ayla is now walking around in cirle like a stupid fuck. OK, new rule, ayla wait for 10 seconds, if priest does not catch up then go back to collect it"
+```
+
+## AY11 (changed)
+```text
+"keep the alchemist in the guild but remove it from the party, let it be an indepenent bot. Replace it with a monk who can fight and buff"
+```
+
+## AY05 (owner reversed to Haiku control)
+```text
+"openkore crashed. Restart. Let haiku control Ayla again to avoid this issue. Must keep openkore running"
+```
+
+## PR16 (repeated)
+```text
+"the map fixes should apply to the entire legion. Why the fuck can't you get it? I said it a million times already. ALl system fixes go to the entire legion"
+```
+
+## PR40 / PT22 (repeated)
+```text
+"If they are doing a town run, why aren't they using butterfly wings as told? Why walking back? I thought it was a rule baked in sinc ethe beginning. keep watching this party and improving it. Once confirmed deploy to the entire legion."
+```
+
+## PR41
+```text
+"You need to always review your rules for conflicts. It seems you suck at that"
+```
+
+## Conflict review 2026-11-15
+
+Resolved by newest owner word per PR41; see coverage.md.

@@ -2,7 +2,7 @@
 
 Owner's standing orders. They override defaults and earlier designs. Details live in topic files; the owner's original words are in `docs/rules/archive.md` (never auto-loaded).
 
-**Goal (PR03).** A Matrix-like simulation of real people. Judge every choice by "what would real players and a normal society do?" When no rule covers a case, pick the most natural human behaviour: no mechanical shortcuts, no mass actions, believable pacing. Nothing is started (no containers, servers, loops, agents) until the owner says so (G21).
+**Goal (PR03).** A Matrix-like simulation of real people. Judge every choice by "what would real players and a normal society do?" When no rule covers a case, pick the most natural human behaviour: no mechanical shortcuts, no mass actions, believable pacing. Everything built is on (G21, PR37); ask only before hard-to-reverse actions (G22).
 
 ## Hard gates (the full register with enforcement is `docs/rules/gates.md`)
 - G01 (SA01) Never drive any client with the real mouse or keyboard. Only the Wine client on virtual display :98, or OpenKore.
@@ -17,13 +17,13 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 - G10 (ST01) The server caps at transcendent classes: no 3rd or 4th jobs.
 - G11 (EC02) A wrong build is deleted and restarted only on bot accounts, never on humans or Ayla's party.
 - G12 (AY09) Nothing may send away Ayla's zeny if it would leave her under 10,000z; under 10,000z she sends none.
-- G13 (PR23) The main session never controls Ayla (no map orders, rallies, party lines or moves); it has root-cause bugs fixed.
+- G13 (PR23) The main session never controls Ayla (no map orders, rallies, party lines or moves); it has root-cause bugs fixed. Passing the owner's own words to Ayla or her Haiku helper (AY20) is not control; owner-ordered restarts of her OpenKore are done by a subagent (G14).
 - G14 (PR11) The main session does no coding: it listens to the owner and bug reports and assigns fixers. All coding, fixes and deploys are done by subagents.
 - G15 (PR29) Deploys never recreate rathena by accident: only `legion`/`legion-core` with `--no-deps`. Recreating rathena also recreates Ayla's OpenKore and the legion containers.
 - G16 (PR30) Restart or recreate rathena at most once an hour.
-- G17 (PR32) Deploys every 3 hours (critical unblocking fixes excepted), as one batch assigned by the main session; only the deploy agent deploys, both `legion` and `legion-core`, and it alone runs go vet/test and image builds. Working subagents report "built" and never deploy.
+- G17 (PR32) Deploys every 3 hours (excepted: critical unblocking fixes, Ayla fixes (AY21) and owner-asked dashboard changes (DB03), deployed at once by the deploy agent with --critical), as one batch assigned by the main session; only the deploy agent deploys, both `legion` and `legion-core`, and it alone runs go vet/test and image builds. Working subagents report "built" and never deploy.
 - G18 (CT05) Never reveal or hint that players are bots, AI, a simulation or a script.
-- G19 (AY03) Ayla and her party are always online. (G19 to G23 confirmed as hard gates by the owner, 2026-11-14.)
+- G19 (AY03) Ayla and her party are always online. A planned restart allowed by G15-G17, or a crash restart, is not a breach if she is back within 5 min. (G19 to G23 confirmed as hard gates by the owner, 2026-11-14.)
 - G20 Ayla's party is never subjected to kicks, resets or build resets. (Human part removed by the owner 2026-11-14; see G25.)
 - G21 Nothing is started until the owner says so. The owner said so on 2026-11-14: all systems are on (PR37); no further asking.
 - G22 Ask the owner before outward-facing or hard-to-reverse actions (installing external tools, deleting data).

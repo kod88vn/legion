@@ -158,7 +158,7 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | AY14 | Old seed bot AIBot is switched off | server setting | RULES 5 (l.496) | docs/rules/settings.md | moved |
 | AY15 | Rotate party members through other jobs; keep the priest | behaviour spec | RULES 5 (l.498) | docs/rules/ayla.md | kept |
 | AY16 | Always close popups on Ayla's screen | behaviour spec | RULES 5 (l.499) | docs/rules/ayla.md | kept |
-| AY17 | Owner watches Ayla in the TigerVNC window | behaviour spec | RULES 5 (l.502) | docs/rules/ayla.md | kept |
+| AY17 | Owner watches Ayla in the TigerVNC window | behaviour spec | RULES 5 (l.502) | docs/rules/ayla.md | replaced (see the 2026-11-14 AY17 row) |
 | DB01 | Dashboard shows world, minds, guilds, parties with HP/SP/zeny | behaviour spec | RULES 6 (l.505) | docs/rules/process.md | moved |
 | DB02 | Owner can close and reopen mind chats | behaviour spec | RULES 6 (l.506) | docs/rules/process.md | moved |
 | CL01 | Every class uses AoE skills on crowds, aimed at the central mob | behaviour spec | CLASSES All (l.22) | docs/classes/all.md | kept |
@@ -181,7 +181,7 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | AY19 | Ayla plays like a normal bot without any AI; the mind only adds | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
 | EC35 | Shop merchants occasionally announce rare items in #trade | economy | owner 2026-11-14 | docs/rules/economy.md | new rule |
 | PR38 | Code decides; AI observes and improves code; goal: only puppet masters, once a day | process | owner 2026-11-14 | docs/rules/process.md | new rule |
-| AY05 | Ayla's code decides; her Haiku only unsticks her (rally cancel, respawn) and files the fix; no map picks | ayla | owner 2026-11-14 | docs/rules/ayla.md | replaced |
+| AY05 | Ayla controlled by her Haiku again (map, rally, party commands), code runs underneath; keep OpenKore running | ayla | owner 2026-11-14 | docs/rules/ayla.md | replaced |
 | PT29 | Members ask for buffs; priest buffs unless low SP, never passive | parties | owner 2026-11-14 | docs/rules/parties.md | new rule |
 | PR39 | Every system agent/script/watchdog files every problem it sees into the bug queue | process | owner 2026-11-14 | docs/rules/process.md | new rule |
 | EC36 | Waiting time used for errands (sell, store, restock), esp. with a near-full bag | economy | owner 2026-11-14 | docs/rules/economy.md | new rule |
@@ -189,9 +189,15 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | PT31 | Members stay with the party; no solo random Teleport escapes; retreat to tank/priest, wing to party Kafra only if dying | parties | owner 2026-11-14 | docs/rules/parties.md | new rule |
 | AY21 | Ayla fixes deploy immediately, never wait for the 3-hour batch | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
 | PT32 | Fight in place near the party; no running around pulling extra attackers; stay back | parties | owner 2026-11-14 | docs/rules/parties.md | new rule |
+| DB03 | Owner-requested dashboard changes deploy right away | process | owner 2026-11-14 | docs/rules/process.md | new rule |
+| CL17 | Healers heal themselves instead of resting for HP; rest only for SP | classes | owner 2026-11-14 | docs/classes/acolyte.md | new rule |
+| PR40 | Try on Ayla's party first, watch and improve, then deploy to the entire Legion | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PR41 | Check every rule/instruction for conflicts; full conflict review after each batch of rules | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| AY22 | Ayla waits 10 s for a lagging priest, then goes back to collect it | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
 | CL16 | A caster with full SP most of the time is a bug; it must spend SP on spells | classes | owner 2026-11-14 | docs/classes/mage.md | new rule |
 | AY17 | No watch client for Ayla; owner watches via GM account; OpenKore log in a terminal | ayla | owner 2026-11-14 | docs/rules/ayla.md | replaced |
 | PT30 | Duplicate of the existing leader-plan rule (parties.md l.55-57); merged there, not a new line | parties | owner 2026-11-14 | docs/rules/parties.md | merged |
+| PR41-review | 2026-11-15 conflict review applied (20 items) | process | main | docs/rules/* | amended |
 
 Changes after the trim: 2026-11-14 the owner removed the human part of G20 and added gate G25 (no in-world
 discrimination between humans and other players); GD06 has no human exception. Owner's words in `archive.md` (G20, G25, GD06).

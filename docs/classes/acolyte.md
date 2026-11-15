@@ -5,9 +5,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 ## Acolyte -> Priest / Monk (support line)
 
 ### Rules
-- CL09 (also PT14). Priests heal first: SP is kept for healing (buffs only above 60% SP). When nobody needs healing the priest sits (heal, buff
+- CL09 (also PT14). Priests heal first: SP is kept for healing (buffs only above 60% SP). When nobody needs a heal or buff the priest sits only for low SP (CL17, PT29) (heal, buff
   or move with the party, otherwise sit). Idle sitting does not stop the party; only an announced rest (SP really low,
   "need sp" / "ready") makes the others wait. (2026-11-14)
+- CL17. A healer (Acolyte, Priest, Monk with Heal) heals itself instead of sitting to rest for HP, and a Priest keeps Kyrie Eleison on itself at all times; it sits only for low SP when nobody needs a heal, and stands up as soon as someone does. (2026-11-14)
 - CL10. Acolyte and Priest builds max out INT first, then DEX/VIT as support; existing characters grow into it with new stat
   points. (2026-11-14)
 - Healers carry few HP potions and mostly SP potions (EC29). Ayla's party keeps its priest when others rotate jobs (AY15).
@@ -25,8 +26,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   (Blessing, Increase AGI, Kyrie on the tank) only above 60% SP; Heal as an attack on Undead-element monsters (solo
   keeps 20% SP, a party healer 50%); Magnus Exorcismus on 4+ undead/demons (Blue Gemstone, long cast). A solo support
   Acolyte casts Blessing and Increase AGI on itself.
-- **Rest:** sits under `priest_sit_low_sp_pct` (40%), rests to 80% (60% when the party moves); idle sitting otherwise
-  (heal, buff, move, or sit) without holding the party.
+- **Rest:** sits under `priest_sit_low_sp_pct` (40%), rests to 80% (60% when the party moves); sits only for low SP when nobody needs a heal or buff (CL17, PT29); otherwise
+  heal, buff or move without holding the party.
 - **Gear:** lv1-26 Rod / Mace, Silk Robe, Guard / Buckler, Hat / Biretta, Hood/Muffler, Sandals/Shoes, Rosary; lv24-60
   Wand / Arc Wand, Saint's Robe, Buckler, Biretta, Manteau, Rosary (undead dungeons with a party); lv55-99 Arc Wand /
   Healing Staff (lv55), Boots. Cards (top): Elder Willow (headgear, INT+2), Raydric, Sohee (shoes, MaxSP+15%); Pupa /
@@ -36,7 +37,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   Warp Portal).
 - **Boss role:** healer: Heal the tank first, Kyrie on the tank, Blessing/Increase AGI on all; never fight; Lex Aeterna
   before big hits; the party retreats if the priest dies.
-- **Do:** heal first, keep SP for healing, sit whenever idle. **Don't:** melee monsters, spend SP on buffs below 60%,
+- **Do:** heal first, keep SP for healing, sit only for low SP when nobody needs a heal or buff (CL17, PT29). **Don't:** melee monsters, spend SP on buffs below 60%,
   stop the party for idle sitting.
 
 ### Variant: "Magnus Exorcismus Priest" (plan `priest_me`, Base priest; support role allowed)

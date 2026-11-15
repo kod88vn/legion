@@ -31,7 +31,7 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Boss role:** main tank or melee DPS: holds the boss (Provoke), Two-Hand Quicken + Bowling Bash on the adds,
   Endure vs knock-back.
 - **Do:** engage first, pull the next group, stay in front, use AoE and potions when surrounded. **Don't:** trail
-  behind the party, sit while members fight, Fly Wing away except as a last resort near death.
+  behind the party, sit while members fight, escape except as a last resort near death (Butterfly Wing to the party's save Kafra when in a party (PT31); Fly Wing only solo).
 
 ### Crusader: "VIT Holy Cross Crusader" (plan `crusader`, end goal Paladin)
 - **Party role:** main tank with a shield; holy damage vs undead/demons.

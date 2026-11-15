@@ -18,7 +18,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Design deta
 - GD07. Every guild has a Merchant-line member (Vending, Discount, Overcharge) as its trader: vends surplus at the Prontera
   market, sells to NPCs with Overcharge, buys what the guild needs (from player shops, #trade, and NPCs with Discount) for the guild stock. (2026-11-14)
 - GD08. Every bot aims for the Creamy Card (Teleport): an early step in every build's gear path, high priority and high demand in
-  the market; bots use Teleport to travel and escape. (2026-11-14)
+  the market; bots use Teleport to travel and escape (solo only; in a party PT31 applies). (2026-11-14)
 - GD09. Every guild member (Starveil included; only Ayla's party is fixed) has a loyalty that grows when the guild takes care of
   it and falls when ignored. Leaders send gear or money to members at risk of leaving. Members ask for help in guild chat and
   guild mates who can, help. Loyalty and friendship decide whether a member stays. (2026-11-14)

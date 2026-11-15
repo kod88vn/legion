@@ -11,14 +11,14 @@ One line per rule: ID, statement, date. Owner words in `archive.md`.
 - EC06. Beginners stay near their home town, level first, earn money for gear and Kafra travel. (2026-11-13)
 - PR33. No back-and-forth Kafra trips: decide once where to go and stay. (2026-11-14)
 - EC25. About 90% of online time is spent killing monsters on the hunting ground. Town trips are rare and measured. (2026-11-14)
-- EC30. Bots run away from danger; a Fly Wing escape to avoid dying stays on. (2026-11-13)
+- EC30. Bots run away from danger; a Fly Wing escape to avoid dying stays on (solo only; in a party PT31 applies). (2026-11-13)
 
 ## Town runs and supplies
 - EC26. Every bot keeps basic utilities (HP/SP potions, Fly Wings, Butterfly Wings, cures/arrows as its class needs) and uses a
   Butterfly Wing for a town run when affordable. (2026-11-14)
 - EC27. Town runs only for a real need (bag at 50% weight, out of potions); gear buying and loot selling happen on those runs, never as a separate reason to drag the party to town.
   Arrows are a necessary supply (CL13). (2026-11-13)
-- EC28. 50% weight triggers a town run at once, for every bot and party. (2026-11-14)
+- EC28. 50% weight triggers a town run at once, for every bot and party; the member at 50% weight sells on the next party town run, or goes alone like PT23 if it can't wait. (2026-11-14)
 - EC29. SP users carry SP potions as well as HP potions, within the weight limit (stay under 50% weight: regen stops above); healers carry few HP potions and mostly SP
   potions. (2026-11-13)
 
@@ -65,4 +65,4 @@ One line per rule: ID, statement, date. Owner words in `archive.md`.
 - EC33. Bots say what they find in natural #trade/#global talk, rate-limited to about 10-30 public lines a minute, so other bots and humans hear it and can act on it (farm it, list it, buy it). (2026-11-14)
 - EC34. A glut (price near or under NPC value, many sellers) sends bots to farm items that pay better, so the price recovers. (2026-11-14)
 - EC35. Merchants with an open shop occasionally announce its rare items (cards, katana and the like) in #trade so buyers know; natural wording, not spam, within the EC33 rate limit. (2026-11-14)
-- EC36. Waiting time is never wasted: a bot or party member with nothing to do (waiting for the party, a rally or a Kafra) uses it for errands: sell loot, store items, restock potions and arrows, repair, especially when its bag is nearly full. (2026-11-14)
+- EC36. A solo bot, or a party gathering at a Kafra before setting out, uses idle time for errands (sell, store, restock). A party member does errands only on the party town run (PT22/PT24) or at 50% weight (EC28); otherwise it farms near the party (PT18). (2026-11-14)

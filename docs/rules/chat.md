@@ -9,4 +9,4 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Realism rul
 - CT03. #global is for important things only (looking for party/members, trade, guild recruiting). More party, guild and local
   chat. (2026-11-14)
 - CT04. Conversation is the chat agents' job; templates fill in, and keep working when no agent is running (PR08). (2026-11-14)
-- EC33. Market findings are said in natural trade talk, within the public-chat rate limit (about 10-30 lines a minute).
+- EC33. See economy.md EC33.

@@ -12,7 +12,7 @@ the classic name in brackets where they differ. The owner's words for each class
 - CL02 (also PT13). Tanks are active: they engage first, pick up every monster that targets a party member, take aggro off others, keep
   attacking, and never sit back. (2026-11-14)
 - CL03. A tank may pull big groups; when surrounded it uses its area skills (Bowling Bash, Magnum Break, Brandish Spear, Grand
-  Cross) and potions with the priest healing, and does not Fly Wing away except as a last resort near death. (2026-11-14)
+  Cross) and potions with the priest healing, and does not escape except as a last resort near death (Butterfly Wing to the party's save Kafra when in a party (PT31); Fly Wing only solo). (2026-11-14)
 - CL04. Every class has its common build variants (e.g. Knight 2H-sword and spear, Priest full-support and battle, Wizard AoE
   and bolt, Hunter trap/DEX, Assassin katar and dagger, Blacksmith battle and forge, Monk combo and Asura, Sage battle and
   support), spread across the bots, each with its own gear table in buildgear.json. A bot's goal is to complete its build: it
@@ -92,7 +92,7 @@ the classic name in brackets where they differ. The owner's words for each class
   the first accessory step in every buildgear.json band and in extrasMelee/Cast/Holy; the card is on every band's card
   list (prio 3) and `cardValue` rates it 60 for every build, so bots ask #trade for it, keep it and compound it.
 - Use (`teleport.go`, for anyone with AL_TELEPORT - the card or the Acolyte skill): escape a losing fight with the skill
-  before a Fly Wing (danger.go, same rules); a solo hunter with nothing to fight for 6 s on its hunting map teleports
+  before a wing (danger.go, same rules: Butterfly Wing to the party's save Kafra when in a party (PT31); Fly Wing only solo); a solo hunter with nothing to fight for 6 s on its hunting map teleports
   to a random cell instead of roaming (not in a party: it would split it; keeps 25% SP for an escape). The skill's warp
   list (0x0abe) is answered "Random" (0x011b); a map where the position didn't change is skipped for 30 min.
 
