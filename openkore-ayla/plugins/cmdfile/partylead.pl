@@ -2444,7 +2444,10 @@ sub pack_tick {
 	# a lockMap held during the last tick's wait comes back first (the wait below takes it again if still waiting)
 	if (($pk{lmHold} || '') ne '') { $config{lockMap} = $pk{lmHold} if ($config{lockMap} || '') eq ''; $pk{lmHold} = '' }
 	return 0 if defined $config{partylead_pack} && $config{partylead_pack} eq '0';
-	return 0 if $rally || $depart || $holding || $collect || $fetchMap ne '' || $char->{dead} || !$char->{pos_to};
+	# a rally in ANOTHER town is travel too (live: the owner's re-pick to pay_dun02 started a Payon save-stop rally and
+	# she took the Kafra from aldebaran alone): the departure rule holds until she is in the rally town
+	my $rallyTravel = $rally && $field && $field->baseName ne $rally->{town} ? 1 : 0;
+	return 0 if ($rally && !$rallyTravel) || $depart || $holding && !$rallyTravel || $collect || $fetchMap ne '' || $char->{dead} || !$char->{pos_to};
 	return 0 if AI::inQueue('NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal', 'teleport') || (defined &aylagear::busy && aylagear::busy());
 	my $here = $field->baseName;
 	my @fr;
@@ -2459,9 +2462,14 @@ sub pack_tick {
 	my ($dm, $nm) = route_maps();
 	my $farm = $huntMap ne '' && $here eq $huntMap ? 1 : 0;
 	my $town = is_townmap($here);
-	my $leaving = $town && $dm ne '' && !is_townmap($dm) ? 1 : 0;
+	my $leaving = $town && (($dm ne '' && !is_townmap($dm)) || $rallyTravel) ? 1 : 0;
 	return 0 if $town && !$leaving && !$pk{wf};       # town errands / shopping / the Kafra regroup
-	return 0 if !$farm && $dm ne '' && is_townmap($dm) && !$pk{wf}; # a town run back (the party meets at the Kafra)
+	return 0 if !$farm && $dm ne '' && is_townmap($dm) && !$pk{wf} && !$rallyTravel; # a town run back (the party meets at the Kafra)
+	if ($rallyTravel && $town && ($pk{rallySaid} || '') ne $rally->{town}) { # one line: where the party meets
+		$pk{rallySaid} = $rally->{town};
+		my $dst = $rally->{dest} || $rally->{thenGoto} || '';
+		pk_say(($dst ne '' ? "new spot: $dst, " : '') . "meet at the kafra in $rally->{town}");
+	}
 	my $cross = ($dm ne '' && $dm ne $here && cross_danger($here)) ? 'on' : ($nm ne '' && $nm ne $dm && cross_danger($nm)) ? 'pre' : '';
 	# fighting while she waits: released only when the priest + one friend (priest offline: 2 friends) are within 20
 	# the priest's distance over time: shrinking = it got closer within the last 10 s (or changed map within 20 s);
