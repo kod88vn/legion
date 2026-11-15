@@ -48,6 +48,8 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
   under the same ID, and a row in `coverage.md`; a new hard gate also gets a G ID in `gates.md` and the core. A new rule that
   replaces an old one edits the old line. (2026-11-14)
 - PR01. Rules are short plain lines with an ID and a date. They never repeat the owner's prompt. (2026-11-14)
+- PR44. Every change is verified live as soon as it is made, and committed as soon as it is verified. Nothing waits on a later session or the owner when an agent can check it now (for example a fresh-session test via a headless `claude -p`). (2026-11-15)
+- PR43. Every reply of the main session ends with its pending tasks: each task still running or waiting, who has it, and what it waits on. (2026-11-15)
 - PR42. Nothing is written twice. A rule, fact or instruction lives in one place and everything else points to it; every agent reads the constitution first and exactly once, and no prompt, brief, skill, rule or reply restates it. (2026-11-15)
 - G15 / G16 / G17. Deploy rules: legion/legion-core only with `--no-deps`; rathena restart at most once an hour; deploys every
   3 hours as one batch assigned by the main session, run by the deploy agent only, for both legion and legion-core (excepted: critical unblocking fixes, Ayla fixes (AY21) and owner-asked dashboard changes (DB03), deployed at once by the deploy agent with --critical); working subagents report "built" and never deploy (PR32). Details in `gates.md`; the deploy scripts are described in `docs/handover/startup-old.md` (0.4 and 0.5) and `tools/deploy/`.
@@ -60,6 +62,8 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - DB04. Only agents the owner has retired sit under a collapsed "Retired" section on the dashboard; nothing is removed. None is retired now (Constitution 2.9). (2026-11-15, amended 2026-11-15)
 - DB05. The dashboard is one page with the server status always on top and tabs below it: Ayla's party, Legion, Economy, Puppet master decisions, Leaderboard, System (with every agent's status). No clutter; nothing is removed (G08), it moves into its tab. (2026-11-15)
 - DB06. The dashboard page is always on, also when the stack or the agents are down; it then shows what is down. (2026-11-15)
+- DB07. A dashboard tab inspects any player in the database: search by name, then the full character (stats, gear, inventory, skills, zeny, guild, party, history). Read-only. (2026-11-15)
+- DB08. Everything that exists on disk is shown when the stack is down (files, logs, reports, the last saved world data with its age); "engine down, no data" only where nothing exists. (2026-11-15)
 - PR38. See Constitution 2.7, 2.8 and 2.9. Ayla's Haiku helper steers her only through guarded commands (AY05); until the goal of 2.9 is reached AY05 and PR18 run. (2026-11-14)
 - PR39. See Constitution 3.3; it covers every system agent, script and watchdog (sentinel, partycheck, Ayla's watchdog and Haiku helper, qa, watcher, fixers that notice side bugs). (2026-11-14)
 - DB03. Dashboard changes the owner asks for deploy right away, like Ayla fixes (AY21); they never wait for the 3-hour batch. (2026-11-14)

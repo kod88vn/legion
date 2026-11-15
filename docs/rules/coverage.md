@@ -206,6 +206,12 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | PR41-review | 2026-11-15 conflict review applied (20 items) | process | main | docs/rules/* | amended |
 | DB05 | Dashboard: server status on top, six tabs (Ayla's party, Legion, Economy, Puppet master decisions, Leaderboard, System) (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | DB06 | Dashboard page always on, also when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| DB07 | Dashboard tab to inspect any player in the database, read-only (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| DB08 | Dashboard shows everything on disk when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PR44 | Verify every change at once; commit as soon as verified (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PT34 | Off the roster means leave the in-game party right away (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
+| ST07 | rathena chat logging on, for @partyspy (2026-11-15) | settings | owner 2026-11-15 | docs/rules/settings.md | new rule |
+| PR43 | Every main-session reply ends with its pending tasks (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR42 | Nothing is written twice; the constitution is read first and once, never restated (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | Constitution | Highest law, three articles (main session, the Matrix world, the self-improving loop); every agent reads it in full; G13, PR23 and AY21 amended to fit (2026-11-15) | constitution | owner 2026-11-15 | CONSTITUTION.md | new, above all rules |
 

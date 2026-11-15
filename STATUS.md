@@ -1,5 +1,8 @@
 # STATUS - read this first
 
+**2026-11-15: game server only is up (owner order).** `ro-db` and `ro-rathena` were started with `docker start`; the Legion
+engine (legion, legion-core), Ayla's OpenKore, the agency and every agent, mind and loop stay down; `stack.hold` stays.
+
 ## 2026-11-15 09:05 local: everything shut down for a system redesign (owner order)
 The owner said "we need a system redesign. Shut down everything". All six containers are stopped (`docker stop`: legion,
 legion-core, openkore-ayla, rathena, agency, db), all loops are stopped (sentinel, partycheck, dispatcher, aylalog,

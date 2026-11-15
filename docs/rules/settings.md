@@ -18,3 +18,4 @@ One line per setting: ID, value, date. Owner words in `archive.md`.
   brought back by restarts. (2026-11-14)
 - AY12 (setting part). `guild_emperium_check: no` in `rathena/conf/import/battle_conf.txt`; guild name Starveil is the owner's choice. (2026-11-14)
 - Guild name of Ayla's guild: Starveil (owner's choice, 2026-11-14).
+- ST07. rathena logs chat (party, guild, whisper, global) so the owner's GM can use `@partyspy` and the dashboard can show it; set in `rathena/conf/import/`, kept across recreates. (2026-11-15)

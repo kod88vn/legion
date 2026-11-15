@@ -1936,6 +1936,21 @@ Resolved by newest owner word per PR41; see coverage.md.
 "fix the 3 conflicts you found. Like I said we're starting over and the constitution is the law of the land"
 ```
 
+## PR44 / PT34 / ST07
+```text
+"fresh session check, why don't you just open a new window with claude and test yourself? Stop waiting. Always commit work immediately once verified. Yes you must always verify immediately. Always leave party right away. Yes please log chat for partyspy"
+```
+
+## PR43
+```text
+"ok, from now on in your reply always disclose pending tasks"
+```
+
+## DB07 / DB08
+```text
+"in dashboard, I need a tab to inspect any player in the database. Also, a lot of information should be available offline right?"
+```
+
 ## DB05 / DB06
 ```text
 "redesign dashboard. It's too cluttered now. I want tabs, each represent an important aspect: server status is always on top, then tabs: Ayla party, Legion, Economy, Puppet Master decisions, Leaderboard, and System (including all agent status). This page must always be on"
