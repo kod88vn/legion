@@ -331,6 +331,16 @@ type Tuning struct {
 	// the server's party_share_level (rathena/conf/import/inter_conf.txt), so even exp share always works; the map
 	// (survivable for the weakest, real exp for the strongest) is what keeps parties sensible. 15 = stock rAthena.
 	PartyLvSpread int `json:"party_lv_spread"`
+	// huntfit.go / town.go (2026-11-15, Constitution 3.2): the hunting-map fit of potions, arrows and cards. ON by default;
+	// fit_buy_off true = the plain pre-fit behaviour (one potion tier with a Red fallback, plain Arrows, no card fit).
+	// pot_budget_pct: the potion spend beyond the survival minimum, as a share of the bot's recent zeny per hour, with
+	// pot_budget_floor zeny when there is no measured hour yet. pot_min_heal_pct: a potion must heal this share of max HP
+	// to be a bulk buy. arrow_gain_per_z: percent of damage an elemental arrow must gain per extra zeny per arrow.
+	FitBuyOff       bool `json:"fit_buy_off"`
+	PotBudgetPct    int  `json:"pot_budget_pct"`
+	PotBudgetFloor  int  `json:"pot_budget_floor"`
+	PotMinHealPct   int  `json:"pot_min_heal_pct"`
+	ArrowGainPerZ   int  `json:"arrow_gain_per_z"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
@@ -366,6 +376,7 @@ var defaultTuning = Tuning{
 	AmbientTalkOn: true, AmbientTalkDiv: 150, AmbientTalkMaxPerMin: 3,
 	IdleErrandWaitSec: 45, IdleErrandWeightPct: 35, IdleErrandSlots: 85, IdleErrandCooldownMin: 10,
 	PartyLvSpread: 99,
+	PotBudgetPct: 15, PotBudgetFloor: 1000, PotMinHealPct: 2, ArrowGainPerZ: 4,
 }
 
 var curTuning atomic.Value // *Tuning

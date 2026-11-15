@@ -54,6 +54,7 @@ func loadCardBonuses() {
 	for _, fn := range []string{"item_db_etc.yml", "item_db_equip.yml"} {
 		loadBonusFile(filepath.Join(*rathena, "db", "re", fn))
 	}
+	loadAmmoElements(filepath.Join(*rathena, "db", "re", "item_db_etc.yml")) // huntfit.go: arrow elements (bAtkEle)
 }
 
 func loadBonusFile(path string) {
@@ -88,12 +89,12 @@ func loadBonusFile(path string) {
 						if cur.ele == nil {
 							cur.ele = map[string]int{}
 						}
-						cur.ele[strings.TrimPrefix(strings.TrimSpace(kv[1]), "Ele_")] += n
+						cur.ele[strings.ToLower(strings.TrimPrefix(strings.TrimSpace(kv[1]), "Ele_"))] += n
 					} else {
 						if cur.race == nil {
 							cur.race = map[string]int{}
 						}
-						cur.race[strings.TrimPrefix(strings.TrimSpace(kv[1]), "RC_")] += n
+						cur.race[strings.ToLower(strings.TrimPrefix(strings.TrimSpace(kv[1]), "RC_"))] += n
 					}
 				}
 			}

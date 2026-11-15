@@ -125,14 +125,14 @@ var townInteriors = map[string][]string{
 	"lighthalzen": {"lhz_in02", "lhz_in03"}, "rachel": {"ra_in01"}, "veins": {"ve_in"}, "hugel": {"hu_in01"},
 }
 
-// potWorthPct: an HP potion is worth carrying when it heals at least this share of max HP (3% of 3,000 = 90 HP)
-const potWorthPct = 3
-
 // potStockMin: the stock a restock must be able to pay for before a potion tier is bought (pickHPPotion)
 const potStockMin = 5
 
 // potPickReserve: zeny kept back from a potion restock (as potBuyPlan keeps it)
 const potPickReserve = 500
+
+// potEmergencyN: strongest-tier potions a bot keeps for emergencies (bought once, not restocked beyond this)
+const potEmergencyN = 3
 
 // hpPotOrder: the HP potions, strongest first
 var hpPotOrder = []int{itemWhitePotion, itemYellowPotion, itemOrangePotion, itemRedPotion}
@@ -150,51 +150,102 @@ func potLevelOK(id, lv int) bool {
 	return id == itemRedPotion
 }
 
-// pickHPPotion: the HP potion a restock buys from a shop's list (pk, the NPC sell packet), strongest first among the
-// potions the level allows and the shop lists: (1) one that heals at least potWorthPct of max HP and whose potStockMin
-// stock is affordable, (2) the strongest with an affordable potStockMin stock, (3) the strongest the bot can buy at all.
-// 0, 0 when nothing is affordable. QA 2026-11-15: lv60-85 bots restocked Red Potions (+45 HP) against 3,000-9,700 max HP
-// because they could not afford a full Orange/Yellow stock; a Red stock does almost nothing at that HP.
+// potMinHealPct: the share of max HP one potion must heal to be a bulk buy (tuning pot_min_heal_pct, default 2)
+func potMinHealPct() int {
+	if v := tune().PotMinHealPct; v > 0 {
+		return v
+	}
+	return 2
+}
+
+// pickHPPotion: the bulk HP potion a restock buys from a shop's list (pk, the NPC sell packet) for a bot of level lv
+// with maxHP max HP and zeny zeny. Tiers the level allows and the shop lists, judged by heal per zeny (the cheapest HP
+// per zeny is the bulk; the strongest tier is for emergencies, emergencyPot). Preference: a potion that heals at least
+// potMinHealPct of max HP with a potStockMin stock affordable; then any with that stock; then any affordable one. Heal
+// per zeny decides inside each group, so a restock never buys fewer HP for more zeny (QA 2026-11-15: at 2,000z it took
+// 8 Yellow = 1,640 HP where 25 Red gave 1,375 HP for 250z). 0, 0 when nothing is affordable.
 func pickHPPotion(pk []byte, lv, maxHP, zeny int) (id, price int) {
-	var ids, prices []int
+	type cand struct{ id, pr int }
+	var cs []cand
 	for _, c := range hpPotOrder {
 		if pr := listedPrice(pk, c); pr > 0 && potLevelOK(c, lv) {
-			ids, prices = append(ids, c), append(prices, pr)
+			cs = append(cs, cand{c, pr})
 		}
 	}
 	afford := func(pr int) int { return (zeny - potPickReserve) / pr }
-	for i, c := range ids {
-		if potHeal(c)*100 >= maxHP*potWorthPct && afford(prices[i]) >= potStockMin {
-			return c, prices[i]
+	pick := func(worthOnly bool, need int) (int, int) {
+		bi := -1
+		for i, c := range cs {
+			if (worthOnly && potHeal(c.id)*100 < maxHP*potMinHealPct()) || afford(c.pr) < need {
+				continue
+			}
+			// heal per zeny: potHeal(c)/pr(c) > potHeal(best)/pr(best)
+			if bi < 0 || potHeal(c.id)*cs[bi].pr > potHeal(cs[bi].id)*c.pr {
+				bi = i
+			}
 		}
-	}
-	for i, c := range ids {
-		if afford(prices[i]) >= potStockMin {
-			return c, prices[i]
+		if bi < 0 {
+			return 0, 0
 		}
+		return cs[bi].id, cs[bi].pr
 	}
-	for i, c := range ids {
-		if afford(prices[i]) >= 1 {
-			return c, prices[i]
+	if id, pr := pick(true, potStockMin); id > 0 {
+		return id, pr
+	}
+	if id, pr := pick(true, 1); id > 0 { // a weak tier is not readmitted at high max HP: the worth test holds here too
+		return id, pr
+	}
+	return pick(false, 1)
+}
+
+// emergencyPot: the strongest HP potion the level allows and the shop lists, when it is not the bulk tier bulk
+// (0 when it is the same tier, or nothing is listed). Carried a few at a time for emergencies only.
+func emergencyPot(pk []byte, lv, bulk int) (int, int) {
+	for _, c := range hpPotOrder {
+		if pr := listedPrice(pk, c); pr > 0 && potLevelOK(c, lv) {
+			if c == bulk {
+				return 0, 0
+			}
+			return c, pr
 		}
 	}
 	return 0, 0
 }
 
-// potTierFor: the HP potion this bot restocks from its level and max HP, whatever the shop lists: the strongest the
-// level allows that heals at least potWorthPct of max HP, else the strongest the level allows.
+// legacyHPPotion: the pre-fit pick (tuning fit_buy_off): the highest level-allowed tier, Red when the bot can't afford an
+// hour's stock of it
+func legacyHPPotion(b *Bot, pk []byte) (int, int) {
+	best, price := 0, 0
+	lv := b.BaseLvOr()
+	for o := 4; o+13 <= len(pk); o += 13 {
+		pr, id := int(le.Uint32(pk[o+4:])), int(le.Uint32(pk[o+9:]))
+		want := id == itemRedPotion || (id == itemOrangePotion && lv >= 30) || (id == itemYellowPotion && lv >= 60) ||
+			(id == itemWhitePotion && lv >= 80)
+		if want && id >= best {
+			best, price = id, pr
+		}
+	}
+	if rp := listedPrice(pk, itemRedPotion); best > itemRedPotion && rp > 0 && price > 0 &&
+		(b.Zeny-500)/price < max(b.potMin(), b.hpPotTarget())-b.realPotCount() {
+		best, price = itemRedPotion, rp
+	}
+	return best, price
+}
+
+// potTierFor: the bulk HP potion this bot restocks, whatever a shop lists: the best heal per zeny (NPC price from the
+// item db) among the tiers the level allows that heal at least potMinHealPct of max HP. Red when nothing else fits.
 func potTierFor(lv, maxHP int) int {
+	best, bestHeal, bestBuy := itemRedPotion, 0, 0
 	for _, c := range hpPotOrder {
-		if potLevelOK(c, lv) && potHeal(c)*100 >= maxHP*potWorthPct {
-			return c
+		x := items[c]
+		if x == nil || x.Buy <= 0 || !potLevelOK(c, lv) || potHeal(c)*100 < maxHP*potMinHealPct() {
+			continue
+		}
+		if bestBuy == 0 || potHeal(c)*bestBuy > bestHeal*x.Buy {
+			best, bestHeal, bestBuy = c, potHeal(c), x.Buy
 		}
 	}
-	for _, c := range hpPotOrder {
-		if potLevelOK(c, lv) {
-			return c
-		}
-	}
-	return itemRedPotion
+	return best
 }
 
 // potionShop: the shop in the town (or one of its buildings) that sells the strongest HP potion (Red..White)
@@ -1153,7 +1204,11 @@ func (b *Bot) potBuyPlan(best, price, spBest, spPrice, ap int) (hpN, spN, arrN i
 		if b.BaseLvOr() >= 20 && !b.guideSaving() {
 			budget -= max(0, wingSaveFloor(b.BaseLvOr())-reserve)
 		}
-		hpN += take(max(0, min(budget/price, b.hpPotTarget()-b.realPotCount()-hpN, room-hpN)), itemWeight(best))
+		top := max(0, min(budget/price, b.hpPotTarget()-b.realPotCount()-hpN, room-hpN))
+		if fitBuyOn() {
+			top = min(top, b.potBudget()/price) // the top-up above the survival minimum is capped by zeny per hour
+		}
+		hpN += take(top, itemWeight(best))
 	}
 	return hpN, spN, arrN
 }
@@ -1321,7 +1376,10 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 		}
 		// the HP potion to buy from this list: the strongest one that suits the bot's level and max HP and that it can
 		// afford in a real stock (pickHPPotion). Red Potions (+45 HP) are no restock for a 5,000 HP bot.
-		best, price := pickHPPotion(pk, lv, b.MaxHP, b.Zeny)
+		best, price := legacyHPPotion(b, pk)
+		if fitBuyOn() {
+			best, price = pickHPPotion(pk, lv, b.MaxHP, b.Zeny)
+		}
 		// HP potions up to the target count, SP potions for SP users; neither pushes the bag past the weight cap
 		p := newPkt(0x00c8).u16(0)
 		vendorPots := townOf(b.MapName) == "prontera" && best > 0 && price > 0 && b.realPotCount() >= b.potMin() &&
@@ -1329,8 +1387,12 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 		bought := 0
 		// order (potBuyPlan): the survival minimum of real HP potions, arrows, SP potions, then the HP top-up; gear
 		// (tripGear) only gets what is left. One failed total = nothing bought.
-		arrID, ap := arrowChoice(pk, b.huntMap(), b.Zeny) // ammo.go: the arrow that fits the hunting map
+		arrID, ap := arrowChoice(pk, b.huntMap(), b.Zeny) // huntfit.go: the arrow that fits the hunting map
 		hpN, spN, arrN := b.potBuyPlan(best, price, spBest, spPrice, ap)
+		if arrID != itemArrow && ap > 0 {
+			// huntfit.go: elemental arrows are capped per restock and by the potion budget (zeny per hour)
+			arrN = min(arrN, elemArrowCap, b.potBudget()/ap)
+		}
 		if vendorPots && hpN > 0 {
 			shopPotPick.Store(b, best)
 			econCount("npc potions skipped: cheaper at a vendor")
@@ -1344,6 +1406,15 @@ func (b *Bot) onDeal(op uint16, pk []byte) {
 		if hpN > 0 {
 			p.u16(uint16(hpN)).u32(uint32(best))
 			bought++
+		}
+		// a few of the strongest tier for emergencies (not the bulk tier), inside the potion budget
+		if emID, emPr := emergencyPot(pk, lv, best); fitBuyOn() && emID > 0 && emPr > 0 {
+			n := min(potEmergencyN-b.countItem(emID), (b.potBudget()-hpN*price)/emPr, (b.Zeny-potPickReserve-hpN*price)/emPr, b.potRoom(emID))
+			if n > 0 {
+				p.u16(uint16(n)).u32(uint32(emID))
+				bought++
+				budget -= n * emPr
+			}
 		}
 		if spN > 0 {
 			p.u16(uint16(spN)).u32(uint32(spBest))

@@ -322,7 +322,7 @@ func (b *Bot) ammoThink(now time.Time) {
 				}
 			}
 			if a := b.equipped[eqpAmmo]; a != nil && a.Count > 0 && b.inv[a.Index] == a && isArrow(a.ItemID) {
-				if best == nil || ammoFit(a.ItemID, m) >= ammoFit(best.ItemID, m)-0.01 {
+				if best == nil || !huntKnown(m) || ammoFit(a.ItemID, m) >= ammoFit(best.ItemID, m)-0.01 {
 					return // loaded
 				}
 			}
