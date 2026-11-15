@@ -2724,7 +2724,7 @@ sub pack_tick {
 	}
 	# (3) after a retreat to the Kafra: back in only with the priest within 6, and not for 60 s
 	if (!$prAhead && $act eq 'ok' && $nm ne '' && (is_dungeon($nm) || cross_danger($nm)) && time - ($pk{retreatAt} || 0) < 60 && !(defined $prD && $prD <= 6)) { $act = 'wait' }
-	if ($act eq 'ok' && is_dungeon($here)) {
+	if ($act eq 'ok' && is_dungeon($here) && !$farm) {
 		my @live = grep { !friend_dead($_->[0]) } @fr;
 		my $near20 = grep { $_->[2] eq $here && defined $_->[3] && $_->[3] <= 20 } @live;
 		my $prNear = defined $prD && $prD <= 6;
@@ -2760,6 +2760,8 @@ sub pack_tick {
 	# AY22: the priest within 6 cells is enough to set off (the others follow her through the engine) - the older
 	# "everyone close" holds / town waits below stand aside (live: she waited in geffen with the priest 0 cells away)
 	$pk{prOkAt} = ($act eq 'ok' && defined $prD && $prD <= 6) ? time : 0;
+	$pk{prFarmOkAt} = ($act eq 'ok' && $farm && defined $prD && $prD <= 20) ? time : 0; # farm map: the priest is the only anchor
+	$pk{farFriends} = [map { $_->[0] } grep { !friend_dead($_->[0]) && !(defined $_->[3] && $_->[3] <= 20) && ($_->[1] || '') !~ /priest|acolyte/i } @fr];
 	if ($act eq 'ok' || $act eq 'solo') {
 		if ($cross eq 'pre' && $pk{crossSaid} ne $nm) { $pk{crossSaid} = $nm; psay("crossing $nm together, stay close", 0, 0); message "[partylead] PT04: crossing $nm with the party\n", 'system' }
 		$pk{crossSaid} = '' if $cross eq '' && !cross_danger($here);
@@ -3480,6 +3482,16 @@ sub tick {
 			$depart = {town => $here, at => time, routeAt => 0};
 			psay(pick("all done? lets go back", "ok everyone here, back to hunting"), 1, 40);
 		}
+		return;
+	}
+	# farm map with the priest within 20 (PT04, d1c7320): the other members don't hold her - they come to her ("<name>
+	# come here" once per 2 min each); she farms and sweeps (live: "PT04: wait - anchor Zen.fox 31 cells" / "farming
+	# while waiting" paused the sweep, 9 kills in 5 min)
+	if ($pk{prFarmOkAt} && time - $pk{prFarmOkAt} < 3 && $here eq ($huntMap || '')) {
+		restore() if $holding;
+		foreach my $n (@{$pk{farFriends} || []}) { next if time - ($pk{comeSaid}{$n} || 0) < 120; $pk{comeSaid}{$n} = time; psay("$n come here", 1, 0); last }
+		farm_sweep();
+		crowd_check($here);
 		return;
 	}
 	# ---- hold / collect on the hunting map
