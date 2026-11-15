@@ -553,6 +553,8 @@ func (b *Bot) tripAnnounce(why, town string) {
 		line = pick("overweight, brb selling", "bag full lol, quick town trip", "brb need to sell stuff")
 	case why == "out of potions":
 		line = pick("out of pots, brb", "need pots, back in a few", "brb buying potions")
+	case why == topUpWhy: // together.go potTopUpNeed: a top-up before the dungeon, not an emergency
+		line = pick("grabbing pots, 1 min", "quick pot grab, 1 min", "grabbing a few pots, 1 min")
 	case strings.HasPrefix(why, "selling loot"):
 		line = pick("brb selling loot", "gonna sell my stuff real quick", "town trip, brb")
 	default:

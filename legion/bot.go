@@ -170,7 +170,10 @@ type Bot struct {
 	tripAgain    time.Time
 	classAskAt   time.Time // human-led party: last "need a Rod/Bow" ask in party chat (once per 30 min)
 	lastTripAt   time.Time // last town trip start (min interval: tune().TripMinIntervalMin)
-	cur          *CharSpec // character played this session
+	// lastTripOverLine: the last trip ended (or is running) with the bag still over the regen line; a repeat heavy-bag
+	// trip then waits heavyTripGap (ai.go). A trip that cleared the bag does not hold the next one back.
+	lastTripOverLine bool
+	cur              *CharSpec // character played this session
 	sessionEnd   time.Time
 	hangoutUntil time.Time
 

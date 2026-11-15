@@ -54,5 +54,38 @@ func (b *Bot) regenWeightNeed() string {
 	if b.MaxWeight <= 0 || !b.overRegenWeight() || !b.hasLoot() {
 		return ""
 	}
+	// selling can't bring the bag under the line (the weight is kept items): the trip is for the Kafra store, so the
+	// bag can be cleared there; a plain sell trip would leave it over the line (weight.go regenSellClears)
+	if !b.regenSellClears() && len(b.storeCandidates()) > 0 {
+		return "bag is heavy (store)"
+	}
 	return "bag is heavy"
+}
+
+// regenSellWeight: the weight the sell step takes off this bag - the NPC-sellable loot (junk, junk gear) and the surplus
+// potions it sells (town.go sell list, 0x00c7). Cards, gear and materials the NPC never buys are not in it.
+func (b *Bot) regenSellWeight() int {
+	w := 0
+	for _, it := range b.inv {
+		if it == nil || it.Equipped || it.Count <= 0 {
+			continue
+		}
+		if b.npcSellable(it) {
+			w += itemWeight(it.ItemID) * it.Count
+		}
+	}
+	for idx, c := range b.surplusPots() {
+		if it := b.inv[idx]; it != nil && !b.npcSellable(it) { // a sellable one is counted above
+			w += itemWeight(it.ItemID) * c
+		}
+	}
+	return w
+}
+
+// regenSellClears: selling the loot brings the bag under the regen line. Root cause of the repeat "bag is heavy" trips
+// (QA 2026-11-15, Lily_hunter76Bow made 11 in 45 min): a bag heavy from kept items (gear, cards, materials) with one
+// junk piece to sell started a trip that sold the piece and left the bag over the line, so the next trip followed.
+// A trip that cannot clear the bag is not a bag-is-heavy need; the store path takes those kept items instead (storage.go).
+func (b *Bot) regenSellClears() bool {
+	return (b.Weight-b.regenSellWeight())*100 < b.MaxWeight*tune().WeightRegenPct
 }

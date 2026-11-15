@@ -141,3 +141,122 @@ func TestEscortGateFloorsDriven(t *testing.T) {
 		t.Error("a hurt member alone on a floor must not hold there")
 	}
 }
+
+// Fixer round 2 (review of fe0d3d6, minor 1-4). The bag-clear root cause: a trip is a bag-is-heavy need only when the
+// sellable loot would bring the bag under the regen line; kept weight (cards, gear) is left for the store path.
+func TestRegenTripOnlyWhenSellingClears(t *testing.T) {
+	items[7001] = &Item{ID: 7001, Name: "Jellopy", Type: "Etc", Weight: 10, Buy: 0}
+	items[7002] = &Item{ID: 7002, Name: "Kept Card", Type: "Card", Weight: 500}
+	mk := func(weight int, inv map[int]*InvItem) *Bot {
+		return &Bot{P: &Persona{BaseLevel: 50, Chars: []CharSpec{{Name: "regenclear"}}}, invSeen: true,
+			MaxWeight: 20000, Weight: weight, MapName: "prontera", inv: inv,
+			equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+	}
+	// 52%: 10,000 weight of junk to sell -> selling leaves 2%: a real trip
+	junk := mk(10400, map[int]*InvItem{1: {Index: 1, ItemID: 7001, Count: 1000}})
+	if !junk.regenSellClears() || junk.regenWeightNeed() != "bag is heavy" {
+		t.Fatalf("junk that clears the line: clears %v, need %q", junk.regenSellClears(), junk.regenWeightNeed())
+	}
+	// 52% from kept cards with one junk piece: selling leaves the bag over the line, so no repeat trip (store path)
+	kept := mk(10400, map[int]*InvItem{1: {Index: 1, ItemID: 7001, Count: 1}, 2: {Index: 2, ItemID: 7002, Count: 20}})
+	// the trip still comes at once (owner: 50% triggers a run), but for the store: a plain sell trip would not clear it
+	if kept.regenSellClears() {
+		t.Fatal("kept cards: selling must not clear the bag")
+	}
+	if len(kept.storeCandidates()) > 0 && kept.regenWeightNeed() != "bag is heavy (store)" {
+		t.Fatalf("kept weight: need %q, want the store trip", kept.regenWeightNeed())
+	}
+}
+
+// Call site: the restock errand (ai.go idle errand -> idleRestockNeed) is for fewer than 3 real potions only.
+func TestRestockErrandCallSite(t *testing.T) {
+	tn := tune()
+	mk := func(red int) *Bot {
+		return &Bot{P: &Persona{BaseLevel: 50, Chars: []CharSpec{{Name: "restockerr"}}}, invSeen: true, Zeny: 5000,
+			MaxWeight: 20000, Weight: 2000, MapName: "prontera", MaxHP: 1600, HP: 1600,
+			inv:      map[int]*InvItem{3: {Index: 3, ItemID: itemRedPotion, Count: red}},
+			equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+	}
+	b14 := mk(14)
+	if idleRestockNeed(b14) {
+		t.Fatal("14 potions: no restock errand")
+	}
+	if got := idleErrandWhy(tn, time.Hour, true, 10, 10, false, idleRestockNeed(b14), b14.Zeny); got != "" {
+		t.Fatalf("14 potions started an errand: %q", got)
+	}
+	b2 := mk(2)
+	if got := idleErrandWhy(tn, time.Hour, true, 10, 10, false, idleRestockNeed(b2), b2.Zeny); got != "restocking while waiting" {
+		t.Fatalf("2 potions: errand %q", got)
+	}
+}
+
+// Call site: the gate top-up (escortGate) buys to the survival minimum, only in a town with a potion seller.
+func TestTopUpCallSite(t *testing.T) {
+	b := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "topupsite"}}}, invSeen: true, Zeny: 1000,
+		MaxWeight: 20000, MaxHP: 3500, HP: 3500, MapName: "prontera",
+		equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{},
+		inv: map[int]*InvItem{3: {Index: 3, ItemID: itemRedPotion, Count: 10}}}
+	want := potionShop("prontera") != nil
+	if got := potTopUpNeed(b, "prontera"); got != want {
+		t.Fatalf("10 potions below potMin %d in prontera: got %v, want %v (potion seller present %v)", b.potMin(), got, want, want)
+	}
+	b.inv[3].Count = 60
+	if potTopUpNeed(b, "prontera") {
+		t.Fatal("60 potions: no top-up")
+	}
+	b.inv[3].Count = 10
+	b.Zeny = 100
+	if potTopUpNeed(b, "prontera") {
+		t.Fatal("too poor to top up")
+	}
+	if topUpWhy == "out of potions" || topUpWhy == "" {
+		t.Fatal("the top-up trip needs its own reason (quiet line), not the emergency one")
+	}
+}
+
+// Call site: the dungeon-side walk (escortGate -> floorHoldStep). A member alone on pay_dun00 with her on pay_dun03
+// holds at once, then after floorHoldMove it moves one floor toward her or asks to be collected; it never leaves the
+// dungeon from here, and the timer restarts on a new floor.
+func TestFloorHoldWalkCallSite(t *testing.T) {
+	if next, ok := nextFloorToward("pay_dun00", "pay_dun03"); !ok || next != "pay_dun01" {
+		t.Fatalf("toward pay_dun03 from pay_dun00: %q %v", next, ok)
+	}
+	if next, ok := nextFloorToward("pay_dun03", "pay_dun01"); !ok || next != "pay_dun02" {
+		t.Fatalf("toward pay_dun01 from pay_dun03: %q %v", next, ok)
+	}
+	if next, ok := nextFloorToward("in_sphinx1", "in_sphinx3"); !ok || next != "in_sphinx2" {
+		t.Fatalf("unpadded floors: %q %v", next, ok)
+	}
+	if _, ok := nextFloorToward("payon", "pay_dun01"); ok {
+		t.Fatal("a town is no floor")
+	}
+	now := time.Now()
+	human := "FloorWalkHuman"
+	humanLocs.Store(human, humanSeen{Map: "pay_dun03", At: now})
+	defer humanLocs.Delete(human)
+	b := &Bot{P: &Persona{BaseLevel: 60, Chars: []CharSpec{{Name: "floorwalk"}}}, MapName: "pay_dun00",
+		MaxHP: 3500, HP: 3500, equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}}
+	p := &Party{Human: human, Members: []*Bot{b}}
+	town, why := b.escortGate(p, "pay_dun03", now)
+	if town != "pay_dun00" || !strings.HasPrefix(why, "waiting on this floor") {
+		t.Fatalf("first minute: %q %q, want a hold on the floor", town, why)
+	}
+	later := now.Add(floorHoldMove + time.Second)
+	town, why = b.escortGate(p, "pay_dun03", later)
+	if isTown(town) || (town != "pay_dun00" && town != "pay_dun01") {
+		t.Fatalf("after %v: %q %q - the member must stay on the dungeon floors", floorHoldMove, town, why)
+	}
+	// the collection call is at most once per floorHoldAsk: the escortGate call above may have used it already
+	if strings.HasPrefix(why, "waiting on this floor") && floorHoldAskDue(b, later.Add(time.Minute)) {
+		t.Fatal("collection call: a second one within floorHoldAsk")
+	}
+	if !floorHoldAskDue(b, later.Add(floorHoldAsk+time.Second)) {
+		t.Fatal("collection call: due again after floorHoldAsk")
+	}
+	// a new floor restarts the timer
+	b.MapName = "pay_dun01"
+	if d := floorHoldFor(b, later); d != 0 {
+		t.Fatalf("new floor: hold timer %v, want 0", d)
+	}
+	escortRestockClear(b)
+}

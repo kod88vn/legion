@@ -436,7 +436,7 @@ func (b *Bot) think() {
 				// nothing to sell) must not start the next one within heavyTripGap (QA 2026-11-15: Lily_hunter76Bow made 11
 				// "bag is heavy" trips in 45 min, one every few minutes)
 				heavyBag := (why == "bag is heavy" || why == "bag is full" || why == "bag is heavy (store)") &&
-					(b.lastTripAt.IsZero() || now.Sub(b.lastTripAt) >= heavyTripGap)
+					(b.lastTripAt.IsZero() || !b.lastTripOverLine || now.Sub(b.lastTripAt) >= heavyTripGap)
 				// out of potions never waits (QA 20:17: pixelhunter, a party leader, logged "town need waits for the next
 				// party run: out of potions" and died twice on gef_fild10; kiraknight likewise on prt_fild10): no trip
 				// interval, the short party-run gap, and alone when the party can't go now
