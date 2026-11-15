@@ -2458,6 +2458,24 @@ sub friend_cls {
 	return '';
 }
 # one party line per decision: at most one of "coming to u" / "waiting for u" / "im at ..." every 30 s
+# the Kafra of town $t where most of the party (the priest among them, if online) stands: [x, y] or undef
+sub gathered_kafra {
+	my ($t, $fr) = @_;
+	my @on = grep { !friend_dead($_->[0]) } @$fr;
+	return undef unless @on;
+	my $need = @on >= 2 ? int((@on + 1) / 2) : 1;
+	my ($prName) = map { $_->[0] } grep { ($_->[1] || '') =~ /priest|acolyte/i } @on;
+	foreach my $k (@{$KAFRA{$t} || []}) {
+		my ($n, $pr) = (0, 0);
+		foreach my $f (@on) {
+			next unless $f->[2] eq $t && $f->[4] && defined $f->[4]{x};
+			next if blockDistance({x => $k->[0], y => $k->[1]}, $f->[4]) > 12;
+			$n++; $pr = 1 if defined $prName && $f->[0] eq $prName;
+		}
+		return [$k->[0], $k->[1]] if $n >= $need && (!defined $prName || $pr);
+	}
+	return undef;
+}
 sub pk_say { my $t = shift; return if time - ($pk{lineAt} || 0) < 30; $pk{lineAt} = time; psay($t, 1, 0) }
 sub pack_tick {
 	# a lockMap held during the last tick's wait comes back first (the wait below takes it again if still waiting)
@@ -2484,6 +2502,16 @@ sub pack_tick {
 	my $leaving = $town && (($dm ne '' && !is_townmap($dm)) || $rallyTravel) ? 1 : 0;
 	return 0 if $town && !$leaving && !$pk{wf};       # town errands / shopping / the Kafra regroup
 	return 0 if !$farm && $dm ne '' && is_townmap($dm) && !$pk{wf} && !$rallyTravel; # a town run back (the party meets at the Kafra)
+	# the party (with the priest) already gathered at a Kafra of THIS town: she never walks away from it - the rally
+	# moves here, they regroup and set out together for the new destination (live 00:36: Echobunny / vex_x18 / the
+	# priest at the Payon Kafra while she announced geffen and walked out of payon alone)
+	if ($rallyTravel && $town && $KAFRA{$here} && (my $k = gathered_kafra($here, \@fr))) {
+		message "[partylead] the party is at the $here Kafra ($k->[0],$k->[1]): regrouping there, then $rally->{town} together\n", 'system';
+		$rally->{town} = $here; ($rally->{x}, $rally->{y}) = @$k; $rally->{saved} = 1; $rally->{said} = 0; $rally->{routeAt} = 0;
+		$rally->{dest} ||= $rally->{thenGoto} || '';
+		pk_say("everyone at the kafra here, coming. then we go" . ($rally->{dest} ne '' ? " to $rally->{dest}" : '') . " together");
+		return 0; # rally_tick takes her to that Kafra
+	}
 	if ($rallyTravel && $town && ($pk{rallySaid} || '') ne $rally->{town}) { # one line: where the party meets
 		$pk{rallySaid} = $rally->{town};
 		my $dst = $rally->{dest} || $rally->{thenGoto} || '';
