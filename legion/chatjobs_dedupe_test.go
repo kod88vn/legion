@@ -25,8 +25,9 @@ func TestChatAskDedupe(t *testing.T) {
 	if id := enqueueChatJobAt(askItem("Asker", "guild", 2301, "anyone got shoes?"), now); id == "" {
 		t.Fatal("the first ask waits")
 	}
-	if id := enqueueChatJobAt(askItem("Other", "guild", 2301, "guild, spare shoes?"), now); id != "" {
-		t.Fatalf("the same ask again is not queued, got job %s", id)
+	first := chatJobs.open[0].ID
+	if id := enqueueChatJobAt(askItem("Other", "guild", 2301, "guild, spare shoes?"), now); id != first {
+		t.Fatalf("the same ask again is not queued: it returns the waiting ask %s, got %q", first, id)
 	}
 	if n := openJobs(); n != 1 {
 		t.Fatalf("open jobs = %d, want 1", n)
@@ -84,5 +85,33 @@ func TestCharIndexMainWins(t *testing.T) {
 		if idx["kaiz72prist"] != priest {
 			t.Fatalf("the alt still resolves to its own bot")
 		}
+	}
+}
+
+// two guilds asking for the same item at the same time are two asks: the second guild's ask is queued and said
+func TestChatAskDedupeOtherGroup(t *testing.T) {
+	setupChatJobs(t, true)
+	now := time.Now()
+	chatJobsPolled(now)
+	ask := func(group string, hearers []string, speaker string) ChatJobSpec {
+		s := askItem(speaker, "guild", 2301, "anyone got shoes?")
+		s.Group, s.Hearers = group, hearers
+		return s
+	}
+	if id := enqueueChatJobAt(ask("guild:g1", []string{"A", "B"}, "A"), now); id == "" {
+		t.Fatal("guild 1 asks")
+	}
+	if id := enqueueChatJobAt(ask("guild:g2", []string{"C", "D"}, "C"), now); id == "" {
+		t.Fatal("guild 2 asks for the same item: it is its own ask, not a duplicate")
+	}
+	if n := openJobs(); n != 2 {
+		t.Fatalf("open jobs = %d, want 2 (one per guild)", n)
+	}
+	// the same guild again is the duplicate
+	if id := enqueueChatJobAt(ask("guild:g1", []string{"B", "A"}, "B"), now); id != chatJobs.open[0].ID {
+		t.Fatalf("guild 1 again is a duplicate of its waiting ask, got %q", id)
+	}
+	if n := openJobs(); n != 2 {
+		t.Fatalf("open jobs = %d, want 2", n)
 	}
 }

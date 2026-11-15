@@ -140,20 +140,20 @@ def norm_channel(ch):
 
 def local_hms(ts):
     """HH:MM:SS on this machine's clock for a Go RFC 3339 time (the engine's UTC or offset; nanoseconds allowed)"""
-    m = re.match(r"\d{4}-\d{2}-\d{2}T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?", str(ts))
+    m = re.match(r"(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?", str(ts))
     if not m:
         return str(ts)[11:19]
-    if not m.group(2):
-        return m.group(1)
-    z = m.group(2)
+    if not m.group(3):
+        return m.group(2)
+    z = m.group(3)
     if z == "Z":
         zone = datetime.timezone.utc
     else:
         sign = 1 if z[0] == "+" else -1
         zone = datetime.timezone(sign * datetime.timedelta(hours=int(z[1:3]), minutes=int(z[4:6])))
-    t = datetime.datetime.strptime(m.group(1), "%H:%M:%S")
-    base = datetime.datetime.combine(datetime.date(2000, 1, 1), t.time(), tzinfo=zone)
-    return base.astimezone().strftime("%H:%M:%S")
+    # the timestamp's own date, so this machine's DST rule for that day applies
+    t = datetime.datetime.strptime(m.group(1) + " " + m.group(2), "%Y-%m-%d %H:%M:%S")
+    return t.replace(tzinfo=zone).astimezone().strftime("%H:%M:%S")
 
 
 def cursor(role, key, value=None):

@@ -402,10 +402,8 @@ func botByCharName(n string) *Bot {
 
 // registerGuilds: GET /api/guilds/detail (dashboard + guild minds).
 func registerGuilds(mux *http.ServeMux, bots []*Bot) {
-	for _, b := range bots {
-		for _, c := range b.P.Chars {
-			botNames.Store(c.Name, b)
-		}
+	for n, b := range charIndexBy(bots, func(s string) string { return s }) { // mains win, as in the API (api.go charIndex)
+		botNames.Store(n, b)
 	}
 	if coreInstance() {
 		loadGuildRoster() // the core instance (instances.go) picks no guild leaders and doesn't write the roster

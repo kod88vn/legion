@@ -49,6 +49,11 @@ class ChatJobsCli(unittest.TestCase):
         self.assertEqual(legionctl.local_hms("2026-11-15T10:51:13+02:00"), want)
         self.assertEqual(legionctl.local_hms("2026-11-15T08:51:13"), "08:51:13")
 
+    def test_deadline_uses_the_timestamp_date(self):
+        # a July timestamp gets July's offset (a fixed January date would give the winter offset in a DST zone)
+        want = datetime.datetime(2026, 7, 15, 8, 51, 13, tzinfo=datetime.timezone.utc).astimezone().strftime("%H:%M:%S")
+        self.assertEqual(legionctl.local_hms("2026-07-15T08:51:13Z"), want)
+
     def test_list_pages(self):
         jobs = [job(i) for i in range(1, 6)]
         reply = {"on": True, "wait_sec": [45, 90], "jobs": jobs}

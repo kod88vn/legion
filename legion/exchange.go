@@ -585,7 +585,11 @@ func exchangeAsk(w *Want, s *econSnap, now time.Time) bool {
 	line := styled(s.typing, exAskLine(w, ch))
 	facts := map[string]any{"item": w.Item, "item_id": w.ItemID, "count": w.Count, "bid_each": w.Each, "why": w.Why,
 		"stage": ch, "ask_order": "party, guild, #trade"}
-	go EnqueueChatJob(ChatJobSpec{Kind: ChatKindAsk, Channel: ch, Speaker: s.b, Hearers: hearers, Facts: facts,
+	group := "party:" + r.party
+	if ch == "guild" {
+		group = "guild:" + r.guild
+	}
+	go EnqueueChatJob(ChatJobSpec{Kind: ChatKindAsk, Channel: ch, Speaker: s.b, Hearers: hearers, Group: group, Facts: facts,
 		Template: []ChatLine{{Speaker: s.name, Channel: ch, Text: line}}})
 	return true
 }
