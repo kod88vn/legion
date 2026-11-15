@@ -145,6 +145,10 @@ type Tuning struct {
 	RallyHumanDisabled bool `json:"rally_human_disabled"`
 	// staged rollout: with rally_enabled false, this percentage of bot parties (by party-name hash) rally
 	RallyBotShare int `json:"rally_bot_share"`
+	// rallypark.go: one owner of the rally/Kafra-wait sit, members leave a rally leg they can't travel, park cap.
+	// ON by default (rally_park_off true switches it off); rally_park_cap_min 0 = 12 (Ayla's rally timeout)
+	RallyParkOff    bool `json:"rally_park_off"`
+	RallyParkCapMin int  `json:"rally_park_cap_min"`
 	PotHPAcolyte  int `json:"pot_hp_acolyte"`
 	PotSPTarget   int `json:"pot_sp_target"`
 	// parcel.go (economy batch 17): surplus gear mailed to vendors. Off by default; parcel_test_bots (comma-separated
