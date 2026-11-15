@@ -1496,13 +1496,9 @@ sub heard {
 			psay(AI::inQueue('sellAuto', 'buyAuto', 'storageAuto') ? "$who ok, we're on a town run now" : "$who ok, town run in about $eta min", 1, 0);
 			return;
 		}
+		# PT33: a member's request starts the party's town run now (the 2-member rule answered 'butterfly to town' and ran nothing)
 		$townNeed{$who} = time;
 		foreach my $n (keys %townNeed) { delete $townNeed{$n} if time - $townNeed{$n} > 300 }
-		if (keys(%townNeed) < 2) {
-			$errandFrom{$who} = time;
-			psay(pick("$who butterfly to town and sell, we keep farming here, come back after", "$who go sell solo real quick (butterfly wing), we hold the spot"), 1, 30);
-			return;
-		}
 		$lastTownRun = time;
 		$townReason = join(' + ', sort keys %townNeed) . " need to sell/restock";
 		%townNeed = ();
