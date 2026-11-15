@@ -31,7 +31,7 @@
   with a PIN request), `0AC5` map info on char select (was `0071`), and lets the client close login/char connections
   (the proxy closing first -> "Disconnected from Server"). Base::Ragnarok::* modules compile only when X-Kore 2
   starts, so those overrides are applied lazily in `mainLoop_pre`.
-- The `openkore-ayla` entrypoint in docker-compose.yml writes the rathena container IP into `XKore_publicIp` at every start (a stale IP made OpenKore quit with "Cannot assign requested address" / "Bye!" and restart-loop, 2026-11-14). The `in_game` check in `ai-client.sh` still hardcodes 172.18.0.3 and must follow the real IP.
+- The `openkore-ayla` entrypoint in docker-compose.yml writes the rathena container IP into `XKore_publicIp` at every start (a stale IP made OpenKore quit with "Cannot assign requested address" / "Bye!" and restart-loop, 2026-11-14). `tools/rogui/ayla-ip.sh` resolves that same IP at run time (`docker inspect ro-rathena`, not `ro-openkore-ayla`: it shares rathena's network namespace and has no IP of its own; fallbacks: `XKore_publicIp` in `control/config.txt`, then 172.18.0.3); `ai-client.sh` (`in_game`), `pktlog.py` and `realcap.py` use it, nothing hardcodes the IP any more. Start order for the owner's view: `ai-display.sh` (Xvfb :98 + view-only viewer window), then `ai-client.sh` (waits for Ayla to be online; `keeper.sh` is only Ayla's online watchdog and is independent).
 - **Scripts** (`G:\RO\legion\tools\rogui\`, run in WSL as long-running commands):
   - `ai-display.sh`: Xvfb :98 1280x720 + x11vnc + TigerVNC viewer window. Restart all three if the view freezes.
     **View size** (owner 2026-11-14 "double the UI window", then "too big now, keep 3/4"): the game and Xvfb stay at

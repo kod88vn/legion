@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Record what the real rAthena login/char servers send the 2021 client (reference for the X-Kore 2 fix).
-Client login address -> 127.0.0.1:6905 -> rathena 172.18.0.3:6900. The server list is rewritten so the client's
+Client login address -> 127.0.0.1:6905 -> rathena <container IP>:6900. The server list is rewritten so the client's
 char connection comes to 127.0.0.1:6906 -> rathena :6121. Everything is logged as hex to /tmp/realcap.txt."""
-import socket, struct, threading, time, binascii
+import socket, struct, threading, time, binascii, os, subprocess
 
-RA = '172.18.0.3'
+try:  # container IP resolved at run time (ayla-ip.sh), the old value only as fallback
+    RA = subprocess.check_output(['bash', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ayla-ip.sh')], text=True).strip()
+except Exception:
+    RA = '172.18.0.3'
 LOG = open('/tmp/realcap.txt', 'a', buffering=1)
 
 
