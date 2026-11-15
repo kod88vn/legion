@@ -12,9 +12,14 @@ PUP = os.path.dirname(HERE)
 TOOLS = os.path.dirname(PUP)
 sys.path.insert(0, PUP)
 sys.path.insert(0, TOOLS)
+# never read or write the live owner-orders file or Ayla's log from tests (G23)
+_TMP_ORDERS = tempfile.mkdtemp(prefix="ayla-orders-test-")
+os.environ["AYLA_ORDERS"] = os.path.join(_TMP_ORDERS, "ayla_orders.jsonl")
+os.environ["AYLA_ORDERS_LOG"] = os.path.join(_TMP_ORDERS, "owner_orders.log")
 import briefing  # noqa: E402
 import dispatch  # noqa: E402
 import legionctl  # noqa: E402
+import orders  # noqa: E402
 
 NOW = 1_800_000_000.0
 
@@ -444,10 +449,12 @@ class IntegrationTests(unittest.TestCase):
     def test_ayla_helper_guarded_commands_only(self):
         tl = dispatch.allowed_tools("ayla")
         tools = " ".join(tl)
-        for w in ("cmd:", "rally:", "party", "say", "give", "whisper", "guild"):
+        for w in ("cmd:", "say", "give", "whisper", "guild", "tell", "global", "trade", "recruit"):
             self.assertNotIn(f"ayla.sh {w}", tools)
         self.assertIn(f"Bash({dispatch.ayla_cmd()} cmd respawn)", tl)   # exact: no free console text (G05)
-        self.assertIn(f"Bash({dispatch.ayla_cmd()} rally cancel:*)", tl)
+        # AY20: enough for the owner's common orders
+        for a in ("rally", "party", "townrun", "done", "map", "lead", "status", "log", "orders"):
+            self.assertIn(f"Bash({dispatch.ayla_cmd()} {a}:*)", tl)
         self.assertIn(f"Bash({dispatch.ayla_cmd()} map:*)", tl)
         self.assertTrue(any("bugq.py add:*" in t for t in tl))
         denied = " ".join(dispatch.denied_tools("python", "ayla"))
@@ -475,3 +482,99 @@ class IntegrationTests(unittest.TestCase):
                 f.write("\x1b[1;33m[watchdog] STUCK izlude 24,98 for 3 min -> respawn\x1b[0m\n[watchdog] STUCK again\n")
             self.assertEqual(sig.watchdog_console(c), ["stuck"])
             self.assertEqual(sig.watchdog_console(c), [])
+
+
+class OwnerOrderTests(unittest.TestCase):
+    """AY20: ayla.sh tell -> orders file -> owner wake past min_gap/hourly cap (30 s floor) -> briefing top -> result"""
+
+    def setUp(self):
+        self.d = tempfile.mkdtemp(prefix="ayla-orders-")
+        self.path = os.path.join(self.d, "o.jsonl")
+        self.log = os.path.join(self.d, "owner.log")
+        self.env = {k: os.environ.get(k) for k in ("AYLA_ORDERS", "AYLA_ORDERS_LOG")}
+        os.environ["AYLA_ORDERS"], os.environ["AYLA_ORDERS_LOG"] = self.path, self.log
+
+    def tearDown(self):
+        for k, v in self.env.items():
+            os.environ[k] = v
+
+    def test_add_done_roundtrip_and_log(self):
+        o = orders.add("do a town run\nwith the party\x07", path=self.path, now=NOW)
+        self.assertEqual(o["text"], "do a town run with the party")  # one line, no control chars
+        self.assertEqual([x["id"] for x in orders.open_orders(self.path)], [o["id"]])
+        self.assertIsNone(orders.done("nope", "x", path=self.path, log=self.log))
+        r = orders.done(o["id"], "townrun started, party told", path=self.path, log=self.log)
+        self.assertEqual(r["result"], "townrun started, party told")
+        self.assertEqual(orders.open_orders(self.path), [])
+        self.assertIsNone(orders.done(o["id"], "again", path=self.path, log=self.log))  # closed once
+        self.assertIn("[owner] do a town run with the party -> townrun started, party told", open(self.log).read())
+        self.assertEqual(orders.results(self.path)[0]["order"], "do a town run with the party")
+        with self.assertRaises(ValueError):
+            orders.add("  \n ", path=self.path)
+
+    def test_owner_bypasses_min_gap_and_hourly_cap_but_30s_floor(self):
+        s = dispatch.Scheduler(dispatch.ROLES, NOW, [{"role": "ayla", "t": NOW - 40}])
+        rows = [{"role": "ayla", "t": NOW - 100, "cost_usd": 5.0}]  # far over the hourly cap
+        self.assertIsNone(s.due("ayla", NOW, rows, {}))  # the normal path is blocked (gap 300 s + cap)
+        self.assertEqual(dispatch.owner_due(s, NOW, ["o1"]), "owner")
+        self.assertIsNone(dispatch.owner_due(s, NOW, []))  # no open order, no wake
+        s.started("ayla", NOW)
+        self.assertIsNone(dispatch.owner_due(s, NOW + 60, ["o1"]))  # never two calls at once
+        s.finished("ayla")
+        self.assertIsNone(dispatch.owner_due(s, NOW + dispatch.OWNER_GAP - 1, ["o1"]))  # at most one per 30 s
+        self.assertEqual(dispatch.owner_due(s, NOW + dispatch.OWNER_GAP, ["o1"]), "owner")
+        only = dispatch.Scheduler({"chat": dispatch.ROLES["chat"]}, NOW)
+        self.assertIsNone(dispatch.owner_due(only, NOW, ["o1"]))  # loop restricted to other roles
+
+    def test_briefing_puts_order_on_top(self):
+        self.assertNotIn("OWNER ORDER", briefing.assemble("ayla", briefing.Api(fetch=MockApi(FULL)), self.d)[0])
+        o = orders.add("go farm gl_church", path=self.path)
+        text, _ = briefing.assemble("ayla", briefing.Api(fetch=MockApi(FULL)), self.d, trigger="owner")
+        self.assertTrue(text.startswith("== OWNER ORDER - do this now"))
+        self.assertIn(f"[{o['id']}]", text.split("\n")[1])
+        self.assertIn("go farm gl_church", text.split("\n")[1])
+        self.assertIn("done <id>", dispatch.load_brief("ayla"))
+        self.assertIn("OWNER ORDERS FIRST", dispatch.load_brief("ayla"))
+
+    def test_unreported_orders_closed_after_call(self):
+        a = orders.add("wait for the priest", path=self.path)
+        b = orders.add("go farm gl_church", path=self.path)
+        orders.done(a["id"], "rally prontera", path=self.path, log=self.log)
+        dispatch.close_unreported([a["id"], b["id"]], {"exit": 0, "result": "moved the party"}, self.path)
+        res = {r["id"]: r for r in orders.results(self.path)}
+        self.assertEqual(res[a["id"]]["result"], "rally prontera")  # the helper's own report stays
+        self.assertIn("moved the party", res[b["id"]]["result"])
+        c = orders.add("town run", path=self.path)
+        dispatch.close_unreported([c["id"]], {"exit": "timeout"}, self.path)
+        self.assertEqual(orders.open_orders(self.path), [])
+        self.assertIn("not carried out", orders.results(self.path)[-1]["result"])
+
+    def test_nap_wakes_on_new_order(self):
+        import threading
+        threading.Timer(0.3, lambda: orders.add("town run", path=self.path)).start()
+        t0 = time.time()
+        self.assertTrue(dispatch.nap(5, step=0.1))
+        self.assertLess(time.time() - t0, 3)
+        self.assertFalse(dispatch.nap(0.2, step=0.1))
+
+    def test_cli(self):
+        env = dict(os.environ)
+        r = subprocess.run([sys.executable, os.path.join(PUP, "orders.py"), "add", "do", "a town run"],
+                           capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("queued", r.stdout)
+        oid = orders.open_orders(self.path)[0]["id"]
+        r = subprocess.run([sys.executable, os.path.join(PUP, "orders.py"), "done", oid, "townrun", "started"],
+                           capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        r = subprocess.run([sys.executable, os.path.join(PUP, "orders.py"), "list"], capture_output=True, text=True,
+                           env=env)
+        self.assertIn("[owner] do a town run -> townrun started", r.stdout)
+
+    def test_tell_ayla_cmd_exists(self):
+        p = os.path.join(TOOLS, "rogui", "tell-ayla.cmd")
+        body = open(p, encoding="utf-8").read()
+        self.assertIn("ayla.sh tell %*", body)
+        sh = open(os.path.join(TOOLS, "rogui", "ayla.sh"), encoding="utf-8").read()
+        self.assertIn("tell)", sh)
+        self.assertNotIn("\n  tell) send", sh)  # tell only queues, never writes to her console

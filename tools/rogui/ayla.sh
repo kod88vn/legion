@@ -28,11 +28,17 @@
 #   deals [N]      last N #trade deals (offers accepted/refused, items taken from mail, payments) from logs/deals.log
 #   gear           Ayla's gear plan (aylagear.pl): owned / next piece / where it sells
 #   guild-fund NAME AMOUNT [WHY]   guild mates mail zeny to a member (POST /api/human-guild/fund; 5k max each, hourly)
+#   tell TEXT     the owner's plain-words order for Ayla (rule AY20), e.g. tell "do a town run with the party": queued in
+#                  legion/data/ayla_orders.jsonl; her helper wakes within ~30 s and carries it out ahead of everything
+#   orders [N]     open owner orders + the last N results ("[owner] <order> -> <action>", also logs/owner_orders.log)
+#   done ID TEXT   (her helper) close owner order ID with what was done
 # The plugin (partylead.pl) obeys these orders at once: the mind's explicit order wins over its own decisions.
 CMDS=/mnt/g/RO/legion/openkore-ayla/control/commands.txt
 HERE=$(dirname "$(readlink -f "$0")")
 clean() { sed -e 's/\x1b\][0-9];[^\x07]*\x07//g' -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' -e 's/\]2;[^]]*OpenKore//g' | grep -v '^\s*$'; }
-send() { printf '%s\n' "$*" >> "$CMDS"; }
+# one console line per send: a CR/LF inside an argument must never smuggle in a second (free) console command (G05)
+send() { local l="$*"; l=${l//$'\r'/ }; l=${l//$'\n'/ }; printf '%s\n' "$l" >> "$CMDS"; }
+ORDERS="python3 $HERE/../puppet/orders.py"
 a=$1; shift
 case "$a" in
   log) docker logs --tail "${1:-40}" ro-openkore-ayla 2>&1 | clean | tail -n "${1:-40}";;
@@ -42,7 +48,10 @@ case "$a" in
   say) send "c $*"; echo ok;;
   party) send "p $*"; echo ok;;
   whisper) to=$1; shift; send "pm \"$to\" $*"; echo ok;;
-  map) send "partylead goto $1"; send "conf lockMap $1"; echo "heading to $1";;
+  tell) [ -n "$*" ] || { echo 'usage: ayla.sh tell "<plain text>"'; exit 1; }; $ORDERS add "$*";;
+  orders) $ORDERS list "${1:-10}";;
+  done) $ORDERS done "$@";;
+  map) [[ "$1" =~ ^[A-Za-z0-9_@.-]+$ ]] || { echo "usage: ayla.sh map MAPNAME"; exit 1; }; send "partylead goto $1"; send "conf lockMap $1"; echo "heading to $1";;
   rally) send "partylead rally $*"; echo "sent: partylead rally $*";;
   guild-create) [ -n "$*" ] || { echo "usage: ayla.sh guild-create NAME"; exit 1; }; send "guild create $*"; sleep 3; docker logs --tail 20 ro-openkore-ayla 2>&1 | clean | grep -i guild | tail -3;;
   guild) curl -s -m 8 "http://127.0.0.1:8090/api/human-guild" | python3 "$HERE/ayla_guild.py" guild;;

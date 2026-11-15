@@ -28,6 +28,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import briefing  # noqa: E402
+import orders  # noqa: E402  owner orders for Ayla (AY20)
 
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DATA = os.environ.get("LEGION_DATA") or os.path.join(REPO, "legion", "data")
@@ -107,14 +108,16 @@ ROLES["ayla"] = dict(brief="ayla", model="haiku", interval=10 * 60, offset=20, c
 
 CALL_TIMEOUT = 300
 ORDER_GAP = 120  # an owner order wakes a role at most this often
+OWNER_GAP = 30   # owner orders for Ayla (AY20): past min_gap and the hourly cap, but at most one call per 30 s
 
 
 # ----------------------------------------------------------------- command line for the Claude CLI
 # ayla.sh actions the helper may use: reads (docker logs, deals.log, status/lead print), and the guarded plugin orders
-# for stepping in (partylead rally cancel, goto + lockMap, a Butterfly Wing respawn). Never `cmd` with free text: no
-# bare ai / ai off / ai manual can be formed (G05; cmdfile.pl blocks them too).
-AYLA_READ = ["log", "chat", "deals", "lead", "status"]
-AYLA_ACT = ["rally cancel", "map", "cmd respawn"]
+# for stepping in (partylead rally cancel, goto + lockMap, a Butterfly Wing respawn) and, for the owner's plain-words
+# orders (AY20), rally TOWN [MAP], party TEXT (announcements), townrun, done ID TEXT (report). Never `cmd` with free
+# text: no bare ai / ai off / ai manual can be formed (G05; cmdfile.pl blocks them too; ayla.sh strips CR/LF).
+AYLA_READ = ["log", "chat", "deals", "lead", "status", "orders"]
+AYLA_ACT = ["rally", "map", "cmd respawn", "party", "townrun", "done"]
 BUGQ = os.path.join(REPO, "tools", "system", "bugq.py").replace("\\", "/")
 WD_QUEUE = os.path.join(REPO, "openkore-ayla", "logs", "bugqueue.jsonl")  # partylead.pl wd_report writes here
 # her OpenKore console log (every "[watchdog] CAUSE ..." line, also the repeats the queue file dedupes for an hour)
@@ -532,6 +535,66 @@ def run_call(role, trigger, args, sched=None, sig=None):
     return row
 
 
+# ----------------------------------------------------------------- owner orders for Ayla (AY20)
+def owner_due(sched, now, open_ids, role="ayla"):
+    """'owner' when open owner orders wait and the helper may run: not running, last call >= OWNER_GAP ago.
+    Owner orders skip min_gap and the hourly cap (the owner pays for what he asks)."""
+    if not open_ids or role not in sched.roles or role in sched.running:
+        return None
+    last = sched.last.get(role)
+    if last is not None and now - last < OWNER_GAP:
+        return None
+    return "owner"
+
+
+def close_unreported(ids, row, path=None):
+    """after an owner call: orders the helper did not report with `ayla.sh done` are closed with what the call said,
+    so a failed call never wakes her again and again (the owner can tell her again)."""
+    still = {o["id"] for o in orders.open_orders(path)}
+    for oid in ids:
+        if oid not in still:
+            continue
+        if row.get("exit") == 0 and row.get("result"):
+            orders.done(oid, "(no done report) helper: " + str(row["result"])[:200], by="dispatcher", path=path)
+        else:
+            orders.done(oid, f"not carried out (call exit {row.get('exit')})", by="dispatcher", path=path)
+
+
+def run_owner_call(ids, args, sched):
+    row = run_call("ayla", "owner", args, sched)
+    try:
+        close_unreported(ids, row)
+    except Exception as e:  # never crash the dispatcher
+        print("owner close error:", repr(e), file=sys.stderr, flush=True)
+    return row
+
+
+def launch_owner(sched, now, args, threads):
+    """one-line hook in the loop: start Ayla's helper at once for new owner orders (also while the API is down)"""
+    try:
+        ids = [o["id"] for o in orders.open_orders()]
+    except Exception:
+        return None
+    if not owner_due(sched, now, ids):
+        return None
+    sched.started("ayla", now)
+    t = threading.Thread(target=run_owner_call, args=(ids, args, sched), daemon=True)
+    t.start()
+    threads.append(t)
+    return t
+
+
+def nap(seconds, step=1.0):
+    """sleep up to `seconds`, waking early when the owner orders file changes (an order is acted on in ~1 s, not ~30)"""
+    sig0 = orders.signature()
+    end = time.time() + seconds
+    while time.time() < end:
+        time.sleep(min(step, max(0.0, end - time.time())))
+        if orders.signature() != sig0:
+            return True
+    return False
+
+
 # ----------------------------------------------------------------- main loop
 def heartbeat(state, sched, rows, api_ok, now):
     d = {"t": now, "iso": time.strftime("%Y-%m-%dT%H:%M:%S"), "pid": os.getpid(), "state": state, "api_ok": api_ok,
@@ -628,6 +691,8 @@ def main(argv=None):
             now = time.time()
             rows = read_log(since=now - HOUR)
             try:
+                if not paused():
+                    launch_owner(sched, now, args, threads)  # AY20: owner orders first, even with the API down
                 if paused():
                     heartbeat("paused", sched, rows, None, now)
                     time.sleep(args.tick)
@@ -637,7 +702,7 @@ def main(argv=None):
                 if not s["api_ok"]:
                     backoff = min(max(backoff * 2, 10), 120)
                     heartbeat("api-down", sched, rows, False, now)
-                    time.sleep(max(args.tick, backoff))
+                    nap(max(args.tick, backoff))
                     continue
                 backoff = 0
                 signals = {"orders": s["orders"], "wake": s["wake"]}
@@ -660,7 +725,7 @@ def main(argv=None):
                 heartbeat("ok", sched, rows, True, now)
             except Exception as e:  # the loop must survive anything
                 print("loop error:", repr(e), file=sys.stderr, flush=True)
-            time.sleep(args.tick)
+            nap(args.tick)
     except KeyboardInterrupt:
         heartbeat("stopped", sched, [], None, time.time())
         print("stopped")
