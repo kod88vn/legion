@@ -1,6 +1,6 @@
 {
- "generated": "2026-11-15T16:53:45",
- "generated_epoch": 1794779625,
+ "generated": "2026-11-15T16:55:18",
+ "generated_epoch": 1794779718,
  "sources": {
   "builds": "legion/builds.go",
   "gear": "legion/data/buildgear.json",
@@ -13,6 +13,23 @@
  "item_names": 26793,
  "skill_names": 1627,
  "transcendent": "Transcendent classes (already-reborn characters only): a 4th-job or transcendent character keeps the plan of its 2nd job (builds.go transToSecond); ST01 caps the server at 2nd classes.",
+ "part_counts": {
+  "solo": {
+   "defined": 3,
+   "draft": 34,
+   "gap": 0
+  },
+  "mvp": {
+   "defined": 12,
+   "draft": 25,
+   "gap": 0
+  },
+  "pvp": {
+   "defined": 0,
+   "draft": 37,
+   "gap": 0
+  }
+ },
  "draft": {
   "status": "draft for owner review",
   "source": "legion/data/buildmilestones.json",

@@ -100,6 +100,18 @@ class ExportTests(unittest.TestCase):
                 self.assertEqual(pvp["note"], "draft for owner review", b["id"])
                 self.assertTrue(all(l["source"].startswith("draft:") for l in pvp["lines"]), b["id"])
 
+    def test_part_counts_split_defined_from_draft_per_part(self):
+        doc = load_export()
+        pc = doc["part_counts"]
+        self.assertEqual(sorted(pc), ["mvp", "pvp", "solo"])
+        for part in ("solo", "mvp", "pvp"):
+            c = pc[part]
+            self.assertEqual(c["defined"] + c["draft"] + c["gap"], len(doc["builds"]), part)
+            self.assertEqual(c["defined"], sum(1 for b in doc["builds"] if b["playstyle"][part]["status"] == "defined"), part)
+            self.assertEqual(c["draft"], sum(1 for b in doc["builds"] if b["playstyle"][part]["status"] == "draft"), part)
+        # knight solo is draft only (owner call: the draft fills it, labelled)
+        self.assertGreater(pc["solo"]["draft"], 0)
+
     def test_every_draft_playstyle_part_is_labelled(self):
         for b in load_export()["builds"]:
             for part, val in b["playstyle"].items():
@@ -171,7 +183,7 @@ class ExportTests(unittest.TestCase):
 
     def test_engine_gear_hook_is_used_when_the_file_exists(self):
         tmp = tempfile.mkdtemp()
-        path = os.path.join(tmp, "milestonegear.json")
+        path = os.path.join(tmp, "buildmilestones_gear.json")
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             json.dump({"builds": {"knight": {"ranges": [
                 {"min": 1, "max": 99, "slots": {"weapon": [1201]}}]}}}, f)

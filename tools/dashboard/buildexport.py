@@ -29,10 +29,10 @@ GEAR_JSON = os.path.join(REPO, "legion", "data", "buildgear.json")
 # the design draft (feat/build-design): per-band stats and skills, plan_check and draft playstyles. Read at export
 # time, so a regenerated file (the plan rebalance) shows up on the next export. Every value from it is "draft".
 MILESTONES_JSON = os.path.join(REPO, "legion", "data", "buildmilestones.json")
-# HOOK for fix/gear-gate: when the engine writes its own milestone gear table, point this at that file. Until the
+# HOOK for fix/gear-gate: when the engine writes its own milestone gear table (legion/data/buildmilestones_gear.json). Until the
 # file exists the gear rows come from GEAR_JSON (buildgear.json). Expected shape, to confirm when it lands:
 # {"builds": {id: {"ranges": [{"min": n, "max": n, "slots": {slot: [item ids]}}]}}}
-ENGINE_GEAR_JSON = os.path.join(REPO, "legion", "data", "milestonegear.json")
+ENGINE_GEAR_JSON = os.path.join(REPO, "legion", "data", "buildmilestones_gear.json")
 STAT_ORDER_OUT = ["STR", "AGI", "VIT", "INT", "DEX", "LUK"]
 DRAFT_NOTE = "draft for owner review"
 PERSONAS = os.path.join(REPO, "legion", "data", "personas.json")
@@ -344,6 +344,19 @@ def band_for(bands, rmin, rmax):
     return best
 
 
+def part_counts(builds):
+    """per playstyle part (solo, MVP, PvP): how many builds are defined in code or docs, how many are draft only
+    (the design draft, owner review), and how many have no text at all"""
+    out = {}
+    for part in ("solo", "mvp", "pvp"):
+        c = {"defined": 0, "draft": 0, "gap": 0}
+        for b in builds:
+            st = b["playstyle"][part]["status"]
+            c[st] = c.get(st, 0) + 1
+        out[part] = c
+    return out
+
+
 def plan_warnings(pc):
     """the warnings a draft plan_check shows: points the plan needs against what exists, and goals never reached"""
     out = []
@@ -515,7 +528,7 @@ def build_export(items, skills, paths=None):
             gear_rows = [{"min": r["min"], "max": r["max"], "cards": [],
                           "slots": {s: [item_name(items, i) for i in ids] for s, ids in (r.get("slots") or {}).items() if ids}}
                          for r in eng["ranges"]]
-            row_gear_src = "engine milestone gear (legion/data/milestonegear.json)"
+            row_gear_src = "engine milestone gear (legion/data/buildmilestones_gear.json)"
         else:
             gear_rows, row_gear_src = bands, gear_src
 
@@ -587,6 +600,7 @@ def build_export(items, skills, paths=None):
         "item_names": len(items), "skill_names": len(skills),
         "transcendent": ("Transcendent classes (already-reborn characters only): a 4th-job or transcendent character "
                          "keeps the plan of its 2nd job (builds.go transToSecond); ST01 caps the server at 2nd classes."),
+        "part_counts": part_counts(builds),
         "draft": {"status": DRAFT_NOTE, "source": "legion/data/buildmilestones.json",
                   "file_status": ms_all.get("status"), "drafted": ms_all.get("drafted"),
                   "found": bool(ms_builds)},
