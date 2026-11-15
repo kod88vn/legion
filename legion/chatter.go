@@ -506,6 +506,7 @@ func (b *Bot) partySay(text string) {
 	msg := b.charName() + " : " + text
 	b.send(newPkt(0x0108).u16(0).str(msg, len(msg)+1).varlen())
 	b.event("said", b.charName(), "(party) "+text)
+	noteSaid(b, text) // leadertalk.go: a decision already spoken is not spoken twice
 }
 
 // guildSay: guild chat (CZ_GUILD_CHAT "Name : text").
@@ -528,6 +529,9 @@ func (b *Bot) tripAnnounce(why, town string) {
 	// the trip's log reason ends in a label for the event log ("(on the party town run)", "(necessary: class
 	// weapon)"): players never say those (2026-11-14, party chat read like a log)
 	why = spokenWhy(why)
+	if b.leaderTalkSkipTrip(why) { // leadertalk.go: the leader says the run's plan instead
+		return
+	}
 	item := strings.ToLower(strings.TrimPrefix(why, "buying "))
 	var line string
 	switch {

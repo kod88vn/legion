@@ -167,6 +167,8 @@ type Tuning struct {
 	PartyDestOff bool `json:"party_dest_off"`
 	// healerstick.go: the party healer stays with the leader and keeps the leader buffed (true = old behaviour)
 	HealerStickOff bool `json:"healer_stick_off"`
+	// leadertalk.go PT10/PT26: bot party leaders say town runs, rally waits, late members, answer members (true = off)
+	LeaderTalkOff bool `json:"leader_talk_off"`
 	// kafrachain.go: the next hop of one Kafra trip (same goal) is not refused by the 3-in-10-min cap (true = plain cap)
 	KafraChainOff bool `json:"kafra_chain_off"`
 	// ferry.go: the Sailor boats (Izlude <-> Byalan Island) are route edges (true = no boats: iz_dun* unreachable)
