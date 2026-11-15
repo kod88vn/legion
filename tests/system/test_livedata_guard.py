@@ -19,8 +19,13 @@ SUITES = ["tests/system", "tests/dashboard", "tests/ayla", "tests/tools", "tools
 CHILD_TIMEOUT = 900
 
 
+RESOLVER_OVERRIDES = ("LEGION_DATA", "AYLA_ORDERS", "AYLA_ORDERS_LOG", "LEGION_BUGQ_EXTRA")
+
+
 def _child_env(**extra):
-    env = {k: v for k, v in os.environ.items() if k != "LEGION_DATA"}
+    """the parent's environment without the path overrides, so a child resolves its paths the way a bare run does
+    (test_constitution sets AYLA_ORDERS for the whole process; a child must not inherit that)"""
+    env = {k: v for k, v in os.environ.items() if k not in RESOLVER_OVERRIDES}
     env["LEGION_TEST"] = "1"
     env.update(extra)
     return env
@@ -44,23 +49,36 @@ class SuitesStayOffLiveData(unittest.TestCase):
 
 
 class PlantedLeak(unittest.TestCase):
-    def test_resolver_raises_when_the_live_folder_would_be_used(self):
-        code = ("import sys; sys.path.insert(0, %r); import common; common.data_dir()"
-                % os.path.join(REPO, "tools", "system"))
-        r = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=_child_env(),
-                           capture_output=True, text=True, timeout=120)
-        self.assertNotEqual(r.returncode, 0, "planted leak did not raise")
-        self.assertIn("G23", r.stderr)
+    """each resolver of a live location, called with no test path, must raise under LEGION_TEST=1"""
+    LEAKS = {
+        "common.data_dir": ("tools/system", "import common; common.data_dir()"),
+        "mindgate.data_dir": ("tools", "import mindgate; mindgate.data_dir()"),
+        "orders.orders_path": ("tools/puppet", "import orders; orders.orders_path()"),
+        "orders.log_path": ("tools/puppet", "import orders; orders.log_path()"),
+        "bugq.extra_paths (Ayla's queue)": ("tools/system", "import bugq; bugq.extra_paths()"),
+    }
 
-    def test_resolver_accepts_a_temp_folder(self):
+    def test_planted_leaks_raise(self):
+        for name, (subdir, call) in self.LEAKS.items():
+            with self.subTest(resolver=name):
+                code = "import sys; sys.path.insert(0, %r); %s" % (os.path.join(REPO, subdir), call)
+                r = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=_child_env(),
+                                   capture_output=True, text=True, timeout=120)
+                self.assertNotEqual(r.returncode, 0, "planted leak through %s did not raise" % name)
+                self.assertIn("G23", r.stderr)
+
+    def test_resolvers_accept_a_temp_folder(self):
         import tempfile
         d = tempfile.mkdtemp(prefix="guard-probe-")
-        code = ("import sys; sys.path.insert(0, %r); import common; print(common.data_dir())"
-                % os.path.join(REPO, "tools", "system"))
-        r = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=_child_env(LEGION_DATA=d),
+        code = ("import sys; sys.path.insert(0, %r); sys.path.insert(0, %r); import common, orders; "
+                "print(common.data_dir()); print(orders.orders_path())"
+                % (os.path.join(REPO, "tools", "system"), os.path.join(REPO, "tools", "puppet")))
+        r = subprocess.run([sys.executable, "-c", code], cwd=REPO,
+                           env=_child_env(LEGION_DATA=d, AYLA_ORDERS=os.path.join(d, "o.jsonl"),
+                                          AYLA_ORDERS_LOG=os.path.join(d, "o.log")),
                            capture_output=True, text=True, timeout=120)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout.strip(), d)
+        self.assertEqual(r.stdout.splitlines(), [d, os.path.join(d, "o.jsonl")])
 
 
 if __name__ == "__main__":
