@@ -14,6 +14,8 @@ import os
 import time
 import urllib.request
 
+import orders  # owner orders for Ayla (AY20), same directory
+
 API = os.environ.get("LEGION_API", "http://127.0.0.1:8090")
 MAX_BRIEFING_CHARS = 6000
 
@@ -456,7 +458,8 @@ def chat_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
 # ----------------------------------------------------------------- Ayla
 def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
     snap = {"metrics": {}}
-    parts = [f"Role: Ayla's helper (watch her; step in only when stuck or deciding badly; file the code gap every time). Trigger: {trigger or 'schedule'}."]
+    owner = orders.briefing_section()  # AY20: the owner's plain-words orders go first, "do this now"
+    parts = ([owner] if owner else []) + [f"Role: Ayla's helper (watch her; step in only when stuck or deciding badly; file the code gap every time). Trigger: {trigger or 'schedule'}."]
     neo = api.get("/api/meter/neo")
     if neo is not None:
         ps = dig(neo, "party_summary", default={}) or {}

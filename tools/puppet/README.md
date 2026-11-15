@@ -14,6 +14,10 @@ python tools/puppet/dispatch.py                         # the loop (start it onl
 Stop: Ctrl+C or kill (heartbeat state becomes `stopped`). Pause without stopping: create `legion/data/puppet.pause`
 (`tools/system/stackctl.py down`, which writes `stack.hold`, pauses it too).
 Wake the build/class master: `touch legion/data/build.wake` (or an owner order to mind `build`).
+Owner orders for Ayla (AY20): `bash tools/rogui/ayla.sh tell "do a town run with the party"` (Windows:
+`toolsogui	ell-ayla.cmd "..."`) appends to `legion/data/ayla_orders.jsonl` (`orders.py`); the loop wakes the `ayla`
+role within ~1 s with trigger `owner` (past min_gap and the hourly cap, at most one call per 30 s), the order heads
+her briefing, and the result goes back to the file and to `openkore-ayla/logs/owner_orders.log` (`ayla.sh orders`).
 Files: `legion/data/puppet_calls.jsonl` (call log), `puppet_heartbeat.json` (each loop, details) and
 `dispatch.heartbeat` (epoch; the session gate and the sentinel read it), `bugqueue.jsonl` (bug/neo
 queue written by `legionctl bug|neo`), `tools/puppet/notes/<role>.md` (each mind's notes, git-ignored).
