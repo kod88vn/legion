@@ -41,6 +41,7 @@ func TestRegenWeightNeedAndSnack(t *testing.T) {
 		t.Fatalf("nothing sellable over the line: %q", got)
 	}
 	b.inv[5] = &InvItem{Index: 5, ItemID: 90920, Count: 1}
+	// a trip at once: this bot has no Zeny for a store visit, so the sell trip (weight.go regenWeightNeed)
 	if got := b.regenWeightNeed(); got != "bag is heavy" {
 		t.Fatalf("51%% with loot: %q", got)
 	}

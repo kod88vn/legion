@@ -37,6 +37,12 @@ func (b *Bot) storeCandidates() []int {
 	return out
 }
 
+// canStoreIn: a store visit to this town can actually store - a Kafra here, base level 6 or more, 200z or more and kept
+// items to store (the same conditions as storeNeed and storeThink, which stores in a Kafra town).
+func (b *Bot) canStoreIn(town string) bool {
+	return len(kafraSpots[town]) > 0 && b.basicLv() >= 6 && b.Zeny >= 200 && len(b.storeCandidates()) > 0
+}
+
 // storeNeed (b.mu held): over the regen line with nothing an NPC buys but things to store.
 func (b *Bot) storeNeed() bool {
 	if len(kafraSpots[b.MapName]) > 0 || b.kafra != nil && b.kafra.Store {
@@ -99,5 +105,6 @@ func (b *Bot) onStorageOpen() {
 		b.send(newPkt(0x0193).b)
 	}()
 	b.kafra = nil
+	b.lastTripOverLine = b.overRegenWeight() // the store step is the last one of the trip: did it clear the bag?
 	b.event("info", "", fmt.Sprintf("stored %d kinds of items in Kafra storage (%s)", n, k.Town))
 }

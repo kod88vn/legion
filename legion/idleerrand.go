@@ -46,6 +46,12 @@ func idleErrandWhy(t *Tuning, waited time.Duration, shopTown bool, weightPct, sl
 	return ""
 }
 
+// idleRestockNeed: the restock errand is for a real potion need only - fewer than 3 real potions, the same line as the
+// trip trigger (town.go outOfPotions). SP potions and a bag of 14 potions are no reason (QA 2026-11-15).
+func idleRestockNeed(b *Bot) bool {
+	return b.realPotCount() < 3
+}
+
 // idleErrand (b.mu held; called from the town-trip block of think with b.trip == nil): start the errand when due.
 func (b *Bot) idleErrand(p *Party, now time.Time) {
 	t := tune()
@@ -65,7 +71,7 @@ func (b *Bot) idleErrand(p *Party, now time.Time) {
 	shopTown := town != "" && potionShop(town) != nil
 	// the restock errand only for real potion need (fewer than 3 real potions, the same line as the trip trigger in
 	// town.go outOfPotions): a bot with 14 potions and low SP made "restocking while waiting" trips (QA 2026-11-15)
-	why := idleErrandWhy(t, now.Sub(b.buffAt["idlewait:since"]), shopTown, b.weightPct(), b.invSlots(), b.hasLoot(), b.realPotCount() < 3, b.Zeny)
+	why := idleErrandWhy(t, now.Sub(b.buffAt["idlewait:since"]), shopTown, b.weightPct(), b.invSlots(), b.hasLoot(), idleRestockNeed(b), b.Zeny)
 	if why == "" {
 		return
 	}

@@ -1088,8 +1088,7 @@ func (b *Bot) escortGate(p *Party, herMap string, now time.Time) (string, string
 	if dungeonMap(b.MapName) {
 		if dungeonFamily(b.MapName) == dungeonFamily(herMap) && !friendOnFloor(p, b, b.MapName, now) && !floorAdjacent(b.MapName, herMap) {
 			if !b.outOfPotions() && !b.hurtBadly() {
-				escortRestockClear(b)
-				return b.MapName, "waiting on this floor for " + p.Human
+				return b.floorHoldStep(p, herMap, now)
 			}
 		} else {
 			escortRestockClear(b)
@@ -1117,10 +1116,10 @@ func (b *Bot) escortGate(p *Party, herMap string, now time.Time) (string, string
 	}
 	// short of the survival minimum but not out of potions: top up at the town's potion seller before going in, the
 	// way a player at the Kafra would. No trip away and no party run: the trip stays in this town (forceTown).
-	if !b.isHealer() && b.realPotCount() < b.potMin() && b.Zeny >= 500 && potionShop(town) != nil && escortRestockOK(b, now) {
+	if potTopUpNeed(b, town) && escortRestockOK(b, now) {
 		if b.trip == nil && (b.lastTripAt.IsZero() || now.Sub(b.lastTripAt) >= 2*time.Minute) {
 			b.forceTown = town
-			b.startTrip("out of potions", now)
+			b.startTrip(topUpWhy, now) // chatter.go tripAnnounce: "grabbing pots, 1 min", not "out of pots, brb"
 			b.forceTown = ""
 		}
 		if b.trip != nil {
@@ -1218,11 +1217,99 @@ func escortRestockOK(b *Bot, now time.Time) bool {
 	return now.Sub(t) < escortRestockMax
 }
 
-// escortRestockClear: the bot is no longer holding for a restock (in the dungeon, out of the hold, or restocked).
+// escortRestockClear: the bot is no longer holding for a restock (in the dungeon, out of the hold, or restocked). It also
+// ends a floor hold (floorHold below): every exit of escortGate that is not that hold comes through here.
 func escortRestockClear(b *Bot) {
 	escortRestock.Lock()
-	defer escortRestock.Unlock()
 	delete(escortRestock.since, strings.ToLower(b.P.Name))
+	escortRestock.Unlock()
+	floorHold.Lock()
+	delete(floorHold.st, strings.ToLower(b.P.Name))
+	floorHold.Unlock()
+}
+
+// topUpWhy: the trip reason of a potion top-up at the dungeon gate (below the survival minimum, not out of potions).
+// Its party line is "grabbing pots, 1 min" (chatter.go), not "out of pots, brb".
+const topUpWhy = "grabbing pots"
+
+// potTopUpNeed: a member short of the survival minimum in a town with a potion seller tops up before going in (the
+// way a player at the Kafra would). Healers heal themselves.
+func potTopUpNeed(b *Bot, town string) bool {
+	return !b.isHealer() && b.realPotCount() < b.potMin() && b.Zeny >= 500 && potionShop(town) != nil
+}
+
+// floorHold: a member alone on a dungeon floor, its leader two or more floors away (see floorHoldStep).
+var floorHold = struct {
+	sync.Mutex
+	st map[string]floorHoldState
+}{st: map[string]floorHoldState{}}
+
+type floorHoldState struct {
+	floor string    // the floor it holds on: a change of floor restarts the timer
+	since time.Time // when it began holding here
+	seen  time.Time // the last escortGate call that held it: a gap restarts the timer
+}
+
+const (
+	floorHoldMove = 3 * time.Minute // held this long: the member moves one floor toward her, when it is safe
+	floorHoldGap  = time.Minute     // no escortGate call for this long: the hold starts over
+)
+
+// floorHoldFor: how long the bot has held on its current floor, continuously (a new floor, or no call for
+// floorHoldGap, restarts it).
+func floorHoldFor(b *Bot, now time.Time) time.Duration {
+	floorHold.Lock()
+	defer floorHold.Unlock()
+	key := strings.ToLower(b.P.Name)
+	s, ok := floorHold.st[key]
+	if !ok || s.floor != b.MapName || now.Sub(s.seen) > floorHoldGap {
+		s = floorHoldState{floor: b.MapName, since: now}
+	}
+	s.seen = now
+	floorHold.st[key] = s
+	return now.Sub(s.since)
+}
+
+// floorSafeAlone: a floor a member may walk to by itself: no monster there is above its level and no recent deaths
+// (the same test as the route check in kafra.go routeSafeFrom, applied to the floor itself).
+func floorSafeAlone(m string, maxLv int) bool {
+	return !mapTooStrong(m, maxLv) && recentDeaths(m) < 3
+}
+
+// nextFloorToward: the floor one step from `from` toward `to`, in the same dungeon ("pay_dun00" toward "pay_dun03" is
+// "pay_dun01"); false when they are not two floors of one dungeon or already the same floor.
+func nextFloorToward(from, to string) (string, bool) {
+	fa, oka := dungeonFloorNo(from)
+	fb, okb := dungeonFloorNo(to)
+	if !oka || !okb || fa == fb || dungeonFamily(from) != dungeonFamily(to) {
+		return "", false
+	}
+	step := 1
+	if fb < fa {
+		step = -1
+	}
+	digits := from[len(dungeonFamily(from)):]
+	return fmt.Sprintf("%s%0*d", dungeonFamily(from), len(digits), fa+step), true
+}
+
+// floorHoldStep: a member alone on a floor of her dungeon, she two or more floors away. It HOLDS here: it keeps fighting
+// what comes to it and keeps safe (the goal stays on this floor; it does not walk on alone). After floorHoldMove it moves
+// one floor toward her (never past her floor) when a friend is on that floor or the floor is safe to walk to alone;
+// otherwise it stays and the party's "where r u" line (humanparty.go) asks to be collected. It never walks out of the
+// dungeon from here (only escortGate's hurt / out-of-potions case does).
+func (b *Bot) floorHoldStep(p *Party, herMap string, now time.Time) (string, string) {
+	if floorHoldFor(b, now) >= floorHoldMove {
+		if next, ok := nextFloorToward(b.MapName, herMap); ok {
+			// one floor, never past her: a friend already there, or the floor itself is safe to walk to alone
+			if friendOnFloor(p, b, next, now) || floorSafeAlone(next, b.targetMaxLv()) {
+				return next, "moving one floor toward " + p.Human
+			}
+			// the floor is too strong or has had deaths: stay, and the party's "where r u" line (humanparty.go) asks
+			// to be collected
+			return b.MapName, "waiting on this floor for " + p.Human + ": asking to be collected"
+		}
+	}
+	return b.MapName, "waiting on this floor for " + p.Human
 }
 
 // humanTrail: the maps a human leader walked through lately (oldest first), so her friends take the same road.

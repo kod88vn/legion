@@ -547,6 +547,7 @@ func (b *Bot) startTrip(why string, now time.Time) {
 	}
 	if t.Why != "calling it a day" {
 		b.lastTripAt = now
+		b.lastTripOverLine = true // until the trip is done and shows the bag cleared (case "done")
 	}
 	b.event("info", "", fmt.Sprintf("heading to %s (%s) %s", town, why, b.tripNumbers()))
 	if p := partyOf(b); p != nil && t.Why != "calling it a day" {
@@ -747,6 +748,9 @@ func (b *Bot) tripThink(gm *GameMap, moving bool, now time.Time) bool {
 		t.Stage, t.At = "talk", now
 		return true
 	case "done":
+		if !b.canStoreIn(b.MapName) { // a store step follows in a Kafra town (storage.go): it sets the flag then
+			b.lastTripOverLine = b.overRegenWeight()
+		}
 		b.trip = nil
 		b.startKafraMeet(t.Why, now) // kaframeet.go (PT22): a bot party's town run ends at the Kafra, the party returns together
 		b.checkMarket(now)     // opportunity.go (run 8): what's missing in the market becomes the money goal
