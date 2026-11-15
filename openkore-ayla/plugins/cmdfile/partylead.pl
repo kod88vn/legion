@@ -289,6 +289,8 @@ sub on_errand {
 }
 # a friend lying dead (Legion's API: 0 HP or a "dead" state, fresh) is not waited for - it respawns and comes back by
 # itself (queue b1794719424081: she held 5+ min in geffen "waiting for Zen.fox" after it died)
+# her own cell now (interpolated mid-walk; pos_to is where the walk ends)
+sub my_pos { my $p = eval { $char->position }; return (ref $p && defined $p->{x}) ? $p : $char->{pos_to} }
 sub friend_dead {
 	my $a = $apiPos{$_[0] || ''};
 	return 0 unless $a && time - ($a->{at} || 0) < 15;
@@ -457,7 +459,10 @@ sub party_strong {
 sub friend_pos {
 	my ($u, $here) = @_;
 	my $pl = $playersList ? $playersList->getByName($u->{name}) : undef;
-	return ($pl->{pos_to}, $pl) if $pl && $pl->{pos_to} && defined $pl->{pos_to}{x};
+	if ($pl && $pl->{pos_to} && defined $pl->{pos_to}{x}) { # on screen: exact - where it is now, not where its walk ends
+		my $pp = eval { $pl->position };
+		return ((ref $pp && defined $pp->{x}) ? $pp : $pl->{pos_to}, $pl);
+	}
 	my $a = $apiPos{$u->{name}};
 	# Legion's API up to 30 s old; OpenKore's party-list position goes stale for minutes (live: "waiting for Zen.fox
 	# (214 cells away)" with Zen.fox 2 cells from her) - never used: no fresh position = unknown
@@ -2438,6 +2443,11 @@ sub pack_decide {
 	if ($pr) {
 		my $prD = $pr->[2] eq $here && defined $pr->[3] ? $pr->[3] : undef;
 		my $near6 = defined $prD && $prD <= 6 ? 1 : 0;
+		if ($s->{farm} && defined $prD) { # PT04 on the farm map: farm freely within 20 cells, go toward it beyond
+			return ('ok', $pr) if $prD <= 20 && !$s->{collecting};
+			return ('ok', $pr) if $s->{collecting} && $prD <= 6;
+			return ('goto', $pr);
+		}
 		if ($s->{collecting}) {
 			return ('ok', $pr) if $near6 && ($s->{nearFor} || 0) >= 3;
 			return ('wait', $pr) if $near6 || $s->{shrinking}; # the priest is here / coming: never both walk
@@ -2589,7 +2599,7 @@ sub pack_tick {
 		my $m = friend_map($u); $m =~ s/\.gat$//;
 		my ($pos) = $m eq $here ? friend_pos($u, $here) : ();
 		my $a = $apiPos{$u->{name}};
-		push @fr, [$u->{name}, friend_cls($u->{name}), $m, ($pos && defined $pos->{x}) ? blockDistance($char->{pos_to}, $pos) : undef, $pos];
+		push @fr, [$u->{name}, friend_cls($u->{name}), $m, ($pos && defined $pos->{x}) ? blockDistance(my_pos(), $pos) : undef, $pos];
 	}
 	if (!@fr) { ($pk{waitAt}, $pk{goName}, $pk{wf}, $regroupTo) = (0, '', undef, ''); return 0 } # everyone offline: she may farm solo
 	my ($dm, $nm) = route_maps();

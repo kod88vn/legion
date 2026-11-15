@@ -75,5 +75,9 @@ ok(entrance_wait(undef, 1, 3), 'priest away, just arrived, monsters: wait at the
 ok(entrance_wait(undef, 0, 0), 'priest away, no monsters: keep waiting at the entrance');
 ok(!entrance_wait(undef, 0, 2), 'priest away 60 s+, monsters on her: town Kafra');
 ok(!entrance_wait(5, 1, 0), 'priest here: no entrance wait');
+# PT04 on the farm map: free within 20 cells of the priest (the 6-cell pace is for travel only)
+ok(act({here => 'pay_dun02', farm => 1, friends => [$pr->('pay_dun02', 11)]}) =~ /^ok/, 'farm: priest 11 cells -> farm on');
+ok(act({here => 'pay_dun02', farm => 1, friends => [$pr->('pay_dun02', 24)]}) eq 'goto:Zen.fox', 'farm: priest 24 cells -> toward it');
+ok(act({here => 'pay_arche', friends => [$pr->('pay_arche', 11)], waited => 5}) eq 'wait:Zen.fox', 'travel: priest 11 cells -> wait (pace)');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);
