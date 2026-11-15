@@ -39,11 +39,24 @@ focus() { xdotool windowfocus --sync "$(win)" 2>/dev/null; }
 click() { focus; xdotool mousemove $1 $2 sleep 0.1 mousedown 1 sleep 0.15 mouseup 1; sleep 0.6; }
 . "$(dirname "$(readlink -f "$0")")/ayla-ip.sh"
 in_game() { ss -tn 2>/dev/null | grep -qF "$(ayla_ip):6903"; }   # live connection to OpenKore's map server
-# Ayla really in game right now: the server's online flag plus a fresh OpenKore status line (the log alone is stale
-# right after an OpenKore restart, which wasted a login attempt)
+# Ayla really in game right now: the server's online flag plus OpenKore's own log. The log part must not need the
+# terminal-title status line ("Ayla:  B81 ...", only printed when her stats or position change, so it almost never
+# shows up within 20 s while she stands in town: 2026-11-14 the loop waited forever with her clearly in game).
+# Instead, looking only at the log since the container's StartedAt (so a previous run or the stale log right after a
+# restart never counts): the map-loaded marker "You are now in the game" is there, no map-server disconnect/timeout
+# line came after the last one, and the log is alive (any line in the last ROAI_LOG_FRESH seconds, default 90).
+ayla_log_ok() {
+  local started last
+  started=$(docker inspect -f '{{.State.StartedAt}}' ro-openkore-ayla 2>/dev/null)
+  [ -n "$started" ] || return 1
+  last=$(docker logs --since "$started" ro-openkore-ayla 2>&1 |
+    grep -aE "You are now in the game|Timeout on Map Server|Lost connection|Disconnecting from|Connection terminated|Failed to connect" | tail -1)
+  case "$last" in *"You are now in the game"*) ;; *) return 1;; esac
+  [ "$(docker logs --since "${ROAI_LOG_FRESH:-90}s" ro-openkore-ayla 2>&1 | wc -l)" -gt 0 ]
+}
 ayla_online() {
   [ "$(docker exec ro-db mariadb -N -uragnarok -pragnarok ragnarok -e 'SELECT online FROM `char` WHERE char_id=150010' 2>/dev/null)" = "1" ] &&
-    docker logs --since 20s ro-openkore-ayla 2>&1 | grep -qa "Ayla:  B"
+    ayla_log_ok
 }
 
 # Login timing scales with machine load (2026-11-14: with load ~25 on 24 cores the client took >40 s to draw its
