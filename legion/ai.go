@@ -849,7 +849,14 @@ func (b *Bot) chooseHuntingGround() {
 			// buildgear.go nextBuildPiece (economy run 7, owner: each bot farms or trades to perfect its build): a
 			// drop-only next piece is farmed where it drops, when that map is one of the fitting, safe candidates
 			buildPick := false
-			if pc := b.nextBuildPiece(); pc != nil && pc.Source == "drop" && b.rng.Float64() < 0.8 {
+			// EC39: a gated bot's goal is its failing gear piece (buildmilestones.go gearGoalPiece), farmed every time;
+			// otherwise the build's next piece, drop maps 80% of the time
+			_, goal := b.gearGate(b.BaseLvOr())
+			pc := b.nextBuildPiece()
+			if goal != nil {
+				pc = gearGoalPiece(*goal, b.BaseLvOr())
+			}
+			if pc != nil && pc.Source == "drop" && (goal != nil || b.rng.Float64() < 0.8) {
 			farm:
 				for _, f := range pc.Farm {
 					for _, c := range cs {
@@ -861,6 +868,15 @@ func (b *Bot) chooseHuntingGround() {
 							break farm
 						}
 					}
+				}
+			}
+			// EC39: a shop piece is a zeny goal while gated: earn its price on the best-paying map of the candidates
+			if goal != nil && pc != nil && pc.Source == "shop" && !buildPick {
+				if z := b.bestZenyMap(near); z != "" {
+					if z != pickMap {
+						b.event("info", "", fmt.Sprintf("saving zeny for %s (%s) on %s", pc.Name, goal.Slot, z))
+					}
+					pickMap, buildPick = z, true
 				}
 			}
 			// opportunity.go (run 8, owner: farm what the Prontera market lacks): the money goal's map when it fits,
@@ -974,6 +990,9 @@ func (b *Bot) bestGearIn(town string) *Item {
 	}
 	if b.gearHold() {
 		return nil // no class weapon / no arrows yet: nothing else at a gear shop, the money waits (builds.go gearHold)
+	}
+	if b.gatedSaveHold(b.Zeny - b.gearReserve()) { // buildmilestones.go (EC39): saving for the gated piece, no lesser gear
+		return nil
 	}
 	// lfg.go turnPiece: a human party's member buys exactly its turn piece (the party's money is for it), nothing else
 	if id := b.turnPiece(); id != 0 {
@@ -2032,6 +2051,10 @@ func partyFitLv(ms []*Bot) (minLv, fitLv, known, unknown int) {
 			fitLv += b
 		}
 		minLv, fitLv = partyPerfAdjust(ms, minLv, fitLv, false) // gearscore.go: easy farming steps the party up
+		if g := partyGearGate(ms); g > 0 && minLv > g { // buildmilestones.go (EC39): a step never lifts past the gear
+			fitLv -= minLv - g
+			minLv = g
+		}
 	}
 	return
 }

@@ -678,6 +678,12 @@ func (b *Bot) realUpgrade(it *Item, cur *Item) bool {
 // nextGear: the best affordable upgrade on the plan's routes that this character can use now and doesn't own.
 func (b *Bot) nextGear() (*Item, *Shop) {
 	budget := b.Zeny - b.gearReserve()
+	if it, sh := b.gatedGearShop(budget); it != nil { // buildmilestones.go (EC39): the failing piece is bought first
+		return it, sh
+	}
+	if b.gatedSaveHold(budget) { // the failing piece costs more than the budget: the zeny saves up for it
+		return nil, nil
+	}
 	// economy run 7 (owner: each bot works to perfect its build): when the build's next piece is a shop item the bot
 	// can't afford yet but soon could (<= 3x its budget, or <= 5,000z), it saves toward it instead of buying lesser gear
 	if pc := b.nextBuildPiece(); pc != nil && pc.Source == "shop" && pc.NPC > budget && pc.Gain > 0 &&
@@ -687,9 +693,19 @@ func (b *Bot) nextGear() (*Item, *Shop) {
 	return b.nextGearBudget(budget)
 }
 
-// gearReserve: zeny kept back for potions when buying gear. Was 1500 + level*100 - at level 39 that is 5,400, so
-// party members holding 4,500 zeny could never afford a 2,000z weapon and stayed on the starter Knife.
+// gearReserve: the reserve for potions, but never more than the purse minus the gated piece's price while gated
+// (buildmilestones.go gatedPrice): the failing piece comes before the other reserves (EC39).
 func (b *Bot) gearReserve() int {
+	r := b.gearReserveFree()
+	if price, ok := b.gatedPrice(); ok && b.Zeny >= price {
+		return min(r, b.Zeny-price)
+	}
+	return r
+}
+
+// gearReserveFree: zeny kept back for potions when buying gear. Was 1500 + level*100 - at level 39 that is 5,400, so
+// party members holding 4,500 zeny could never afford a 2,000z weapon and stayed on the starter Knife.
+func (b *Bot) gearReserveFree() int {
 	tn := tune()
 	if b.Zeny > 3000 && b.guideSaving() { // alchemy.go: the guild's fund for the Potion Creation Guide is not gear money
 		// run 8: all of it (was Zeny-1000: TheShadowsenpai at 103,062z gave 1,000z to a party gear turn, dropping
@@ -1312,6 +1328,12 @@ func (b *Bot) gearStepNeed() (*Item, *Shop) {
 		return nil, nil
 	}
 	budget := b.Zeny - b.gearReserve()
+	if it, sh := b.gatedGearShop(budget); it != nil { // buildmilestones.go (EC39): the gated piece before any other step
+		return it, sh
+	}
+	if b.gatedSaveHold(budget) { // saving for the gated piece: no other necessary step meanwhile
+		return nil, nil
+	}
 	pick := func(ids []int, slot uint32, score func(*Item) float64, floor float64) (*Item, *Shop) {
 		for _, it := range b.inv { // already carrying something better: equipFromInventory / identifyThink, no trip
 			if x := items[it.ItemID]; x != nil && !it.Equipped && gearSlot(x.Loc) == slot && score(x) >= floor &&

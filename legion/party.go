@@ -26,6 +26,7 @@ type pubState struct {
 	AID      uint32
 	Lv       int    // base level
 	Power    int    // effective level from level + gear (gearpower.go powerLv)
+	Gate     int    // buildmilestones.go: the gear ceiling on Power (0 = none)
 	Back     bool   // together.go: a ranged / support member - tanks and melee keep monsters off it
 	Mobbed   int    // together.go: monsters hitting it right now (the tank comes to help at 3+)
 	Help     bool   // together.go: it called for help in party chat in the last 45 s (danger.go helpcall)
@@ -53,13 +54,14 @@ var pubs sync.Map // name -> *atomic.Value(pubState)
 func (b *Bot) publish() {
 	b.restAnnounce(time.Now()) // together.go: "need sp, resting" / "ok ready" - drives the published Resting
 	v, _ := pubs.LoadOrStore(b.P.Name, &atomic.Value{})
+	gate, _ := b.gearGate(b.BaseLvOr())
 	collect := ""
 	if b.collectName != "" && time.Since(b.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second {
 		collect = b.collectName
 	}
 	lx, ly := b.livePos(time.Now())
 	v.(*atomic.Value).Store(pubState{Name: b.charName(), Map: b.MapName, X: b.X, Y: b.Y, LX: lx, LY: ly, HPFrac: b.hpFrac(),
-		Target: b.target, Online: b.Online, Support: b.isHealer(), Tank: partyRole(b) == roleTank, AID: b.aid, Lv: b.BaseLvOr(), Power: b.powerLv(), Known: b.BaseLv > 0, EscortAt: b.escWaitAt, Fragile: fragileClass(b.Class), Back: partyRole(b) == roleRanged || partyRole(b) == roleSupport, Mobbed: b.mobbedNow(), Help: time.Now().Before(b.buffAt["helpcall"]),
+		Target: b.target, Online: b.Online, Support: b.isHealer(), Tank: partyRole(b) == roleTank, AID: b.aid, Lv: b.BaseLvOr(), Power: b.powerLv(), Gate: gate, Known: b.BaseLv > 0, EscortAt: b.escWaitAt, Fragile: fragileClass(b.Class), Back: partyRole(b) == roleRanged || partyRole(b) == roleSupport, Mobbed: b.mobbedNow(), Help: time.Now().Before(b.buffAt["helpcall"]),
 		SavedTown: b.savedTown, Waiting: b.waitingAtCheckpoint, Collect: collect, Goal: b.Goal.Map, Roaming: b.State == "roaming", Trip: b.trip != nil, Errand: b.errand != nil || b.Goal.Set == "alchemy", Resting: b.restOn, DX: b.DestX, DY: b.DestY,
 		AoE: b.hasAoESpell(), CastUntil: b.aoeCastUntil, MKills: int(b.meter.sess.Kills), MFair: int(b.meter.sess.Fair), MDeaths: int(b.meter.sess.Deaths)})
 }

@@ -83,7 +83,7 @@ func (b *Bot) powerLv() int {
 			def = x.Def
 		}
 	}
-	return effectiveLv(family(b.Class), lv, w, def)
+	return b.gearGatedLv(b.gearPlan(), lv, effectiveLv(family(b.Class), lv, w, def)) // buildmilestones.go (EC39): gated here too
 }
 
 // peekPower: another bot's effective level without its lock (the published snapshot), base level if unknown.
