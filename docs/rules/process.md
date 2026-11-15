@@ -56,8 +56,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
   replaces an old one edits the old line. (2026-11-14)
 - PR01. Rules are short plain lines with an ID and a date. They never repeat the owner's prompt. (2026-11-14)
 - G15 / G16 / G17. Deploy rules: legion/legion-core only with `--no-deps`; rathena restart at most once an hour; deploys every
-  3 hours by the deploy agent only (critical fixes excepted). Details in `gates.md` and `docs/handover/deploy.md` if present
-  in HANDOVER section 3.
+  3 hours by the deploy agent only (critical fixes excepted). Details in `gates.md`; the deploy scripts are described in `docs/handover/startup-old.md` (0.4 and 0.5) and `tools/deploy/`.
 - Engineering notes that behave like rules (Windows git, engine flags default off, lessons about locks): `docs/design/REDESIGN.md` section 2.
 
 ## Dashboard
