@@ -289,6 +289,9 @@ class RealPathTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "Windows paths")
     def test_live_resolution(self):
+        # the expected answers are for the live checkout's paths (G:\RO\legion); a copy elsewhere would decide differently
+        if os.path.normcase(os.path.abspath(REPO)) != os.path.normcase(r"G:\RO\legion"):
+            self.skipTest("live-checkout paths only (REPO is %s)" % REPO)
         d = lambda t, ti: mainguard.decide(inp(t, ti, cwd=REPO), ALLOW)[0]
         self.assertTrue(d("Write", {"file_path": os.path.join(REPO, "RULES.md")}))
         self.assertTrue(d("Write", {"file_path": os.path.join(REPO, "docs", "reports", "new-report.md")}))

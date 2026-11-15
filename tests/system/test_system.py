@@ -474,7 +474,7 @@ class TestSentinelMeter(Env):
 
     def test_imports_without_legion_data(self):
         """Regression b1794706820063-060: with LEGION_DATA unset, ROOT was used before it was defined."""
-        env = {k: v for k, v in os.environ.items() if k != "LEGION_DATA"}
+        env = {k: v for k, v in os.environ.items() if k not in ("LEGION_DATA", "LEGION_TEST")}
         r = subprocess.run([sys.executable, "-c", "import sentinel; print(sentinel.DATA)"], capture_output=True,
                            text=True, env=env, cwd=os.path.join(REPO, "tools"))
         self.assertEqual(r.returncode, 0, r.stderr)

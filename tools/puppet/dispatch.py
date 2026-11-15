@@ -35,7 +35,7 @@ DISPATCH_LOCKED = False
 import constitution  # noqa: E402  the one loader of CONSTITUTION.md (PR42): first in every prompt, exactly once
 
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-DATA = os.environ.get("LEGION_DATA") or os.path.join(REPO, "legion", "data")
+DATA = LC.data_dir()   # the one resolver (rule G23)
 NOTES = os.path.join(HERE, "notes")
 BRIEFS = os.path.join(HERE, "briefs")
 WORKDIR = os.path.join(HERE, "workdir")

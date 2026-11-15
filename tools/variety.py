@@ -20,8 +20,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import wrongbuilds as wb  # noqa: E402  (plans parsed from builds.go, SQL helper, skill trees)
 
 SRV = wb.SRV
-PERSONAS = os.path.join(SRV, 'legion', 'data', 'personas.json')
-OUT = os.path.join(SRV, 'legion', 'data', 'variety.json')
+sys.path.insert(0, os.path.join(SRV, 'tools', 'system'))
+import common as _C  # the one data-folder resolver (rule G23)
+DATA = _C.data_dir()
+PERSONAS = os.path.join(DATA, 'personas.json')
+OUT = os.path.join(DATA, 'variety.json')
 HEALER_PLANS = {'priest', 'priest_me'}
 
 # trans skill plans (transplans.go) count as caps for 2nd-job skills too

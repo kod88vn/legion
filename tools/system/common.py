@@ -14,8 +14,17 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
 
+LIVE_DATA = os.path.join(ROOT, "legion", "data")
+
+
 def data_dir():
-    return os.environ.get("LEGION_DATA") or os.path.join(ROOT, "legion", "data")
+    """The one resolver for the data folder: LEGION_DATA, else the live legion/data. Under LEGION_TEST=1 (set by
+    every test process) the live folder is refused at once (rule G23): a test that reaches it fails here."""
+    d = os.environ.get("LEGION_DATA") or LIVE_DATA
+    if os.environ.get("LEGION_TEST") == "1" and os.path.normcase(os.path.abspath(d)) == os.path.normcase(LIVE_DATA):
+        raise RuntimeError("LEGION_TEST=1 but the data folder is the live legion/data (rule G23): "
+                           "set LEGION_DATA to a temp folder")
+    return d
 
 
 def dpath(name):

@@ -18,4 +18,5 @@ def isolate():
         _DIR[:] = [d]
         atexit.register(shutil.rmtree, d, True)
     os.environ["LEGION_DATA"] = _DIR[0]
+    os.environ["LEGION_TEST"] = "1"   # common.data_dir() refuses the live folder while this is set (rule G23)
     return _DIR[0]
