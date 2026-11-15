@@ -113,6 +113,17 @@ class BriefingTests(unittest.TestCase):
         self.assertIn("archer|21-40|solo n=30", text.split("Biggest gaps")[1].splitlines()[1])  # biggest zeny prize first
         self.assertEqual(snap["metrics"]["zph"], 2000)
 
+    def test_live_quirks(self):
+        """seen on the first live dry-run: relations null before any event, empty cohorts listed first"""
+        meter = dict(FULL["/api/meter"])
+        meter["cohorts"] = [{"key": "acolyte|1-20|party", "n": 0, "kpm": {"mean": 0, "par": 0, "prize": 0},
+                             "zph": {"mean": 0, "par": 0, "prize": 0}}] + FULL["/api/meter"]["cohorts"]
+        data = dict(FULL, **{"/api/guild-relations": {"instance": "main", "relations": None}, "/api/meter": meter})
+        with tempfile.TemporaryDirectory() as nd:
+            text, _ = briefing.assemble("guild03", briefing.Api(fetch=MockApi(data)), nd)
+        self.assertIn("(all neutral, no events yet)", text)
+        self.assertNotIn("acolyte|1-20|party", text)
+
     def test_guessed_shapes_still_read(self):
         with tempfile.TemporaryDirectory() as nd:
             text, snap = briefing.assemble("guild03", briefing.Api(fetch=MockApi(GUESSED)), nd)

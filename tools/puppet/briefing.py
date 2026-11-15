@@ -186,7 +186,8 @@ def _prize(r, metric):
 
 def cohort_summary(meter, limit=6):
     """cohorts by prize from /api/meter (the engine already sorts by zeny prize, then kill prize)"""
-    rows = [r for r in rows_of(dig(meter, "cohorts", default=meter)) if isinstance(r, dict)]
+    rows = [r for r in rows_of(dig(meter, "cohorts", default=meter)) if isinstance(r, dict)
+            and (num(r.get("n")) is None or num(r.get("n")) > 0)]  # empty cohorts (n=0) say nothing
     rows.sort(key=lambda r: (-_prize(r, "zph"), -_prize(r, "kpm")))
     return rows[:limit]
 
@@ -259,6 +260,8 @@ def place_of(r):
 def relation_lines(rel, gid):
     """engine {"relations":[{a,b,name_a,name_b,value,label,events,last_event}]}: lines for the pairs with gid"""
     rows = dig(rel, "relations", default=None)
+    if rows is None and isinstance(rel, dict) and "relations" in rel:
+        rows = []  # the engine sends null while no pair has had an event
     if not isinstance(rows, list):
         r = row_for(rel, gid)
         return compact(r if r is not None else rel, 600)
