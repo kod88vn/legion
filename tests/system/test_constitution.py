@@ -39,7 +39,9 @@ class LoaderTests(unittest.TestCase):
         self.assertTrue(CONST.startswith("# The Constitution"))
         self.assertIn("## Article 1. The main session", CONST)
         self.assertIn("## Article 3. The self-improving loop", CONST)
-        self.assertTrue(CONST.endswith("except getting Ayla back online."))
+        self.assertIn("## Article 4. Development", CONST)
+        self.assertIn("except getting Ayla back online.", CONST)
+        self.assertTrue(CONST.endswith("A change without a review is not merged or\nloaded."))
 
     def test_line_ends_do_not_matter(self):
         self.assertEqual(constitution.digest(CONST.replace("\n", "\r\n") + "\r\n\r\n"), constitution.digest())
