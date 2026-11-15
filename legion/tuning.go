@@ -299,7 +299,8 @@ type Tuning struct {
 	FairSpotGateOn bool    `json:"fair_spot_gate_on"`
 	FairSpotShare  float64 `json:"fair_spot_share"`
 	// lfgstats.go / lfg.go (bug b1794773272q31): count the map check of every fitting join pair, not only the pairs that
-	// would beat the best candidate (costs one partyMapOK per fitting pair; off by default until measured)
+	// would beat the best candidate (costs one partyMapOK per fitting pair; on by default for the first live run: the
+	// per-tick cost is in /api/lfg tick_ms_*, so it can be switched off if it is too slow)
 	LfgCountMaps bool `json:"lfg_count_maps"`
 	// partystick.go (PT04/PT06/PT31, 2026-11-14): no move / target / loot takes a grinding party member beyond
 	// together_cells of its party (party_stick_on), and no solo random Fly Wing / Teleport escape while party mates are
@@ -349,7 +350,7 @@ type Tuning struct {
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
 var defaultTuning = Tuning{
-	GearScoreOn: true, GearPerfOn: true, FairSpotGateOn: true, FairSpotShare: 0.5, TownDropJunk: true,
+	GearScoreOn: true, GearPerfOn: true, FairSpotGateOn: true, FairSpotShare: 0.5, TownDropJunk: true, LfgCountMaps: true,
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
 	PriestActiveBuffs: true, PriestBuffHoldSP: 30, PartyCmd: true,

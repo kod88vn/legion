@@ -270,3 +270,55 @@ func lfgCountsReport() map[string]interface{} {
 		"note": "join_checks count pairs; gate_checks count bots per tick; gauge is the last tick",
 	}
 }
+
+// avgMs: the mean of total over n, in milliseconds (0 when n is 0).
+func avgMs(total time.Duration, n int) float64 {
+	if n == 0 {
+		return 0
+	}
+	return float64(total.Microseconds()) / 1000 / float64(n)
+}
+
+// lfgPerfHistogram: the party performance step (partyPerf, gearscore.go, keyed by the party leader) of every bot party,
+// by the party's level band: {band: {step: parties}}. "no_state" = the leader has no step yet. Measurement only: the
+// step itself is not changed here (AY07). Takes parties and the members' locks, never with lfgStats held.
+func lfgPerfHistogram(now time.Time) map[string]map[string]int {
+	parties.Lock()
+	var list []*Party
+	for _, p := range parties.byName {
+		if p.Human == "" && p.Leader != nil {
+			list = append(list, p)
+		}
+	}
+	parties.Unlock()
+	out := map[string]map[string]int{}
+	for _, p := range list {
+		parties.Lock()
+		mem := append([]*Bot(nil), p.Members...)
+		parties.Unlock()
+		sum, n := 0, 0
+		for _, m := range mem {
+			m.mu.Lock()
+			if m.BaseLv > 0 {
+				sum += m.BaseLvOr()
+				n++
+			}
+			m.mu.Unlock()
+		}
+		if n == 0 {
+			continue
+		}
+		band := bandNames[lfgBandIdx(sum/n)]
+		partyPerf.mu.Lock()
+		step := "no_state"
+		if s := partyPerf.s[p.Leader.P.Name]; s != nil {
+			step = itoa(s.off)
+		}
+		partyPerf.mu.Unlock()
+		if out[band] == nil {
+			out[band] = map[string]int{}
+		}
+		out[band][step]++
+	}
+	return out
+}

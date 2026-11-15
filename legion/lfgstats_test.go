@@ -200,3 +200,28 @@ func TestLeaveGamePartyClearsPartyGoal(t *testing.T) {
 		t.Errorf("goal help kept after leaving the party: %+v", b.Goal)
 	}
 }
+
+// TestLfgPerfHistogramAndDefaults: the default turns the full map count on, and the step histogram groups each bot
+// party's leader step by the party's level band (measurement only).
+func TestLfgPerfHistogramAndDefaults(t *testing.T) {
+	if !defaultTuning.LfgCountMaps {
+		t.Fatal("lfg_count_maps must default to on for the first live run")
+	}
+	lead := &Bot{P: &Persona{Name: "zzperf_lead"}, BaseLv: 45}
+	mem := &Bot{P: &Persona{Name: "zzperf_mem"}, BaseLv: 47}
+	p := &Party{Name: "zzperf", Leader: lead, Members: []*Bot{lead, mem}}
+	parties.Lock()
+	parties.byName[p.Name] = p
+	parties.Unlock()
+	defer func() {
+		parties.Lock()
+		delete(parties.byName, p.Name)
+		parties.Unlock()
+		gsPerfReset()
+	}()
+	gsPerfSet(lead.P.Name, "pay_fild04", -9)
+	h := lfgPerfHistogram(time.Now())
+	if h["lv41-60"]["-9"] != 1 {
+		t.Fatalf("histogram = %v, want one lv41-60 party at step -9", h)
+	}
+}

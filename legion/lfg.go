@@ -149,6 +149,9 @@ var lfgStats = struct {
 	inParty   int                // bots already in a party (skipped, not counted per band)
 	leftCD    int                // bots in the 3 min pause after leaving a party
 	gauge     lfgGauge           // the latest tick
+	tickLast  time.Duration      // duration of the last lfgTick
+	tickSum   time.Duration      // sum of lfgTick durations since start (not saved)
+	ticks     int                // lfgTick count since start (not saved)
 }{started: time.Now(), counted: time.Now(), set: map[string]int{}, met: map[string]int{}, expired: map[string]int{}, changed: map[string]int{},
 	posts: map[string]int{}, dissolved: map[string]int{}, leaves: map[string]int{}}
 
@@ -1567,6 +1570,14 @@ func lfgMatch(cs []*lfgCand, ps []*lfgParty, used map[*Bot]bool, now time.Time) 
 
 // lfgTick: matching first, then new posts within the #global budget (flavour: they also fill the last places).
 func lfgTick(bots []*Bot, now time.Time) {
+	start := time.Now()
+	defer func() { // /api/lfg tick_ms_*: what one matching tick costs (lfg_count_maps included)
+		lfgStats.Lock()
+		lfgStats.tickLast = time.Since(start)
+		lfgStats.tickSum += lfgStats.tickLast
+		lfgStats.ticks++
+		lfgStats.Unlock()
+	}()
 	cs, ps := lfgGather(bots, now)
 	used := map[*Bot]bool{}
 	lfgMatch(cs, ps, used, now)
@@ -2161,6 +2172,7 @@ func registerLFG(mux *http.ServeMux) {
 		}
 		lfg.Unlock()
 		sort.Slice(posts, func(i, j int) bool { return posts[i].Age < posts[j].Age })
+		perf := lfgPerfHistogram(now) // outside the lfgStats lock: it takes parties and the bots
 		lfgStats.Lock()
 		perMin := 0
 		for _, t := range lfgStats.postTimes {
@@ -2188,6 +2200,10 @@ func registerLFG(mux *http.ServeMux) {
 		for k, v := range lfgCountsReport() { // lfgstats.go: join / gate / party checks, the gauge
 			out[k] = v
 		}
+		out["perf_step_by_band"] = perf
+		out["tick_ms_last"] = float64(lfgStats.tickLast.Microseconds()) / 1000
+		out["tick_ms_avg"] = avgMs(lfgStats.tickSum, lfgStats.ticks)
+		out["ticks_since_start"] = lfgStats.ticks
 		lfgStats.Unlock()
 		writeJSON(w, out)
 	})
