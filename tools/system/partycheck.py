@@ -193,6 +193,10 @@ def main(argv=None):
     ap.add_argument("--interval", type=float, default=60)
     ap.add_argument("--dry-run", action="store_true", help="print violations, do not file them")
     a = ap.parse_args(argv)
+    locked = not (a.once or a.dry_run)   # single instance for the loop: legion/data/partycheck.lock
+    if locked and not C.take_lock("partycheck.lock", 300):
+        print("partycheck: another copy holds legion/data/partycheck.lock; not starting", file=sys.stderr)
+        return 0
     pc = PartyCheck(instant=a.once)
     while True:
         try:
@@ -210,6 +214,9 @@ def main(argv=None):
                 print("party ok (%d members checked)" % len(snap.get("members", [])))
         except Exception as e:
             sys.stderr.write("partycheck pass failed: %s\n" % e)
+        if locked and not C.refresh_lock("partycheck.lock"):
+            print("partycheck: lock taken by another copy; exiting", file=sys.stderr)
+            return 0
         C.heartbeat("partycheck")
         if a.once:
             return 0

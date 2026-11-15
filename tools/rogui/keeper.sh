@@ -29,7 +29,7 @@ while true; do
   beat "running"
   if ! docker ps --format '{{.Names}}' | grep -qx ro-openkore-ayla; then
     log "ro-openkore-ayla not running -> starting it"
-    docker compose up -d openkore-ayla >/dev/null 2>&1
+    docker compose up -d --no-deps openkore-ayla >/dev/null 2>&1   # --no-deps (G15): never recreate rathena or the db
     beat "started ayla"
     sleep 60; continue
   fi

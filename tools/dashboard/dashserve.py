@@ -752,6 +752,9 @@ class Handler(BaseHTTPRequestHandler):
 
 def beat():
     while True:
+        if not C.refresh_lock("dashboard.lock"):   # another copy took the lock: this one must not keep serving
+            print("dashboard: lock taken by another copy; exiting", flush=True)
+            os._exit(0)
         C.heartbeat("dashboard")
         time.sleep(30)
 
@@ -769,6 +772,9 @@ def main(argv=None):
     ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args(argv)
     PAGE, CACHE_DIR = a.page, a.cache
+    if not a.no_heartbeat and not C.take_lock("dashboard.lock", 120):   # single instance (the beat thread keeps it)
+        print("dashboard: another copy holds legion/data/dashboard.lock; not starting", flush=True)
+        return 0
     srv = ThreadingHTTPServer((a.bind, a.port), Handler)
     srv.daemon_threads = True
     srv.verbose = a.verbose

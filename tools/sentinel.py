@@ -328,7 +328,13 @@ def party_split_wake(aw, ap, now):
     return aw.any_wake()
 
 
+SENTINEL_LOCKED = False   # single instance: legion/data/sentinel.lock (common.take_lock), refreshed each cycle
+
+
 def heartbeat():
+    if SENTINEL_LOCKED and SYSC and not SYSC.refresh_lock('sentinel.lock'):
+        print('sentinel: lock taken by another copy; exiting', flush=True)
+        sys.exit(0)
     try:
         os.makedirs(DATA, exist_ok=True)
         with open(os.path.join(DATA, 'sentinel.heartbeat'), 'w') as f:
@@ -338,6 +344,12 @@ def heartbeat():
 
 
 def main():
+    global SENTINEL_LOCKED
+    if SYSC:
+        if not SYSC.take_lock('sentinel.lock', 300):
+            print('sentinel: another copy holds legion/data/sentinel.lock; not starting', flush=True)
+            return
+        SENTINEL_LOCKED = True
     P = Problems()
     F = FarmWatch()
     last_probe = time.time() - 420

@@ -240,10 +240,160 @@ class TestGraceThrottleAndRecord(W.Env):
     def test_meter_blind_and_no_deploy(self):
         self.stack(up=True)
         self.beat_all(age=10)
-        self.put("meter.jsonl", json.dumps({"t": int(T0 - 2000)}) + "\n", age=2000)
+        self.put("meter.jsonl", json.dumps({"t": int(T0 - 5000)}) + "\n", age=5000)   # 83 min: past the hourly backup
         res = self.run_at(T0, W.FakeOps())
         self.assertEqual(res["status"]["meter"]["state"], "blind")
         self.assertFalse(res["status"]["deploy"]["available"])
+
+
+class TestMeterAges(W.Env):
+    """the meter from its real cadence: meter_bots.json every 5 min (reading under 12 min), meter.jsonl hourly (the
+    backup, reading under 75 min)"""
+
+    def meter(self, bots_age=None, jsonl_age=None):
+        self.stack(up=True)
+        self.beat_all(age=10)
+        if bots_age is not None:
+            self.put("meter_bots.json", "{}", age=bots_age)
+        if jsonl_age is not None:
+            self.put("meter.jsonl", json.dumps({"t": int(T0 - jsonl_age)}) + "\n", age=jsonl_age)
+        return self.run_at(T0, W.FakeOps())["status"]["meter"]
+
+    def test_bots_file_five_minutes_old_is_reading(self):
+        m = self.meter(bots_age=300, jsonl_age=3000)
+        self.assertEqual(m["state"], "reading")
+        self.assertEqual(m["source"], "meter_bots.json")
+
+    def test_bots_file_eleven_minutes_old_still_reading(self):
+        self.assertEqual(self.meter(bots_age=660)["state"], "reading")
+
+    def test_bots_file_thirteen_minutes_old_falls_back_to_jsonl(self):
+        m = self.meter(bots_age=780, jsonl_age=600)
+        self.assertEqual(m["state"], "reading")
+        self.assertIn("meter.jsonl", m["source"])
+
+    def test_hourly_jsonl_fifty_minutes_old_is_reading_without_bots(self):
+        m = self.meter(jsonl_age=3000)
+        self.assertEqual(m["state"], "reading")
+        self.assertIn("hourly backup", m["source"])
+
+    def test_both_stale_is_blind_with_reasons(self):
+        m = self.meter(bots_age=900, jsonl_age=4600)
+        self.assertEqual(m["state"], "blind")
+        self.assertIn("meter_bots.json not written for 15 min", m["why"])
+        self.assertIn("meter.jsonl not written for 76 min", m["why"])
+
+    def test_no_meter_files_is_blind(self):
+        self.assertEqual(self.meter()["state"], "blind")
+
+
+class TestProcessCheckClassification(W.Env):
+    """a failed or unclear process check counts as alive: only a clean "none" lets a restart through"""
+
+    def test_pgrep_found_and_clean_none(self):
+        import watchdog
+        self.assertTrue(watchdog.proc_found(0, "123\n", "", pgrep=True))
+        self.assertFalse(watchdog.proc_found(1, "", "", pgrep=True))
+
+    def test_pgrep_unclear_exits_raise(self):
+        import watchdog
+        for rc, err in ((1, "wsl: no such distro\n"), (255, ""), (4294967295, "")):
+            with self.assertRaises(RuntimeError):
+                watchdog.proc_found(rc, "", err, pgrep=True)
+
+    def test_powershell_count_and_failures(self):
+        import watchdog
+        self.assertFalse(watchdog.proc_found(0, "0\n", "", pgrep=False))
+        self.assertTrue(watchdog.proc_found(0, "2\n", "", pgrep=False))
+        for rc, out in ((0, ""), (1, "0"), (1, ""), (0, "Access denied")):
+            with self.assertRaises(RuntimeError):
+                watchdog.proc_found(rc, out, "", pgrep=False)
+
+    def test_failed_check_means_alive_in_alive(self):
+        import watchdog
+
+        class Unclear(W.FakeOps):
+            def process_running(self, a):
+                return watchdog.proc_found(0, "", "", pgrep=False)   # empty output: unclear
+        self.stack(up=True)
+        self.beat_all(age=10, skip=("sentinel",))
+        self.put("sentinel.heartbeat", str(int(T0 - 900)), age=900)
+        ops = Unclear()
+        self.run_at(T0, ops)
+        self.assertEqual(ops.started, [])
+
+
+class TestStartBackoff(W.Env):
+    def test_failing_start_backs_off_30_then_60_then_120_seconds(self):
+        self.stack(up=True)
+        ops = W.FakeOps(fail={"sentinel"})
+        for t in (T0, T0 + 10, T0 + 30, T0 + 60, T0 + 90, T0 + 100):
+            self.beat_all(age=10, skip=("sentinel",), base=t)
+            self.put("sentinel.heartbeat", str(int(t - 900)), age=900, base=t)
+            ops.now = t
+            self.run_at(t, ops)
+        # attempts at T0 (fails, next 30 s), T0+30 (fails, next 60 s), T0+90 (fails, next 120 s); not at +10, +60, +100
+        self.assertEqual([t for k, t in ops.attempts], [T0, T0 + 30, T0 + 90])
+
+    def test_backoff_is_capped_at_ten_minutes(self):
+        import watchdog
+        self.assertEqual(min(watchdog.RETRY_MAX, watchdog.RETRY_BASE * 2 ** (10 - 1)), 600)
+
+    def test_success_clears_the_backoff(self):
+        self.stack(up=True)
+        ops = W.FakeOps(fail={"sentinel"})
+        self.beat_all(age=10, skip=("sentinel",))
+        self.put("sentinel.heartbeat", str(int(T0 - 900)), age=900)
+        ops.now = T0
+        self.run_at(T0, ops)
+        ops.fail.clear()
+        self.beat_all(age=10, skip=("sentinel",), base=T0 + 30)
+        self.put("sentinel.heartbeat", str(int(T0 + 30 - 900)), age=900, base=T0 + 30)
+        ops.now = T0 + 30
+        self.run_at(T0 + 30, ops)
+        self.assertEqual(ops.started, ["sentinel"])
+        import watchdog
+        st = watchdog.load_state()
+        self.assertNotIn("sentinel", st["retry"])
+
+
+class TestSingleInstances(W.Env):
+    """the five scripts refuse a second copy while another holds a fresh lock, and each lock name the watchdog checks
+    is the one the script takes"""
+
+    def test_each_lock_name_in_agents_is_taken_by_its_script(self):
+        import watchdog
+        expect = {"sentinel": "tools/sentinel.py", "partycheck": "tools/system/partycheck.py",
+                  "dispatcher": "tools/puppet/dispatch.py", "aylalog": "tools/system/aylalog.py",
+                  "dashboard": "tools/dashboard/dashserve.py", "unwall": "tools/unwall.py",
+                  "keeper": "tools/rogui/keeper-lock.sh"}
+        by = {a["key"]: a for a in watchdog.AGENTS}
+        for key, script in expect.items():
+            lock = by[key].get("lock")
+            self.assertTrue(lock, key)
+            with open(os.path.join(REPO, script), encoding="utf-8") as f:
+                self.assertIn(lock, f.read(), "%s does not take %s" % (script, lock))
+
+    def test_partycheck_main_refuses_with_a_fresh_lock(self):
+        import partycheck
+        self.put("partycheck.lock", "77 1", age=10)
+        self.assertEqual(partycheck.main(["--interval", "1"]), 0)     # refused before the loop starts
+
+    def test_dashboard_main_refuses_with_a_fresh_lock(self):
+        import dashserve
+        self.put("dashboard.lock", "77 1", age=10)
+        self.assertEqual(dashserve.main(["--port", "1"]), 0)          # refused before the port is bound
+
+    def test_sentinel_main_refuses_with_a_fresh_lock(self):
+        import sentinel
+        self.put("sentinel.lock", "77 1", age=10)
+        self.assertIsNone(sentinel.main())                             # refused: returns before the loop
+
+    def test_dispatch_main_refuses_with_a_fresh_lock(self):
+        sys.path.insert(0, os.path.join(REPO, "tools", "puppet"))
+        import dispatch
+        self.put("dispatch.lock", "77 1", age=10)
+        self.assertEqual(dispatch.main([]), 3)
 
 
 class TestUnwall(W.Env):

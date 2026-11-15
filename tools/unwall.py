@@ -32,7 +32,7 @@ def beat():
         sys.exit(0)
     C.heartbeat('unwall')
 
-WSL = ['wsl', '-d', 'Ubuntu-24.04', '--']
+WSL = ['wsl', '-d', C.WSL_DISTRO, '--']   # the one WSL setting (common.py, LEGION_WSL_DISTRO)
 CACHE = os.path.join(tempfile.gettempdir(), 'unwall_mapcache')
 
 

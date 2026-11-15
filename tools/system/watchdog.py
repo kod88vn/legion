@@ -42,7 +42,10 @@ RESTART_GAP = 600        # one restart per item per 10 min
 RATHENA_GAP = 3600       # G16: rathena at most once an hour
 WAIT_ALARM = 3600        # the bug queue watch waiting this long for the main session is filed
 GRACE = 600              # after a hold ends (or the stack is started again), scripts get this long to write heartbeats
-METER_FRESH = 600        # the meter file written within this many seconds = reading
+BOTS_FRESH = 720         # meter_bots.json is written every 5 min by the engine: reading if under 12 min old
+JSONL_FRESH = 4500       # meter.jsonl is written hourly (the backup): reading if under 75 min old
+RETRY_BASE = 30          # a failed start waits 30 s, then 60, 120 ... (backoff)
+RETRY_MAX = 600
 STATE_FILE = "watchdog.state.json"
 STATUS_FILE = "watchdog.status.json"
 REPORTS_FILE = "watchdog-reports.jsonl"
@@ -57,14 +60,14 @@ WAITING = "waiting"
 # script's own single-instance lock (legion/data/<lock>), fresh = alive. never_start: the watchdog files the outage only.
 AGENTS = [
     {"key": "sentinel", "label": "Sentinel", "hb": ["sentinel.heartbeat"], "stale": 300,
-     "cmd": ["tools/sentinel.py"]},
+     "cmd": ["tools/sentinel.py"], "lock": "sentinel.lock", "lock_stale": 300},
     {"key": "partycheck", "label": "Party check", "hb": ["partycheck.heartbeat"], "stale": 300,
-     "cmd": ["tools/system/partycheck.py"]},
+     "cmd": ["tools/system/partycheck.py"], "lock": "partycheck.lock", "lock_stale": 300},
     {"key": "dispatcher", "label": "Puppet dispatcher",
      "hb": ["dispatch.heartbeat", "dispatcher.heartbeat", "puppet.heartbeat"], "stale": 180,
-     "cmd": ["tools/puppet/dispatch.py"]},
+     "cmd": ["tools/puppet/dispatch.py"], "lock": "dispatch.lock", "lock_stale": 180},
     {"key": "aylalog", "label": "Ayla log watcher", "hb": ["aylalog.heartbeat"], "stale": 300,
-     "cmd": ["tools/system/aylalog.py"]},
+     "cmd": ["tools/system/aylalog.py"], "lock": "aylalog.lock", "lock_stale": 300},
     {"key": "bugq-watch", "label": "Bug queue watch", "hb": ["bugq-watch.heartbeat"], "stale": 300,
      "cmd": ["tools/system/bugq.py", "watch"], "waits": True, "never_start": True},
     {"key": "unwall", "label": "Unwall loop", "hb": ["unwall.heartbeat"], "stale": 600,
@@ -72,7 +75,7 @@ AGENTS = [
     {"key": "keeper", "label": "Ayla keeper", "hb": ["keeper.heartbeat"], "stale": 300,
      "cmd": ["tools/rogui/keeper.sh"], "bash": True, "lock": "keeper.lock", "lock_stale": 150},
     {"key": "dashboard", "label": "Dashboard server", "hb": ["dashboard.heartbeat"], "stale": 120,
-     "cmd": ["tools/dashboard/dashserve.py"], "always": True},
+     "cmd": ["tools/dashboard/dashserve.py"], "always": True, "lock": "dashboard.lock", "lock_stale": 120},
 ]
 CONTAINERS = ["ro-db", "ro-rathena", "ro-agency", "ro-openkore-ayla", "ro-legion", "ro-legion-core"]
 
@@ -104,6 +107,22 @@ def _pgrep_pattern(script):
     """pgrep -f pattern that does not match the grep/shell running it: "keeper.sh" -> "[k]eeper.sh"."""
     base = os.path.basename(script)
     return "[%s]%s" % (base[0], base[1:])
+
+
+def proc_found(returncode, stdout, stderr, pgrep=True):
+    """Classify a process check. True = a process runs; False = confirmed none. Anything unclear raises, and the caller
+    then counts the script as alive, so a flaky check never starts a second copy. pgrep: exit 0 = found, exit 1 with no
+    stderr = none (WSL down, wsl.exe errors and other exits are unclear). PowerShell: exit 0 with a count = the count."""
+    if pgrep:
+        if returncode == 0:
+            return True
+        if returncode == 1 and not (stderr or "").strip():
+            return False
+        raise RuntimeError("process check unclear (exit %s): %s" % (returncode, (stderr or "").strip()[:120]))
+    out = (stdout or "").strip()
+    if returncode == 0 and out.isdigit():
+        return int(out) > 0
+    raise RuntimeError("process check unclear (exit %s, output %r)" % (returncode, out[:60]))
 
 
 class Ops:
@@ -149,23 +168,27 @@ class Ops:
         if a.get("bash"):
             argv = ["wsl.exe", "-d", C.WSL_DISTRO, "--", "pgrep", "-f", _pgrep_pattern(a["cmd"][0])] if os.name == "nt" \
                 else ["pgrep", "-f", _pgrep_pattern(a["cmd"][0])]
-            return subprocess.run(argv, capture_output=True, timeout=60).returncode == 0
+            p = subprocess.run(argv, capture_output=True, text=True, timeout=60)
+            return proc_found(p.returncode, p.stdout, p.stderr, pgrep=True)
         if os.name == "nt":
             ps = ("@(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -like "
                   "'*%s*' }).Count" % base)
-            out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True,
-                                 timeout=60).stdout.strip()
-            return out.isdigit() and int(out) > 0
-        return subprocess.run(["pgrep", "-f", _pgrep_pattern(a["cmd"][0])], capture_output=True).returncode == 0
+            p = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=60)
+            return proc_found(p.returncode, p.stdout, p.stderr, pgrep=False)
+        p = subprocess.run(["pgrep", "-f", _pgrep_pattern(a["cmd"][0])], capture_output=True, text=True, timeout=60)
+        return proc_found(p.returncode, p.stdout, p.stderr, pgrep=True)
 
     def docker_start(self, name):
-        subprocess.run(docker_prefix() + ["start", name], capture_output=True, timeout=120)
+        p = subprocess.run(docker_prefix() + ["start", name], capture_output=True, text=True, timeout=120)
+        if p.returncode != 0:
+            raise RuntimeError("docker start %s failed (exit %s): %s" % (name, p.returncode,
+                                                                        (p.stderr or p.stdout).strip()[:120]))
 
 
 # ----------------------------------------------------------------- state and files
 def load_state():
     base = {"restarts": {}, "open": {}, "waiting_filed": False, "last_report": None, "was_running": None,
-            "resumed_at": None}
+            "resumed_at": None, "retry": {}}
     try:
         with open(C.dpath(STATE_FILE), encoding="utf-8") as f:
             st = json.load(f)
@@ -226,14 +249,21 @@ def last_json_line(path):
 
 
 def meter_state(now):
-    """Is the meter reading? The meter file is written by the engine; reading = written within METER_FRESH."""
-    age = C.marker_age("meter.jsonl")
-    if age is None:
-        return {"state": "blind", "last_write_age_s": None, "last_row_t": None, "why": "no meter history file"}
+    """Is the meter reading? The engine writes meter_bots.json every 5 min (reading if under 12 min old) and meter.jsonl
+    once an hour (the backup: reading if under 75 min old). Ages are the file times on the (fakeable) clock."""
     last = last_json_line(C.dpath("meter.jsonl")) or {}
-    state = "reading" if age <= METER_FRESH else "blind"
-    return {"state": state, "last_write_age_s": int(age), "last_row_t": last.get("t"),
-            "why": "" if state == "reading" else "meter file not written for %d min" % (age // 60)}
+    age_b = C.marker_age("meter_bots.json")
+    if age_b is not None and age_b <= BOTS_FRESH:
+        return {"state": "reading", "source": "meter_bots.json", "last_write_age_s": int(age_b),
+                "last_row_t": last.get("t"), "why": ""}
+    age_h = C.marker_age("meter.jsonl")
+    if age_h is not None and age_h <= JSONL_FRESH:
+        return {"state": "reading", "source": "meter.jsonl (hourly backup)", "last_write_age_s": int(age_h),
+                "last_row_t": last.get("t"), "why": ""}
+    why = ("meter_bots.json not written for %s min" % ("?" if age_b is None else int(age_b // 60)),
+           "meter.jsonl not written for %s min" % ("?" if age_h is None else int(age_h // 60)))
+    return {"state": "blind", "source": None, "last_write_age_s": None if age_h is None else int(age_h),
+            "last_row_t": last.get("t"), "why": "; ".join(why)}
 
 
 def deploy_records():
@@ -334,6 +364,11 @@ class Pass:
         if last is not None and self.now - last < gap:
             self.actions.append({"key": key, "action": "restart throttled"})
             return "restart throttled"
+        bo = self.st["retry"].get(key)
+        if bo and self.now < bo["next"]:
+            act = "start backoff: %d failed start(s), next try at %s" % (bo["n"], C.iso(bo["next"]))
+            self.actions.append({"key": key, "action": act})
+            return act
         if self.restarted:
             self.actions.append({"key": key, "action": "restart deferred: one restart per pass"})
             return "restart deferred"
@@ -343,11 +378,16 @@ class Pass:
             return "would restart"
         try:
             fn()
-        except Exception as e:   # a failed start is not counted against the throttle
-            act = "restart failed (not counted): %s" % str(e)[:120]
+        except Exception as e:
+            # a failed or raised start is not counted against the 10-min throttle, but it backs off (30 s, 60 s ... 10 min)
+            n = (bo or {}).get("n", 0) + 1
+            wait = min(RETRY_MAX, RETRY_BASE * 2 ** (n - 1))
+            self.st["retry"][key] = {"n": n, "next": self.now + wait}
+            act = "restart failed (backoff %d s): %s" % (wait, str(e)[:120])
             self.actions.append({"key": key, "action": act})
             return act
         self.st["restarts"][key] = self.now
+        self.st["retry"].pop(key, None)
         self.actions.append({"key": key, "action": "restarted " + what})
         return "restarted " + what
 

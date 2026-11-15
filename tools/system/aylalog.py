@@ -584,6 +584,10 @@ def run(a):
         n = filer.seed(evs, now, a.backlog_h)
         print("aylalog: backlog %s %d queue items" % ("would file" if a.dry_run else "filed", n), file=out)
     last_meter = 0
+    locked = not (a.once or a.dry_run)   # single instance for the loop: legion/data/aylalog.lock
+    if locked and not C.take_lock("aylalog.lock", 300):
+        print("aylalog: another copy holds legion/data/aylalog.lock; not starting", file=sys.stderr)
+        return
     while True:
         now = C.now()
         lines = tail.read()
@@ -608,6 +612,9 @@ def run(a):
         if not a.dry_run:
             save_state(dict(filer.state(), path=path, offset=tail.offset, head=tail.head, saved=now, map=tracker.map,
                             cell=tracker.cell, map_since=tracker.map_since, last_exp=tracker.last_exp, last_t=tracker.last_t))
+            if locked and not C.refresh_lock("aylalog.lock"):
+                print("aylalog: lock taken by another copy; exiting", file=sys.stderr)
+                return
             C.heartbeat("aylalog")
         if a.once:
             return 0

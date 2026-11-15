@@ -30,8 +30,10 @@ class FakeOps:
     def __init__(self, running=(), fail=()):
         self.started, self.docker = [], []
         self.running, self.fail = set(running), set(fail)
+        self.attempts, self.now = [], None   # every start attempt (failed ones too), with the pass time
 
     def start_agent(self, a):
+        self.attempts.append((a["key"], self.now))
         if a["key"] in self.fail:
             raise OSError("fake start failure")
         self.started.append(a["key"])
