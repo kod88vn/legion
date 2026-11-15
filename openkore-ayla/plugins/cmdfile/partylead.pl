@@ -127,6 +127,7 @@ my $lastExit = 0;
 my ($sellTrigSaved, $sellTrigUntil) = (0, 0); # sell-run loop guard
 my $errandStart = 0; # her sell/buy errand (party town run) started
 my $townWaitAt = 0;
+my $meetAnn = ''; # the destination last announced when setting off with the priest from a town wait
 my $meetArrAt = 0; # when she reached the Kafra for the regroup after a town run
 my $regroupDoneAt = 0; # when that regroup ended (no new town wait for 5 min: she sets out with the priest) # passing through town: waiting for a friend behind since
 my ($meetRouteAt, $meetSaid) = (0, 0); # after a town run: walking to the town's Kafra, announced once
@@ -306,6 +307,19 @@ sub on_errand {
 # itself (queue b1794719424081: she held 5+ min in geffen "waiting for Zen.fox" after it died)
 # her own cell now (interpolated mid-walk; pos_to is where the walk ends)
 sub my_pos { my $p = eval { $char->position }; return (ref $p && defined $p->{x}) ? $p : $char->{pos_to} }
+# cells to the party's priest on her map (on screen, else Legion's API <= 30 s); 999 = not on her map / unknown
+sub priest_dist {
+	my $here = $field ? $field->baseName : '';
+	my $best = 999;
+	foreach my $u (values %{$char->{party}{users} || {}}) {
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || friend_cls($u->{name}) !~ /priest|acolyte/i;
+		my ($pos) = friend_pos($u, $here);
+		next unless $pos && defined $pos->{x} && friend_map($u) eq $here;
+		my $d = blockDistance(my_pos(), $pos);
+		$best = $d if $d < $best;
+	}
+	return $best;
+}
 sub friend_dead {
 	my $a = $apiPos{$_[0] || ''};
 	return 0 unless $a && time - ($a->{at} || 0) < 15;
@@ -2337,7 +2351,8 @@ sub watchdog_tick {
 	# (24,98)", live 2026-11-15): after 3 min the plugin cancels the rally itself, drops the goto and flies to her save
 	# point (Butterfly Wing); the same destination failing twice is skipped for 2 h (unless the mind ordered it)
 	# (live 07:29: "STUCK payon 179,107 ... -> DROP_MAP pay_dun02" while she held at the Kafra for the party)
-	my $waitingNow = $holding || $rally || $depart || pk_waiting() || (is_townmap($here) && time - ($errandEnd || 0) < 300);
+	my $waitingNow = $holding || $rally || $depart || pk_waiting() || (is_townmap($here) && time - ($errandEnd || 0) < 300)
+		|| ($townWaitAt && time - $townWaitAt < 300); # the town wait ("in <town>: waiting for X") is a wait too (live 03:37)
 	if (!$waitingNow && AI::inQueue('route', 'move') && !AI::inQueue('attack', 'NPC', 'sellAuto', 'buyAuto', 'storageAuto', 'deal')
 		&& !$char->{sitting} && !own_rest() && !$char->{dead} && !pk_waiting() && $now - $wdStuckSince > 180) { # holding for the party is no STUCK
 		my $dest = $rally ? ($rally->{thenGoto} || $rally->{dest} || $rally->{town}) : ($gotoMap || $config{lockMap} || '');
@@ -3552,6 +3567,13 @@ sub tick {
 				next if party_strong(); # a strong party: same town map is enough, they follow her out
 				my ($pos) = friend_pos($u, $here);
 				if ($pos && blockDistance($char->{pos_to}, $pos) > ($townWaitAt ? RESUME : TOGETHER)) { $far = $u->{name}; last }
+			}
+			# AY22: the priest within 6 cells - no town wait for anyone else, she sets off ("going to <map>, follow me")
+			if ($far ne '' && (my $pd = priest_dist()) <= 6) {
+				restore() if $holding; $townWaitAt = 0;
+				my $dest = $gotoMap ne '' ? $gotoMap : ($config{lockMap} || $homeMap || '');
+				if ($dest ne '' && $dest ne $here && ($meetAnn || '') ne $dest) { $meetAnn = $dest; psay("going to $dest, follow me", 1, 0) }
+				$far = '';
 			}
 			if ($far ne '' && (!$townWaitAt || time - $townWaitAt < 180)) {
 				$townWaitAt ||= time;
