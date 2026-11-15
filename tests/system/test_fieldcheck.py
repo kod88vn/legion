@@ -106,12 +106,12 @@ class FieldCompare(Synthetic):
         probs, _ = fieldcheck.check_fields("t", self.fdir, self.cache)
         self.assertEqual(self.kinds(probs), [("tst1", "flags")])
 
-    def test_higher_flag_bits_are_not_compared(self):
+    def test_higher_flag_bits_are_compared_too(self):
         vals = list(FLD1)
-        vals[5] = 10                                        # shootable wall stored as 2 | 8: same snipe bit
+        vals[5] = 10                                        # shootable wall stored as 2 | 8: bit 8 is a difference now
         write_gz_field(self.fdir, "tst1", 4, 3, vals)
         probs, _ = fieldcheck.check_fields("t", self.fdir, self.cache)
-        self.assertEqual(probs, [])
+        self.assertEqual(self.kinds(probs), [("tst1", "flags")])
 
     def test_uncompressed_shadow_and_unreadable_file(self):
         write(os.path.join(self.fdir, "tst2.fld2"), field_bytes(4, 3, FLD2))   # shadows tst2.fld2.gz
@@ -124,6 +124,34 @@ class FieldCompare(Synthetic):
         probs, info = fieldcheck.check_fields("t", self.fdir, self.cache)
         self.assertEqual(probs, [])
         self.assertTrue(any("nomap" in n for n in info["notes"]))
+
+
+class Snapshot(unittest.TestCase):
+    def test_refresh_rules(self):
+        meta = {"t": 1000.0, "image": "sha256:a"}
+        self.assertEqual(fieldcheck.snapshot_needed(None, "sha256:a", 1000.0)[0], True)
+        self.assertEqual(fieldcheck.snapshot_needed(meta, "sha256:a", 1000.0 + 3600)[0], False)
+        self.assertEqual(fieldcheck.snapshot_needed(meta, "sha256:a", 1000.0 + 86400)[0], True)
+        self.assertEqual(fieldcheck.snapshot_needed(meta, "sha256:b", 1000.0 + 60)[0], True)
+        self.assertEqual(fieldcheck.snapshot_needed(meta, None, 1000.0 + 60)[0], False)
+
+    def test_no_docker_uses_the_last_snapshot_with_a_warning(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            snap = os.path.join(tmp, "mapsnap")
+            write(os.path.join(snap, "npc", "x.txt"), b"")
+            write(os.path.join(snap, "meta.json"), b'{"t": 0, "image": "sha256:a"}')
+            root, label, warn = fieldcheck.ensure_snapshot(None, None, now=10.0 + 86400 * 2, snap=snap)
+            self.assertEqual(root, snap)
+            self.assertIn("using the snapshot", warn)
+            root, _, warn = fieldcheck.ensure_snapshot(None, None, now=5.0, snap=snap)
+            self.assertIsNone(warn)  # fresh: no docker is not a warning, the snapshot is used
+            self.assertEqual(root, snap)
+            root, _, warn = fieldcheck.ensure_snapshot(None, None, now=5.0, snap=os.path.join(tmp, "none"))
+            self.assertIsNone(root)
+            self.assertIn("no server data", warn)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
 
 class PortalCompare(Synthetic):
@@ -246,6 +274,38 @@ class WatchdogHook(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.run_at(T0 + 1000, started, self.fake([], calls))        # running already: not again
         self.assertEqual(len(calls), 2)
+
+    def test_start_inside_the_debounce_stays_pending_then_runs(self):
+        import watchdog
+        calls = []
+        self.run_at(T0, {}, self.fake([], calls))                     # the hourly pass
+        started = {"ro-openkore-ayla": ("running", "Up 1 minute")}
+        self.run_at(T0 + 600, started, self.fake([], calls))          # started 10 min later: inside the 15 min debounce
+        self.assertEqual(len(calls), 1)
+        self.assertIn("ro-openkore-ayla", self.last_state()["fc_pending"])
+        self.run_at(T0 + 1000, started, self.fake([], calls))         # the debounce is over: the pending start runs
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(self.last_state()["fc_pending"], [])
+        self.assertEqual(watchdog.FIELD_DEBOUNCE, 900)
+
+    def test_only_sources_in_use_are_filed(self):
+        import bugq
+        probs = [{"source": "ro-openkore-qa", "kind": "cells", "map": "umbala", "detail": "x"},
+                 {"source": "ro-openkore-ayla", "kind": "cells", "map": "umbala", "detail": "y"}]
+
+        def fake():
+            return probs, [{"source": "server", "label": "t", "maps": 1, "warps": 0},
+                           {"source": "ro-openkore-qa", "active": False, "state": "exited"},
+                           {"source": "ro-openkore-ayla", "active": True, "state": "exited"}]
+        self.run_at(T0, {}, fake)
+        keys = {e.get("key") for e in bugq.load().values()}
+        self.assertIn("watchdog:fieldcheck:ro-openkore-ayla", keys)
+        self.assertNotIn("watchdog:fieldcheck:ro-openkore-qa", keys)
+
+    def last_state(self):
+        import json
+        with open(os.path.join(self.d, "watchdog.state.json"), encoding="utf-8") as f:
+            return json.load(f)
 
     def test_check_that_cannot_run_is_filed(self):
         def broken():

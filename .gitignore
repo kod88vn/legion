@@ -83,3 +83,5 @@ tools/puppet/workdir/.claude/
 tools/dev/rathena-*/
 legion/testdata/rathena/
 legion/data/lfgstats.json
+# map-truth snapshot of the server data (tools/system/fieldcheck.py refreshes it: read-only copy of ro-rathena)
+tools/dev/mapsnap/

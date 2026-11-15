@@ -55,12 +55,15 @@ def main():
     except Exception as e:  # a check that cannot run is a failed check
         bad.append("constcheck could not run: %r" % (e,))
 
-    # the map truth: every OpenKore field file and portal line against the server's map cache and loaded warps
-    # (fieldcheck.py: the repo copies, plus every OpenKore container that exists, stopped ones too; read-only)
+    # the map truth: the repo's field files and portal patches against the server snapshot (tools/dev/mapsnap, refreshed
+    # when older than a day or the server image changed). Repo only and fast; the containers are the watchdog's job.
+    # No server data is a WARNING and a skip, not a failure.
     try:
         import fieldcheck
-        probs, infos = fieldcheck.run_all()
-        print("fields: " + "; ".join(i.get("label", i.get("source", "?")) for i in infos[:1]))
+        probs, infos = fieldcheck.run_all(containers=[])
+        for i in infos:
+            if i.get("source") == "server" and i.get("warning"):
+                print("WARNING: fields: " + i["warning"])
         by_src = {}
         for p in probs:
             by_src.setdefault(p["source"], []).append(p)
@@ -68,7 +71,9 @@ def main():
             maps = sorted({p["map"] for p in ps})
             bad.append("fieldcheck %s: %d mismatch(es) in %d map(s): %s%s" % (
                 src, len(ps), len(maps), ", ".join(maps[:12]), " ..." if len(maps) > 12 else ""))
-        print("fields: %d mismatch(es)" % len(probs))
+        print("fields: %d mismatch(es) in the repo copies" % len(probs))
+    except OSError as e:  # no server data at all: say so, skip
+        print("WARNING: fields not checked: %s" % e)
     except Exception as e:  # a check that cannot run is a failed check
         bad.append("fieldcheck could not run: %r" % (e,))
 

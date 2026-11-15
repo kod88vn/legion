@@ -104,12 +104,6 @@ def docker_ps():
         return None
 
 
-def docker_prefix():
-    if os.name == "nt":
-        return ["wsl.exe", "-d", C.WSL_DISTRO, "--", "docker"]
-    return ["docker"]
-
-
 def _pgrep_pattern(script):
     """pgrep -f pattern that does not match the grep/shell running it: "keeper.sh" -> "[k]eeper.sh"."""
     base = os.path.basename(script)
@@ -186,7 +180,7 @@ class Ops:
         return proc_found(p.returncode, p.stdout, p.stderr, pgrep=True)
 
     def docker_start(self, name):
-        p = subprocess.run(docker_prefix() + ["start", name], capture_output=True, text=True, timeout=120)
+        p = subprocess.run(C.docker_prefix() + ["start", name], capture_output=True, text=True, timeout=120)
         if p.returncode != 0:
             raise RuntimeError("docker start %s failed (exit %s): %s" % (name, p.returncode,
                                                                         (p.stderr or p.stdout).strip()[:120]))
@@ -500,30 +494,41 @@ class Pass:
         return row
 
 
-def run_fieldcheck():
-    """the map truth: (problems, infos) from tools/system/fieldcheck.py (read-only; raises when the server data is absent)"""
+FIELD_DEBOUNCE = 900     # a container start re-runs the check at most every 15 min (a crash loop does not flood it)
+
+
+def run_fieldcheck(tick=None):
+    """the map truth: (problems, infos) from tools/system/fieldcheck.py: the repo copies and the containers in use
+    (read-only; refreshes the server snapshot when due). tick() is called around the docker copies (the watchdog lock)."""
     import fieldcheck  # tools/system is on sys.path (HERE)
-    return fieldcheck.run_all()
+    return fieldcheck.run_all(tick=tick)
 
 
 def field_pass(p, now, st, containers, fields):
     """Files the map-truth mismatches (one open item per source) and closes the items of sources that match again.
-    Runs when an hour has passed or an OpenKore container has just started. fields: the check (a callable)."""
+    Runs once an hour, and after an OpenKore container has started (at most every FIELD_DEBOUNCE s; a start that comes
+    too soon stays pending). Only sources in use are filed: the repo copies, and containers that are running or in use
+    (fieldcheck.IN_USE). fields: the check (a callable)."""
     up = sorted(n for n in OPENKORE if isinstance(containers, dict) and containers.get(n, ("",))[0] == "running")
     started = set(up) - set(st.get("fc_up") or [])
     st["fc_up"] = up
+    pending = set(st.get("fc_pending") or []) | started
     last = st.get("fieldcheck_t")
-    if not started and last is not None and now - last < FIELD_EVERY:
+    hourly = last is None or now - last >= FIELD_EVERY
+    starts = bool(pending) and (last is None or now - last >= FIELD_DEBOUNCE)
+    if not (hourly or starts):
+        st["fc_pending"] = sorted(pending)
         return
+    st["fc_pending"] = []
     st["fieldcheck_t"] = now
     try:
         probs, infos = fields()
     except Exception as e:  # a check that cannot run is filed, never silent
         p.file("fieldcheck:run", "fieldcheck could not run: %r" % (e,), priority="high")
         return
-    checked = {i["source"] for i in infos if i.get("source") not in (None, "server") and not i.get("absent")}
-    checked |= {x["source"] for x in probs}
-    for src in sorted(checked):
+    active = {i["source"] for i in infos
+              if i.get("source") not in (None, "server") and not i.get("absent") and i.get("active", True)}
+    for src in sorted(active):
         ps = [x for x in probs if x["source"] == src]
         key = "fieldcheck:" + src
         if ps:
@@ -609,7 +614,7 @@ def main(argv=None):
             print("watchdog lock taken by another loop; exiting", file=sys.stderr, flush=True)
             return EXIT_LOCKED
         try:
-            res = run_pass(C.now(), ops, dry=a.dry_run, fields=run_fieldcheck)
+            res = run_pass(C.now(), ops, dry=a.dry_run, fields=lambda: run_fieldcheck(tick=touch_lock))
             if a.dry_run or a.once:
                 print(json.dumps({"filed": res["filed"], "actions": res["actions"], "report_due": res["report_due"],
                                   "summary": res["status"]["summary"]}, ensure_ascii=False, indent=1))
