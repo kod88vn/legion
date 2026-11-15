@@ -2381,6 +2381,58 @@ sub respawn_guard {
 	message "[partylead] respawn allowed: stuck on $here for " . int(time - $mvAt) . " s with no friend near\n", 'system';
 	return Commands::cmdRespawn($sw);
 }
+# ---- party sweep on the farm map (owner 2026-11-15: on pay_dun02 she one-shot a Bongun, then stood still and only
+# side-stepped): no monster within 8 cells for 8 s -> a short leg (10-15 cells) toward the nearest seen monster (live or
+# remembered, mob_target) or an unexplored cell, staying within 20 cells of the priest and pausing while the priest is
+# more than 10 cells away; never toward a group (another monster within 5 cells of the spot); not the same spot twice
+my ($fsIdleSince, $fsAt, @fsLast) = (0, 0);
+sub farm_sweep {
+	return 0 unless $char && $field && $char->{pos_to};
+	my $here = $field->baseName;
+	return 0 if ($huntMap || '') eq '' || $here ne $huntMap || $char->{sitting} || $char->{dead} || $holding || $rally;
+	return 0 if AI::inQueue('attack', 'take', 'items_take', 'items_gather', 'NPC', 'sitting', 'sitAuto', 'sellAuto', 'buyAuto', 'storageAuto', 'teleport') || party_resting() || own_rest();
+	my $me = my_pos();
+	my @mons = grep { $_->{pos_to} && defined $_->{pos_to}{x} && !$_->{dead} } @{$monstersList ? $monstersList->getItems() : []};
+	if (grep { blockDistance($me, $_->{pos_to}) <= 8 } @mons) { $fsIdleSince = 0; return 0 } # something to fight here
+	$fsIdleSince ||= time;
+	return 0 if time - $fsIdleSince < 8;
+	return 1 if AI::inQueue('route', 'move') && time - $fsAt < 12; # a leg under way
+	my $an = stick_anchor(stick_mates());
+	my $ap = $an ? $an->[1] : undef;
+	return 0 if $ap && blockDistance($me, $ap) > 10; # let the priest close up first (PT04)
+	my $ok = sub {
+		my ($x, $y) = @_;
+		return 0 unless eval { $field->isWalkable($x, $y) };
+		return 0 if $ap && blockDistance({x => $x, y => $y}, $ap) > 20;
+		my $b = int($x / 6) . ',' . int($y / 6);
+		return 0 if grep { $_ eq $b } @fsLast;
+		my $grp = grep { blockDistance({x => $x, y => $y}, $_->{pos_to}) <= 5 } @mons;
+		return 0 if $grp >= 2; # a group there: not toward it
+		return 1;
+	};
+	my ($tx, $ty);
+	if (my $t = mob_target($here, $me->{x}, $me->{y})) { # nearest seen monster spot: a leg of at most 15 cells toward it
+		my ($dx, $dy) = ($t->[0] - $me->{x}, $t->[1] - $me->{y});
+		my $n = (abs($dx) > abs($dy) ? abs($dx) : abs($dy)) || 1;
+		my $k = $n > 15 ? 15 / $n : 1;
+		($tx, $ty) = (int($me->{x} + $dx * $k), int($me->{y} + $dy * $k));
+		($tx, $ty) = () unless $ok->($tx, $ty);
+	}
+	if (!defined $tx) { # unexplored: a random cell 10-15 cells away
+		for (1 .. 30) {
+			my ($a, $d) = (rand(6.2832), 10 + int(rand(6)));
+			my ($x, $y) = (int($me->{x} + cos($a) * $d), int($me->{y} + sin($a) * $d));
+			if ($ok->($x, $y)) { ($tx, $ty) = ($x, $y); last }
+		}
+	}
+	return 0 unless defined $tx;
+	unshift @fsLast, int($tx / 6) . ',' . int($ty / 6); splice(@fsLast, 3) if @fsLast > 3;
+	$fsAt = time; $fsIdleSince = time;
+	AI::clear('route', 'move');
+	safe_route($here, $tx, $ty, distFromGoal => 2, maxRouteTime => 10, noMapRoute => 1, attackOnRoute => 2);
+	message "[partylead] sweep: nothing near for 8 s - a short leg to $tx,$ty" . ($an ? " ($an->[0] " . blockDistance($me, $ap) . " cells)" : '') . "\n", 'system';
+	return 1;
+}
 # the nearest monster hitting her, attacked now (OpenKore's attack task takes it from there)
 sub fight_back {
 	return if AI::inQueue('attack');
@@ -3167,8 +3219,9 @@ sub tick {
 	# never stand still (owner: "Never stand still, walk around a bit to unstuck yourself"): no movement for 20 s
 	# while not fighting, sitting or talking to an NPC -> step a few cells in a random direction
 	my $pk = "$char->{pos_to}{x},$char->{pos_to}{y}";
+	my $swept = farm_sweep(); # the party sweep on the farm map (it replaces the side-step there)
 	if ($pk ne $lastPos) { ($lastPos, $stillSince) = ($pk, time); }
-	elsif (time - $stillSince > 20 && !$holding && !$rally && !$depart && !party_resting() && !AI::inQueue('attack', 'NPC', 'sitting', 'sellAuto', 'buyAuto', 'storageAuto') && !$char->{sitting}) {
+	elsif (!$swept && $field->baseName ne ($huntMap || '') && time - $stillSince > 20 && !$holding && !$rally && !$depart && !party_resting() && !AI::inQueue('attack', 'NPC', 'sitting', 'sellAuto', 'buyAuto', 'storageAuto') && !$char->{sitting}) {
 		$stillSince = time;
 		my ($x, $y) = free_cell($char->{pos_to}{x}, $char->{pos_to}{y}, 2, 5);
 		($x, $y) = ($char->{pos_to}{x}, $char->{pos_to}{y}) unless defined $x;
