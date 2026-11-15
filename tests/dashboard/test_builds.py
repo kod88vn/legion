@@ -63,6 +63,27 @@ class ExportTests(unittest.TestCase):
             self.assertTrue(b["steps"]["stats"], b["id"])
             self.assertTrue(b["steps"]["skills"], b["id"])
 
+    def test_solo_sentences_must_describe_fighting_or_farming_alone(self):
+        # the three false hits of the first version: a wing rule, an errand, a sourcing line
+        self.assertEqual(buildexport.solo_clauses("Fly Wing only solo"), [])
+        self.assertEqual(buildexport.solo_clauses("solo trip, or the party member's \"weapon\" errand"), [])
+        self.assertEqual(buildexport.solo_clauses("Guild farmers (economy agent) come from these solo DS Hunters."), [])
+        # real solo fighting text is kept
+        self.assertEqual(buildexport.solo_clauses("Solo: no boss/swarm, Fire Wall vs a walker; quick"),
+                         ["Solo: no boss/swarm, Fire Wall vs a walker"])
+
+    def test_knight_assassin_hunter_solo_stays_not_defined(self):
+        by = {b["id"]: b for b in load_export()["builds"]}
+        for bid in ("knight", "assassin", "hunter"):
+            self.assertEqual(by[bid]["playstyle"]["solo"]["status"], "gap", bid)
+            self.assertEqual(by[bid]["playstyle"]["solo"]["lines"], [], bid)
+
+    def test_mage_and_acolyte_solo_text_is_defined(self):
+        # docs/classes/mage.md:26 (wizard, sage plans) and acolyte.md:26-27 (priest plans) describe solo play
+        by = {b["id"]: b for b in load_export()["builds"]}
+        self.assertEqual(by["wizard"]["playstyle"]["solo"]["status"], "defined")
+        self.assertEqual(by["priest"]["playstyle"]["solo"]["status"], "defined")
+
     def test_pvp_is_a_gap_everywhere(self):
         for b in load_export()["builds"]:
             self.assertEqual(b["playstyle"]["pvp"]["status"], "gap", b["id"])

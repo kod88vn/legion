@@ -1,6 +1,6 @@
 {
- "generated": "2026-11-15T16:38:52",
- "generated_epoch": 1794778732,
+ "generated": "2026-11-15T16:42:30",
+ "generated_epoch": 1794778950,
  "sources": {
   "builds": "legion/builds.go",
   "gear": "legion/data/buildgear.json",
@@ -934,14 +934,9 @@
    },
    "playstyle": {
     "solo": {
-     "status": "defined",
-     "lines": [
-      {
-       "text": "do: solo",
-       "source": "docs/classes/swordman.md:33"
-      }
-     ],
-     "note": ""
+     "status": "gap",
+     "lines": [],
+     "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
     },
     "party": {
      "status": "defined",
@@ -4854,14 +4849,9 @@
    },
    "playstyle": {
     "solo": {
-     "status": "defined",
-     "lines": [
-      {
-       "text": "boss role: solo DS Hunters",
-       "source": "docs/classes/archer.md:31"
-      }
-     ],
-     "note": ""
+     "status": "gap",
+     "lines": [],
+     "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
     },
     "party": {
      "status": "defined",
@@ -5881,14 +5871,6 @@
       {
        "text": "party role: solo, a Double Strafe archer",
        "source": "docs/classes/archer.md:46"
-      },
-      {
-       "text": "use (song.go, build review run 3): solo the bow wins",
-       "source": "docs/classes/archer.md:53"
-      },
-      {
-       "text": "gear: solo the bow",
-       "source": "docs/classes/archer.md:59"
       }
      ],
      "note": ""
@@ -6906,14 +6888,9 @@
    },
    "playstyle": {
     "solo": {
-     "status": "defined",
-     "lines": [
-      {
-       "text": "use: solo the bow build",
-       "source": "docs/classes/archer.md:73"
-      }
-     ],
-     "note": ""
+     "status": "gap",
+     "lines": [],
+     "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
     },
     "party": {
      "status": "defined",
@@ -15370,14 +15347,9 @@
    },
    "playstyle": {
     "solo": {
-     "status": "defined",
-     "lines": [
-      {
-       "text": "katar first (run 6, coreweapon.go): solo trip, or the party member's \"weapon\" errand",
-       "source": "docs/classes/thief.md:23"
-      }
-     ],
-     "note": ""
+     "status": "gap",
+     "lines": [],
+     "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
     },
     "party": {
      "status": "defined",
@@ -34539,6 +34511,11 @@
    "note": "no PvP playstyle exists in the code or the docs: legion/persona.go has only a flavour line (\"lives for WoE\") and legion/guilds.go names War of Emperium as a goal"
   },
   {
+   "build": "assassin",
+   "part": "solo",
+   "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
+  },
+  {
    "build": "assassin_dagger",
    "part": "mvp",
    "note": "no build-specific boss role in docs/classes/*.md; the generic boss hunt applies (legion/bosshunt.go (party makeup, tactics and retreat; bossReady needs a tank and a healer))"
@@ -34664,6 +34641,11 @@
    "note": "no PvP playstyle exists in the code or the docs: legion/persona.go has only a flavour line (\"lives for WoE\") and legion/guilds.go names War of Emperium as a goal"
   },
   {
+   "build": "dancer",
+   "part": "solo",
+   "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
+  },
+  {
    "build": "dancer_arrow",
    "part": "mvp",
    "note": "no build-specific boss role in docs/classes/*.md; the generic boss hunt applies (legion/bosshunt.go (party makeup, tactics and retreat; bossReady needs a tank and a healer))"
@@ -34682,6 +34664,11 @@
    "build": "hunter",
    "part": "pvp",
    "note": "no PvP playstyle exists in the code or the docs: legion/persona.go has only a flavour line (\"lives for WoE\") and legion/guilds.go names War of Emperium as a goal"
+  },
+  {
+   "build": "hunter",
+   "part": "solo",
+   "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
   },
   {
    "build": "hunter_agi",
@@ -34732,6 +34719,11 @@
    "build": "knight",
    "part": "pvp",
    "note": "no PvP playstyle exists in the code or the docs: legion/persona.go has only a flavour line (\"lives for WoE\") and legion/guilds.go names War of Emperium as a goal"
+  },
+  {
+   "build": "knight",
+   "part": "solo",
+   "note": "no solo-farming line for this build in docs/classes/*.md; only the rules for every class (docs/classes/all.md)"
   },
   {
    "build": "knight_pierce",

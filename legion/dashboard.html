@@ -1561,9 +1561,9 @@ function bdCard(b, live) {
 }
 async function refreshBuilds() {
   const r = await eget('/api/builds');
-  if (!r.ok) {   // a short reason, never the raw response body
-    const why = r.data && r.data.error ? r.data.error : r.status ? 'HTTP ' + r.status : 'the dashboard server did not answer';
-    $('bdCards').innerHTML = `<div class="empty">Builds not available: ${esc(String(why).slice(0, 200))}. Retry with reload.</div>`;
+  if (!r.ok) {   // eget() drops the body on an error, so the reason is the status code only
+    const why = r.status ? 'HTTP ' + r.status : 'the dashboard server did not answer';
+    $('bdCards').innerHTML = `<div class="empty">Builds not available: ${esc(why)}. Retry with reload.</div>`;
     return;
   }
   BD = r.data;

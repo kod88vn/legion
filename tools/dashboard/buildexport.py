@@ -210,8 +210,15 @@ def parse_docs(docs_dir):
 
 # ----------------------------------------------------------------- names and gear tables
 
+# a solo sentence counts only when it says how the build fights or farms alone (not where it travels, what it sells
+# or buys, or who sources from it): it needs a fight or farm word and at least three words after "solo"
+SOLO_FIGHT = re.compile(r"\b(fight|farm|kill|attack|hit|cast|skill|monster|boss|heal|buff|target|SP|HP|walker|swarm|"
+                        r"crowd|group|spell|strafe|combo|tank|damage|pull|hunt)\w*", re.I)
+SOLO_SKIP = re.compile(r"\b(wing|trip|errand|economy|sourc\w*|seller|buy\w*|shop\w*|farmers|come from|guild)\b", re.I)
+
+
 def solo_clauses(text):
-    """the clauses of a doc bullet that talk about solo play: from the word "solo" to the end of its sentence"""
+    """the clauses of a doc bullet that describe solo fighting or farming: from the word "solo" to the end of its sentence"""
     out = []
     for m in re.finditer(r"\bsolo\b", text, re.I):
         end = len(text)
@@ -220,7 +227,9 @@ def solo_clauses(text):
             if i != -1:
                 end = min(end, i)
         clause = text[m.start():end].strip(" ,.)(")
-        if clause and clause not in out:
+        if len(clause.split()[1:]) < 3 or SOLO_SKIP.search(clause) or not SOLO_FIGHT.search(clause):
+            continue
+        if clause not in out:
             out.append(clause)
     return out
 
@@ -228,7 +237,11 @@ def solo_clauses(text):
 def load_items_lua(path):
     """the client's item table (LuaFiles514/itemInfo.lua): [id] = { ... identifiedDisplayName = "..." }"""
     out, cur = {}, None
-    with open(path, encoding="utf-8", errors="replace") as f:
+    try:
+        f = open(path, encoding="utf-8", errors="replace")
+    except OSError:
+        return out
+    with f:
         for line in f:
             m = re.match(r"^\t\[(\d+)\] = \{", line)
             if m:
@@ -511,7 +524,7 @@ def export(out=OUT, items_path=ITEMS_TSV, skills_path=SKILLS_TSV, paths=None):
     doc["name_sources"] = src
     doc["unnamed"] = _count_unnamed(doc)
     tmp = out + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:   # LF on every platform
         json.dump(doc, f, ensure_ascii=False, indent=1)
     os.replace(tmp, out)
     return doc
