@@ -81,6 +81,8 @@ ok(!entrance_wait(5, 1, 0), 'priest here: no entrance wait');
 ok(act({here => 'pay_dun02', farm => 1, friends => [$pr->('pay_dun02', 11)]}) =~ /^ok/, 'farm: priest 11 cells -> farm on');
 ok(act({here => 'pay_dun02', farm => 1, friends => [$pr->('pay_dun02', 24)]}) eq 'goto:Zen.fox', 'farm: priest 24 cells -> toward it');
 ok(act({here => 'pay_arche', friends => [$pr->('pay_arche', 11)], waited => 5}) eq 'wait:Zen.fox', 'travel: priest 11 cells -> wait (pace)');
+# farm map: the priest on her map with no known cell - she doesn't farm ahead (12:38: swept 50 cells ahead of it)
+ok(act({here => 'pay_dun03', farm => 1, friends => [$pr->('pay_dun03', undef), $kn->('pay_dun03', 3)]}) eq 'wait:Zen.fox', 'farm: priest position unknown -> wait');
 # PT16: an outside party line naming another meeting point / map is refused (helper: "meet at the prontera kafra")
 ok(plan_line_conflict("Pay_dun02 nearly got me. Meet at the prontera kafra, we go to mjolnir 12 instead", 'pay_dun02', 'payon'), 'prontera / mjolnir 12 line refused');
 ok(!plan_line_conflict("new spot: pay_dun02, meet at the kafra in payon", 'pay_dun02', 'payon'), 'the plan line passes');

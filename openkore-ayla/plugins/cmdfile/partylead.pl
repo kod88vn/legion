@@ -318,6 +318,12 @@ sub priest_elsewhere {
 	}
 	return '';
 }
+sub party_has_priest_online {
+	foreach my $u (values %{$char->{party}{users} || {}}) {
+		return 1 if $u && $u->{online} && $u->{name} ne $char->{name} && friend_cls($u->{name}) =~ /priest|acolyte/i;
+	}
+	return 0;
+}
 sub priest_dist {
 	my $here = $field ? $field->baseName : '';
 	my $best = 999;
@@ -2625,6 +2631,8 @@ sub farm_sweep {
 	my $an = stick_anchor(stick_mates());
 	my $ap = $an ? $an->[1] : undef;
 	return fs_why(0, "the priest $an->[0] is " . blockDistance($me, $ap) . " cells away") if $ap && blockDistance($me, $ap) > 10; # let the priest close up first (PT04)
+	my $prd = priest_dist();
+	return fs_why(0, $prd >= 999 ? 'the priest is not near (position unknown / another map)' : "the priest is $prd cells away") if $prd > 10 && party_has_priest_online();
 	my $ok = sub {
 		my ($x, $y) = @_;
 		return 0 unless eval { $field->isWalkable($x, $y) };
@@ -2741,6 +2749,7 @@ sub pack_decide {
 	if ($pr) {
 		my $prD = $pr->[2] eq $here && defined $pr->[3] ? $pr->[3] : undef;
 		my $near6 = defined $prD && $prD <= 6 ? 1 : 0;
+		return ('wait', $pr) if $s->{farm} && !defined $prD && $pr->[2] eq $here; # on her map, cell unknown: no farming ahead
 		if ($s->{farm} && defined $prD) { # PT04 on the farm map: farm freely within 20 cells, go toward it beyond
 			return ('ok', $pr) if $prD <= 20 && !$s->{collecting};
 			return ('ok', $pr) if $s->{collecting} && $prD <= 6;
@@ -2959,6 +2968,32 @@ sub pack_tick {
 	} else { ($pk{prBest}, $pk{prCell}) = (undef, '') }
 	my $shrinking = defined $prD ? (time - ($pk{prBestAt} || 0) < 10 ? 1 : 0) : ($prRow && time - ($pk{prMapAt} || 0) < 20 ? 1 : 0);
 	if (defined $prD && $prD <= 6) { $pk{nearSince} ||= time } else { $pk{nearSince} = 0 }
+	# (b) 3+ members off her map (town, dead, respawned; live 12:38: four winged to payon) - she stops farming, holds
+	# 60 s with the priest, then rallies the party at the town where they are and returns to the plan map after
+	if ($farm) {
+		my @off = grep { $_->[2] ne $here } @fr;
+		if (@off >= 3) {
+			$pk{offSince} ||= time;
+			if (time - $pk{offSince} < 60) {
+				if (!$pk{offSaid}) { $pk{offSaid} = 1; pk_say("waiting for u guys here") }
+				AI::clear('route', 'move') if AI::inQueue('route', 'move');
+				@pk{qw(act an seenAt)} = ('wait', $off[0], time);
+				return 1;
+			}
+			my %tc; $tc{town_of_map($_->[2])}++ foreach grep { $_->[2] ne '' } @off;
+			my ($t) = sort { $tc{$b} <=> $tc{$a} } grep { $KAFRA{$_} } keys %tc;
+			if ($t && !$rally) {
+				$rallyNext = 0;
+				start_rally($t, undef, undef, scalar(@off) . " members are off the map - regroup", 0);
+				if ($rally) {
+					$rally->{dest} = plan_map() || $homeMap || $here; $rally->{mind} = 1;
+					pk_say("lets regroup at the $t kafra, then back to " . $rally->{dest});
+					($pk{offSince}, $pk{offSaid}) = (0, 0);
+					return 0;
+				}
+			}
+		} else { ($pk{offSince}, $pk{offSaid}) = (0, 0) }
+	}
 	my ($act, $an) = pack_decide({here => $here, friends => \@fr, farm => $farm, leaving => ($leaving || $pk{wf} ? 1 : 0), cross => $cross,
 		waited => $pk{waitAt} ? time - $pk{waitAt} : 0, shrinking => $shrinking, collecting => ($pk{goName} ne '' ? 1 : 0),
 		nearFor => $pk{nearSince} ? time - $pk{nearSince} : 0});
