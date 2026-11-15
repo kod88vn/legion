@@ -259,6 +259,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	// the leader went somewhere far too dangerous for our level: wait at the checkpoint town to be picked up
 	// instead of walking in alone and dying (the leader comes back for us)
 	waiting := false
+	preWait := m // healerstick.go: where a healer goes instead of a danger hold
 	// one party, one decision: members follow the leader unless the map is deadly for the party's weakest member
 	// (each member used to judge alone by its own risk trait - Echobunny waited in Payon while the priest went in)
 	if m != b.MapName && !isTown(m) && p.Checkpoint != "" {
@@ -293,6 +294,11 @@ func (b *Bot) humanPartySync(now time.Time) {
 			}
 			m, waiting = p.Checkpoint, true
 		}
+	}
+	// the healer goes where the leader is (healerstick.go): no hold for the weakest member's map rating - only its own
+	// two deaths there in 10 min (live 03:43Z: "waiting in geffen: gef_fild08 too dangerous" while Ayla farmed it)
+	if waiting && healerStickOn() && b.isHealer() && !healerHoldsForDanger(b.healerOwnDeaths(b.waitDanger, now)) {
+		m, waiting = preWait, false
 	}
 	b.waitingAtCheckpoint = waiting
 	if !waiting {
@@ -362,7 +368,7 @@ func (b *Bot) humanPartySync(now time.Time) {
 	// in Payon, then walked into pay_dun00/01 one by one and got swarmed)
 	b.escortHold = ""
 	if ok && h.Map != "" && !waiting {
-		if t, why := b.escortGate(p, h.Map, now); t != "" {
+		if t, why := b.escortGate(p, h.Map, now); t != "" && !(healerStickOn() && b.isHealer() && why != "the way in is too dangerous alone") { // healerstick.go: the healer goes in to her
 			m, b.escortHold = t, why
 		}
 	}

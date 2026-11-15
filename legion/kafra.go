@@ -598,7 +598,7 @@ func (b *Bot) kafraCapExempt(now time.Time) bool {
 	}
 	p := partyOf(b)
 	if p == nil || p.Human != "" {
-		return false
+		return b.humanLeaderLeg() // healerstick.go: on the way to the human leader, her Kafra legs are ours too
 	}
 	parties.Lock()
 	pm := p.Map
@@ -676,7 +676,7 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 		}
 	}
 	why := ""
-	if dest != "" && now.Sub(l.At) < cd && (dest == l.From || nearestTown(dest) == l.From) {
+	if dest != "" && now.Sub(l.At) < cd && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() { // following the party / leader back is no flip-flop (healerstick.go)
 		why = fmt.Sprintf("not straight back to %s (left it %d min ago)", l.From, int(now.Sub(l.At).Minutes()))
 	} else if mx := tune().KafraMaxPerHour; mx > 0 && n >= mx && !b.kafraCapExempt(now) {
 		if goal != "" && !b.kafraWalkSafe(goal, now) {
@@ -960,7 +960,7 @@ func (b *Bot) routeSafeFrom(m string, x, y int, goal string) bool {
 func (b *Bot) kafraPartyMove() bool {
 	p := partyOf(b)
 	if p == nil || p.Human != "" {
-		return false
+		return b.humanLeaderLeg() // healerstick.go
 	}
 	parties.Lock()
 	pm := p.Map

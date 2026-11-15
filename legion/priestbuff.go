@@ -113,6 +113,10 @@ func (b *Bot) buffCands(p *Party, members []pubState, fighting bool, now time.Ti
 		if !s.Online || s.Map != b.MapName || dist(b.X, b.Y, s.X, s.Y) > 9 {
 			continue
 		}
+		// healerstick.go: rAthena range + wall line (healreach.go) - a cast that can't land isn't a candidate
+		if healerStickOn() && s.Name != me && !healReachable(maps[b.MapName], b.X, b.Y, s.X, s.Y, healRange) {
+			continue
+		}
 		if s.HPFrac <= 0 && s.Name != me { // dead: its buffs are gone - rebuff once it is up
 			for _, id := range []int{alBlessing, alIncAgi, prKyrie, prImpositio, hpAssumptio} {
 				delete(b.buffAt, fmt.Sprintf("%d:%s", id, s.Name))
@@ -127,6 +131,10 @@ func (b *Bot) buffCands(p *Party, members []pubState, fighting bool, now time.Ti
 			base = 30
 		case !s.Back && !s.Support:
 			base = 20
+		}
+		leader := healerStickOn() && s.Name != me && isPartyLeaderName(p, s.Name)
+		if leader {
+			base = 40 // healerstick.go: the leader (Ayla too) is buffed first, after explicit requests
 		}
 		asked := now.Before(b.buffAt["buffreq:"+s.Name])
 		due := func(id int) bool { return learned(id) && !now.Before(b.buffAt[fmt.Sprintf("%d:%s", id, s.Name)]) }
@@ -144,7 +152,7 @@ func (b *Bot) buffCands(p *Party, members []pubState, fighting bool, now time.Ti
 			add(alIncAgi, 1)
 		}
 		// Kyrie: the tank (old loop does it too) or anyone who asked for it
-		if due(prKyrie) && (s.Tank || now.Before(b.buffAt[fmt.Sprintf("req:%d:%s", prKyrie, s.Name)])) && s.Name != me {
+		if due(prKyrie) && (s.Tank || leader && (fighting || s.Target != 0) || now.Before(b.buffAt[fmt.Sprintf("req:%d:%s", prKyrie, s.Name)])) && s.Name != me {
 			add(prKyrie, 3)
 		}
 		if fighting && due(prImpositio) && s.Name != me && (s.Tank || !s.Back && !s.Support) && b.MaxSP > 0 && b.SP*100/b.MaxSP >= 60 {
@@ -196,10 +204,15 @@ func (b *Bot) activeBuffs(p *Party, members []pubState, lead pubState, now time.
 		}
 		key := fmt.Sprintf("%d:%s", c.skill, c.name)
 		switch c.skill {
-		case alBlessing, alIncAgi:
-			b.buffAt[key] = b.buffRenewAt(si.Lv, now)
-		case prKyrie:
-			b.buffAt[key] = now.Add(kyrieRenew)
+		case alBlessing, alIncAgi, prKyrie:
+			if c.name != b.charName() && b.buffBookPending(c.skill, c.name, now) {
+				break // healerstick.go: booked for real when the cast is seen landing (buffRecv)
+			}
+			if c.skill == prKyrie {
+				b.buffAt[key] = now.Add(kyrieRenew)
+			} else {
+				b.buffAt[key] = b.buffRenewAt(si.Lv, now)
+			}
 		case prMagnificat:
 			key = fmt.Sprintf("%d:party", prMagnificat)
 			b.buffAt[key] = now.Add(activeBuffDur(prMagnificat, si.Lv) - 5*time.Second)
@@ -258,7 +271,11 @@ func (b *Bot) buffRecv(op uint16, pk []byte, now time.Time) {
 		b.buffAt[fmt.Sprintf("gotever:%d", skill)] = now
 		return
 	}
-	if src == b.aid || !b.isHealer() || skill == prMagnificat {
+	if src == b.aid && b.aid != 0 {
+		b.buffConfirm(skill, lv, dst, now) // healerstick.go: our own cast landed on a party member
+		return
+	}
+	if !b.isHealer() || skill == prMagnificat {
 		return
 	}
 	if e := b.ents[dst]; e != nil && e.Name != "" { // someone else buffed a player near us: no double cast
