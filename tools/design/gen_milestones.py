@@ -138,6 +138,7 @@ def main():
             "pace": "assumed: Novice job 10 by base 10, first job 40 at base 40, second job level = base level - 39 after the "
                     "change; the engine changes jobs at job level 10 and 40 whatever the base level is, so the skill rows are "
                     "approximate by up to a few levels either side",
+            "vendors": "vendor characters learn vendorFirst (Enlarge Weight Limit 5, Pushcart 3, Vending 3) before the plan's skills (builds.go planSkill). Merchant-line plans already start with these goals, so for them the replay is the same; a vendor of another line is not modelled (vendors are Merchant-line)",
             "ranges": "gear bands from legion/data/buildgear.json (variants use their main plan's bands); a bands overlap, so "
                       "'by the end of the range' is the max level of the band",
             "stats_keys": pl.STATS,

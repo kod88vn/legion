@@ -6,6 +6,7 @@
   "stat_points": "db/re/statpoint.yml (48 at level 1, 1273 at 99); every stat starts at 1; raising a stat from v costs (v-1)/10+2; job-level stat bonuses are not counted (the engine's plan reads base stats only)",
   "skill_points": "Novice 9 (job 10), first job 39 (changes at job 40), second job 49 (job cap 50 for every second job on this server, db/re/job_exp.yml); a goal is raised only when the server's skill_tree.yml allows it",
   "pace": "assumed: Novice job 10 by base 10, first job 40 at base 40, second job level = base level - 39 after the change; the engine changes jobs at job level 10 and 40 whatever the base level is, so the skill rows are approximate by up to a few levels either side",
+  "vendors": "vendor characters learn vendorFirst (Enlarge Weight Limit 5, Pushcart 3, Vending 3) before the plan's skills (builds.go planSkill). Merchant-line plans already start with these goals, so for them the replay is the same; a vendor of another line is not modelled (vendors are Merchant-line)",
   "ranges": "gear bands from legion/data/buildgear.json (variants use their main plan's bands); a bands overlap, so 'by the end of the range' is the max level of the band",
   "stats_keys": [
    "STR",
@@ -494,8 +495,8 @@
      "Avoids Holy-resistant monsters, big Ghost packs that hit through Auto Guard, and long farms with no healer; drinks White Potions and rests."
     ],
     "mvp": [
-     "Main tank: Provoke, Auto Guard and Reflect Shield up, Holy Cross on Undead/Demon bosses, Grand Cross on grouped adds when it can afford the HP, Devotion on the priest once it has it.",
-     "Brings White and Blue Potions (Grand Cross is SP-hungry), Awakening Potion, Yggdrasil Berry."
+     "Main tank: Provoke, Auto Guard and Reflect Shield up, Holy Cross on Undead/Demon bosses, Grand Cross on grouped adds when it can afford the HP (not reached by the current plan), Devotion on the priest (not reached by the current plan).",
+     "Brings White and Blue Potions, Awakening Potion, Yggdrasil Berry."
     ],
     "pvp": [
      "Highest HP and DEF in the line: Auto Guard + Reflect Shield + Shield Boomerang, Holy Cross on single targets, Smite to stun; Sacrifice only next to a priest.",
@@ -823,8 +824,8 @@
      "Avoids melee contact without a wall, Undead/Ghost packs resistant to its element, and long single-target grinds where SP runs dry; Fly Wing when cornered."
     ],
     "mvp": [
-     "Burst from max range: Storm Gust / Lord of Vermilion on the adds, Jupitel Thunder and bolts on the boss, Meteor Storm on a standing pack, Quagmire or Safety Wall when the boss closes.",
-     "Brings Blue Potions and Blue Gemstones (Safety Wall), Awakening Potion, Yggdrasil Berry; never stands in front of the tank."
+     "Burst from max range: Storm Gust / Lord of Vermilion on the adds, Jupitel Thunder and bolts on the boss, Meteor Storm on a standing pack, Quagmire when the boss closes (Safety Wall (not reached by the current plan)).",
+     "Brings Blue Potions and Blue Gemstones, Awakening Potion, Yggdrasil Berry; never stands in front of the tank."
     ],
     "pvp": [
      "Glass-cannon AoE: Storm Gust, Lord of Vermilion and Meteor Storm at range, Quagmire to slow melee, Fire Wall to hold a line, Jupitel Thunder to knock back; Frost Diver is its only single-target control.",
@@ -1157,11 +1158,11 @@
      "Avoids melee contact and Earth-immune groups; stops and rests under 30% SP."
     ],
     "mvp": [
-     "Mid-range support DPS: bolts with Free Cast on the move, Heaven's Drive on adds, Dispell on buffed bosses, Endow Blaze / Tsunami / Tornado on a melee ally when stones are in the bag.",
+     "Mid-range support DPS: bolts with Free Cast on the move, Heaven's Drive on adds, Dispell on buffed bosses (not reached by the current plan), Endow Blaze / Tsunami / Tornado on a melee ally when stones are in the bag.",
      "Brings Blue Potions, elemental stones for the endows, Awakening Potion, Fly Wing."
     ],
     "pvp": [
-     "Spell breaker: Free Cast to move and cast, Spell Breaker and Magic Rod to blunt enemy casters, Dispell strips buffs, Heaven's Drive on groups, Cast Cancel when interrupted.",
+     "Spell breaker: Free Cast to move and cast, Spell Breaker and Magic Rod to blunt enemy casters, Dispell strips buffs (not reached by the current plan), Heaven's Drive on groups, Cast Cancel when interrupted.",
      "Avoids melee rush and Silence; carries Blue Potions, Fly Wing, a few elemental stones."
     ]
    }
@@ -2144,11 +2145,11 @@
      "Avoids soloing anything above its level and melee early (VIT and DEX are low). Rests, buffs itself, keeps Blue Gemstones in stock."
     ],
     "mvp": [
-     "Healer: Heal the tank first, Kyrie Eleison on the tank, Blessing and Increase AGI on all, Lex Aeterna on the boss before the big hit (not reached in this plan yet), Sanctuary on the tank's cell, Resurrection for the dead; stays out of melee range.",
-     "Brings Blue Gemstones (Sanctuary, Safety Wall, Warp Portal), Holy Water, Blue Potions, Yggdrasil Berry; the party retreats if the priest dies."
+     "Healer: Heal the tank first, Kyrie Eleison on the tank, Blessing and Increase AGI on all, Lex Aeterna on the boss before the big hit (not reached by the current plan), Sanctuary on the tank's cell, Resurrection for the dead (not reached by the current plan); stays out of melee range.",
+     "Brings Blue Gemstones (Sanctuary, Warp Portal), Holy Water, Blue Potions, Yggdrasil Berry; the party retreats if the priest dies."
     ],
     "pvp": [
-     "Team support: Kyrie and Heal on the front line, Blessing / Increase AGI, Suffragium for casters, Resurrection after the fight; not a duelist.",
+     "Team support: Kyrie and Heal on the front line, Blessing / Increase AGI, Suffragium for casters, Resurrection after the fight (not reached by the current plan); not a duelist.",
      "Avoids duels; carries Blue Gemstones, Blue Potions, Yggdrasil Berry, Fly Wing."
     ]
    }
@@ -4606,7 +4607,7 @@
      "Avoids long solo grinds and melee; rests often and prefers spots a party also uses."
     ],
     "mvp": [
-     "Support caster: Volcano / Deluge / Violent Gale on the boss area for the party's element, endows for melee allies, Dispell on buffed bosses, bolts when idle.",
+     "Support caster: Volcano / Deluge / Violent Gale on the boss area for the party's element, endows for melee allies, Dispell on buffed bosses (not reached by the current plan), bolts when idle.",
      "Brings Blue Potions, a stack of elemental stones, a Blue Gemstone, Awakening Potion."
     ],
     "pvp": [
@@ -6926,7 +6927,7 @@
      "Avoids Fire-resistant spots (Magma, Volcano) and melee swarms; picks fire-weak farms."
     ],
     "mvp": [
-     "Boss caster: Meteor Storm on fire-weak bosses and adds, Fire Bolt and Fire Wall from max range, Lord of Vermilion; backs off for Quagmire/Safety Wall when the boss reaches it.",
+     "Boss caster: Meteor Storm on fire-weak bosses and adds, Fire Bolt and Fire Wall from max range, Lord of Vermilion; backs off for Quagmire when the boss reaches it.",
      "Brings Blue Potions, a Blue Gemstone, Awakening Potion; needs the boss held by a tank."
     ],
     "pvp": [
@@ -7476,7 +7477,7 @@
      "Avoids low-SP stretches and Ghost mobs for the wrong bolt; leaves when VIT-1 HP runs low (Fly Wing)."
     ],
     "mvp": [
-     "Melee-caster DPS: Hindsight bolt procs on the boss, Free Cast, Dispell later; relies on the tank for aggro and a priest for heals (VIT is low).",
+     "Melee-caster DPS: Hindsight bolt procs on the boss, Free Cast, Dispell (not reached by the current plan); relies on the tank for aggro and a priest for heals (VIT is low).",
      "Brings Blue Potions, Awakening Potion, Concentration Potion for ASPD."
     ],
     "pvp": [
