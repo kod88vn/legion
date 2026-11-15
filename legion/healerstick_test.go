@@ -136,3 +136,63 @@ func TestLeaderBuffDueBeatsLightHeals(t *testing.T) {
 		t.Fatal("out of reach: not due")
 	}
 }
+
+// owner 2026-11-15: "the priest can heal itself, why resting?"
+func TestSelfHealInsteadOfResting(t *testing.T) {
+	now := time.Now()
+	b := pbPriest("zz_hsself", 800)
+	b.rng = rand.New(rand.NewSource(1))
+	b.HP = 400 // 40%
+	if !b.selfHealOK() {
+		t.Fatal("Heal learned, SP to spare: heal, don't sit")
+	}
+	if !b.selfHealInstead(b.hpFrac(), 0.5, now) || b.wantSit || b.State != "healing myself (40%)" {
+		t.Fatalf("under the rest line: heals itself, state %q wantSit %v", b.State, b.wantSit)
+	}
+	b.Sitting = true
+	b.selfHeal(now.Add(2 * time.Second))
+	if b.State != "standing up to heal myself" {
+		t.Fatalf("seated: stands up to heal, got %q", b.State)
+	}
+	b.Sitting, b.SP = false, 50 // 5%: no SP for heals
+	if b.selfHealOK() && b.hpFrac() >= 0.4 {
+		t.Fatal("SP gone: it may sit for SP")
+	}
+	m := pbPriest("zz_hsmonk", 800)
+	m.skills = map[int]*SkillInfo{}
+	if m.selfHealOK() {
+		t.Fatal("no Heal learned: old rest")
+	}
+	if got := b.priestSitLine(pubState{Name: "zz_l", X: 70, Y: 50}); got != healerMoveSitSP {
+		t.Fatalf("leader walking off: sit line %d, want %d", got, healerMoveSitSP)
+	}
+}
+
+func TestSelfKyrie(t *testing.T) {
+	now := time.Now()
+	b := pbPriest("zz_hskyrie", 900)
+	if !b.selfKyrie(now) || b.State != "Kyrie Eleison on myself" {
+		t.Fatalf("no Kyrie on us in the field: cast it, state %q", b.State)
+	}
+	b.skillReady, b.buffAt["buffgap"] = time.Time{}, time.Time{}
+	if b.selfKyrie(now.Add(3 * time.Second)) {
+		t.Fatal("a cast is on its way: no second one")
+	}
+	b.buffAt["got:73"] = now.Add(100 * time.Second)
+	if b.selfKyrie(now.Add(9 * time.Second)) {
+		t.Fatal("Kyrie on: no recast")
+	}
+	delete(b.buffAt, "got:73") // broke (status icon off)
+	if !b.selfKyrie(now.Add(9 * time.Second)) {
+		t.Fatal("broken: recast")
+	}
+	b.skillReady, b.buffAt["buffgap"], b.buffAt["kyrieself"] = time.Time{}, time.Time{}, time.Time{}
+	b.HP = 300
+	if b.selfKyrie(now.Add(20 * time.Second)) {
+		t.Fatal("under 50% HP: heal first")
+	}
+	b.HP, b.MapName = 1000, "prontera"
+	if b.selfKyrie(now.Add(20 * time.Second)) {
+		t.Fatal("no Kyrie in town")
+	}
+}

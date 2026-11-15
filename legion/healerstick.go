@@ -206,3 +206,104 @@ func (b *Bot) leaderBuffDue(p *Party, members []pubState, now time.Time) bool {
 	}
 	return false
 }
+
+// ---- the priest heals itself instead of resting for HP; Kyrie on itself (owner 2026-11-15, CL17 extended) ----
+
+// selfHealCost: SP for one Heal at the learned level (0 = no Heal learned).
+func (b *Bot) selfHealCost() int {
+	si := b.skills[alHeal]
+	if si == nil || si.Lv == 0 {
+		return 0
+	}
+	return max(si.SP, 10+3*si.Lv)
+}
+
+// selfHealOK (b.mu held): a bot with Heal (Acolyte / Priest / Monk line) can heal itself now instead of sitting for
+// HP: Heal learned, the SP for it, and 20% SP left after it (below that only when HP is under 40%).
+func (b *Bot) selfHealOK() bool {
+	if !healerStickOn() || b.Dead || b.MaxSP <= 0 || b.poisoned(time.Now()) && b.hpFrac() > 0.4 {
+		return false
+	}
+	c := b.selfHealCost()
+	if c == 0 || b.SP < c {
+		return false
+	}
+	return (b.SP-c)*100/b.MaxSP >= 20 || b.hpFrac() < 0.4
+}
+
+// selfHeal (b.mu held): cast Heal on ourselves (standing up first). Always owns the tick while HP is being restored:
+// waiting for the cast gap is not a reason to sit down.
+func (b *Bot) selfHeal(now time.Time) bool {
+	si := b.skills[alHeal]
+	if si == nil || si.Lv == 0 {
+		return false
+	}
+	b.wantSit = false
+	if b.Sitting {
+		if now.Sub(b.sitSentAt) > 700*time.Millisecond {
+			b.sitSentAt = now
+			go b.stand()
+		}
+		b.setState("standing up to heal myself")
+		return true
+	}
+	b.setState(fmt.Sprintf("healing myself (%d%%)", int(b.hpFrac()*100)))
+	if now.Before(b.skillReady) {
+		return true
+	}
+	b.skillReady = now.Add(900 * time.Millisecond)
+	healSent(b.charName(), b.aid)
+	go b.useSkill(alHeal, si.Lv, b.aid)
+	return true
+}
+
+// selfHealInstead (b.mu held, hunt rest): instead of sitting to rest for HP (hp under the rest line, or already
+// resting and under 95%), a bot with Heal heals itself. SP short: false (it sits for SP like before).
+func (b *Bot) selfHealInstead(hp, restAt float64, now time.Time) bool {
+	if !b.selfHealOK() || b.lowSP() {
+		return false
+	}
+	if hp < restAt || b.wantSit && hp < 0.95 {
+		return b.selfHeal(now)
+	}
+	return false
+}
+
+// selfKyrieLead: Kyrie on ourselves is recast this long before it runs out (120 s), or at once when it breaks.
+const selfKyrieLead = 10 * time.Second
+
+// selfKyrie (b.mu held, every think, right after the urgent heals): a Priest keeps Kyrie Eleison on itself outside
+// towns. Its book is buffRecv's got:73 (set when it lands on us, cleared when the status icon goes off = broken).
+func (b *Bot) selfKyrie(now time.Time) bool {
+	if !healerStickOn() || b.Dead || b.Sitting || isTown(b.MapName) || townOf(b.MapName) != "" || now.Before(b.skillReady) {
+		return false
+	}
+	si := b.skills[prKyrie]
+	if si == nil || si.Lv == 0 || !b.buffOK(si, now) {
+		return false
+	}
+	if got := b.buffAt["got:73"]; now.Before(got.Add(-selfKyrieLead)) || now.Before(b.buffAt["kyrieself"]) {
+		return false // still on (or a cast is on its way)
+	}
+	// urgent heals first: anyone of the party (us included) under 50% HP
+	if b.hpFrac() < 0.5 {
+		return false
+	}
+	if p := partyOf(b); p != nil {
+		_, _, members := b.partyView(p, now)
+		for _, s := range members {
+			if s.Online && s.Map == b.MapName && s.HPFrac > 0 && s.HPFrac < 0.5 {
+				return false
+			}
+		}
+	}
+	b.buffAt["kyrieself"] = now.Add(8 * time.Second)
+	b.buffAt["buffgap"] = now.Add(activeBuffGap)
+	b.skillReady = now.Add(1000 * time.Millisecond)
+	b.setState("Kyrie Eleison on myself")
+	go b.useSkill(prKyrie, si.Lv, b.aid)
+	return true
+}
+
+// healerMoveSitSP: % SP under which a party healer still rests while the leader moves or fights (priestSitLine).
+const healerMoveSitSP = 30

@@ -225,6 +225,9 @@ func (b *Bot) lowHPGuard(gm *GameMap, moving bool, now time.Time) bool {
 		if b.escape(gm, hp, moving, now) {
 			return true
 		}
+		if b.selfHealOK() { // healerstick.go: Heal on ourselves beats a potion
+			return b.selfHeal(now)
+		}
 		if hp < 0.4 && now.After(b.potAt) {
 			if idx := b.potionIndex(); idx >= 0 {
 				b.potAt = now.Add(time.Second)
@@ -232,6 +235,10 @@ func (b *Bot) lowHPGuard(gm *GameMap, moving bool, now time.Time) bool {
 			}
 		}
 		return false
+	}
+	if b.selfHealOK() { // healerstick.go: a bot with Heal never sits to rest for HP - it heals itself
+		delete(b.buffAt, "lowrest")
+		return b.selfHeal(now)
 	}
 	if !resting {
 		b.buffAt["lowrest"] = now
@@ -351,6 +358,11 @@ func (b *Bot) buffOK(si *SkillInfo, now time.Time) bool {
 // hysteresis: a standing healer sits only under priest_sit_below_sp_pct (40%); once seated it rests up to
 // priestStandSP (80%), or priestMoveSP (60%) when the leader moves off or fights - never down for SP above ~60%.
 func (b *Bot) priestSitLine(lead pubState) int {
+	// healerstick.go (owner 2026-11-15: "the priest can heal itself, why resting?"): while the leader walks off or
+	// fights, the healer sits only when its SP is really low, and stands up at once otherwise
+	if healerStickOn() && lead.Name != "" && (dist(b.X, b.Y, lead.X, lead.Y) > 3 || lead.Target != 0) {
+		return healerMoveSitSP
+	}
 	if !b.Sitting {
 		return tune().PriestSitBelowSP
 	}
