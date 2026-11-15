@@ -1956,6 +1956,17 @@ sub plan_change {
 	return if $c eq '' || $c eq ($new || '');
 	wd_report('PLAN_CHANGE', $c, "$c -> " . ($new || '-') . ": $why", "new plan on arrival");
 	$plan = undef; plan_save();
+	announce_plan($new);
+}
+# "new spot: <map>, meet at the kafra in <town>" - Legion's rally.go rallyLineRe reads it as the party's newest meeting
+# point and drops an older rally (live: after the false gef_fild03 plan, Zendancer84 / LilLilyblade waited at the
+# Geffen Kafra while she was back on pay_dun01)
+sub announce_plan {
+	my $new = shift || '';
+	return if $new eq '' || is_townmap($new);
+	my $t = town_of_map($new);
+	return unless $KAFRA{$t};
+	psay("new spot: $new, meet at the kafra in $t", 1, 0);
 }
 sub lockmap_guard {
 	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
@@ -2113,6 +2124,7 @@ sub force_repick {
 	($plan, $homeMap, $homeAt, $homeBy) = @keep;
 	if (defined $m && $m ne '') {
 		wd_report('PLAN_CHANGE', $old, "$old -> $m: re-pick, the nearest fitting map ($why)", 'new plan on arrival');
+		announce_plan($m);
 		$plan = undef; plan_save();
 		($homeMap, $homeAt, $homeBy) = ('', 0, 'auto');
 		auto_goto($m, "re-pick, the nearest fitting map; $why") if $old ne $m;
@@ -2394,7 +2406,7 @@ sub pack_decide {
 		return ('ok', $pr) if $ok;
 		return ('wait', $pr) if defined $prD && $prD <= 15; # pace: wait for it to close up
 		return ('wait', $pr) if $s->{shrinking};            # coming toward her: stand still
-		return ('goto', $pr) if ($s->{waited} || 0) >= 10;
+		return ('goto', $pr) if ($s->{waited} || 0) >= (defined $prD ? 10 : 60); # another map: 60 s for it to come first
 		return ('wait', $pr);
 	}
 	my $ok;
@@ -2571,7 +2583,7 @@ sub pack_tick {
 			if ($f->[3] < $t->{best}) { ($t->{best}, $t->{at}) = ($f->[3], time) } elsif ($f->[3] > $t->{best} + 3) { $t->{best} = $f->[3] }
 		}
 		my ($slow) = grep { $_->[2] eq $here && defined $_->[3] && $_->[3] > 20 && time - ($pk{dtr}{$_->[0]}{at} || 0) < 10 } @live;
-		if (!($prNear && $near20 * 2 >= @live) && $slow) {
+		if (defined $prD && !($prNear && $near20 * 2 >= @live) && $slow) { # the priest away: no waiting for the others
 			$pk{dunWaitAt} ||= time;
 			if (time - $pk{dunWaitAt} < 30) { ($act, $an) = ('wait', $slow) } # the intent names the member waited for
 		} else { $pk{dunWaitAt} = 0 }
@@ -2623,7 +2635,7 @@ sub pack_tick {
 		# (she is in a Kafra town, the priest's map belongs to a Kafra town); otherwise hold and tell it where she is
 		my $ak = join(',', $am, $ax // '', $ay // '');
 		if (($pk{anKey} || '') ne $ak) { ($pk{anKey}, $pk{anSince}) = ($ak, time) }
-		my $stuckFar = $am ne $here && time - $pk{anSince} > 120 && !($KAFRA{$here} && $KAFRA{town_of_map($am)});
+		my $stuckFar = $am ne $here && time - $pk{anSince} > 120 && !$KAFRA{town_of_map($am)}; # a Kafra town's area: she gets there (walk + Kafra hop)
 		if ($am ne '' && ($stuckFar || ($pk{goAt} && $pk{goName} eq $an->[0] && time - $pk{goAt} > 180))) {
 			$pk{goGaveUp} = time; ($pk{goName}, $regroupTo, $pk{goAt}) = ('', '', 0);
 			my $out = $here =~ /^(.+?)_in\d*$/ ? $1 : $here;
@@ -2646,6 +2658,12 @@ sub pack_tick {
 			}
 			return 1;
 		}
+	}
+	# the priest on another map: say once where she is, so it can come (AY22: she goes to it after 60 s)
+	if ($an && ($an->[1] || '') =~ /priest|acolyte/i && $an->[2] ne $here && ($pk{toldPr} || '') ne "$an->[0]|$here") {
+		$pk{toldPr} = "$an->[0]|$here";
+		my $out = $here =~ /^(.+?)_in\d*$/ ? $1 : $here;
+		pk_say("$an->[0] im at $out $cx,$cy, come here");
 	}
 	# wait: stand where she is (OpenKore's sitAuto still sits her under its HP / SP marks). lockMap is held for the
 	# wait - clearing OpenKore's lockMap route every tick made it recalculate it every 0.5 s ("Calculating lockMap route")

@@ -29,7 +29,8 @@ ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 5)], collecting =>
 ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 5)], collecting => 1, nearFor => 3}) =~ /^ok/, 'within 6 for 3 s: together again');
 ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 14), $kn->('gef_fild07', 2)]}) eq 'wait:Zen.fox', 'priest 14 behind: wait');
 ok(act({here => 'gef_fild07', friends => [$pr->('gef_fild07', 14)], waited => 9}) eq 'wait:Zen.fox', 'under 10 s: wait');
-ok(act({here => 'gef_fild07', friends => [$pr->('geffen', undef)], waited => 10}) eq 'goto:Zen.fox', 'after 10 s: back to the priest');
+ok(act({here => 'gef_fild07', friends => [$pr->('geffen', undef)], waited => 60}) eq 'goto:Zen.fox', 'priest on another map: after 60 s she goes to it');
+ok(act({here => 'gef_fild07', friends => [$pr->('geffen', undef)], waited => 30}) eq 'wait:Zen.fox', 'priest on another map: 30 s - still waiting for it to come');
 ok(act({here => 'orcsdun02', farm => 1, friends => [$pr->('orcsdun02', 28)], waited => 12}) eq 'goto:Zen.fox', 'farm: priest 28 away -> back to it');
 ok(act({here => 'geffen', leaving => 1, friends => [$pr->('geffen', 5), $kn->('geffen', 40)]}) =~ /^ok/, 'leave with the priest');
 # crossing: priest + one more within 10
