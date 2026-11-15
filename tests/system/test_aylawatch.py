@@ -320,6 +320,39 @@ class TestEngineView(unittest.TestCase):
         self.assertIsNone(v["exp_5m"])      # no exp total in the engine API for an engine party
         self.assertIsNone(v["exp_h"])
 
+    def test_offline_ayla_gives_no_distances(self):
+        p = engine_party([engine_member("Ayla", leader=True, online=False), engine_member("Bob", x=103, y=146)])
+        v = W.engine_view(p, {}, None)
+        self.assertEqual(v["distance"], {"Bob": -1})   # no distance from an offline Ayla's last position
+
+    def test_exp_total_rate_and_delta_from_the_member_field(self):
+        prev = {"totals": {"Ayla": {"kills": 0, "deaths": 0, "exp": 1000}}, "members_map": {"Ayla": "prt_fild08"}}
+        ay = engine_member("Ayla", leader=True)
+        ay["base_exp"], ay["exp_per_h"] = 1500, 360000   # partydash.go: every member carries these, engine parties too
+        v = W.engine_view(engine_party([ay, engine_member("Bob")]), {}, prev)
+        self.assertEqual((v["exp_5m"], v["exp_total"], v["exp_h"]), (500, 1500, 360000))
+
+    def test_exp_absent_is_n_a_and_an_old_record_gives_no_delta(self):
+        ay = engine_member("Ayla", leader=True)
+        ay["base_exp"] = 1500
+        old = {"totals": {"Ayla": {"kills": 0, "deaths": 0}}, "members_map": {"Ayla": "prt_fild08"}}  # no exp in it
+        v = W.engine_view(engine_party([ay]), {}, old)
+        self.assertIsNone(v["exp_5m"])                  # a delta from the total would be wrong here
+        self.assertEqual(v["exp_total"], 1500)
+        self.assertIsNone(v["exp_h"])
+        v2 = W.engine_view(engine_party([engine_member("Ayla", leader=True)]), {}, None)
+        self.assertIsNone(v2["exp_total"])
+
+
+class TestSummaryLine(unittest.TestCase):
+    def test_line_says_kpm_and_zph_are_a_60_minute_window(self):
+        snap = {"t": 1000, "era": "engine", "map": "prt_fild08", "x": 1, "y": 2, "errors": [], "watchdog": [],
+                "exp_5m": 5, "exp_h": 360000, "exp_total": 1500, "kpm": 4.2, "zph": 61000.0, "distance": {},
+                "status_age": 3}
+        line = W.summary(snap)
+        self.assertIn("kpm 4.2 zph 61000.0 (60-min window)", line)
+        self.assertIn("exp/h 360000 total 1500", line)
+
 
 class TestOpenKoreView(unittest.TestCase):
     def test_distance_is_dist_lead_from_the_human_led_party(self):
