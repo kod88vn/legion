@@ -1986,6 +1986,7 @@ func partyFitLv(ms []*Bot) (minLv, fitLv, known, unknown int) {
 			minLv = min(minLv+b, max(minLv, partyMinBase(ms)))
 			fitLv += b
 		}
+		minLv, fitLv = partyPerfAdjust(ms, minLv, fitLv, false) // gearscore.go: easy farming steps the party up
 	}
 	return
 }
@@ -2014,6 +2015,9 @@ func partyFitLvRaw(ms []*Bot) (minLv, fitLv, known, unknown int) {
 		}
 		minLv = min(minLv, lv)
 		fitLv = min(fitLv, max(lv+tn.TargetLvOver+int(b.P.Aggression*tn.TargetLvAggression), tn.TargetLvMin))
+	}
+	if known > 0 {
+		minLv, fitLv = partyPerfAdjust(ms, minLv, fitLv, true) // gearscore.go: deaths / poor kills step the party down
 	}
 	return
 }

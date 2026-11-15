@@ -611,7 +611,8 @@ func serveAPI(addr string, bots []*Bot) {
 				row := map[string]interface{}{"name": m.charName(), "class": className(m.Class), "level": m.BaseLvOr(),
 					"online": m.Online, "state": m.State, "map": m.MapName, "x": m.X, "y": m.Y,
 					"hp": fmt.Sprintf("%d/%d", m.HP, m.MaxHP), "sp": fmt.Sprintf("%d/%d", m.SP, m.MaxSP), "weight": weightStr(m.Weight, m.MaxWeight),
-					"in_party": m.PartyID != 0, "party_roster": m.roster, "goal": m.Goal, "waiting_at_checkpoint": m.waitingAtCheckpoint}
+					"in_party": m.PartyID != 0, "party_roster": m.roster, "goal": m.Goal, "waiting_at_checkpoint": m.waitingAtCheckpoint,
+					"power": m.powerLv(), "kills": m.Kills, "deaths": m.Deaths} // gearscore.go: gear-rated level; partylead.pl's map choice and step
 				if st, known := m.knownSave(); known {
 					row["saved_town"] = st // together.go: Ayla's departure gate waits until every friend saved at the rally Kafra
 				}

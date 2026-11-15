@@ -55,6 +55,7 @@ type Item struct {
 	MinLv      int
 	Atk        int
 	Def        int
+	Mdef       int    // MagicDefense (gearscore.go: armor MDEF)
 	Matk       int    // MagicAttack (staves, rods): casters' weapon score (builds.go gearScore)
 	Sub        string // SubType: Dagger, 1hSword, Staff, Mace, Bow, Katar, Knuckle, Musical, Whip ...
 	Slots      int    // card slots (economy.go: slotted gear is worth more)
@@ -127,6 +128,8 @@ func loadItemDB(paths ...string) {
 				cur.Sub = strings.TrimSpace(t[8:])
 			case strings.HasPrefix(t, "Defense:"):
 				cur.Def, _ = strconv.Atoi(strings.TrimSpace(t[8:]))
+			case strings.HasPrefix(t, "MagicDefense:"):
+				cur.Mdef, _ = strconv.Atoi(strings.TrimSpace(t[13:]))
 			case strings.HasPrefix(t, "AegisName:"):
 				cur.Aegis = strings.TrimSpace(t[10:])
 			case strings.HasPrefix(t, "Name:"):

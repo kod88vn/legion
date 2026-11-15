@@ -70,6 +70,9 @@ func (b *Bot) powerLv() int {
 	if !b.invReady() {
 		return lv
 	}
+	if gearScoreOn() {
+		return b.gearPowerLv(lv) // gearscore.go: the whole kit + measured performance (tuning gear_score_on)
+	}
 	var w *Item
 	if e := b.equipped[0x2]; e != nil {
 		w = items[e.ItemID]

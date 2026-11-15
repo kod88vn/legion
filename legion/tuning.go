@@ -26,6 +26,10 @@ package main
 //   priest_buff_renew_min_sec 220  a buff on a member is renewed after a random time between min and max seconds
 //   priest_buff_renew_max_sec 260
 //
+//   Map choice by level AND gear (gearscore.go, AY07)
+//   gear_score_on             true the effective level rates the whole kit (weapon+refine, all armor DEF/MDEF, cards, empty slots)
+//   gear_perf_on              true measured kills / deaths step a solo bot or a party down (easier map) or up
+//
 //   Solo / general AI (ai.go)
 //   beginner_lv               20   below this base level a bot stays near its home town and Kafra keeps more money
 //   stay_crowd                70   a bot stays on a fitting map while it holds at most this many bots
@@ -234,10 +238,15 @@ type Tuning struct {
 	ChatJobsOn           bool `json:"chat_jobs_on"`
 	ChatJobWaitMinSec    int  `json:"chat_job_wait_min_sec"`
 	ChatJobWaitMaxSec    int  `json:"chat_job_wait_max_sec"`
+	// gearscore.go (AY07, 2026-11-14): the effective level rates the whole kit (gear_score_on) and measured kills /
+	// deaths step a solo bot or a party down / up (gear_perf_on); both default ON
+	GearScoreOn bool `json:"gear_score_on"`
+	GearPerfOn  bool `json:"gear_perf_on"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.
 var defaultTuning = Tuning{
+	GearScoreOn: true, GearPerfOn: true,
 	PartyLeash: 8, RegroupExtra: 4, TogetherCells: 20, CollectStopCells: 16, TankPullRadius: 12, TankMaxLvOver: 5,
 	PriestBuffMinSP: 60, PriestSitBelowSP: 40, PriestBuffRenewLo: 220, PriestBuffRenewHi: 260,
 
