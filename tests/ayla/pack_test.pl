@@ -10,6 +10,8 @@ open(my $fh, '<', $file) or die "$file: $!";
 my $src = do { local $/; <$fh> };
 my ($code) = $src =~ /(# ---- pack begin.*?# ---- pack end)/s or die "no pack block";
 eval "$code\n1" or die $@;
+my ($plc) = $src =~ /(sub plan_line_conflict \{.*?\n\}\n)/s or die "no plan_line_conflict";
+eval "$plc\n1" or die $@;
 my ($pass, $fail) = (0, 0);
 sub ok($$) { my ($c, $m) = @_; if ($c) { $pass++ } else { $fail++; print "FAIL: $m\n" } }
 sub act { my ($a, $an) = pack_decide(shift); return $a . ($an ? ":$an->[0]" : '') }
@@ -70,5 +72,18 @@ ok(pt32_ok($me, {x => 51, y => 50}, undef, [], 3, 1), 'one hitting her: always')
 ok(!pt32_ok($me, {x => 54, y => 50}, undef, [], 0, 0, [{x => 57, y => 52}]), 'target with another monster 3 cells from it: no');
 ok(pt32_ok($me, {x => 54, y => 50}, undef, [], 0, 0, [{x => 54, y => 60}]), 'target alone: ok');
 ok(pt32_ok($me, {x => 54, y => 50}, undef, [], 1, 0, []), 'one on her: a new target is fine');
+# in a dungeon without the priest: the cave entrance first (60 s), the town Kafra only after that with monsters on her
+ok(entrance_wait(undef, 1, 3), 'priest away, just arrived, monsters: wait at the entrance');
+ok(entrance_wait(undef, 0, 0), 'priest away, no monsters: keep waiting at the entrance');
+ok(!entrance_wait(undef, 0, 2), 'priest away 60 s+, monsters on her: town Kafra');
+ok(!entrance_wait(5, 1, 0), 'priest here: no entrance wait');
+# PT04 on the farm map: free within 20 cells of the priest (the 6-cell pace is for travel only)
+ok(act({here => 'pay_dun02', farm => 1, friends => [$pr->('pay_dun02', 11)]}) =~ /^ok/, 'farm: priest 11 cells -> farm on');
+ok(act({here => 'pay_dun02', farm => 1, friends => [$pr->('pay_dun02', 24)]}) eq 'goto:Zen.fox', 'farm: priest 24 cells -> toward it');
+ok(act({here => 'pay_arche', friends => [$pr->('pay_arche', 11)], waited => 5}) eq 'wait:Zen.fox', 'travel: priest 11 cells -> wait (pace)');
+# PT16: an outside party line naming another meeting point / map is refused (helper: "meet at the prontera kafra")
+ok(plan_line_conflict("Pay_dun02 nearly got me. Meet at the prontera kafra, we go to mjolnir 12 instead", 'pay_dun02', 'payon'), 'prontera / mjolnir 12 line refused');
+ok(!plan_line_conflict("new spot: pay_dun02, meet at the kafra in payon", 'pay_dun02', 'payon'), 'the plan line passes');
+ok(!plan_line_conflict("nice drop lol", 'pay_dun02', 'payon'), 'small talk passes');
 print "pass=$pass fail=$fail\n";
 exit($fail ? 1 : 0);

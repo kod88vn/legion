@@ -214,7 +214,7 @@ cartMaxWeight 7900
 itemsTakeGreed 0
 itemsCheckWeight 1
 
-lockMap gl_church
+lockMap
 lockMap_x
 lockMap_y
 lockMap_randX
@@ -268,11 +268,11 @@ runFromTarget_noAttackMethodFallback 0
 runFromTarget_noAttackMethodFallback_attackMaxDist 14
 runFromTarget_noAttackMethodFallback_minStep 8
 
-saveMap geffen
+saveMap payon
 saveMap_x
 saveMap_y
 saveMap_warp 0
-saveMap_warpToBuyOrSell 1
+saveMap_warpToBuyOrSell 0
 saveMap_warp_minDistance
 saveMap_warpChatCommand
 memo1
@@ -818,7 +818,7 @@ buyAuto Orange Potion {
 # ---- Ayla's gear plan (2026-11-14; owner: "Ayla's party gears up first, every member including Ayla; buy when there's
 # money, else farm"; "town runs only for a real need"). Steps 1-4 done (Adventurer's Suit, Jur [2], Muffler + Shoes, Cap).
 # # items she hands to friends: "Item=Friend; ..." (aylagear.pl: fetched from storage, mailed when in the bag)
-giftItems Great Bow [3]=xXRinfangXx
+giftItems
 gearPlan_list 2405,2406=25000; 2505,2506=40000; 2627,2607=25000; 4040>2627=15000; 1252,1253,1254,1255=48000; 2309,2310,2336=28000; 2228,2229=50000; 2336=80000
 # "CARD>ITEM" = a card compounded into that item; BUDGET = zeny she must hold first (NPC price + reserve), or the most she
 # pays a player vendor for a player-only piece. aylagear.pl looks up the sellers in Legion's game data: an NPC piece is
@@ -834,16 +834,17 @@ gearPlan_list 2405,2406=25000; 2505,2506=40000; 2627,2607=25000; 4040>2627=15000
 # tool is a real need. 60z each, weight 5.
 buyAuto Gear Slot {
 	npc prontera 146 57
-	townShop
+	gearSlot 1
 	npc_steps b
 	distance 3
 	minAmount
 	maxAmount 1
 	zeny
+	disabled 1
 }
 buyAuto Fly Wing {
 	npc payon_in01 5 49
-	gearSlot
+	townShop tool
 	npc_steps b
 	distance 3
 	maxAmount 10
