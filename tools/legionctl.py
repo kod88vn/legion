@@ -100,7 +100,14 @@ API = os.environ.get("LEGION_API", "http://127.0.0.1:8090")
 STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".state")
 
 
+# AY25: the owner's overrides for Ayla take the owner token, which only the dashboard holds (tools/dashboard). This
+# client has no token and never reaches those routes, for puppet masters or anyone else.
+OVERRIDE_ROUTE = "/api/ayla/overrides"
+
+
 def call(path, body=None):
+    if path.split("?")[0].rstrip("/").startswith(OVERRIDE_ROUTE):
+        sys.exit("AY25: Ayla's overrides are owner-only, set on the dashboard; legionctl never calls them")
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(API + path, data=data, headers={"Content-Type": "application/json"},
                                  method="POST" if body is not None else "GET")

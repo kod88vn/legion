@@ -27,6 +27,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import aylaswitch  # noqa: E402  AY24: after the switch Ayla's watcher has no ayla.sh tools
 import briefing  # noqa: E402
 import orders  # noqa: E402  owner orders for Ayla (AY20)
 sys.path.append(os.path.join(HERE, "..", "system"))
@@ -147,7 +148,9 @@ REVIEWERS = ("qa", "build")  # scheduled reviewers: observe and file only, like 
 def allowed_tools(role, python="python"):
     """Bash only, and only legionctl (Ayla's watcher also reads her console log through ayla.sh, read-only actions)."""
     tools = [f"Bash({python} {mind_path(CTL)}:*)"]
-    if role == "ayla":
+    if role == "ayla" and aylaswitch.engine_on():
+        tools.append(f"Bash({python} {mind_path(BUGQ)} add:*)")  # AY24: watch and file only; no ayla.sh after the switch
+    elif role == "ayla":
         tools += [f"Bash({ayla_cmd()} {a}:*)" for a in AYLA_READ]
         tools += [f"Bash({ayla_cmd()} {a})" if a == "cmd respawn" else f"Bash({ayla_cmd()} {a}:*)" for a in AYLA_ACT]
         tools.append(f"Bash({python} {mind_path(BUGQ)} add:*)")
@@ -156,7 +159,10 @@ def allowed_tools(role, python="python"):
 
 # legionctl commands that hand bots direct goals/maps: puppet masters set directions, prices, words, never these
 # guild-kick: the duty ledger kicks by its own rules; a leader mind pardons but never kicks by hand
-DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-cancel", "guild-kick"]
+# AY25: the owner's overrides (POST/DELETE /api/ayla/overrides) need the owner token that only the dashboard holds:
+# no puppet master and no legionctl verb reaches them (legionctl.call refuses the route too)
+DENIED_CTL = ["goal", "guild-goal", "party", "leader-party", "boss-hunt", "boss-cancel", "guild-kick",
+              "ayla-override", "ayla-overrides", "override", "overrides"]
 
 
 # the watcher only observes and files: no words, prices, directions or chat jobs in the world either

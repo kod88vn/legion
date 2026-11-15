@@ -14,6 +14,7 @@ import os
 import time
 import urllib.request
 
+import aylaswitch  # AY24: OpenKore era or engine era, read from tuning engine_parties
 import orders  # owner orders for Ayla (AY20), same directory
 
 API = os.environ.get("LEGION_API", "http://127.0.0.1:8090")
@@ -456,10 +457,47 @@ def chat_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
 
 
 # ----------------------------------------------------------------- Ayla
+def overrides_lines(ov):
+    """AY25: the owner's active overrides, each with the puppet directive it stands in for (what it replaced)"""
+    if not isinstance(ov, dict):
+        return ""
+    owner = ov.get("owner") if isinstance(ov.get("owner"), dict) else {}
+    puppet = ov.get("puppet") if isinstance(ov.get("puppet"), dict) else {}
+    lines = []
+    for kind, row in owner.items():
+        if not isinstance(row, dict) or not row.get("active", True):
+            continue
+        replaced = "(none)"
+        if kind == "guild_dir":
+            replaced = compact(dig(puppet, "starveil_guild", default=None), 260)
+        elif kind in ("farm_map", "party_order", "town_run", "rally"):
+            replaced = compact(dig(puppet, "orders", default=None), 260)
+        note = f", note: {row['note']}" if row.get("note") else ""
+        lines.append(f"- {kind} = {row.get('value')} (set by {row.get('set_by', 'owner')}, "
+                     f"until {row.get('expires_at', '?')}{note}). Replaces the puppet directive: {replaced}")
+    if not lines:
+        return "(no owner overrides active)"
+    return "\n".join(lines) + (
+        "\nAn override is a deliberate owner order, never a bug: do not file it, do not argue it, never undo it. "
+        "Judge what she does under it and file only the code gaps it reveals.")
+
+
 def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
     snap = {"metrics": {}}
-    owner = orders.briefing_section()  # AY20: the owner's plain-words orders go first, "do this now"
-    parts = ([owner] if owner else []) + [f"Role: Ayla's helper (watch her; step in only when stuck or deciding badly; file the code gap every time). Trigger: {trigger or 'schedule'}."]
+    engine = aylaswitch.engine_on()  # AY24: the mode decides what the watcher may do (its brief says so)
+    mode_line = ("Mode: engine (Ayla is played by the Legion engine: you watch and file bugs, you never steer)"
+                 if engine else "Mode: openkore (until the switch: OpenKore, the steering section of your brief applies)")
+    owner = "" if engine else orders.briefing_section()  # AY20: owner orders go first, "do this now" (OpenKore era)
+    parts = ([owner] if owner else []) + [
+        f"Role: Ayla's watcher. Trigger: {trigger or 'schedule'}.", mode_line]
+    if engine:
+        reqs = orders.pending_requests()
+        if reqs:
+            parts.append(section("Owner requests waiting for the owner on the dashboard (you do nothing with them)",
+                                 "\n".join(f"- [{r.get('id')}] ({r.get('iso', '?')}) {r.get('text')}" for r in reqs[:10])))
+    ov = api.get("/api/ayla/overrides")
+    if ov is not None:
+        parts.append(section("Owner overrides (AY25, deliberate owner orders, never bugs)", overrides_lines(ov)))
     neo = api.get("/api/meter/neo")
     if neo is not None:
         ps = dig(neo, "party_summary", default={}) or {}
@@ -477,11 +515,16 @@ def ayla_briefing(api, notes_dir, prev=None, prev_ts=None, trigger=""):
         lazy = sum(float(sh.get(k) or 0) for k in ("town", "idle", "waiting"))
         amap = (neo.get("ayla") or {}).get("map", "?") if isinstance(neo, dict) else "?"
         if lazy >= 0.5:
-            parts.append(section("IDLE ALERT (rule: Ayla has zero downtime)",
-                                 f"Ayla spent {int(lazy * 100)}% of the last 10 min in town/idle/waiting (now on {amap}; shares {compact(sh, 200)}). "
-                                 "Her code is failing her. Read her log (`ayla.sh log 120`: watchdog, [partylead] lines), find what "
-                                 "holds her, steer her (`ayla.sh map <gear-fitting map>`, `ayla.sh rally <town> [map]`, "
-                                 "`ayla.sh rally cancel`, `ayla.sh cmd respawn`, `ayla.sh party <text>`) and file the code gap (`bug ... --priority high` with the log lines)."))
+            if engine:
+                idle_text = (f"Ayla spent {int(lazy * 100)}% of the last 10 min in town/idle/waiting (now on {amap}; shares "
+                             f"{compact(sh, 200)}). Her code is failing her. Find what holds her in the meter and the events, "
+                             "and file the code gap (`bug ... --priority high` with the evidence). You do not steer her.")
+            else:
+                idle_text = (f"Ayla spent {int(lazy * 100)}% of the last 10 min in town/idle/waiting (now on {amap}; shares "
+                             f"{compact(sh, 200)}). Her code is failing her. Read her log (`ayla.sh log 120`: watchdog, [partylead] lines), find what "
+                             "holds her, steer her (`ayla.sh map <gear-fitting map>`, `ayla.sh rally <town> [map]`, "
+                             "`ayla.sh rally cancel`, `ayla.sh cmd respawn`, `ayla.sh party <text>`) and file the code gap (`bug ... --priority high` with the log lines).")
+            parts.append(section("IDLE ALERT (rule: Ayla has zero downtime)", idle_text))
         parts.append(section("You, your party and Starveil against comparable bots (par = p75, last hour)", body))
         for name, d in (("party", ps), ("starveil", ss)):
             for k in ("ratio_kpm", "ratio_zph", "above_par_kpm", "above_par_zph"):
