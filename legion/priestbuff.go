@@ -114,8 +114,10 @@ func (b *Bot) buffCands(p *Party, members []pubState, fighting bool, now time.Ti
 			continue
 		}
 		// healerstick.go: rAthena range + wall line (healreach.go) - a cast that can't land isn't a candidate
-		if healerStickOn() && s.Name != me && !healReachable(maps[b.MapName], b.X, b.Y, s.X, s.Y, healRange) {
-			continue
+		if healerStickOn() && s.Name != me {
+			if lx, ly := livePosOf(s); !healReachable(maps[b.MapName], b.X, b.Y, lx, ly, healRange) {
+				continue // where she stands now, not the end of her walk
+			}
 		}
 		if s.HPFrac <= 0 && s.Name != me { // dead: its buffs are gone - rebuff once it is up
 			for _, id := range []int{alBlessing, alIncAgi, prKyrie, prImpositio, hpAssumptio} {
