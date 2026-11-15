@@ -48,10 +48,10 @@ def extra_paths():
     mount). LEGION_BUGQ_EXTRA (os.pathsep-separated) overrides; with LEGION_DATA set (tests) there is no default extra."""
     env = os.environ.get("LEGION_BUGQ_EXTRA")
     if env is not None:
-        return [p for p in env.split(os.pathsep) if p]
+        return [C.refuse_live(p, "LEGION_BUGQ_EXTRA") for p in env.split(os.pathsep) if p]
     if os.environ.get("LEGION_DATA"):
         return []
-    return [os.path.join(C.ROOT, "openkore-ayla", "logs", "bugqueue.jsonl")]
+    return [C.refuse_live(os.path.join(C.ROOT, "openkore-ayla", "logs", "bugqueue.jsonl"), "Ayla's bug queue")]
 
 
 def load():

@@ -1,5 +1,11 @@
 """Tests for tools/system/aylalog.py (Ayla log reporter). Sample lines are copied from her real console log.
 Run: python -m unittest discover -s tests/system -v   (from the repo root). No server, temp data dir only."""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import io
 import os
 import shutil
@@ -195,8 +201,9 @@ class TestFiler(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.d, ignore_errors=True)
-        for k in ("LEGION_DATA", "LEGION_BUGQ_EXTRA", "LEGION_FAKE_NOW"):
+        for k in ("LEGION_BUGQ_EXTRA", "LEGION_FAKE_NOW"):
             os.environ.pop(k, None)
+        testenv.isolate()
 
     def ev(self, t, line, mp="pay_dun00"):
         r, m = A.classify(line)
@@ -316,7 +323,7 @@ class TestDryRun(unittest.TestCase):
             self.assertIn("WOULD FILE [high] ayla:route-stuck:pay_dun00", out.getvalue())
             self.assertFalse(os.path.exists(os.environ["LEGION_DATA"]))
         finally:
-            os.environ.pop("LEGION_DATA", None)
+            testenv.isolate()
             shutil.rmtree(d, ignore_errors=True)
 
 

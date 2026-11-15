@@ -29,8 +29,12 @@ GRACE_S = 180        # after stack.up is written, give the scripts time to start
 REPEAT_S = 3600      # re-report a problem that persists this long
 
 
+sys.path.insert(0, os.path.join(HERE, "system"))
+import common as _C  # noqa: E402  the one data-folder resolver (rule G23)
+
+
 def data_dir():
-    return os.environ.get("LEGION_DATA") or os.path.join(HERE, "..", "legion", "data")
+    return _C.data_dir()
 
 
 def _now():

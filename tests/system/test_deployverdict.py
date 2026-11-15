@@ -1,6 +1,12 @@
 """Deploy verdict (Constitution 3.6, 3.9): the keep/revert of the last deploy's fixes is written to legion/data/
 deploys.jsonl by the deploy flow, and verdict lines are never read as deploys. No server, a fake clock, temp data.
 Run: python -m unittest discover -s tests/system -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import os
 import shutil
 import sys
@@ -25,7 +31,7 @@ class DeployVerdictTests(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.d, ignore_errors=True)
-        os.environ.pop("LEGION_DATA", None)
+        testenv.isolate()
         os.environ.pop("LEGION_FAKE_NOW", None)
 
     def clock(self, t):

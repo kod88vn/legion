@@ -1,4 +1,10 @@
 """Tests for the puppet harness: no server, no tokens. Run: python -m unittest discover -s tools/puppet/tests -v"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "../../../tests"))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import http.server
 import json
 import os
@@ -282,10 +288,11 @@ class ScheduleTests(unittest.TestCase):
             def get(self, p):
                 return neo if p == "/api/meter/neo" else ({"events": [], "next": 1} if "events" in p else ([] if p != "/api/stats" else {}))
             def alive(self): return True
-        s = dispatch.Signals(lambda: A())
-        self.assertEqual(s.poll()["ayla_event"], "idle")
-        s.consumed("ayla")
-        self.assertIsNone(s.poll()["ayla_event"])
+        with tempfile.TemporaryDirectory() as d:   # Ayla's live watchdog files are never read by a test
+            s = dispatch.Signals(lambda: A(), wd_queue=os.path.join(d, "q.jsonl"), wd_console=os.path.join(d, "c.txt"))
+            self.assertEqual(s.poll()["ayla_event"], "idle")
+            s.consumed("ayla")
+            self.assertIsNone(s.poll()["ayla_event"])
 
 
 class ReviewerBriefingTests(unittest.TestCase):

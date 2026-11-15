@@ -1,5 +1,11 @@
 """Tests for the constitution loader, the dispatcher's refusal and constcheck (PR42). Offline; no model is called.
 Run: python -m unittest discover -s tests/system -p "test_constitution.py" -v"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import json
 import os
 import re

@@ -1,5 +1,11 @@
 """Tests for tools/system/mainguard.py (Constitution 1.3 / 1.9). Offline: sample hook inputs only.
 Run: python -m unittest discover -s tests/system -p "test_mainguard.py" -v"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import json
 import os
 import subprocess
@@ -283,6 +289,9 @@ class RealPathTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "Windows paths")
     def test_live_resolution(self):
+        # the expected answers are for the live checkout's paths (G:\RO\legion); a copy elsewhere would decide differently
+        if os.path.normcase(os.path.abspath(REPO)) != os.path.normcase(r"G:\RO\legion"):
+            self.skipTest("live-checkout paths only (REPO is %s)" % REPO)
         d = lambda t, ti: mainguard.decide(inp(t, ti, cwd=REPO), ALLOW)[0]
         self.assertTrue(d("Write", {"file_path": os.path.join(REPO, "RULES.md")}))
         self.assertTrue(d("Write", {"file_path": os.path.join(REPO, "docs", "reports", "new-report.md")}))

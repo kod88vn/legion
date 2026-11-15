@@ -1,5 +1,11 @@
 """Offline test of tools/dev/gen_mapdensity.py: only the npc files the server loads are counted (the conf import tree
 from conf/map_athena.conf and npc/re/scripts_main.conf: npc:, delnpc:, import:), and within them only live monster lines."""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import os
 import subprocess
 import sys
