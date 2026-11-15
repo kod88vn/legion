@@ -371,6 +371,7 @@ class TestSingleInstances(W.Env):
         import watchdog
         expect = {"sentinel": "tools/sentinel.py", "partycheck": "tools/system/partycheck.py",
                   "dispatcher": "tools/puppet/dispatch.py", "aylalog": "tools/system/aylalog.py",
+                  "aylawatch": "tools/system/aylawatch.py",
                   "dashboard": "tools/dashboard/dashserve.py", "unwall": "tools/unwall.py",
                   "keeper": "tools/rogui/keeper-lock.sh"}
         by = {a["key"]: a for a in watchdog.AGENTS}

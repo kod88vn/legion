@@ -23,10 +23,11 @@ sys.path.insert(0, os.path.join(REPO, "tools", "dashboard"))
 sys.path.insert(0, os.path.join(REPO, "tools"))
 
 T0 = 1_800_000_000.0
-ALL = ["sentinel", "partycheck", "dispatcher", "aylalog", "bugq-watch", "unwall", "keeper", "dashboard"]
+ALL = ["sentinel", "partycheck", "dispatcher", "aylalog", "aylawatch", "bugq-watch", "unwall", "keeper", "dashboard"]
 HB_FILE = {"dispatcher": "dispatch.heartbeat", "bugq-watch": "bugq-watch.heartbeat", "unwall": "unwall.heartbeat",
            "keeper": "keeper.heartbeat", "dashboard": "dashboard.heartbeat", "sentinel": "sentinel.heartbeat",
-           "partycheck": "partycheck.heartbeat", "aylalog": "aylalog.heartbeat"}
+           "partycheck": "partycheck.heartbeat", "aylalog": "aylalog.heartbeat",
+           "aylawatch": "aylawatch.heartbeat"}
 OK_CONTAINERS = {n: ("running", "Up 3 hours") for n in
                  ["ro-db", "ro-rathena", "ro-agency", "ro-openkore-ayla", "ro-legion", "ro-legion-core"]}
 
@@ -107,7 +108,7 @@ class TestWatchdogPass(Env):
         self.assertEqual(ops.started, [])
         self.assertEqual(ops.docker, [])
         st = res["status"]
-        self.assertEqual(st["summary"]["agents_ok"], 8)
+        self.assertEqual(st["summary"]["agents_ok"], 9)
         self.assertEqual(st["summary"]["containers_up"], 6)
         self.assertEqual(self.queue_rows(), [])
 
@@ -215,7 +216,7 @@ class TestWatchdogPass(Env):
         self.assertEqual(len(outs), 1)
         import watchdog
         with self.assertRaises(RuntimeError):
-            watchdog.Ops().start_agent(watchdog.AGENTS[4])
+            watchdog.Ops().start_agent([a for a in watchdog.AGENTS if a["key"] == "bugq-watch"][0])
 
     def test_container_exited_restarts_and_rathena_hourly_only(self):
         self.stack(up=True)
@@ -273,7 +274,7 @@ class TestWatchdogPass(Env):
             recs = [json.loads(l) for l in f if l.strip()]
         self.assertEqual(len(recs), 2)
         r = recs[-1]
-        self.assertEqual(len(r["agents"]), 8)
+        self.assertEqual(len(r["agents"]), 9)
         self.assertEqual(len(r["containers"]), 6)
         self.assertEqual({a["key"] for a in r["agents"]}, set(ALL))
         self.assertIn("summary", r)

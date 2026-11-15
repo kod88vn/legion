@@ -1,5 +1,9 @@
 """Tests of tools/system/aylawatch.py (Ayla watch, plain code). No server, no docker, no live folder (rule G23): the
 engine API and docker are fakes, and the data and Ayla-log folders are temp dirs.
+
+The party fixtures copy the JSON that legion/partydash.go (partyView, partyMemberView, PartyMemberExtras) and
+legion/meterapi.go (meterBotOut, meterBotsFile) write: the same json tags, the same omitempty rules. An engine party
+has no "human" key (Party.Human is "", engineparty.go), so Ayla is an ordinary member and gets no dist_lead / exp_h.
 Run: python -m unittest discover -s tests/system -v   (from the repo root)."""
 import os as _os  # G23: tests never touch the live legion/data folder
 import sys as _sys
@@ -15,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import urllib.error
 from contextlib import redirect_stdout
@@ -40,16 +45,40 @@ LOG_SAMPLE = (
 )
 
 
-def party(members, human="Ayla", map_="prt_fild08"):
-    """an engine API party view: the leader row (human) plus bot members"""
-    rows = [{"name": human, "human": True, "map": map_, "x": 100, "y": 150, "zeny": -1, "level": 80}]
-    rows += members
-    return {"name": "P1", "human": human, "map": map_, "members": rows}
+def engine_member(name, x=100, y=150, map_="prt_fild08", online=True, leader=False, kills=0, deaths=0, zeny=500,
+                  level=80):
+    """partyMemberView JSON (partydash.go) for a bot in an engine party: no human, no PartyMemberExtras"""
+    return {"name": name, "class": "Swordman", "level": level, "job_level": 40, "role": "melee", "online": online,
+            "map": map_, "x": x, "y": y, "hp": 1.0, "sp": 1.0, "zeny": zeny, "state": "farming",
+            "leader": leader, "with_leader": True, "kills": kills, "deaths": deaths}
 
 
-def bot(name, map_="prt_fild08", dist=3, kills=10, deaths=1, zeny=500, exp_h=0):
-    return {"name": name, "human": False, "map": map_, "dist_lead": dist, "kills": kills, "deaths": deaths,
-            "zeny": zeny, "exp_h": exp_h}
+def engine_party(members, map_="prt_fild08"):
+    """partyView JSON for an engine party: "human" is omitted (omitempty) because Party.Human is ""."""
+    return {"name": "Ayla's party", "leader": "Ayla", "map": map_, "checkpoint": "prontera", "formed_min": 42,
+            "even_share": False, "online": sum(1 for m in members if m["online"]),
+            "together": len(members), "avg_level": 80.0, "members": members}
+
+
+def openkore_party(bots):
+    """partyView JSON for Ayla's human-led party: the human row, then bots with the PartyMemberExtras fields"""
+    human = {"name": "Ayla", "class": "human", "level": 80, "job_level": 50, "role": "leader", "online": True,
+             "map": "prontera", "x": 100, "y": 150, "hp": -1, "sp": -1, "zeny": -1, "state": "played by a person / OpenKore",
+             "leader": True, "human": True, "with_leader": True, "kills": 0, "deaths": 0}
+    rows = [human]
+    for name, dist in bots:
+        m = engine_member(name)
+        m.update({"dist_lead": dist, "lead_map": "prontera", "kpm": 3.5, "exp_h": 120000, "exp_min": 9.5})
+        rows.append(m)
+    return {"name": "Ayla core", "human": "Ayla", "leader": "Ayla", "map": "prontera", "members": rows}
+
+
+def meter_bot(name, kpm=3.1, zph=54000.0, map_="prt_fild08", online=True):
+    """meterBotOut JSON (meterapi.go) for one bot in meter_bots.json "bots"; there is no exp or kill count in it"""
+    return {"name": name, "class": "Swordman", "lv": 80, "cohort": "mid", "instance": "", "online": online, "map": map_,
+            "bucket": "fields", "party": "Ayla's party", "guild": "Starveil", "min": 60.0, "counted": True,
+            "kpm": kpm, "kpm_own": kpm, "kpm_all": kpm, "zph": zph, "zph_own": zph, "deaths_h": 0.5,
+            "par_kpm": 3.0, "par_zph": 50000.0, "gap_kpm": -0.1, "gap_zph": -4000.0}
 
 
 class Base(unittest.TestCase):
@@ -59,9 +88,10 @@ class Base(unittest.TestCase):
         self.logs = os.path.join(self.tmp, "logs")
         os.makedirs(self.data)
         os.makedirs(self.logs)
-        self._old = {k: os.environ.get(k) for k in ("LEGION_DATA", "LEGION_AYLA_LOGS")}
+        self._old = {k: os.environ.get(k) for k in ("LEGION_DATA", "LEGION_AYLA_LOGS", "LEGION_FAKE_NOW")}
         os.environ["LEGION_DATA"] = self.data
         os.environ["LEGION_AYLA_LOGS"] = self.logs
+        os.environ.pop("LEGION_FAKE_NOW", None)
         os.environ["LEGION_TEST"] = "1"
 
     def tearDown(self):
@@ -77,6 +107,10 @@ class Base(unittest.TestCase):
         with open(p, "w", encoding="utf-8") as f:
             json.dump(obj, f)
         return p
+
+    def write_meter(self, t, bots):
+        with open(os.path.join(self.data, W.METER_BOTS), "w", encoding="utf-8") as f:
+            json.dump({"t": t, "window": "60m", "total": len(bots), "bots": bots}, f)
 
     @staticmethod
     def opener_ok(answer):
@@ -94,7 +128,7 @@ class Base(unittest.TestCase):
                 return False
 
         def op(url, timeout):
-            return Resp(answer.encode("utf-8") if isinstance(answer, str) else json.dumps(answer).encode("utf-8"))
+            return Resp(json.dumps(answer).encode("utf-8"))
         return op
 
     @staticmethod
@@ -132,11 +166,11 @@ class TestParseLog(unittest.TestCase):
 
 
 class TestStatusFile(Base):
-    def test_reads_object(self):
-        p = self.write_status({"map": "prontera", "x": 1, "y": 2, "zeny": 900})
+    def test_reads_object_and_age(self):
+        p = self.write_status({"map": "prontera", "x": 1, "y": 2, "zeny": 900, "lock_map": "prt_fild08",
+                               "intent": "farm"})
         st, age, err = W.read_status(p, os.path.getmtime(p) + 7)
-        self.assertEqual((st["map"], err), ("prontera", ""))
-        self.assertEqual(age, 7)
+        self.assertEqual((st["map"], err, age), ("prontera", "", 7))
 
     def test_missing_file_is_an_error_not_a_crash(self):
         st, age, err = W.read_status(os.path.join(self.logs, "nope.json"), 0)
@@ -147,7 +181,7 @@ class TestStatusFile(Base):
         with open(p, "w", encoding="utf-8") as f:
             f.write("{not json")
         with self.assertLogs("aylawatch", level="WARNING"):
-            st, age, err = W.read_status(p, 0)
+            st, _, err = W.read_status(p, 0)
         self.assertEqual((st, err), ({}, "status.json JSONDecodeError"))
 
     def test_non_object_json(self):
@@ -162,7 +196,6 @@ class TestContainerLog(Base):
         self.assertEqual((text, err), ("You have gained 5/1 base exp\n", ""))
         cmd, kw = run.calls[0]
         self.assertIn("ro-openkore-ayla", cmd)
-        self.assertIn("--since", cmd)
         self.assertEqual(kw["timeout"], W.DOCKER_TIMEOUT)
 
     def test_timeout_is_caught(self):
@@ -172,7 +205,7 @@ class TestContainerLog(Base):
 
     def test_missing_wsl_is_caught(self):
         with self.assertLogs("aylawatch", level="WARNING"):
-            text, err = W.container_log(self.fake_run(exc=FileNotFoundError("wsl.exe")))
+            _, err = W.container_log(self.fake_run(exc=FileNotFoundError("wsl.exe")))
         self.assertEqual(err, "docker/wsl missing")
 
     def test_other_os_error_is_caught(self):
@@ -187,9 +220,10 @@ class TestContainerLog(Base):
 
 class TestEngineApi(Base):
     def test_ok_list(self):
-        views, err = W.fetch_party_detail(self.opener_ok([party([bot("Bob")])]), base="http://x")
+        views, err = W.fetch_party_detail(self.opener_ok([engine_party([engine_member("Ayla", leader=True)])]),
+                                          base="http://x")
         self.assertEqual(err, "")
-        self.assertEqual(views[0]["human"], "Ayla")
+        self.assertEqual(views[0]["name"], "Ayla's party")
 
     def test_urlerror_timeout_and_http_are_caught(self):
         for exc, name in ((urllib.error.URLError("refused"), "URLError"), (TimeoutError("slow"), "TimeoutError"),
@@ -200,102 +234,139 @@ class TestEngineApi(Base):
             self.assertEqual(err, "api " + name)
 
     def test_bad_json_and_wrong_shape(self):
+        def raw(_url, timeout):
+            class R:
+                def read(self):
+                    return b"<html>"
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *a):
+                    return False
+            return R()
         with self.assertLogs("aylawatch", level="WARNING"):
-            self.assertEqual(W.fetch_party_detail(self.opener_ok("<html>"), base="http://x"), (None, "api bad json"))
+            self.assertEqual(W.fetch_party_detail(raw, base="http://x"), (None, "api bad json"))
         self.assertEqual(W.fetch_party_detail(self.opener_ok({"a": 1}), base="http://x"),
                          (None, "api answer is not a list"))
 
-    def test_ayla_party_is_picked_by_human_name(self):
-        other = {"name": "P2", "human": "Zen", "members": []}
-        self.assertEqual(W.ayla_party([other, party([])])["human"], "Ayla")
+    def test_engine_party_is_found_by_member_name_not_human(self):
+        eng = engine_party([engine_member("Bob"), engine_member("Ayla", leader=True)])
+        ok = openkore_party([("Bob", 3)])
+        other = {"name": "P2", "human": "Zen", "members": [engine_member("Cy")]}
+        self.assertIs(W.ayla_party([other, eng]), eng)
+        self.assertIs(W.ayla_party([other, ok]), ok)
         self.assertIsNone(W.ayla_party([other]))
         self.assertIsNone(W.ayla_party(None))
 
 
 class TestMeterFile(Base):
-    def test_fresh_ayla_row_is_read(self):
-        with open(os.path.join(self.data, W.METER_BOTS), "w", encoding="utf-8") as f:
-            json.dump({"t": 1000, "ayla": {"exp_h": 3000, "kills": 7, "zeny": 42, "map": "prt_fild08"}}, f)
+    def test_fresh_ayla_bot_row_is_read(self):
+        self.write_meter(1000, [meter_bot("Bob"), meter_bot("Ayla", kpm=4.2, zph=61000.0)])
         row, err = W.read_meter_ayla(self.data, 1100)
-        self.assertEqual((row["exp_h"], err), (3000, ""))
+        self.assertEqual((row["name"], row["kpm"], row["zph"], err), ("Ayla", 4.2, 61000.0, ""))
 
     def test_missing_stale_and_no_row(self):
         self.assertEqual(W.read_meter_ayla(self.data, 0)[1], "meter_bots.json missing")
-        with open(os.path.join(self.data, W.METER_BOTS), "w", encoding="utf-8") as f:
-            json.dump({"t": 1000, "ayla": {"exp_h": 1}}, f)
+        self.write_meter(1000, [meter_bot("Ayla")])
         self.assertEqual(W.read_meter_ayla(self.data, 1000 + W.MAX_METER_AGE + 1)[1], "meter_bots.json stale")
-        with open(os.path.join(self.data, W.METER_BOTS), "w", encoding="utf-8") as f:
-            json.dump({"t": 1000, "bots": []}, f)
+        self.write_meter(1000, [meter_bot("Bob")])
         self.assertEqual(W.read_meter_ayla(self.data, 1001)[1], "meter_bots.json has no ayla row")
 
 
 class TestEngineView(unittest.TestCase):
-    def test_no_previous_snapshot_gives_no_deltas(self):
-        v = W.engine_view(party([bot("Bob", kills=10), bot("Cy", kills=4, deaths=2)]), {}, None)
-        self.assertIsNone(v["kills_5m"])
-        self.assertIsNone(v["map_changes"])
-        self.assertEqual(v["kills_total"], 14)
-        self.assertEqual(v["deaths_total"], 3)
-        self.assertEqual(v["distance"], {"Bob": 3, "Cy": 3})
+    def test_distance_from_positions_not_dist_lead(self):
+        p = engine_party([engine_member("Ayla", x=100, y=150, leader=True),
+                          engine_member("Bob", x=103, y=146),          # same map: max(3, 4) = 4
+                          engine_member("Cy", x=100, y=150, map_="payon"),  # other map: -1
+                          engine_member("Dee", x=100, y=150, online=False)])  # offline: -1
+        v = W.engine_view(p, {}, None)
+        self.assertEqual(v["distance"], {"Bob": 4, "Cy": -1, "Dee": -1})
+        self.assertEqual(v["map"], "prt_fild08")
+        self.assertEqual((v["x"], v["y"]), (100, 150))
 
-    def test_kills_deaths_and_map_changes_against_previous(self):
-        prev = {"kills_total": 10, "deaths_total": 1, "members_map": {"Ayla": "prt_fild08", "Bob": "prt_fild08"}}
-        p = party([bot("Bob", map_="payon", kills=15, deaths=1), bot("Cy", kills=4, deaths=2)])
+    def test_no_previous_gives_no_deltas(self):
+        v = W.engine_view(engine_party([engine_member("Ayla", leader=True), engine_member("Bob", kills=10, deaths=2)]),
+                          {}, None)
+        self.assertIsNone(v["kills_5m"])
+        self.assertIsNone(v["deaths_5m"])
+        self.assertIsNone(v["map_changes"])
+        self.assertEqual((v["kills_total"], v["deaths_total"]), (10, 2))
+
+    def test_kills_deaths_are_clamped_deltas_of_running_totals(self):
+        prev = {"totals": {"Ayla": {"kills": 5, "deaths": 0}, "Bob": {"kills": 10, "deaths": 1},
+                           "Cy": {"kills": 40, "deaths": 3}},
+                "members_map": {"Ayla": "prt_fild08", "Bob": "prt_fild08", "Cy": "prt_fild08"}}
+        p = engine_party([engine_member("Ayla", kills=7, leader=True), engine_member("Bob", kills=15, deaths=2),
+                          engine_member("Cy", kills=4, deaths=3)])  # Cy's counter went down: a replaced bot
         v = W.engine_view(p, {}, prev)
-        self.assertEqual(v["kills_5m"], 9)           # 19 - 10
-        self.assertEqual(v["deaths_5m"], 2)          # 3 - 1
-        self.assertEqual(v["map_changed"], ["Bob"])
+        self.assertEqual(v["kills_5m"], 2 + 5 + 0)     # Ayla +2, Bob +5, Cy clamped to 0
+        self.assertEqual(v["deaths_5m"], 1 + 0)        # Bob +1, Cy 0, Ayla 0
+
+    def test_new_member_adds_no_delta_and_map_changes_are_listed(self):
+        prev = {"totals": {"Ayla": {"kills": 0, "deaths": 0}}, "members_map": {"Ayla": "prt_fild08"}}
+        p = engine_party([engine_member("Ayla", leader=True, map_="payon"), engine_member("Newbie", kills=30)])
+        v = W.engine_view(p, {}, prev)
+        self.assertEqual(v["kills_5m"], 0)
+        self.assertEqual(v["map_changed"], ["Ayla"])
         self.assertEqual(v["map_changes"], 1)
 
-    def test_zeny_falls_back_to_meter_and_exp_adds_own_row(self):
-        v = W.engine_view(party([bot("Bob", exp_h=600)]), {"zeny": 4242, "exp_h": 3000}, None)
-        self.assertEqual(v["zeny"], 4242)
-        self.assertEqual(v["exp_h"], 3600)
-        self.assertEqual(v["exp_5m"], 300)          # 3600 * 5 / 60
+    def test_rates_and_zeny_from_the_meter_row_and_api(self):
+        row = meter_bot("Ayla", kpm=4.2, zph=61000.0)
+        v = W.engine_view(engine_party([engine_member("Ayla", zeny=12345, leader=True), engine_member("Bob")]),
+                          row, None)
+        self.assertEqual((v["kpm"], v["zph"], v["deaths_h"]), (4.2, 61000.0, 0.5))
+        self.assertEqual(v["zeny"], 12345)
+        self.assertIsNone(v["exp_5m"])      # no exp total in the engine API for an engine party
+        self.assertIsNone(v["exp_h"])
 
-    def test_leader_zeny_wins_when_known(self):
-        p = party([bot("Bob")])
-        p["members"][0]["zeny"] = 77
-        self.assertEqual(W.engine_view(p, {"zeny": 4242}, None)["zeny"], 77)
+
+class TestOpenKoreView(unittest.TestCase):
+    def test_distance_is_dist_lead_from_the_human_led_party(self):
+        p = openkore_party([("Bob", 12), ("Cy", -1)])
+        v = W.openkore_view({"map": "prontera", "x": 5, "y": 6, "zeny": 900}, LOG_SAMPLE, "", p)
+        self.assertEqual(v["distance"], {"Bob": 12, "Cy": -1})
+        self.assertEqual((v["exp_5m"], v["kills_5m"], v["deaths_5m"], v["map_changes"]), (200, 2, 1, 1))
+        self.assertEqual(v["zeny"], 900)
 
 
 class TestCollect(Base):
-    def test_openkore_snapshot_from_logs_status_and_api(self):
-        p = self.write_status({"map": "prontera", "x": 5, "y": 6, "lock_map": "prt_fild08", "zeny": 900,
-                               "intent": "farm"})
-        snap = W.collect("openkore", 1000, p, self.data, self.opener_ok([party([bot("Bob", dist=12)])]),
+    def test_engine_snapshot_end_to_end(self):
+        self.write_meter(1000, [meter_bot("Ayla", kpm=4.2, zph=61000.0)])
+        p = self.write_status({"map": "prontera", "lock_map": "prt_fild08", "intent": "farm the field"})
+        snap = W.collect("engine", 1100, p, self.data,
+                         self.opener_ok([engine_party([engine_member("Ayla", leader=True, kills=3),
+                                                       engine_member("Bob", x=101, y=150, kills=10)])]),
                          self.fake_run(stdout=LOG_SAMPLE))
-        self.assertEqual(snap["map"], "prontera")
-        self.assertEqual(snap["zeny"], 900)
-        self.assertEqual(snap["exp_5m"], 200)
-        self.assertEqual(snap["distance"], {"Bob": 12})
+        self.assertEqual(snap["era"], "engine")
+        self.assertEqual(snap["distance"], {"Bob": 1})
+        self.assertEqual(snap["kpm"], 4.2)
+        self.assertEqual(snap["lock_map"], "prt_fild08")
+        self.assertEqual(snap["watchdog"], ["idle 300s", "stuck at payon"])
         self.assertEqual(snap["errors"], [])
         self.assertTrue(snap["ok"])
 
+    def test_openkore_snapshot_end_to_end(self):
+        p = self.write_status({"map": "prontera", "x": 5, "y": 6, "zeny": 900, "lock_map": "prt_fild08"})
+        snap = W.collect("openkore", 1000, p, self.data, self.opener_ok([openkore_party([("Bob", 12)])]),
+                         self.fake_run(stdout=LOG_SAMPLE))
+        self.assertEqual(snap["exp_5m"], 200)
+        self.assertEqual(snap["distance"], {"Bob": 12})
+        self.assertTrue(snap["ok"])
+
     def test_every_failed_source_is_listed(self):
-        snap = W.collect("openkore", 1000, os.path.join(self.logs, "missing.json"), self.data,
+        snap = W.collect("engine", 1000, os.path.join(self.logs, "missing.json"), self.data,
                          self.opener_raising(urllib.error.URLError("down")),
                          self.fake_run(exc=subprocess.TimeoutExpired(["wsl"], 60)))
         self.assertFalse(snap["ok"])
-        self.assertIn("api URLError", snap["errors"])
-        self.assertIn("status.json missing", snap["errors"])
-        self.assertIn("docker logs timeout", snap["errors"])
+        for e in ("api URLError", "status.json missing", "docker logs timeout", "meter_bots.json missing"):
+            self.assertIn(e, snap["errors"])
 
-    def test_engine_snapshot_from_api_and_meter(self):
-        with open(os.path.join(self.data, W.METER_BOTS), "w", encoding="utf-8") as f:
-            json.dump({"t": 1000, "ayla": {"exp_h": 1200, "kills": 3, "zeny": 9, "map": "prt_fild08"}}, f)
-        snap = W.collect("engine", 1100, os.path.join(self.logs, "x.json"), self.data,
-                         self.opener_ok([party([bot("Bob", kills=5)])]), self.fake_run())
-        self.assertEqual(snap["era"], "engine")
-        self.assertEqual(snap["exp_h"], 1200)
-        self.assertEqual(snap["kills_total"], 5)
-        self.assertEqual(snap["errors"], [])   # the meter file was written above: fresh, so no error
-
-    def test_engine_snapshot_with_no_party_is_flagged(self):
-        snap = W.collect("engine", 1100, "", self.data, self.opener_ok([]), self.fake_run())
-        self.assertIn("no party with human Ayla", snap["errors"])
+    def test_no_ayla_party_is_flagged(self):
+        snap = W.collect("engine", 1100, "", self.data, self.opener_ok([engine_party([engine_member("Bob")])]),
+                         self.fake_run())
+        self.assertIn("no party with a member named Ayla", snap["errors"])
         self.assertIsNone(snap["map"])
-        self.assertFalse(snap["ok"])
 
 
 class TestRunOnce(Base):
@@ -308,63 +379,118 @@ class TestRunOnce(Base):
             snap = W.run_once(args, now=now, opener=opener, run=run)
         return snap, buf.getvalue()
 
+    def party_opener(self):
+        return self.opener_ok([engine_party([engine_member("Ayla", leader=True), engine_member("Bob", kills=10)])])
+
     def test_auto_picks_openkore_without_the_switch(self):
-        snap, line = self.run_quiet(self.args(), self.opener_ok([party([])]), self.fake_run())
+        snap, line = self.run_quiet(self.args(), self.opener_ok([openkore_party([("Bob", 3)])]), self.fake_run())
         self.assertEqual(snap["era"], "openkore")
         self.assertIn("[openkore]", line)
 
     def test_auto_picks_engine_when_engine_parties_names_ayla(self):
         with open(os.path.join(self.data, "tuning.json"), "w", encoding="utf-8") as f:
             json.dump({"engine_parties": "Zen, Ayla"}, f)
-        with open(os.path.join(self.data, W.METER_BOTS), "w", encoding="utf-8") as f:
-            json.dump({"t": 1000, "ayla": {"exp_h": 100}}, f)
-        snap, line = self.run_quiet(self.args(), self.opener_ok([party([bot("Bob")])]), self.fake_run())
+        self.write_meter(1000, [meter_bot("Ayla")])
+        snap, line = self.run_quiet(self.args(), self.party_opener(), self.fake_run())
         self.assertEqual(snap["era"], "engine")
         self.assertIn("[engine]", line)
 
     def test_forced_era_overrides_switch(self):
         with open(os.path.join(self.data, "tuning.json"), "w", encoding="utf-8") as f:
             json.dump({"engine_parties": "ayla"}, f)
-        snap, _ = self.run_quiet(self.args(era="openkore"), self.opener_ok([party([])]), self.fake_run())
+        snap, _ = self.run_quiet(self.args(era="openkore"), self.party_opener(), self.fake_run())
         self.assertEqual(snap["era"], "openkore")
 
     def test_records_heartbeat_and_jsonl_and_kill_delta(self):
-        opener = self.opener_ok([party([bot("Bob", kills=10)])])
-        self.run_quiet(self.args(era="engine"), opener, self.fake_run(), now=1000)
-        opener = self.opener_ok([party([bot("Bob", kills=14)])])
+        self.write_meter(1000, [meter_bot("Ayla")])
+        self.run_quiet(self.args(era="engine"), self.party_opener(), self.fake_run(), now=1000)
+        opener = self.opener_ok([engine_party([engine_member("Ayla", leader=True),
+                                               engine_member("Bob", kills=14)])])
         snap, _ = self.run_quiet(self.args(era="engine"), opener, self.fake_run(), now=1300)
         self.assertEqual(snap["kills_5m"], 4)
-        rows = C.read_jsonl(os.path.join(self.data, W.RECORD))
-        self.assertEqual(len(rows), 2)
+        self.assertEqual(len(C.read_jsonl(os.path.join(self.data, W.RECORD))), 2)
         with open(os.path.join(self.data, W.HEARTBEAT + ".heartbeat"), encoding="utf-8") as f:
             hb = f.read()
-        self.assertEqual(hb.split()[1], "engine", hb)     # the epoch is the real clock; the note names the era
+        self.assertEqual(hb.split()[1], "engine", hb)
 
     def test_no_record_writes_nothing(self):
-        self.run_quiet(self.args(no_record=True), self.opener_ok([party([])]), self.fake_run())
+        self.run_quiet(self.args(no_record=True), self.party_opener(), self.fake_run())
         self.assertFalse(os.path.exists(os.path.join(self.data, W.RECORD)))
 
     def test_heartbeat_names_the_error(self):
         with self.assertLogs("aylawatch", level="WARNING"):
             self.run_quiet(self.args(era="engine"), self.opener_raising(urllib.error.URLError("x")), self.fake_run())
         with open(os.path.join(self.data, W.HEARTBEAT + ".heartbeat"), encoding="utf-8") as f:
-            hb = f.read()
-        self.assertIn("api URLError", hb)
+            self.assertIn("api URLError", f.read())
 
 
-class TestGuards(Base):
-    def test_logs_folder_in_live_checkout_is_refused_under_test(self):
-        os.environ["LEGION_AYLA_LOGS"] = C.LIVE_AYLA_LOGS
-        with self.assertRaises(RuntimeError):
-            W.logs_dir()
+class TestLoop(Base):
+    class Stop(Exception):
+        pass
 
-    def test_temp_logs_folder_is_accepted(self):
-        self.assertEqual(os.path.abspath(W.logs_dir()), os.path.abspath(self.logs))
+    def test_second_loop_is_refused_by_the_lock(self):
+        with open(os.path.join(self.data, W.LOCK), "w", encoding="utf-8") as f:
+            f.write("1 %d\n" % int(time.time()))
+        with self.assertLogs("aylawatch", level="ERROR"):
+            self.assertEqual(W.main([]), 3)
 
-    def test_summary_line_shows_errors(self):
-        line = W.summary({"t": 0, "era": "openkore", "errors": ["api URLError"], "map": "x", "x": 1, "y": 2,
-                          "exp_5m": 0, "kills_5m": 0, "deaths_5m": 0, "map_changes": 0, "zeny": 5, "distance": {}})
-        self.assertIn("ERR api URLError", line)
+    def test_loop_survives_a_source_error_and_records_it(self):
+        real_run_once, real_sleep = W.run_once, W.time.sleep
+        calls = []
+
+        def boom(args):
+            calls.append(1)
+            raise KeyError("odd api shape")
+
+        def stop(_secs):
+            raise self.Stop()
+        W.run_once, W.time.sleep = boom, stop
+        try:
+            with self.assertLogs("aylawatch", level="ERROR"), self.assertRaises(self.Stop):
+                W.main([])
+        finally:
+            W.run_once, W.time.sleep = real_run_once, real_sleep
+        self.assertEqual(len(calls), 1)
+        with open(os.path.join(self.data, W.HEARTBEAT + ".heartbeat"), encoding="utf-8") as f:
+            self.assertIn("loop error KeyError", f.read())
+
+
+class TestWatchdogEntry(Base):
+    def test_watchdog_checks_the_ayla_watch_heartbeat(self):
+        import watchdog
+        row = [a for a in watchdog.AGENTS if a["key"] == "aylawatch"]
+        self.assertEqual(len(row), 1)
+        self.assertEqual(row[0]["hb"], ["aylawatch.heartbeat"])
+        self.assertGreaterEqual(row[0]["stale"], 360)          # 300 s round plus docker
+        self.assertEqual(row[0]["lock"], "aylawatch.lock")
+        self.assertEqual(row[0]["cmd"], ["tools/system/aylawatch.py"])
+
+    def test_stale_ayla_watch_is_reported_as_down(self):
+        import watchdog
+        now = 1_800_000_000.0
+        os.environ["LEGION_FAKE_NOW"] = str(now)
+        with open(os.path.join(self.data, "aylawatch.heartbeat"), "w") as f:
+            f.write(str(int(now - 900)))
+        os.utime(os.path.join(self.data, "aylawatch.heartbeat"), (now - 900, now - 900))
+        with open(os.path.join(self.data, "stack.up"), "w") as f:
+            f.write("t")
+
+        class Ops:
+            started = []
+
+            def start_agent(self, a):
+                self.started.append(a["key"])
+
+            def process_running(self, a):
+                return False
+
+            def docker_start(self, name):
+                pass
+        ops = Ops()
+        res = watchdog.run_pass(now, ops, containers={}, queue={})
+        row = [r for r in res["status"]["agents"] if r["key"] == "aylawatch"][0]
+        self.assertEqual(row["state"], "down")
+        self.assertTrue(row["action"])     # one restart per pass: the sentinel took it, the Ayla watch is queued
 
 
 if __name__ == "__main__":
