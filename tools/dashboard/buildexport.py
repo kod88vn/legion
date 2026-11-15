@@ -26,6 +26,15 @@ REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 OUT = os.path.join(HERE, "builds.json")
 BUILDS_GO = os.path.join(REPO, "legion", "builds.go")
 GEAR_JSON = os.path.join(REPO, "legion", "data", "buildgear.json")
+# the design draft (feat/build-design): per-band stats and skills, plan_check and draft playstyles. Read at export
+# time, so a regenerated file (the plan rebalance) shows up on the next export. Every value from it is "draft".
+MILESTONES_JSON = os.path.join(REPO, "legion", "data", "buildmilestones.json")
+# HOOK for fix/gear-gate: when the engine writes its own milestone gear table, point this at that file. Until the
+# file exists the gear rows come from GEAR_JSON (buildgear.json). Expected shape, to confirm when it lands:
+# {"builds": {id: {"ranges": [{"min": n, "max": n, "slots": {slot: [item ids]}}]}}}
+ENGINE_GEAR_JSON = os.path.join(REPO, "legion", "data", "milestonegear.json")
+STAT_ORDER_OUT = ["STR", "AGI", "VIT", "INT", "DEX", "LUK"]
+DRAFT_NOTE = "draft for owner review"
 PERSONAS = os.path.join(REPO, "legion", "data", "personas.json")
 PROGRESS_GO = os.path.join(REPO, "legion", "progress.go")
 PERSONA_GO = os.path.join(REPO, "legion", "persona.go")
@@ -316,6 +325,43 @@ def item_name(items, i):
     return items.get(i) or "#%d (no name in the local item table)" % i
 
 
+def load_json_or_none(path):
+    """a JSON file read at export time; None when it is missing or unreadable"""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def band_for(bands, rmin, rmax):
+    """the gear band that overlaps a level range the most (None when no band overlaps it)"""
+    best, best_n = None, 0
+    for bd in bands:
+        n = min(bd["max"], rmax) - max(bd["min"], rmin) + 1
+        if n > best_n:
+            best, best_n = bd, n
+    return best
+
+
+def plan_warnings(pc):
+    """the warnings a draft plan_check shows: points the plan needs against what exists, and goals never reached"""
+    out = []
+    if not pc:
+        return out
+    cost, avail = pc.get("stat_points_goals_cost"), pc.get("stat_points_at_99")
+    if cost is not None and avail is not None and cost > avail:
+        out.append("stat goals need %d points; the plan has %d at level 99" % (cost, avail))
+    if pc.get("stat_goals_unreached"):
+        out.append("stat goals never reached at 99: %s" % ", ".join(pc["stat_goals_unreached"]))
+    for s in pc.get("skills_unreached_at_99") or []:
+        out.append("skill never reached at 99: %s (wants %s, reaches %s)" % (s["name"], s["want"], s["reached"]))
+    listed, reach = pc.get("skill_points_listed"), pc.get("skill_points_reachable")
+    if listed is not None and reach is not None and listed > reach:
+        out.append("skill rows list %d points, %d are reachable" % (listed, reach))
+    return out
+
+
 def gear_table(gear, bid, base):
     """the engine's gear table for a build: its own, else its base build's (buildgear.go falls back to Base)"""
     b = gear.get("builds") or {}
@@ -329,8 +375,13 @@ def gear_table(gear, bid, base):
 # ----------------------------------------------------------------- the export
 
 def build_export(items, skills, paths=None):
-    p = dict(BUILDS_GO=BUILDS_GO, GEAR_JSON=GEAR_JSON, PROGRESS_GO=PROGRESS_GO, PERSONA_GO=PERSONA_GO, DOCS_DIR=DOCS_DIR)
+    p = dict(BUILDS_GO=BUILDS_GO, GEAR_JSON=GEAR_JSON, PROGRESS_GO=PROGRESS_GO, PERSONA_GO=PERSONA_GO, DOCS_DIR=DOCS_DIR,
+             MILESTONES=MILESTONES_JSON, ENGINE_GEAR=ENGINE_GEAR_JSON)
     p.update(paths or {})
+    ms_all = load_json_or_none(p["MILESTONES"]) or {}
+    ms_builds = ms_all.get("builds") or {}
+    engine_gear = load_json_or_none(p["ENGINE_GEAR"])   # the hook (inert until the engine file exists)
+    engine_gear_builds = (engine_gear or {}).get("builds") or {}
     with open(p["BUILDS_GO"], encoding="utf-8") as f:
         src = f.read()
     with open(p["PROGRESS_GO"], encoding="utf-8") as f:
@@ -391,7 +442,8 @@ def build_export(items, skills, paths=None):
                 row = {"min": bd.get("min"), "max": bd.get("max"),
                        "slots": {s: [item_name(items, i) for i in bd.get(s, [])] for s in GEAR_SLOTS if bd.get(s)},
                        "cards": [{"name": item_name(items, c["id"]), "slot": c.get("slot"), "prio": c.get("prio"),
-                                  "why": c.get("why", "")} for c in bd.get("cards", [])]}
+                                  "why": c.get("why", "")} for c in bd.get("cards", [])],
+                       "source": "legion/data/buildgear.json builds.%s band %s-%s" % (table_id, bd.get("min"), bd.get("max"))}
                 bands.append(row)
             top = max(table.get("bands", []), key=lambda b: b.get("max", 0)) if table.get("bands") else {}
             for s in GEAR_SLOTS:
@@ -436,9 +488,20 @@ def build_export(items, skills, paths=None):
             if solo["lines"]:
                 solo = {"status": "defined", "lines": solo["lines"], "note": ""}
         playstyle = {"solo": solo, "party": party, "mvp": mvp, "pvp": pvp}
+        draft = ms_builds.get(bid) or {}
+        for part in ("solo", "mvp", "pvp"):
+            # a gap is filled by the design draft's text, labelled draft; the doc or code line always wins
+            if playstyle[part]["status"] == "gap" and (draft.get("playstyle") or {}).get(part):
+                playstyle[part] = {"status": "draft", "note": DRAFT_NOTE, "lines": [
+                    {"text": t, "source": "draft: legion/data/buildmilestones.json builds.%s.playstyle.%s[%d]" % (bid, part, i)}
+                    for i, t in enumerate(draft["playstyle"][part])]}
         for part, val in playstyle.items():
             if val["status"] == "gap":
                 gaps.append({"build": bid, "part": part, "note": val["note"]})
+        pc = draft.get("plan_check")
+        plan_check = ({"status": "draft", "note": DRAFT_NOTE, "warnings": plan_warnings(pc), "figures": pc,
+                       "source": "draft: legion/data/buildmilestones.json builds.%s.plan_check" % bid}
+                      if pc else {"status": "gap", "note": "no plan_check in the design draft", "warnings": []})
 
         # the engine's middle steps, in the order the plan uses them
         stat_steps = [{"label": "%s %d" % (s, v)} for s, v in stats]
@@ -446,22 +509,56 @@ def build_export(items, skills, paths=None):
         # EC39 milestones: one row per gear band of the engine's table (the levels the engine buys gear for). The
         # engine's stat and skill steps have no level (builds.go planStat / planSkill pick the next unmet goal), so
         # those are gaps in every row, never invented.
+        # gear rows: the engine's own milestone gear when its file exists (hook ENGINE_GEAR_JSON), else buildgear.json
+        eng = engine_gear_builds.get(bid)
+        if eng and eng.get("ranges"):
+            gear_rows = [{"min": r["min"], "max": r["max"], "cards": [],
+                          "slots": {s: [item_name(items, i) for i in ids] for s, ids in (r.get("slots") or {}).items() if ids}}
+                         for r in eng["ranges"]]
+            row_gear_src = "engine milestone gear (legion/data/milestonegear.json)"
+        else:
+            gear_rows, row_gear_src = bands, gear_src
+
+        def gear_of(bd):
+            return {"slots": {s: v[-1] for s, v in bd["slots"].items()}, "options": bd["slots"],
+                    "source": bd.get("source", row_gear_src)}
+
         milestones = []
-        for bd in bands:
-            rng = "%s-%s" % (bd["min"], bd["max"])
-            milestones.append({
-                "range": rng, "min": bd["min"], "max": bd["max"],
-                "gear": {"slots": {s: v[-1] for s, v in bd["slots"].items()}, "options": bd["slots"],
-                         "source": gear_src},
-                "cards": bd["cards"],
-                "stats": {"status": "gap", "value": None,
-                          "note": "no level milestone for stats: the plan is an ordered list (builds.go planStat)"},
-                "skills": {"status": "gap", "value": None,
-                           "note": "no level milestone for skills: the plan is an ordered list (builds.go planSkill)"},
-            })
+        if draft.get("ranges"):
+            # stats and skills per level range come from the design draft (labelled draft); gear from the band overlapping it
+            for r in draft["ranges"]:
+                rng = r["range"]
+                bd = band_for(gear_rows, r["min"], r["max"])
+                gear = ({"status": "ok", **gear_of(bd), "cards": bd["cards"]} if bd
+                        else {"status": "gap", "slots": {}, "options": {}, "cards": [],
+                              "note": "no gear band overlaps levels %s" % rng, "source": row_gear_src})
+                milestones.append({
+                    "range": rng, "min": r["min"], "max": r["max"], "class_at_end": r.get("class_at_end", ""),
+                    "gear": gear,
+                    "cards": bd["cards"] if bd else [],
+                    "stats": {"status": "draft", "note": DRAFT_NOTE, "values": {s: (r.get("stats") or {}).get(s) for s in STAT_ORDER_OUT},
+                              "points": {"available": r.get("stat_points_available"), "used": r.get("stat_points_used"),
+                                         "spare": r.get("stat_points_spare")},
+                              "source": "draft: legion/data/buildmilestones.json builds.%s.ranges[%s].stats" % (bid, rng)},
+                    "skills": {"status": "draft", "note": DRAFT_NOTE, "items": r.get("skills") or [],
+                               "unspent": r.get("skill_points_unspent"),
+                               "source": "draft: legion/data/buildmilestones.json builds.%s.ranges[%s].skills" % (bid, rng)},
+                })
+        else:
+            for bd in gear_rows:
+                rng = "%s-%s" % (bd["min"], bd["max"])
+                milestones.append({
+                    "range": rng, "min": bd["min"], "max": bd["max"], "class_at_end": "",
+                    "gear": dict(gear_of(bd), status="ok"), "cards": bd["cards"],
+                    "stats": {"status": "gap", "value": None,
+                              "note": "no level milestone for stats in the design draft or the engine"},
+                    "skills": {"status": "gap", "value": None,
+                               "note": "no level milestone for skills in the design draft or the engine"},
+                })
         builds.append({
             "id": bid, "base": f.get("Base", ""), "name": f.get("Name", bid), "summary": f.get("Summary", ""),
             "milestones": milestones,
+            "plan_check": plan_check,
             "class": {"id": cls, "name": cname(cls), "first": cname(f.get("First", 0)),
                       "first_id": f.get("First", 0), "branch": f.get("Branch", 0),
                       "line": "%s (1st job) -> %s (2nd job, end goal)" % (cname(f.get("First", 0)), cname(cls))},
@@ -490,6 +587,9 @@ def build_export(items, skills, paths=None):
         "item_names": len(items), "skill_names": len(skills),
         "transcendent": ("Transcendent classes (already-reborn characters only): a 4th-job or transcendent character "
                          "keeps the plan of its 2nd job (builds.go transToSecond); ST01 caps the server at 2nd classes."),
+        "draft": {"status": DRAFT_NOTE, "source": "legion/data/buildmilestones.json",
+                  "file_status": ms_all.get("status"), "drafted": ms_all.get("drafted"),
+                  "found": bool(ms_builds)},
         "builds": builds, "gaps": gaps,
     }
 
