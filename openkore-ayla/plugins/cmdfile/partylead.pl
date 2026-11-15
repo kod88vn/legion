@@ -1484,6 +1484,38 @@ sub crowd_move {
 	auto_goto($m, "$here is crowded; $why");
 }
 
+# ---- PT29 (2026-11-14): like every party member she asks the party priest for buffs she lacks ("bless pls", "agi?");
+# the engine priest (legion/priestbuff.go buffAskHeard) reads such party lines and moves the asker to the front.
+# Only with the priest on her map within 9 cells, never while idle in town, once per 90-150 s (varied).
+my ($buffAskAt, $buffAskGap) = (0, 120);
+sub has_status {
+	my $re = shift;
+	foreach my $k (keys %{$char->{statuses} || {}}) { return 1 if $k =~ $re || (($Globals::statusName{$k} || '') =~ $re) }
+	return 0;
+}
+sub buff_ask_tick {
+	return if time - $buffAskAt < $buffAskGap;
+	return if !$char || $char->{dead} || !$field || !$char->{pos_to};
+	my $here = $field->baseName;
+	return if is_townmap($here) && !$rally && !$depart; # idle in town: no asking
+	my $noBless = !has_status(qr/bless/i);
+	my $noAgi = !has_status(qr/inc_?agi|increase ?ag/i);
+	return unless $noBless || $noAgi;
+	my $pr = '';
+	foreach my $u (values %{$char->{party}{users} || {}}) {
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name};
+		my $a = $apiPos{$u->{name}};
+		next unless $a && ($a->{cls} || '') =~ /priest|acolyte/i;
+		my ($pos) = friend_pos($u, $here);
+		if ($pos && friend_map($u) eq $here && blockDistance($char->{pos_to}, $pos) <= 9) { $pr = $u->{name}; last }
+	}
+	return if $pr eq '';
+	($buffAskAt, $buffAskGap) = (time, 90 + int(rand(61)));
+	my $t = $noBless && $noAgi ? pick("buff pls", "buffs?", "bless agi pls", "can i get buffs?", "bless + agi pls ty")
+		: $noBless ? pick("bless pls", "bless?", "blessing pls") : pick("agi pls", "agi?", "inc agi pls", "agi pls ty");
+	psay($t, 1 + rand(2), 0);
+}
+
 # ---- zero-downtime watchdog (owner rule AY18, 2026-11-14: Ayla is never idle for any length of time) -------------------
 # Audit 2026-11-14 (console log, 27.9 h): 38% of the time was in idle stretches of 60 s or more (waiting for the party
 # 29% of those, char-select / login timeouts 27%, RODEX polling 19%, town / Kafra regroup 16%, routing 8%). Each of the
@@ -1677,6 +1709,7 @@ sub tick {
 	if ($sellTrigUntil && time > $sellTrigUntil) { $config{itemsMaxWeight_sellOrStore} = $sellTrigSaved; ($sellTrigSaved, $sellTrigUntil) = (0, 0) }
 	$huntMap = $config{lockMap} ne '' ? $config{lockMap} : (($saved && $saved->{lockMap}) ? $saved->{lockMap} : '');
 	set_home($config{lockMap}) if ($config{lockMap} || '') ne ''; # a non-empty lockMap is always the current destination (QA 20:54: stale homeMap pay_fild08)
+	buff_ask_tick(); # PT29: ask the priest for missing buffs
 	fit_tick(); # AY07/AY19: her own level / gear / turn map choice when the mind's order is stale
 	watchdog_tick();
 	# never stand still (owner: "Never stand still, walk around a bit to unstuck yourself"): no movement for 20 s
