@@ -5,6 +5,11 @@ each ID is kept, merged, moved, or archived as replaced (with the replacing rule
 words for every ID are in `archive.md`. `tools/system/gatecheck.py --coverage` checks that every kept ID appears in
 its new file.
 
+Old section numbers (code comments and older notes still cite them, e.g. "RULES.md 3b", "owner rule 3", "RULES 5"):
+section 0 -> `process.md`, 1 -> the hard gates (`gates.md`), 2 -> `economy.md` and `settings.md`, 3 -> `parties.md`,
+3b -> `guilds.md`, 4 -> `chat.md`, 5 -> `ayla.md`, 6 -> `process.md` (DB01, DB02); class rules -> `docs/classes/`.
+Find the rule by the quoted title in the Name column below.
+
 Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server setting 8, total 161.
 
 | ID | Name | Kind | Old location | New location | Status |

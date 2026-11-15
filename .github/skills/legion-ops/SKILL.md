@@ -3,6 +3,8 @@ name: legion-ops
 description: Operate and troubleshoot the AI-Lab Ragnarok stack (Docker in WSL) - start/stop, logs, re-seed bot profiles, rebuild Legion, check the game server. Use when legionctl can't reach the API or the world looks broken.
 ---
 
+> SUPERSEDED in part (2026-11-14 redesign): start/stop order and guards are in .claude/skills/legion-session/SKILL.md and docs/TEST-CHECKLIST.md; deploys go through tools/deploy with the 3-hour guard.
+
 # Ops
 
 All containers run in WSL (Ubuntu-24.04) Docker; compose project in this folder.

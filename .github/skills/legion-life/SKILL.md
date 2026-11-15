@@ -3,6 +3,8 @@ name: legion-life
 description: Ambient life for the AI-Lab Ragnarok world - writes short, natural conversations between players who are near each other (town hangouts, parties, fields), grounded in what they are doing and their memories, so the server feels alive. Use for the ambient-life sub-agent of a Legion session.
 ---
 
+> SUPERSEDED (2026-11-14 redesign): the ambient-life mind is no longer started (see docs/design/REDESIGN.md); this mirror describes the old always-on setup.
+
 # Ambient life loop
 
 ## Minds bus: the owner is watching (do this every cycle)

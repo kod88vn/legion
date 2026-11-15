@@ -3,6 +3,8 @@ name: legion-market
 description: Market mind for the AI-Lab Ragnarok world - runs the Prontera vending market: shop titles in each vendor's voice, price levels, advertising and haggling in chat. Use for the market sub-agent of a Legion session.
 ---
 
+> SUPERSEDED (2026-11-14 redesign): the market mind is a one-shot puppet master started by tools/puppet/dispatch.py with tools/puppet/briefs/market.md; this mirror describes the old always-on setup.
+
 # Market loop
 
 ## Minds bus: the owner is watching (do this every cycle)

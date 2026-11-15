@@ -3,6 +3,8 @@ name: legion-chat
 description: Chat director for the AI-Lab Ragnarok world - reads what players said (especially real humans), picks the character who would answer, and replies in that player's voice using their memory. Use for the chat sub-agent of a Legion session.
 ---
 
+> SUPERSEDED (2026-11-14 redesign): the chat mind is now a one-shot puppet master started by tools/puppet/dispatch.py with tools/puppet/briefs/chat.md; this mirror describes the old always-on setup.
+
 # Chat director loop
 
 ## Minds bus: the owner is watching (do this every cycle)

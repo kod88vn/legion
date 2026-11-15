@@ -19,7 +19,7 @@ for each of your guilds every cycle.
   decided, in plain English, out of character (this is the owner's window into your head, not game chat; it is
   never shown to players). One or two sentences each; no spam. Post a `--kind summary` thought when you stop.
 
-## Game data: look it up, never guess (owner rule, RULES.md 5)
+## Game data: look it up, never guess (owner rule AY08, docs/rules/process.md)
 For any question about drops, monsters or maps, and **before picking a map to farm or level on**, look it up:
 - `python tools/legionctl.py drops "<item>" [--for "<leader>"]`: who drops it (rate %), and the maps to farm it ranked
   by drop rate x spawn count (dungeon/field), graded against that party's levels with `--for`, plus each map's danger
@@ -30,7 +30,7 @@ For any question about drops, monsters or maps, and **before picking a map to fa
 Names are fuzzy ("SS card", "blue pot", "ygg", item/monster ids). It covers every item, every monster (MVPs and
 mini-bosses too) and every field and dungeon. Never say you can't find the data: run the lookup and answer from it.
 
-## Your guild leader (owner rule, RULES.md 3b)
+## Your guild leader (owner rules, docs/rules/guilds.md)
 Each guild's leader character is always online (the engine relogs it) and should be on the server leaderboard. Every
 cycle: `python tools/legionctl.py leader guild01` (level, rank, party, free members with class/role/level, suggested
 party + best map). If it isn't leading a full party, `python tools/legionctl.py leader-party guild01 [map]

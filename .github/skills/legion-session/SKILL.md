@@ -3,6 +3,8 @@ name: legion-session
 description: Start (or resume) a live session of the AI-Lab Ragnarok world - checks the server and Legion bot engine, then spawns sub-agents that act as the minds of the players (chat director, ambient life, guild leaders, market). Use when asked to "start the bot legion", "bring the server to life", or "run the masterminds".
 ---
 
+> SUPERSEDED (2026-11-14 redesign): use .claude/skills/legion-session/SKILL.md (new startup order) and docs/TEST-CHECKLIST.md; this mirror describes the old 15-minds setup.
+
 > **SUPERSEDED 2026-11-14:** the restart order / agent roster described here belongs to the old setup. Read
 > `STATUS.md` at the repo root first and start nothing (containers, loops, minds, agents) without the owner's word.
 

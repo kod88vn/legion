@@ -18,7 +18,7 @@ Your mind name: `life`. (a second ambient-life agent uses `life2`)
   decided, in plain English, out of character (this is the owner's window into your head, not game chat; it is
   never shown to players). One or two sentences each; no spam. Post a `--kind summary` thought when you stop.
 
-## Game data: look it up, never guess (owner rule, RULES.md 5)
+## Game data: look it up, never guess (owner rule AY08, docs/rules/process.md)
 For any question about drops, monsters or maps, and **before picking a map to farm or level on**, look it up:
 - `python tools/legionctl.py drops "<item>" [--for "<leader>"]`: who drops it (rate %), and the maps to farm it ranked
   by drop rate x spawn count (dungeon/field), graded against that party's levels with `--for`, plus each map's danger

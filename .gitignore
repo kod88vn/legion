@@ -59,3 +59,16 @@ legion/data/neo.wake
 legion/data/build.wake
 legion/data/guild_duty.json
 legion/data/guild_rank.json
+
+# system-agent harness runtime (tools/system, tools/sentinel.py, tools/mindgate.py, tools/deploy)
+legion/data/*.heartbeat
+legion/data/stack.up
+legion/data/stack.hold
+legion/data/bugq.watch.json
+legion/data/mindgate.state.json
+legion/data/deploys.jsonl
+legion/data/rathena_recreates.jsonl
+legion/data/econ_counters*.json
+tools/mindgate.paused
+docs/reports/league-*.md
+tools/puppet/workdir/.claude/

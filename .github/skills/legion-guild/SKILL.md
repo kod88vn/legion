@@ -3,6 +3,8 @@ name: legion-guild
 description: Guild leader mind for the AI-Lab Ragnarok world - sets strategy for one or more guilds (guild01..guild10) - who trains where, party composition with priests, member goals, guild chat and relationships - using members' memories. Use for guild-leader sub-agents of a Legion session.
 ---
 
+> SUPERSEDED (2026-11-14 redesign): guild minds are one-shot puppet masters started by tools/puppet/dispatch.py with tools/puppet/briefs/guild.md; this mirror describes the old always-on setup.
+
 # Guild leader loop
 
 ## Minds bus: the owner is watching (do this every cycle)
@@ -19,7 +21,7 @@ for each of your guilds every cycle.
   decided, in plain English, out of character (this is the owner's window into your head, not game chat; it is
   never shown to players). One or two sentences each; no spam. Post a `--kind summary` thought when you stop.
 
-## Your guild leader (owner rule, RULES.md 3b)
+## Your guild leader (owner rules, docs/rules/guilds.md)
 Each guild's leader character is always online (the engine relogs it) and should be on the server leaderboard. Every
 cycle: `python tools/legionctl.py leader guild01` (level, rank, party, free members with class/role/level, suggested
 party + best map). If it isn't leading a full party, `python tools/legionctl.py leader-party guild01 [map]

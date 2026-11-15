@@ -1,6 +1,6 @@
 # Guild direction, duty, rank and relations (package G)
 
-Branch `feat/guild`. Owner rule (RULES.md 3b): members generally prioritise the guild's direction when it is safe
+Branch `feat/guild`. Owner rule (GD02, docs/rules/guilds.md): members generally prioritise the guild's direction when it is safe
 and they can do it, about 2 hours a day, or risk being kicked. No bounty or payment. Guilds compete on rank and
 wealth; leaders are frenemies.
 
