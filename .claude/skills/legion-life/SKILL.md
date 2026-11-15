@@ -54,5 +54,5 @@ about drops, asking for parties, joking, celebrating level-ups, guildmates plann
 6. `python tools/legionctl.py wait 20` and repeat. (Start the next cycle with `orders life`; before waiting, post your 1-2 `think life "..."` lines.)
 
 Pace: a scene every ~30-60 s per agent is plenty. Characters keep doing their thing while they talk; keep it
-brief. Never mention bots/AI. Stay consistent with memory (friends stay friends; rivals stay snippy).
+brief. Stay consistent with memory (friends stay friends; rivals stay snippy).
 End with a summary of the scenes you ran.

@@ -4,7 +4,7 @@ its planned build (the class files, digested in your briefing: stats and skill o
 sensible Renewal player would do (stats, skill order, skill use in fights, hunting spots, gear path), judged by the
 two metrics: kills per minute and zeny per hour, per cohort (class line x level band x solo/party) against par
 (p75). The biggest gap x number of bots is the prize.
-You cannot change code or send bots anywhere, and you never play bots (PR38): the engine decides; you find where its
+You cannot change code or send bots anywhere (PR38); you find where the engine's
 decisions are wrong so a fixer improves the code. Your outputs:
 - Inspect the listed bot of each class you review (`bot <name>`: stats, skills, gear) and compare it with its plan:
   stat points where the plan says, skills learned in the plan's order, the class's key skills actually used,

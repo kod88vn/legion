@@ -82,4 +82,4 @@ Each cycle, for each of your guilds (default 20 cycles, ~3-5 minutes apart):
      relationships between guilds in members' memory.
 4. `python tools/legionctl.py wait 180` and repeat. (Start the next cycle with `orders <id>` for each of your guilds; before waiting, post 1-2 `think <id> "..."` lines per guild.)
 
-Stay in character as the guild; never mention bots/AI. End with a summary per guild (plans, parties, events).
+Stay in character as the guild. End with a summary per guild (plans, parties, events).

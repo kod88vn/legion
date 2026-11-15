@@ -13,7 +13,7 @@ Read `STATUS.md` first. The old always-on setup (15 minds, standing agents) is g
    files in the same turn.
 2. **Assign**: each queue item goes to a `fixer` (Sonnet; `hard-fixer` only for locking, networking, deploy scripts, or a bug
    that failed twice). One fixer per item, own worktree, builds only. Resume an agent with SendMessage; never spawn a
-   duplicate. No coding in the main session.
+   duplicate.
 3. **One planning pass before each 3-hour deploy**: the queue watcher wakes you at about 2h40 after the last deploy. Then:
    `analyst-review` (league + keep/revert), pick the batch, fixers finish, the `deploy` agent deploys with the fix list.
    Critical fixes (something is blocked) may deploy early with `--critical "<reason>"`; nothing else does.
@@ -52,9 +52,8 @@ Check what is running before starting anything: exactly one copy of each loop.
 
 ## Never
 - Start containers, loops or agents without the owner's word. Never use the real mouse or keyboard on any client.
-- Control Ayla: no map orders, rallies, party lines or moves from the main session. Find the root-cause bug instead.
-  Her requests arrive as Neo entries in the queue; those jump the queue.
+- Her requests arrive as Neo entries in the queue; those jump the queue.
 - Send a bare `ai`, `ai off` or `ai manual` to her OpenKore.
 - Deploy outside the deploy agent, deploy twice inside 3 hours without `--critical`, or recreate rathena by accident
   (Legion deploys are `--no-deps` on legion/legion-core only). Never touch the database by hand.
-- Do a fixer's work, or let fixers deploy. Delete human characters or Ayla's party.
+- Let fixers deploy. Delete human characters or Ayla's party.

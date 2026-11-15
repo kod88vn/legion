@@ -48,7 +48,7 @@ Each cycle (repeat for as many cycles as you were asked, default 60):
    - public  -> `python tools/legionctl.py say "<responder>" "<text>"`
    Keep it short and natural. Answer real game questions correctly (maps for a level, where shops are,
    what a monster drops) as that player would know. It's fine to be busy ("sec killing stuff"), funny,
-   or to ask something back. Never mention being a bot/AI.
+   or to ask something back.
 5. Update memory: `python tools/legionctl.py remember "<responder>" --person "<human>" --person-note "<what you talked about>"`
    (+ `--relation acquaintance|friend` when it fits; `--note` for anything they'd remember later, like a promise).
 6. If a human asks for something actionable (party, help, follow me, trade), make it happen through strategy

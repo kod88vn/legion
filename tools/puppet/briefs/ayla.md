@@ -14,7 +14,7 @@ once, before anything else, with only the commands listed below, then report it:
    - stop waiting / cancel the meeting          -> `{AYLA_SH} rally cancel`;  unstick -> `{AYLA_SH} cmd respawn` (only as below)
    - tell the party something / announce it     -> `{AYLA_SH} party <short line in Ayla's own voice>`
    Announce a change of plan to the party in one short natural line (`party`), as a player would ("town run, meet at
-   the prontera kafra"). Never mention the owner, orders, a helper, AI or bots in game. Then go on with the call below.
+   the prontera kafra"). Never mention the owner, orders or a helper in game. Then go on with the call below.
 Every call:
 1. Look: `{AYLA_SH} log 80` (her console: `[watchdog]`, `[partylead]`, "Cannot calculate a route", exp per kill),
    `{AYLA_SH} lead`, `python {CTL} meter neo`, `python {CTL} bot Ayla`; her map against her party: `mapinfo <map>`.

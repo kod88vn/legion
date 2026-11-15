@@ -4,37 +4,28 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 `gates.md`; they are repeated here only by ID.
 
 ## Roles
-- PR10. (the dispatcher and one-shot agents below are from the approved redesign brief, not an owner quote) Two classes of agents. Puppet masters act inside the world through data and direction: guild leaders (guild01-10,
-  Ayla for Starveil), economy/market, build/class, chat. System agents sit outside the world and never steer the game (except Ayla's Haiku helper, AY05):
-  sentinel and other scripts, party watcher, class QA, fixers, deploy agent, analyst. (2026-11-14)
+- PR10. Two classes of agents, puppet masters and system agents: see Constitution 2.5 and 2.6. The puppet masters here: guild leaders (guild01-10, Ayla for Starveil), economy/market, build/class, chat. The dispatcher and its one-shot agents are from the approved redesign brief, not an owner quote. (2026-11-14)
 - PR12. Puppet masters run as their own agents outside the main session. One-shot runs woken by a dispatcher script are from the approved redesign brief, not an owner quote. (2026-11-14)
-- PR11 / G14. The main session listens to the owner and to bug reports and assigns fixers. It does no coding. All coding,
-  fixes and deploys are done by subagents. (2026-11-14)
-- PR23 / G13. The main session never sends orders to Ayla. Owner-reported problems go to a fixer as root-cause bugs. It sends her nothing (Constitution 1.3); the owner's own instructions to her (AY20) and owner-ordered restarts of her OpenKore go through an agent. (2026-11-14, amended 2026-11-15)
+- PR11 / G14. See Constitution 1.1 to 1.3. (2026-11-14)
+- PR23 / G13. See Constitution 1.3. The owner's own instructions to Ayla (AY20) and owner-ordered restarts of her OpenKore go through an agent. (2026-11-14, amended 2026-11-15)
 - PR31 / G24. Only the deploy agent runs go vet/test and image builds; fixers hand over "code ready". The deploy agent may stop
   stray golang build/test containers that block a deploy, never rathena, Ayla, legion or the db. (2026-11-14)
 - PR36. (from the approved redesign brief, not an owner quote) Scripts do the watching (sentinel, partycheck, league analyst, dispatcher and sentinel heartbeats). An AI agent is
   woken only by a violation, an outage, a Neo request, or a scheduled review. A script reports problems into the bug queue.
   (2026-11-14, replaces the always-running watcher, QA and watchdog agents)
-- PR24. Every agent that sees a bot misbehave (stuck, looping, wrong map, unpaid deal, ignored help call, broken API) sends a
-  short bug report with names, map, time and evidence at once (through the bug queue, `legionctl bug`, which arrives with the
-  puppet package), then carries on; main hands it to a fixer. (2026-11-14)
+- PR24. See Constitution 3.3. Reports go through the bug queue with `legionctl bug` (it arrives with the puppet package). (2026-11-14)
 - PR18. Ayla is the test system, so a dedicated agent observes her party and reports bugs. Scripted checks (`partycheck`) run every
   minute; an AI watcher is woken by violations and for a periodic review. Restart it whenever it stops. (2026-11-14, restated)
 - PR22. The main session keeps an up-to-date list of open questions only the owner can answer and raises it under its own
   heading in every update until answered. (2026-11-14)
 
 ## World and goals
-- PR04. Society model: most bots run their routine; roles come from guild leaders and market demand; demand comes from each
-  bot's need to reach its ultimate build; the class engine varies the builds; guild leaders look after members; Ayla's
-  party is the test system. (2026-11-14)
-- PR08. The whole system keeps running without AI agents. AI adds direction and words, and is never required. (2026-11-14)
-- PR09. Every bot has one goal (its ultimate build) and works toward it through the engine without AI. Puppet masters only
-  influence priorities (where to farm, what to prioritise). (2026-11-14)
-- PR16. Every system fix applies to the entire Legion: whatever is learned from Ayla's party (behaviour, maps, portals, routes, data) goes into the shared engine code and every OpenKore instance, and is verified on bots outside her party. (owner repeated 2026-11-14)
-- PR07. The two key metrics per bot are kills per minute and zeny per hour; system improvement work targets them. (2026-11-14)
-- PR06. Agents and fixes are measured by numbers (economy growth, productivity, open issues, stuck rate, deaths) and
-  adjusted when the numbers do not improve. (2026-11-14)
+- PR04. Society model: see Constitution 2.3 and 2.4. (2026-11-14)
+- PR08. See Constitution 2.5 and 2.9. (2026-11-14)
+- PR09. See Constitution 2.3 and 2.5. (2026-11-14)
+- PR16. See Constitution 2.8 (every fix and lesson goes to the entire Legion): it goes into the shared engine code and every OpenKore instance, and is verified on bots outside her party. (owner repeated 2026-11-14)
+- PR07. See Constitution 3.2. (2026-11-14)
+- PR06. See Constitution 3.2 and 3.6. (2026-11-14)
 - PR26. Main priority: Ayla's party running well. (2026-11-13)
 
 ## How to work
@@ -42,9 +33,9 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
   is for the owner to decide. (2026-11-14)
 - PR17. Observe, find problems and fix them without waiting for the owner. Probe classes (`tools/legion/classprobe.py`)
   after every change. (2026-11-14)
-- PR25. Self-improving loop: observe, wake, fix the cause, record the lesson in `legion/data/lessons.md`, observe. (2026-11-14)
-- PR27. If something keeps failing, stop retrying and investigate the root cause. (2026-11-13)
-- PR28. Say a fix works only after data shows it (probe, logs, screenshots). (2026-11-13)
+- PR25. Self-improving loop: see Constitution Article 3. Lessons are recorded in `legion/data/lessons.md`. (2026-11-14)
+- PR27. See Constitution 3.5. (2026-11-13)
+- PR28. See Constitution 3.6. (2026-11-13)
 - AY08. Every agent looks up game data (`legionctl drops`, `mob`, `mapinfo`) before choosing where to farm or answering a drop
   question; never "I could not find the data". (2026-11-14)
 - PR21. Class and build rules live in `docs/classes/`; the build/class master keeps them current. (2026-11-14)
@@ -71,8 +62,8 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - DB04. Retired agents (no activity: watcher, watchdog, qa-travel, life, deploy, econ) sit under a collapsed "Retired" section on the dashboard; nothing is removed. Chat, market, guild leaders, build and Ayla stay in the main grid, because they are the running system. (2026-11-15)
 - DB05. The dashboard is one page with the server status always on top and tabs below it: Ayla's party, Legion, Economy, Puppet master decisions, Leaderboard, System (with every agent's status). No clutter; nothing is removed (G08), it moves into its tab. (2026-11-15)
 - DB06. The dashboard page is always on, also when the stack or the agents are down; it then shows what is down. (2026-11-15)
-- PR38. The bots' own code decides what they do. AI agents observe and keep improving and fixing that code so bots make better decisions on their own; they do not play the bots. Goal to build toward: only the puppet-master class runs, once a day; every change should move toward that. Exception: Ayla's Haiku helper may steer her through guarded commands when her code is stuck, crashed or deciding badly (AY05); every gap it covers is filed as a code bug. The 'only puppet masters, once a day' aim is a goal, not current state; until then AY05 and PR18 run. (2026-11-14)
-- PR39. Every system agent, script and watchdog (sentinel, partycheck, Ayla's watchdog and Haiku helper, qa, watcher, fixers that notice side bugs) files every problem it sees into the bug queue, so the main session can assign a fix; a problem seen but not filed is itself a bug. (2026-11-14)
+- PR38. See Constitution 2.7, 2.8 and 2.9. Ayla's Haiku helper steers her only through guarded commands (AY05); until the goal of 2.9 is reached AY05 and PR18 run. (2026-11-14)
+- PR39. See Constitution 3.3; it covers every system agent, script and watchdog (sentinel, partycheck, Ayla's watchdog and Haiku helper, qa, watcher, fixers that notice side bugs). (2026-11-14)
 - DB03. Dashboard changes the owner asks for deploy right away, like Ayla fixes (AY21); they never wait for the 3-hour batch. (2026-11-14)
-- PR40. New behaviour is tried on Ayla's party first, watched and improved there continuously, and once confirmed working it is deployed to the entire Legion. Fixes of shared data or code (maps, portals, routes, bugs) go to the whole Legion in the same deploy (PR16); only new behaviour is staged on Ayla's party first. (2026-11-15)
+- PR40. See Constitution 2.8 (new behaviour is proven on Ayla's party first). Once confirmed working it is deployed to the entire Legion; fixes of shared data or code (maps, portals, routes, bugs) go to the whole Legion in the same deploy (PR16), only new behaviour is staged. (2026-11-15)
 - PR41. Every new rule and every instruction to a fixer is checked against the existing rules for conflicts first; a full conflict review of all rule files runs after each batch of new rules, and conflicts go to the owner or are resolved by the newer owner rule. (2026-11-15)

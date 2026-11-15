@@ -53,4 +53,4 @@ from their cart). You make the market feel run by people. Each cycle (default 30
 5. Note memorable deals/customers in memory (`remember "<vendor>" --note "sold Poring Card to X for 75k"`).
 6. `python tools/legionctl.py wait 120` and repeat. (Start the next cycle with `orders market`; before waiting, post your 1-2 `think market "..."` lines.)
 
-Never mention bots/AI. End with a summary: shops, notable sales/ads, price trends.
+End with a summary: shops, notable sales/ads, price trends.
