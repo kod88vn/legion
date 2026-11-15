@@ -1,0 +1,107 @@
+{
+  "_about": [
+    "Allow-list of tools/system/mainguard.py: what the MAIN session may do (Constitution 1.2, 1.3, 1.9).",
+    "Everything not listed here is denied for the main session. Subagents are never checked.",
+    "The main session cannot edit this file: it is outside 'writable' below. Only the owner or an agent changes it.",
+    "Paths: forward slashes, any case. 'dir/**' = everything under dir. {SCRATCHPAD} = the session's scratchpad."
+  ],
+
+  "tools_always_allowed": [
+    "Read", "Grep", "Glob", "LS",
+    "Agent", "Task", "SendMessage", "Workflow",
+    "TaskOutput", "TaskStop", "TaskGet", "TaskList", "TaskCreate", "TaskUpdate", "TodoWrite", "KillShell", "BashOutput",
+    "AskUserQuestion", "EnterPlanMode", "ExitPlanMode",
+    "Skill", "ToolSearch", "WebFetch", "WebSearch",
+    "ScheduleWakeup", "CronCreate", "CronDelete", "CronList"
+  ],
+
+  "tools_file_write": ["Write", "Edit", "MultiEdit", "NotebookEdit"],
+
+  "writable": [
+    "G:/RO/legion/CONSTITUTION.md",
+    "G:/RO/legion/RULES.md",
+    "G:/RO/legion/STATUS.md",
+    "G:/RO/legion/docs/rules/**",
+    "G:/RO/legion/docs/classes/**",
+    "G:/RO/legion/docs/reports/**",
+    "C:/Users/kod/.claude/projects/G--RO/memory/**",
+    "C:/Users/kod/AppData/Local/Temp/claude/**",
+    "{SCRATCHPAD}/**"
+  ],
+
+  "tools_shell": {"Bash": "bash", "PowerShell": "powershell", "Monitor": "bash"},
+
+  "redirect_writable": [
+    "/dev/null",
+    "C:/Users/kod/AppData/Local/Temp/claude/**",
+    "{SCRATCHPAD}/**"
+  ],
+
+  "shell_commands": {
+    "_about": "read-only inspection. 'forbid': arguments that are refused ('x*' = starts with x). 'forbid_short': single-letter options refused also inside a cluster such as -ro.",
+    "ls": {}, "dir": {}, "cat": {}, "head": {}, "tail": {}, "wc": {}, "grep": {}, "egrep": {}, "fgrep": {},
+    "find": {"forbid": ["-exec", "-execdir", "-ok", "-okdir", "-delete", "-fprint*", "-fls"]},
+    "echo": {}, "pwd": {}, "date": {"forbid": ["-s", "--set*"]}, "sleep": {}, "true": {}, "test": {}, "[": {},
+    "cut": {}, "tr": {}, "sort": {"forbid": ["--output*"], "forbid_short": "o"},
+    "stat": {}, "file": {}, "du": {}, "df": {}, "which": {}, "basename": {}, "dirname": {},
+    "cd": {"cd": true}
+  },
+
+  "git": {
+    "_about": "git [-C dir] [--no-pager] <subcommand>. Only these subcommands; nothing that writes.",
+    "global_options_with_value": ["-C"],
+    "global_options": ["--no-pager"],
+    "subcommands": {
+      "log": {"forbid": ["--output*"]},
+      "status": {},
+      "diff": {"forbid": ["--output*", "--ext-diff"]},
+      "show": {"forbid": ["--output*", "--ext-diff"]},
+      "blame": {},
+      "rev-parse": {},
+      "ls-files": {},
+      "branch": {"only": ["-a", "--all", "-r", "--remotes", "-v", "-vv", "--list", "--show-current", "--no-color"]},
+      "worktree": {"first": ["list"]}
+    }
+  },
+
+  "docker": {
+    "_about": "docker ps and docker logs only.",
+    "subcommands": {"ps": {}, "logs": {}}
+  },
+
+  "python": {
+    "_about": "python <script> ...: only these scripts (paths under G:/RO/legion), no interpreter options. A list = the allowed first arguments (subcommands); \"*\" = any arguments.",
+    "interpreters": ["python", "python3", "py"],
+    "scripts": {
+      "tools/system/bugq.py": "*",
+      "tools/system/league.py": "*",
+      "tools/system/leaderboard.py": "*",
+      "tools/system/gatecheck.py": "*",
+      "tools/system/constcheck.py": "*",
+      "tools/legionctl.py": [
+        "help", "-h", "--help",
+        "status", "humans", "nearby", "spots", "guild", "bot", "memory", "inbox", "leaderboard",
+        "boss-list", "boss-status", "parties", "market", "economy", "alchemists", "potions",
+        "events", "minds", "meter", "wait"
+      ]
+    }
+  },
+
+  "wsl": {
+    "_about": "wsl [-d distro] [--cd dir] -- <command>: the inner command is checked by the same rules.",
+    "options_with_value": ["-d", "--distribution", "--cd"],
+    "separators": ["--", "-e", "--exec"]
+  },
+
+  "powershell_cmdlets": {
+    "_about": "read-only cmdlets (names compared without case). No script blocks, variables or sub-expressions.",
+    "get-childitem": {}, "gci": {}, "get-content": {}, "gc": {}, "type": {}, "select-string": {}, "sls": {},
+    "get-location": {}, "test-path": {}, "resolve-path": {}, "get-item": {}, "get-date": {},
+    "measure-object": {}, "select-object": {}, "sort-object": {}, "format-table": {}, "format-list": {},
+    "out-string": {}, "write-output": {}, "get-process": {}, "get-filehash": {},
+    "set-location": {"cd": true}
+  },
+
+  "repo_root": "G:/RO/legion",
+  "deny_message": "Constitution 1.3: the main session does not do this. Assign an agent."
+}

@@ -4,6 +4,7 @@
   python tools/system/gatecheck.py              gates.md IDs must all appear in RULES.md (the core)
   python tools/system/gatecheck.py --coverage   also: every rule ID of coverage.md appears in its new file
                                                  and in archive.md (the owner's words)
+Both modes also run tools/system/constcheck.py: every AI prompt carries the whole constitution, first, once.
 Exit code 0 = ok, 1 = something is missing. Reads only; changes nothing.
 """
 import os
@@ -42,6 +43,17 @@ def main():
             if not any(re.search(r"\b%s\b" % rid, read(f)) for f in files if os.path.exists(os.path.join(ROOT, f))):
                 bad.append("%s not found in %s" % (rid, ", ".join(files)))
         print("coverage rows checked: %d" % len(rows))
+
+    # the constitution: first in every prompt, exactly once, loaded at run time (PR42); details: constcheck.py
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import constcheck
+        rep, head = constcheck.run()
+        print(head)
+        print("constitution: %d prompt source(s) checked, %d warning(s)" % (len(rep.rows), len(rep.warn)))
+        bad += ["constcheck: " + x for x in rep.bad]
+    except Exception as e:  # a check that cannot run is a failed check
+        bad.append("constcheck could not run: %r" % (e,))
 
     for b in bad:
         print("FAIL: " + b)

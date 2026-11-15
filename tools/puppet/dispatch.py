@@ -29,6 +29,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import briefing  # noqa: E402
 import orders  # noqa: E402  owner orders for Ayla (AY20)
+sys.path.append(os.path.join(HERE, "..", "system"))
+import constitution  # noqa: E402  the one loader of CONSTITUTION.md (PR42): first in every prompt, exactly once
 
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DATA = os.environ.get("LEGION_DATA") or os.path.join(REPO, "legion", "data")
@@ -173,6 +175,24 @@ def mind_path(p):
     return win_path(p) if WIN_MIND else p
 
 
+def system_prompt(role):
+    """what the one-shot agent is told: the whole constitution first (read from CONSTITUTION.md now, never a copy),
+    then the role brief. Raises constitution.ConstitutionError when the file is missing or the text is there twice."""
+    return constitution.with_constitution(load_brief(role))
+
+
+def check_command(cmd):
+    """the last gate before a call is sent: the system prompt starts with the full constitution, holds it exactly
+    once, and --safe-mode keeps CLAUDE.md and hooks out (they would load it a second time). Raises otherwise."""
+    if "--append-system-prompt" not in cmd or cmd.index("--append-system-prompt") + 1 >= len(cmd):
+        raise constitution.ConstitutionError("the call has no system prompt: not sent")
+    constitution.require(cmd[cmd.index("--append-system-prompt") + 1], "the system prompt of the call")
+    if "--safe-mode" not in cmd:
+        raise constitution.ConstitutionError("the call lacks --safe-mode (CLAUDE.md would load the constitution "
+                                             "a second time): not sent")
+    return cmd
+
+
 def build_command(role, claude="claude", python="python", model=None, call_cap=None):
     cfg = ROLES[role]
     cmd = [claude, "-p",
@@ -185,8 +205,8 @@ def build_command(role, claude="claude", python="python", model=None, call_cap=N
            "--max-budget-usd", f"{call_cap if call_cap is not None else cfg['call_cap']:.2f}",
            "--output-format", "json",
            "--no-session-persistence",
-           "--append-system-prompt", load_brief(role)]
-    return cmd  # the briefing itself goes in on stdin
+           "--append-system-prompt", system_prompt(role)]
+    return check_command(cmd)  # the briefing itself goes in on stdin
 
 
 def render(cmd):
@@ -560,7 +580,7 @@ def run_call(role, trigger, args, sched=None, sig=None):
     row = {"t": t0, "role": role, "trigger": trigger, "model": args.model or ROLES[role]["model"], "exit": None}
     try:
         text, snap = make_briefing(role, trigger)
-        cmd = build_command(role, args.claude, args.python, args.model, args.call_cap)
+        cmd = check_command(build_command(role, args.claude, args.python, args.model, args.call_cap))
         os.makedirs(WORKDIR, exist_ok=True)
         p = subprocess.run(cmd, input=text, capture_output=True, text=True, encoding="utf-8", errors="replace",
                            timeout=CALL_TIMEOUT, cwd=WORKDIR, env=mind_env())
@@ -569,6 +589,10 @@ def run_call(role, trigger, args, sched=None, sig=None):
         if p.returncode != 0:
             row["stderr"] = (p.stderr or "")[-300:]
         save_snap(role, snap, t0)
+    except constitution.ConstitutionError as e:  # no constitution, no call (PR42)
+        row["exit"] = "refused"
+        row["error"] = str(e)[:300]
+        print("call refused:", role, e, file=sys.stderr, flush=True)
     except subprocess.TimeoutExpired:
         row["exit"] = "timeout"
     except Exception as e:  # never crash the dispatcher

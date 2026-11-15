@@ -96,6 +96,28 @@ class Replies(BaseModel):
 
 # ------------------------------------------------------------------ brains
 
+def constitution_text():
+    """The project's highest law, read from the one file every time a prompt is built (never a copy; PR42).
+    In the container it is mounted read-only at /constitution/CONSTITUTION.md (docker-compose.yml)."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for p in (os.environ.get("MASTERMIND_CONSTITUTION"), "/constitution/CONSTITUTION.md",
+              os.path.join(here, "..", "CONSTITUTION.md")):
+        if p and os.path.isfile(p):
+            with open(p, encoding="utf-8") as f:
+                t = f.read().replace("\ufeff", "").replace("\r\n", "\n").strip("\n")
+            if len(t) > 200 and "Article 1" in t:
+                return t
+    return None
+
+
+def with_constitution(system):
+    """the constitution first, exactly once, then the role's system prompt; None when it cannot be loaded"""
+    const = constitution_text()
+    if const is None or const in system:
+        return None
+    return const + "\n\n" + system
+
+
 class ClaudeBrain:
     """Calls Claude through the official SDK with structured outputs."""
 
@@ -105,6 +127,10 @@ class ClaudeBrain:
         self.client = anthropic.Anthropic()
 
     def ask(self, system, prompt, schema, max_tokens=4000):
+        system = with_constitution(system)
+        if system is None:  # no constitution, no call
+            log.error("CONSTITUTION.md not loaded (or already in the prompt): call refused")
+            return None
         try:
             resp = self.client.messages.parse(
                 model=MODEL, max_tokens=max_tokens, system=system,

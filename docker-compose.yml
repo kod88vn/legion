@@ -208,6 +208,7 @@ services:
     volumes:
       - ./legion/data:/data:ro
       - ./mastermind/state:/state
+      - ./CONSTITUTION.md:/constitution/CONSTITUTION.md:ro   # first in every prompt, read at run time (PR42)
     restart: unless-stopped
 
 volumes:

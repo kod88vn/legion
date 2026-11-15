@@ -8,6 +8,28 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/c/Users/kod/AppData/Local/Programs/Python/Python312/python G:/RO/legion/tools/system/mainguard.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/c/Users/kod/AppData/Local/Programs/Python/Python312/python G:/RO/legion/tools/system/constitution.py subagent-start",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
