@@ -1917,16 +1917,21 @@ Resolved by newest owner word per PR41; see coverage.md.
 
 ## C1 (constitution, 2026-11-15)
 ```text
-"the biggest problem is several master hard rules you kept ignoreing. These must be the constitution that no fololowing up rules can override: 1 the main session does not do any fucking shit, it listen to my rant, collect buf report and assign tasks to fixer only."
+"the biggest problem is several master hard rules you kept ignoring. These must be the constitution that no following up rules can override: 1 the main session does not do any fucking shit, it listens to my rant, collects bug reports and assigns tasks to fixer only."
 ```
 
 ## Constitution (approved 2026-11-15; text in `CONSTITUTION.md`)
 ```text
-"let's first draft the highest order of rules - constitution: I need you to rwrite it not like an add on but as a dedicated holy bible: 1 main session communicates with owner, it does not actually do anything, it listens, assign tasks only. 2 the matrix like mechanism. I explained this before, I want you to rewrite it. 3 the self learning/improving loop, the disaster was mainly here, you did not fix the bug queue, the system agents went offline and you did not know. Get those 3 thiungs right. Write the constitution and let me review"
-"ok, write it down. I agree the retired agents were done mistakenly. This must be thr prompt every agent reads. Cannot be shorted, cannot be ignored"
+"let's first draft the highest order of rules - constitution: I need you to rewrite it not like an add on but as a dedicated holy bible: 1 main session communicates with owner, it does not actually do anything, it listens, assign tasks only. 2 the matrix like mechanism. I explained this before, I want you to rewrite it. 3 the self learning/improving loop, the disaster was mainly here, you did not fix the bug queue, the system agents went offline and you did not know. Get those 3 things right. Write the constitution and let me review"
+"ok, write it down. I agree the retired agents were done mistakenly. This must be the prompt every agent reads. Cannot be shortened, cannot be ignored"
 ```
 
 ## PR42
 ```text
 "the constitution must be read upfront. You do not need to repeat the points. Just make it so every agent read it at first. Avoid duplication as general rule to avoid wasting tokens"
+```
+
+## DB05 / DB06
+```text
+"redesign dashboard. It's too cluttered now. I want tabs, each represent an important aspect: server status is always on top, then tabs: Ayla party, Legion, Economy, Puppet Master decisions, Leaderboard, and System (including all agent status). This page must always be on"
 ```

@@ -204,6 +204,8 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | AY17 | No watch client for Ayla; owner watches via GM account; OpenKore log in a terminal | ayla | owner 2026-11-14 | docs/rules/ayla.md | replaced |
 | PT30 | Duplicate of the existing leader-plan rule (parties.md l.55-57); merged there, not a new line | parties | owner 2026-11-14 | docs/rules/parties.md | merged |
 | PR41-review | 2026-11-15 conflict review applied (20 items) | process | main | docs/rules/* | amended |
+| DB05 | Dashboard: server status on top, six tabs (Ayla's party, Legion, Economy, Puppet master decisions, Leaderboard, System) (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| DB06 | Dashboard page always on, also when the stack is down (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR42 | Nothing is written twice; the constitution is read first and once, never restated (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | Constitution | Highest law, three articles (main session, the Matrix world, the self-improving loop); every agent reads it in full; G13, PR23 and AY21 amended to fit (2026-11-15) | constitution | owner 2026-11-15 | CONSTITUTION.md | new, above all rules |
 
