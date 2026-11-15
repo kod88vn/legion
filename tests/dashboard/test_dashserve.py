@@ -206,6 +206,29 @@ class Small(unittest.TestCase):
             with self.assertRaises(ValueError):
                 dbsnap.run([bad])
 
+    def test_owner_token_only_on_override_writes(self):
+        import tempfile
+        import dashserve
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "owner.token"), "w", encoding="utf-8") as f:
+            f.write("tok123\n")
+        old = os.environ.get("LEGION_DATA")
+        os.environ["LEGION_DATA"] = d
+        try:
+            self.assertEqual(dashserve.owner_headers("POST", "/api/ayla/overrides"), {"X-Owner-Token": "tok123"})
+            self.assertEqual(dashserve.owner_headers("DELETE", "/api/ayla/overrides/ov1"), {"X-Owner-Token": "tok123"})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/ayla/overrides?x=1"), {"X-Owner-Token": "tok123"})
+            # GET is never sent the token, nor any other route, nor a look-alike path
+            self.assertEqual(dashserve.owner_headers("GET", "/api/ayla/overrides"), {})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/guild-direction/guild01"), {})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/ayla/overridesX"), {})
+            self.assertEqual(dashserve.owner_headers("POST", "/api/bots/x/goal"), {})
+        finally:
+            if old is None:
+                os.environ.pop("LEGION_DATA", None)
+            else:
+                os.environ["LEGION_DATA"] = old
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -22,6 +22,7 @@ func ovWorld(t *testing.T) {
 		"good_map": {{"good_map", 1, 30}},
 		"low_map":  {{"low_map", 2, 30}},
 	}
+	maps = map[string]*GameMap{"good_map": {}, "low_map": {}} // the engine's known map table
 }
 
 // ovUse makes s the process store for one test (aylaDirective and the API read it).
@@ -278,12 +279,28 @@ func TestAylaOverridesAPI(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
+	tok, err := loadOwnerToken(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
 	post := func(body string) *http.Response {
-		r, err := http.Post(srv.URL+"/api/ayla/overrides", "application/json", strings.NewReader(body))
+		req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/ayla/overrides", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Owner-Token", tok)
+		r, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatal(err)
 		}
 		return r
+	}
+	// without the token the write is refused and nothing is stored
+	r0, _ := http.Post(srv.URL+"/api/ayla/overrides", "application/json", strings.NewReader(`{"kind":"rally","value":"x","hours":1}`))
+	r0.Body.Close()
+	if r0.StatusCode != http.StatusForbidden {
+		t.Fatalf("POST without token: %d, want 403", r0.StatusCode)
+	}
+	if len(s.List(time.Now())) != 0 {
+		t.Fatal("refused POST stored a row")
 	}
 	r := post(`{"kind":"farm_map","value":"low_map","base_lv":60,"max_lv":64}`)
 	if r.StatusCode != http.StatusConflict {
@@ -307,15 +324,143 @@ func TestAylaOverridesAPI(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest(http.MethodDelete, srv.URL+"/api/ayla/overrides/"+o.ID, nil)
+	d0, _ := http.DefaultClient.Do(req) // no token
+	d0.Body.Close()
+	if d0.StatusCode != http.StatusForbidden {
+		t.Fatalf("DELETE without token: %d, want 403", d0.StatusCode)
+	}
+	req, _ = http.NewRequest(http.MethodDelete, srv.URL+"/api/ayla/overrides/"+o.ID, nil)
+	req.Header.Set("X-Owner-Token", tok)
 	d, _ := http.DefaultClient.Do(req)
 	d.Body.Close()
 	if d.StatusCode != http.StatusOK {
-		t.Fatalf("DELETE status %d", d.StatusCode)
+		t.Fatalf("DELETE with token: %d", d.StatusCode)
 	}
 	if _, ok := s.Active(ovFarmMap, time.Now()); ok {
 		t.Fatal("cleared override still active")
 	}
 	if n := len(ovAudit(t, dir)); n != 2 {
 		t.Fatalf("audit lines = %d, want 2 (set, clear)", n)
+	}
+}
+
+// the owner token: created once in the data folder, 64 hex characters, kept across calls
+func TestOwnerTokenCreatedOnce(t *testing.T) {
+	dir := t.TempDir()
+	a, err := loadOwnerToken(dir)
+	if err != nil || len(a) != 64 {
+		t.Fatalf("token %q err %v", a, err)
+	}
+	b, _ := loadOwnerToken(dir)
+	if a != b {
+		t.Fatal("token changed between calls")
+	}
+	raw, _ := os.ReadFile(filepath.Join(dir, "owner.token"))
+	if strings.TrimSpace(string(raw)) != a {
+		t.Fatal("token file does not hold the token")
+	}
+}
+
+// the GET stays open; a write with a wrong token is 403
+func TestAylaOverridesGetOpenWriteNeedsToken(t *testing.T) {
+	ovWorld(t)
+	dir := t.TempDir()
+	oldData := *dataDir
+	*dataDir = dir
+	t.Cleanup(func() { *dataDir = oldData })
+	s, _ := loadAylaOverrideStore(dir)
+	ovUse(t, s)
+	mux := http.NewServeMux()
+	registerAylaOverrides(mux)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	if r, _ := http.Get(srv.URL + "/api/ayla/overrides"); r.StatusCode != http.StatusOK {
+		t.Fatalf("GET status %d, want 200", r.StatusCode)
+	}
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/ayla/overrides", strings.NewReader(`{"kind":"rally","value":"x","hours":1}`))
+	req.Header.Set("X-Owner-Token", "wrong")
+	r, _ := http.DefaultClient.Do(req)
+	r.Body.Close()
+	if r.StatusCode != http.StatusForbidden {
+		t.Fatalf("wrong token: %d, want 403", r.StatusCode)
+	}
+}
+
+// a write whose audit line fails is still stored and reported as a success
+func TestAylaOverrideAuditFailureKeepsSet(t *testing.T) {
+	dir := t.TempDir()
+	s, _ := loadAylaOverrideStore(dir)
+	// the audit path is a folder, so the append fails after the save
+	if err := os.Mkdir(aylaOvAuditPath(dir), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t0 := time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
+	o, err := s.Set(ovRally, "meet", "", 1, 0, 0, false, t0)
+	if err != nil {
+		t.Fatalf("set with failing audit returned %v, want success", err)
+	}
+	again, _ := loadAylaOverrideStore(dir)
+	if got, ok := again.Active(ovRally, t0); !ok || got.ID != o.ID {
+		t.Fatal("override not on disk after the audit failure")
+	}
+}
+
+// Clear on a row whose time is up but not yet swept: swept now, expire logged, expired state returned
+func TestAylaClearExpiredUnswept(t *testing.T) {
+	dir := t.TempDir()
+	s, _ := loadAylaOverrideStore(dir)
+	t0 := time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
+	o, _ := s.Set(ovRally, "meet", "", 1, 0, 0, false, t0)
+	got, err := s.Clear(o.ID, t0.Add(2*time.Hour))
+	if !errors.Is(err, errOvExpired) || got.EndReason != "expire" || got.Active {
+		t.Fatalf("clear after expiry: %+v err=%v, want expired state", got, err)
+	}
+	n := 0
+	for _, a := range ovAudit(t, dir) {
+		if a.Action == "expire" {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("expire lines = %d, want 1", n)
+	}
+}
+
+// farm_map must be a map the engine knows, even with confirm=true
+func TestAylaFarmMapUnknownMapRefused(t *testing.T) {
+	ovWorld(t)
+	s, _ := loadAylaOverrideStore(t.TempDir())
+	t0 := time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
+	if _, err := s.Set(ovFarmMap, "pay_fidl08", "", 1, 60, 64, true, t0); err == nil {
+		t.Fatal("typo map accepted with confirm=true")
+	}
+	if len(s.List(t0)) != 0 {
+		t.Fatal("refused map stored")
+	}
+}
+
+// two store instances on one folder never lose a row, whichever writes second
+func TestAylaOverrideTwoInstancesNoLoss(t *testing.T) {
+	ovWorld(t)
+	dir := t.TempDir()
+	a, _ := loadAylaOverrideStore(dir)
+	b, _ := loadAylaOverrideStore(dir) // loaded before a writes
+	t0 := time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
+	if _, err := a.Set(ovRally, "first", "", 2, 0, 0, false, t0); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.Set(ovTownRun, "second", "", 2, 0, 0, false, t0.Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Set(ovPartyOrder, "third", "", 2, 0, 0, false, t0.Add(2*time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	final, _ := loadAylaOverrideStore(dir)
+	if n := len(final.List(t0.Add(3 * time.Second))); n != 3 {
+		t.Fatalf("rows on disk = %d, want 3", n)
+	}
+	// a reader instance sees the other writer's row through the mtime check
+	if _, ok := a.Active(ovTownRun, t0.Add(3*time.Second)); !ok {
+		t.Fatal("instance a does not see the row written by b")
 	}
 }

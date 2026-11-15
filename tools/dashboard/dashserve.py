@@ -414,6 +414,27 @@ def ayla_file(now):
 
 
 # ----------------------------------------------------------------- engine proxy
+OVERRIDE_ROUTE = re.compile(r"^/api/ayla/overrides(/[^?]*)?(\?.*)?$")
+
+
+def owner_token_path():
+    """legion/data/owner.token: the engine's per-host owner secret (aylaoverride.go). LEGION_DATA moves the folder."""
+    return os.path.join(os.environ.get("LEGION_DATA") or os.path.join(REPO, "legion", "data"), "owner.token")
+
+
+def owner_headers(method, path):
+    """Extra headers for one engine call. Only the owner tool's override writes (POST/DELETE on
+    /api/ayla/overrides) get X-Owner-Token; every other route, GET included, is sent without it."""
+    if method not in ("POST", "DELETE") or not OVERRIDE_ROUTE.match(path or ""):
+        return {}
+    try:
+        with open(owner_token_path(), encoding="utf-8") as f:
+            tok = f.read().strip()
+    except OSError:
+        return {}
+    return {"X-Owner-Token": tok} if tok else {}
+
+
 class Engine:
     def __init__(self, base):
         self.base = base.rstrip("/")
@@ -455,6 +476,8 @@ class Engine:
         req = urllib.request.Request(self.base + path, data=body, method=method)
         if ctype:
             req.add_header("Content-Type", ctype)
+        for k, v in owner_headers(method, path).items():
+            req.add_header(k, v)
         try:
             with urllib.request.urlopen(req, timeout=ENGINE_TIMEOUT) as r:
                 data = r.read()

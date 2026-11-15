@@ -22,6 +22,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -85,7 +88,10 @@ func (e *ovNeedsConfirm) Error() string {
 	return fmt.Sprintf("farm map fails the gates (%d warning(s)); resend with confirm=true to set it anyway", len(e.Warnings))
 }
 
-var errOvNotFound = errors.New("no active override with that id")
+var (
+	errOvNotFound = errors.New("no active override with that id")
+	errOvExpired  = errors.New("override already expired (now swept)")
+)
 
 type aylaOvFile struct {
 	Saved     time.Time      `json:"saved"`
@@ -109,9 +115,11 @@ type aylaOvAudit struct {
 
 // aylaOvStore holds the overrides in memory and mirrors them to <dir>/ayla_overrides.json.
 type aylaOvStore struct {
-	mu   sync.Mutex
-	dir  string
-	rows []AylaOverride
+	mu    sync.Mutex
+	dir   string
+	rows  []AylaOverride
+	mtime time.Time // file stamp of the rows in memory: a change on disk (another instance) is re-read
+	size  int64
 }
 
 var (
@@ -154,7 +162,53 @@ func loadAylaOverrideStore(dir string) (*aylaOvStore, error) {
 		return s, fmt.Errorf("unreadable store moved to %s: %v", bad, err)
 	}
 	s.rows = f.Overrides
+	s.stampLocked()
 	return s, nil
+}
+
+// stampLocked records the file's mtime and size as the rows in memory now are.
+func (s *aylaOvStore) stampLocked() {
+	if st, err := os.Stat(aylaOvPath(s.dir)); err == nil {
+		s.mtime, s.size = st.ModTime(), st.Size()
+	} else {
+		s.mtime, s.size = time.Time{}, 0
+	}
+}
+
+// reloadLocked re-reads the file into memory. A file that cannot be read keeps the rows in memory (logged).
+func (s *aylaOvStore) reloadLocked() {
+	raw, err := os.ReadFile(aylaOvPath(s.dir))
+	if os.IsNotExist(err) {
+		s.rows = nil
+		s.stampLocked()
+		return
+	}
+	if err != nil {
+		log.Printf("ayla overrides: reload: %v", err)
+		return
+	}
+	var f aylaOvFile
+	if err := json.Unmarshal(raw, &f); err != nil {
+		log.Printf("ayla overrides: reload: unreadable file, keeping memory rows: %v", err)
+		return
+	}
+	s.rows = f.Overrides
+	s.stampLocked()
+}
+
+// refreshLocked re-reads the file when its mtime or size differs from what was last loaded or saved (another
+// instance wrote it). Reads use it; mutations always reload first (reloadLocked), so no row is lost.
+func (s *aylaOvStore) refreshLocked() {
+	st, err := os.Stat(aylaOvPath(s.dir))
+	if err != nil {
+		if os.IsNotExist(err) && !s.mtime.IsZero() {
+			s.reloadLocked()
+		}
+		return
+	}
+	if !st.ModTime().Equal(s.mtime) || st.Size() != s.size {
+		s.reloadLocked()
+	}
 }
 
 // saveLocked writes rows atomically: temp file in the same folder, fsync, rename over the old file.
@@ -184,6 +238,7 @@ func (s *aylaOvStore) saveLocked(rows []AylaOverride, now time.Time) error {
 		os.Remove(name)
 		return err
 	}
+	s.stampLocked()
 	return nil
 }
 
@@ -285,6 +340,12 @@ func (s *aylaOvStore) Set(kind, value, note string, hours float64, baseLv, maxLv
 		if !ovMapRe.MatchString(value) {
 			return AylaOverride{}, fmt.Errorf("farm_map value must be a map name such as pay_fild08")
 		}
+		if len(maps) == 0 {
+			return AylaOverride{}, fmt.Errorf("engine map table not loaded: farm_map cannot be checked")
+		}
+		if maps[value] == nil {
+			return AylaOverride{}, fmt.Errorf("farm_map %q is not a map the engine knows", value)
+		}
 	}
 	if value == "" {
 		return AylaOverride{}, fmt.Errorf("value is required")
@@ -308,6 +369,7 @@ func (s *aylaOvStore) Set(kind, value, note string, hours float64, baseLv, maxLv
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.reloadLocked() // another instance may have written since the last read: never drop its rows
 	rows := append([]AylaOverride(nil), s.rows...)
 	replaced := ""
 	for i := range rows {
@@ -325,34 +387,50 @@ func (s *aylaOvStore) Set(kind, value, note string, hours float64, baseLv, maxLv
 		return AylaOverride{}, fmt.Errorf("override not stored: %v", err)
 	}
 	s.rows = rows
+	// the override is stored; a failed audit line is logged, not hidden behind an error (the save already happened)
 	if err := s.auditLocked(aylaOvAudit{At: now, Action: "set", ID: o.ID, Kind: kind, Value: value, By: "owner",
 		Note: o.Note, ExpiresAt: o.ExpiresAt, Replaced: replaced, Confirm: confirm, Warnings: warnings}); err != nil {
-		return o, fmt.Errorf("override stored but the audit line failed: %v", err)
+		log.Printf("ayla overrides: audit line for %s not written: %v", o.ID, err)
 	}
 	return o, nil
 }
 
-// Clear ends an active override now (reason "clear").
+// Clear ends an active override now (reason "clear"). A row whose time is up but not yet swept is swept (its expire
+// line is written) and returned with errOvExpired, so the caller sees the expired state. An unknown or already ended
+// id is errOvNotFound.
 func (s *aylaOvStore) Clear(id string, now time.Time) (AylaOverride, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	rows := append([]AylaOverride(nil), s.rows...)
-	for i := range rows {
-		if rows[i].ID == id && rows[i].Active && now.Before(rows[i].ExpiresAt) {
-			rows[i].Active = false
-			rows[i].EndReason = "clear"
-			rows[i].ClearedAt = now
-			if err := s.saveLocked(rows, now); err != nil {
-				return AylaOverride{}, fmt.Errorf("clear not saved: %v", err)
-			}
-			s.rows = rows
-			r := rows[i]
-			if err := s.auditLocked(aylaOvAudit{At: now, Action: "clear", ID: r.ID, Kind: r.Kind, Value: r.Value,
-				By: "owner", ExpiresAt: r.ExpiresAt}); err != nil {
-				return r, fmt.Errorf("cleared but the audit line failed: %v", err)
-			}
-			return r, nil
+	s.reloadLocked()
+	s.sweepLocked(now)
+	for i := range s.rows {
+		r := s.rows[i]
+		if r.ID != id {
+			continue
 		}
+		if !r.Active {
+			if r.EndReason == "expire" { // swept just now (or earlier): the expired state
+				return r, errOvExpired
+			}
+			return AylaOverride{}, errOvNotFound // cleared or replaced before
+		}
+		if !now.Before(r.ExpiresAt) { // sweep could not save: still expired in memory
+			return r, errOvExpired
+		}
+		rows := append([]AylaOverride(nil), s.rows...)
+		rows[i].Active = false
+		rows[i].EndReason = "clear"
+		rows[i].ClearedAt = now
+		if err := s.saveLocked(rows, now); err != nil {
+			return AylaOverride{}, fmt.Errorf("clear not saved: %v", err)
+		}
+		s.rows = rows
+		c := rows[i]
+		if err := s.auditLocked(aylaOvAudit{At: now, Action: "clear", ID: c.ID, Kind: c.Kind, Value: c.Value,
+			By: "owner", ExpiresAt: c.ExpiresAt}); err != nil {
+			log.Printf("ayla overrides: audit line for clear %s not written: %v", c.ID, err)
+		}
+		return c, nil
 	}
 	return AylaOverride{}, errOvNotFound
 }
@@ -361,6 +439,7 @@ func (s *aylaOvStore) Clear(id string, now time.Time) (AylaOverride, error) {
 func (s *aylaOvStore) Active(kind string, now time.Time) (AylaOverride, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.refreshLocked()
 	s.sweepLocked(now)
 	if i := s.activeLocked(kind, now); i >= 0 {
 		return s.rows[i], true
@@ -372,6 +451,7 @@ func (s *aylaOvStore) Active(kind string, now time.Time) (AylaOverride, bool) {
 func (s *aylaOvStore) List(now time.Time) []AylaOverride {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.refreshLocked()
 	s.sweepLocked(now)
 	return append([]AylaOverride(nil), s.rows...)
 }
@@ -497,14 +577,85 @@ func aylaOverridesView(now time.Time) ovView {
 		Puppet:    ovPuppet{StarveilGuild: dirViewOf(humanGuildID, now), Orders: aylaOrdersView(*dataDir)}}
 }
 
-// registerAylaOverrides: the override endpoints (api.go).
+// registerAylaOverrides: the override endpoints (api.go). Creates the owner token on first start when it is missing.
 func registerAylaOverrides(mux *http.ServeMux) {
+	if _, err := loadOwnerToken(*dataDir); err != nil {
+		log.Printf("ayla overrides: owner token: %v", err)
+	}
 	mux.HandleFunc("/api/ayla/overrides", aylaOverridesAPI)
 	mux.HandleFunc("/api/ayla/overrides/", aylaOverridesAPI)
 }
 
+// ovOwnerTokenFile: <data>/owner.token, the per-host secret that POST and DELETE on the override routes require in the
+// X-Owner-Token header. Git-ignored. Only the dashboard's owner tool (tools/dashboard/dashserve.py) sends it.
+const ovOwnerTokenFile = "owner.token"
+
+// loadOwnerToken returns the owner token in dir, creating it when missing or empty: 32 random bytes as hex, written
+// through a temp file with mode 0600 (the OS may ignore the mode, Windows mostly does).
+func loadOwnerToken(dir string) (string, error) {
+	path := filepath.Join(dir, ovOwnerTokenFile)
+	raw, err := os.ReadFile(path)
+	if err == nil {
+		if t := strings.TrimSpace(string(raw)); t != "" {
+			return t, nil
+		}
+	} else if !os.IsNotExist(err) {
+		return "", err
+	}
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	tok := hex.EncodeToString(buf)
+	tmp, err := os.CreateTemp(dir, "owner-*.tmp")
+	if err != nil {
+		return "", err
+	}
+	name := tmp.Name()
+	if _, err := tmp.WriteString(tok + "\n"); err != nil {
+		tmp.Close()
+		os.Remove(name)
+		return "", err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		os.Remove(name)
+		return "", err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(name)
+		return "", err
+	}
+	os.Chmod(name, 0600) // best effort: not every OS honours the mode
+	if err := os.Rename(name, path); err != nil {
+		os.Remove(name)
+		return "", err
+	}
+	return tok, nil
+}
+
+// ownerTokenOK: the request carries the owner token (constant-time compare). A missing token file is an error.
+func ownerTokenOK(r *http.Request) (bool, error) {
+	tok, err := loadOwnerToken(*dataDir)
+	if err != nil {
+		return false, err
+	}
+	return subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Owner-Token")), []byte(tok)) == 1, nil
+}
+
 func aylaOverridesAPI(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		ok, err := ownerTokenOK(r)
+		if err != nil {
+			apiErr(w, http.StatusInternalServerError, "owner token unavailable: "+err.Error())
+			return
+		}
+		if !ok {
+			apiErr(w, http.StatusForbidden, "owner token required: X-Owner-Token header")
+			return
+		}
+	}
 	switch r.Method {
 	case http.MethodGet:
 		writeJSON(w, aylaOverridesView(now))
@@ -547,6 +698,12 @@ func aylaOverridesAPI(w http.ResponseWriter, r *http.Request) {
 		o, err := aylaOv().Clear(id, now)
 		if errors.Is(err, errOvNotFound) {
 			apiErr(w, http.StatusNotFound, err.Error())
+			return
+		}
+		if errors.Is(err, errOvExpired) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error(), "override": o})
 			return
 		}
 		if err != nil {

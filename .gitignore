@@ -83,3 +83,4 @@ tools/puppet/workdir/.claude/
 tools/dev/rathena-*/
 legion/testdata/rathena/
 legion/data/lfgstats.json
+legion/data/owner.token
