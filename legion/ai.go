@@ -274,7 +274,7 @@ func (b *Bot) think() {
 	if b.bossWatch(gm, moving, now) || b.survive(gm, moving, now) { // bossnote.go: leave before a far-above boss reaches us
 		return
 	}
-	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.lowHPGuard(gm, moving, now) {
+	if b.poisonGuard(gm, moving, now) || b.healFirst(moving, now) || b.selfKyrie(now) || b.lowHPGuard(gm, moving, now) { // healerstick.go: Kyrie on the priest itself
 		return
 	}
 	// economy.go: meeting another player for a trade (bought or sold on #trade) owns the bot until done or timed out
@@ -1561,6 +1561,9 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	restAt := (0.3 + 0.35*(1-b.P.Risk)) * b.tactics().Rest
 	if partyRole(b) == roleTank && partyOf(b) != nil {
 		restAt *= 0.5 // a party's tank keeps going (potions, the priest heals) instead of sitting back
+	}
+	if b.selfHealInstead(hp, restAt, now) { // healerstick.go: a bot with Heal heals itself instead of sitting for HP
+		return
 	}
 	if b.wantSit {
 		done := hp >= 0.95 && !b.lowSP() && (b.MaxSP == 0 || b.SP*100/b.MaxSP >= 80 || b.bestAttack() == nil)
