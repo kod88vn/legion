@@ -1418,6 +1418,16 @@ sub plan_line_conflict {
 	}
 	return 0;
 }
+# her bag at a town run's start / end: weight and the 12 biggest stacks (owner 2026-11-15: town runs every ~28 min,
+# she stayed at 46% weight after a run - what stays heavy?) - "[partylead] bag <when>: w N/M (P%): item xA, ..."
+sub bag_log {
+	my $when = shift;
+	return unless $char && $char->inventory;
+	my @it = sort { ($b->{amount} || 0) <=> ($a->{amount} || 0) } grep { $_ && !$_->{equipped} } @{$char->inventory->getItems() || []};
+	my $pct = $char->{weight_max} ? int(100 * ($char->{weight} || 0) / $char->{weight_max}) : 0;
+	message sprintf("[partylead] bag %s: w %d/%d (%d%%): %s\n", $when, $char->{weight} || 0, $char->{weight_max} || 0, $pct,
+		join(', ', map { "$_->{name} x$_->{amount}" } @it[0 .. ($#it < 11 ? $#it : 11)])), 'system';
+}
 sub flush_say {
 	return unless @pending && time >= $pending[0][0];
 	my $p = shift @pending;
@@ -3461,6 +3471,7 @@ sub tick {
 		}
 		if (!$errand) {
 			$errand = 1;
+			bag_log('start');
 			$errandStart = time;
 			# PT22 (owner rule): on a party town run everyone uses a Butterfly Wing, shops and meets at the Kafra - she
 			# wings 4 s after announcing it (the no-teleport guard lets exactly this wing through)
@@ -3551,6 +3562,7 @@ sub tick {
 	if ($errand) {
 		$errand = 0;
 		$errandEnd = time;
+		bag_log('end');
 		$meetSaid = 0;
 		# a run that freed little weight must not re-trigger a few kills later (QA: sell-run loop at 48%, only 4 items
 		# sold each time): raise the trigger to itemsMaxWeight for 15 min, then back

@@ -758,7 +758,7 @@ equipAuto {
 	leftAccessory
 	rightAccessory
 	robe Muffler
-	armor Adventurer's Suit
+	armor Coat
 	shoes Boots
 	arrow
 	target
@@ -811,7 +811,7 @@ buyAuto Orange Potion {
 	npc_steps b
 	distance 3
 	minAmount 10
-	maxAmount 40
+	maxAmount 25
 	zeny > 3000
 }
 

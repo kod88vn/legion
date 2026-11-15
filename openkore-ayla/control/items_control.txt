@@ -45,7 +45,7 @@ all 0 1 0
 # Adjust these to your needs
 
 Butterfly Wing 0 0 0 # 602 consumable: never stored or sold (2026-11-14: ID lines were ignored, `all 0 1 0` stored her Fly Wings) (id 602)
-Fly Wing 0 0 0 # 601 consumable: never stored or sold (2026-11-14: ID lines were ignored, `all 0 1 0` stored her Fly Wings) (id 601)
+Fly Wing 10 1 0 # 601 keep 10 (no teleport while partied, 347bfa2), the rest to storage (2026-11-15: 40 picked up in one trip, dead weight); was: never stored or sold (2026-11-14: ID lines were ignored, `all 0 1 0` stored her Fly Wings) (id 601)
 
 Blue Potion 0 0 0 # 505 consumable: never stored or sold (2026-11-14: ID lines were ignored, `all 0 1 0` stored her Fly Wings) (id 505)
 Red Slim Potion 0 0 0 # 545 consumable: never stored or sold (2026-11-14: ID lines were ignored, `all 0 1 0` stored her Fly Wings) (id 545)
