@@ -42,6 +42,7 @@ type partyCmdOrder struct {
 	At    time.Time
 	Until time.Time
 	Acked bool
+	LastD int // stay / wait: the leader's last distance (stayends.go: growing = she walks on, the order ends)
 }
 
 var partyOrders sync.Map // member char name (lower) -> partyCmdOrder
@@ -297,6 +298,15 @@ func (b *Bot) partyCmdThink(gm *GameMap, moving bool, now time.Time) bool {
 		o.Acked = true
 		partyOrders.Store(strings.ToLower(b.charName()), o)
 		b.partyCmdAck(o, now)
+	}
+	if (o.Kind == "stay" || o.Kind == "wait") && leadOK && lead.Map == b.MapName { // stayends.go
+		d := dist(b.X, b.Y, lead.X, lead.Y)
+		if stayOrderOver(d, o.LastD) {
+			partyOrders.Delete(strings.ToLower(b.charName()))
+			return false // she is here / walks on: the normal party follow takes over
+		}
+		o.LastD = d
+		partyOrders.Store(strings.ToLower(b.charName()), o)
 	}
 	if o.Kind == "stay" {
 		b.target = 0
