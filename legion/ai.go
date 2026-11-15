@@ -1304,6 +1304,9 @@ func (b *Bot) travel(gm *GameMap, moving bool) {
 					}
 				}
 			}
+			if b.noRouteGiveUp(now) { // farmshare.go: no route for 90 s (doors that lead back): another ground
+				return
+			}
 			if b.escapeNoRoute(gm, moving, now) { // nav.go: Butterfly Wing, or out of the nearest door
 				return
 			}

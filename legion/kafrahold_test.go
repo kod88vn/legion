@@ -93,7 +93,10 @@ func TestKafraHardUntil(t *testing.T) {
 	b := &Bot{P: &Persona{}}
 	b.kafraLast = kafraHop{At: now.Add(-2 * time.Minute), From: "geffen", To: "aldebaran"}
 	b.kafraHops = []time.Time{now.Add(-8 * time.Minute), now.Add(-4 * time.Minute), b.kafraLast.At}
-	if !b.kafraHoldQ("prontera", "", now, true) {
+	if !b.kafraHoldQ("prontera", "", now, true) || !b.kafraHardUntil.IsZero() {
+		t.Fatal("4th teleport in 10 min must be held; a quiet estimate must not record the limit (farmshare.go)")
+	}
+	if !b.kafraHoldQ("prontera", "", now, false) {
 		t.Fatal("4th teleport in 10 min must be held")
 	}
 	if want := now.Add(2 * time.Minute); b.kafraHardUntil.Sub(want) > time.Second || want.Sub(b.kafraHardUntil) > time.Second {

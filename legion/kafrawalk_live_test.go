@@ -247,6 +247,8 @@ func TestKafraWaitInTownLive(t *testing.T) {
 	loadGameData()
 	now := time.Now()
 	b := &Bot{P: &Persona{BaseLevel: 69, Chars: []CharSpec{{Name: "t"}}}, BaseLv: 69, MapName: "aldebaran", X: 140, Y: 131, Zeny: 90000}
+	b.kafraLast = kafraHop{At: now.Add(-2 * time.Minute), From: "geffen", To: "aldebaran"} // 3 teleports in 10 min: held
+	b.kafraHops = []time.Time{now.Add(-8 * time.Minute), now.Add(-4 * time.Minute), b.kafraLast.At}
 	b.kafraHardUntil = now.Add(3 * time.Minute)
 	if !b.kafraWaitInTown("prontera", now) {
 		t.Error("aldebaran -> prontera with the Kafra held and a deadly walk: must wait in town")

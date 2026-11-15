@@ -325,6 +325,7 @@ type Bot struct {
 	idleLeadStill              time.Time
 	idleSitAt                  time.Time // ... and when the idle sit went down (hysteresis / minimum sit time)
 	kafraVirtual               bool      // kafra.go kafraWouldTake: planning from a town we are not in (no fare requests)
+	kafraNoHard                bool      // farmshare.go kafraWaitUseful: a probe plan that ignores the hard limit
 	escortHold                 string    // humanparty.go escortGate: why we wait in the entrance town ("" = not waiting)
 	leadMap                    string    // partyGoalSync: the leader's map as last seen, since when, and when our goal changed
 	leadMapSince               time.Time

@@ -156,7 +156,7 @@ func (b *Bot) kafraPlan(goal string, now time.Time) *kafraTrip {
 		}
 	}
 	if best == nil {
-		if short > 0 && !b.kafraVirtual {
+		if short > 0 && !b.kafraVirtual && !b.kafraNoHard {
 			b.askFare(short-b.Zeny, town, goal, now) // together.go: the party pays a broke member's fare
 		}
 		return nil
@@ -624,6 +624,7 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 	if l.At.IsZero() || cd <= 0 {
 		return false
 	}
+	quiet = quiet || b.kafraNoHard // farmshare.go probe: no events
 	// hard limits no exemption lifts (QA 2026-11-14 19:00Z: a trip to Yuno - a "real need" - lapped prontera <->
 	// Morocc 12 times in 2.5 min until broke): at most 3 teleports in 10 minutes, and never X -> Y -> X within 10
 	// minutes unless it is a party move (the member follows its party map, which a route reaches)
@@ -633,8 +634,8 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 			n10++
 		}
 	}
-	if n10 >= 3 || dest != "" && now.Sub(l.At) < 10*time.Minute && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() &&
-		!(l.ForTrip && b.trip == nil) { // (the one way home after a town run stays free)
+	if !b.kafraNoHard && (n10 >= 3 || dest != "" && now.Sub(l.At) < 10*time.Minute && (dest == l.From || nearestTown(dest) == l.From) && !b.kafraPartyMove() &&
+		!(l.ForTrip && b.trip == nil)) { // (the one way home after a town run stays free)
 		// when it clears (travel waits in town for it rather than walking a deadly way, see kafraWaitInTown)
 		until := l.At.Add(10 * time.Minute)
 		if n10 >= 3 {
@@ -650,7 +651,8 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 			}
 			until = oldest.Add(10 * time.Minute)
 		}
-		if until.After(b.kafraHardUntil) {
+		// (farmshare.go: only a real decision here raises it - not a quiet estimate or a plan from a virtual position)
+		if until.After(b.kafraHardUntil) && !(farmShareOn() && (quiet || b.kafraVirtual)) {
 			b.kafraHardUntil = until
 		}
 		if goal != "" && !quiet && b.buffAt != nil {
@@ -677,8 +679,8 @@ func (b *Bot) kafraHoldQ(dest, goal string, now time.Time, quiet bool) bool {
 	if dest != "" && now.Sub(l.At) < cd && (dest == l.From || nearestTown(dest) == l.From) {
 		why = fmt.Sprintf("not straight back to %s (left it %d min ago)", l.From, int(now.Sub(l.At).Minutes()))
 	} else if mx := tune().KafraMaxPerHour; mx > 0 && n >= mx && !b.kafraCapExempt(now) {
-		if goal != "" && !b.kafraWalkSafe(goal, now) {
-			return false // walking there is deadly: the fare is cheaper than the deaths
+		if goal != "" && (!b.kafraWalkSafe(goal, now) || b.kafraLongWalk(goal)) {
+			return false // walking there is deadly or long (EC04, farmshare.go): the fare is cheaper
 		}
 		why = fmt.Sprintf("%d teleports in the last hour already", n)
 	} else {
@@ -976,6 +978,9 @@ func (b *Bot) kafraWaitInTown(goal string, now time.Time) bool {
 	}
 	if b.routeSafeFrom(b.MapName, b.X, b.Y, goal) {
 		return false // the walk is fine: walk
+	}
+	if b.kafraWaitSkip(goal, now) { // farmshare.go: an open Kafra now, no pointless wait, capped wait
+		return false
 	}
 	b.setState(fmt.Sprintf("waiting in %s for the Kafra (%ds; the walk to %s is too dangerous)", b.MapName, int(b.kafraHardUntil.Sub(now).Seconds()), goal))
 	if at, ok := b.buffAt["kafrawait"]; b.buffAt != nil && (!ok || now.Sub(at) > 10*time.Minute) {
