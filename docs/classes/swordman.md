@@ -10,14 +10,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   waiting for Cavalier Mastery). A partied rider leaves the party briefly for the rental errand (PT23). (2026-11-14)
 - Tanks are active and fight a crowd with AoE: see `all.md` (CL02, CL03).
 
-### Knight: "Two-Hand Sword Knight" (plan `knight`, end goal Lord Knight)
+### Knight: "Two-Hand Sword Knight" (plan `knight`, end goal Knight)
 - **Party role:** main tank (or melee DPS): pulls, Provokes, takes aggro off everyone, clears crowds with Bowling Bash.
-- **Stats:** STR 20, AGI 20, VIT 20, DEX 15 -> STR 40, AGI 40, VIT 35, DEX 25 -> STR 60, AGI 60, VIT 50 -> STR 80,
-  AGI 75, DEX 40, VIT 60 -> STR 90, AGI 85.
-- **Skills (order):** Sword Mastery 1, Bash 10, Two-Handed Sword Mastery 10, Magnum Break 5, Provoke 5, Endure 1,
-  Increase HP Recovery 7 | Knight: Two-Hand Quicken 10, Peco Peco Riding 1, Cavalier Mastery 5 (run 4: moved up from
-  after Bowling Bash - only 24 of 105 Knights had Riding at a median job 19), Counter Attack (Auto Counter) 5, Bowling
-  Bash 10, Magnum Break 10, Increase HP Recovery 10, Endure 10 (Renewal: +MDEF). Old order in `Legacy`.
+- **Stats:** STR 20, AGI 20, VIT 20, DEX 15, STR 40, AGI 40, VIT 35, DEX 25, STR 60, AGI 60, VIT 50, STR 80, AGI 70, VIT 60, DEX 30, STR 90, AGI 75, VIT 61.
+- **Skills (order):** Sword Mastery 1, Bash 10, Two-Handed Sword Mastery 10, Magnum Break 10, Provoke 5, Endure 10, Increase HP Recovery 10, Peco Peco Riding 1, Twohand Quicken 10, Cavalier Mastery 5, Counter Attack 5, Bowling Bash 10, Spear Mastery 1.
 - **Use:** Two-Hand Quicken is a key buff (cast down to 30% SP; needs a two-handed SWORD, not a spear). Bowling Bash on
   the central monster of 3+ (5x5 splash); Brandish Spear when holding a spear; Magnum Break with 2+ around; Provoke to
   pull monsters off members; Endure vs knock-back.
@@ -33,14 +29,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Do:** engage first, pull the next group, stay in front, use AoE and potions when surrounded. **Don't:** trail
   behind the party, sit while members fight, escape except as a last resort near death (Butterfly Wing to the party's save Kafra when in a party (PT31); Fly Wing only solo).
 
-### Crusader: "VIT Holy Cross Crusader" (plan `crusader`, end goal Paladin)
+### Crusader: "VIT Holy Cross Crusader" (plan `crusader`, end goal Crusader)
 - **Party role:** main tank with a shield; holy damage vs undead/demons.
-- **Stats:** VIT 20, STR 20, DEX 15, INT 10 -> VIT 40, STR 40, DEX 30, INT 25 -> VIT 60, STR 60, DEX 45 -> VIT 80,
-  STR 75, DEX 55, INT 40.
-- **Skills (order):** Bash 10, Provoke 5, Sword Mastery 10, Endure 1, Increase HP Recovery 10, Magnum Break 3 |
-  Crusader: Faith 7, Holy Cross 10, Peco Peco Riding 1, Cavalier Mastery 5 (run 4: moved up - 4 of 81 Crusaders had
-  Riding), Faith 10, Guard (Auto Guard) 10, Smite (Shield Charge) 3, Shield Boomerang 5, Shield Reflect (Reflect
-  Shield) 5, Grand Cross 4, Sacrifice (Devotion) 1.
+- **Stats:** VIT 20, STR 20, DEX 15, INT 10, VIT 40, STR 40, DEX 30, INT 25, VIT 60, STR 60, DEX 45, VIT 80, STR 75, DEX 55, INT 40, VIT 89.
+- **Skills (order):** Bash 10, Provoke 5, Endure 10, Increase HP Recovery 10, Magnum Break 3, Peco Peco Riding 1, Cavalier Mastery 5, Faith 10, Holy Cross 10, Guard 5, Smite 3, Shield Boomerang 3, Shield Reflect 5, Grand Cross 4, Sacrifice 1, Provoke 6, Guard 6, Guard 7.
 - **Use:** Auto Guard is a key buff (30% SP floor); Reflect Shield; Grand Cross on 3+ adjacent monsters while HP >= 70%;
   Holy Cross on single targets; Provoke to take aggro.
 - **Gear:** lv1-26 Sword / Falchion / Blade + Guard / Buckler, Adventurer's Suit / Padded Armor; lv14-50 Rapier /
@@ -84,10 +76,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 ### Build milestones and playstyle (rebalanced 2026-11-15)
 - Per-range stats and skills (replayed from the plans at each gear-band end) and the solo / MVP / PvP playstyle of every build of this line are in `legion/data/buildmilestones.json` (`knight`, `crusader`, `knight_spear`, `crusader_gc`, `knight_pierce`, `crusader_spear`). Gear is by band in `buildgear.json`; the party role stays in code.
 - Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:
-  - `knight` (Two-Hand Sword Knight): stat goals 1,408 before (budget 1,273), skill points 87 before (budget 88), not reached before: STR 90; AGI 85; now stat goals 1,272 (spare 1), skill points 87, ends STR 90, AGI 75, VIT 61, DEX 30, not reached now: none.
-  - `crusader` (VIT Holy Cross Crusader): stat goals 1,180 before (budget 1,273), skill points 93 before (budget 88), not reached before: Grand Cross 0/4; Sacrifice 0/1; now stat goals 1,269 (spare 4), skill points 85, ends STR 75, VIT 89, INT 40, DEX 55, not reached now: none.
-  - `knight_spear` (Brandish Spear Knight): stat goals 1,236 before (budget 1,273), skill points 101 before (budget 88), not reached before: Endure 1/10; Pierce 6/10; now stat goals 1,265 (spare 8), skill points 81, ends STR 90, AGI 20, VIT 83, DEX 55, not reached now: none.
-  - `crusader_gc` (INT/VIT Grand Cross Crusader): stat goals 1,340 before (budget 1,273), skill points 115 before (budget 88), not reached before: INT 99; Holy Cross 6/10; Demon Bane 4/5; Heal 0/5; Smite 0/3; Shield Boomerang 0/3; Shield Reflect 0/5; Sacrifice 0/1; Cavalier Mastery 0/5; now stat goals 1,273 (spare 0), skill points 82, ends VIT 85, INT 90, DEX 60, not reached now: none.
-  - `knight_pierce` (AGI/STR Pierce Lancer Knight): stat goals 1,270 before (budget 1,273), skill points 89 before (budget 88), not reached before: Endure 9/10; now stat goals 1,270 (spare 3), skill points 79, ends STR 90, AGI 70, VIT 60, DEX 40, not reached now: none.
-  - `crusader_spear` (STR/VIT Spear Crusader): stat goals 1,152 before (budget 1,273), skill points 90 before (budget 88), not reached before: Grand Cross 3/5; now stat goals 1,241 (spare 32), skill points 79, ends STR 90, AGI 30, VIT 80, DEX 50, not reached now: none.
+  - `knight` (Two-Hand Sword Knight): stat goals 1,408 before (budget 1,273), skill points 87 before (budget 88), not reached before: STR 90; AGI 85; now stat goals 1,272 (spare 1), skill points 88, ends STR 90, AGI 75, VIT 61, DEX 30, not reached now: none.
+  - `crusader` (VIT Holy Cross Crusader): stat goals 1,180 before (budget 1,273), skill points 93 before (budget 88), not reached before: Grand Cross 0/4; Sacrifice 0/1; now stat goals 1,269 (spare 4), skill points 88, ends STR 75, VIT 89, INT 40, DEX 55, not reached now: none.
+  - `knight_spear` (Brandish Spear Knight): stat goals 1,236 before (budget 1,273), skill points 101 before (budget 88), not reached before: Endure 1/10; Pierce 6/10; now stat goals 1,265 (spare 8), skill points 88, ends STR 90, AGI 20, VIT 83, DEX 55, not reached now: none.
+  - `crusader_gc` (INT/VIT Grand Cross Crusader): stat goals 1,340 before (budget 1,273), skill points 115 before (budget 88), not reached before: INT 99; Holy Cross 6/10; Demon Bane 4/5; Heal 0/5; Smite 0/3; Shield Boomerang 0/3; Shield Reflect 0/5; Sacrifice 0/1; Cavalier Mastery 0/5; now stat goals 1,273 (spare 0), skill points 88, ends VIT 85, INT 90, DEX 60, not reached now: none.
+  - `knight_pierce` (AGI/STR Pierce Lancer Knight): stat goals 1,270 before (budget 1,273), skill points 89 before (budget 88), not reached before: Endure 9/10; now stat goals 1,270 (spare 3), skill points 88, ends STR 90, AGI 70, VIT 60, DEX 40, not reached now: none.
+  - `crusader_spear` (STR/VIT Spear Crusader): stat goals 1,152 before (budget 1,273), skill points 90 before (budget 88), not reached before: Grand Cross 3/5; now stat goals 1,241 (spare 32), skill points 88, ends STR 90, AGI 30, VIT 80, DEX 50, not reached now: none.
 - Existing characters: a changed plan keeps the earlier goals in `Legacy` / `LegacyStats` (builds.go), so they are not wrong builds; `tests/tools/test_wrongbuilds_replay.py` replays the pre-rebalance plans through the wrongbuilds.py rules.

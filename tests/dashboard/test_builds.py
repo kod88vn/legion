@@ -49,10 +49,11 @@ class ExportTests(unittest.TestCase):
         self.assertGreater(doc["generated_epoch"], 1_700_000_000)
 
     def test_end_goal_is_the_max_of_the_plan(self):
-        # hunter (builds.go): DEX 99, AGI 75, VIT 30, LUK 40 are the last milestone of each stat
+        # hunter (builds.go Stats, 2026-11-15 rebalance): DEX 99, AGI 75, VIT 40, LUK 30 are the last milestone of each
+        # stat (LegacyStats keeps the old VIT 30, LUK 40)
         hunter = next(b for b in load_export()["builds"] if b["id"] == "hunter")
         got = {s["stat"]: s["value"] for s in hunter["end"]["stats"]}
-        self.assertEqual(got, {"DEX": 99, "AGI": 75, "VIT": 30, "LUK": 40})
+        self.assertEqual(got, {"DEX": 99, "AGI": 75, "VIT": 40, "LUK": 30})
         self.assertEqual(hunter["class"]["name"], "Hunter")
         self.assertEqual(hunter["class"]["first"], "Archer")
 
@@ -124,12 +125,13 @@ class ExportTests(unittest.TestCase):
         by = {b["id"]: b for b in load_export()["builds"]}
         knight = by["knight"]["plan_check"]
         self.assertEqual(knight["status"], "draft")
-        self.assertTrue(any("STR 90" in w and "AGI 85" in w for w in knight["warnings"]), knight["warnings"])
-        self.assertTrue(any("1408 points" in w for w in knight["warnings"]), knight["warnings"])
+        # knight after the 2026-11-15 rebalance: its stat goals (1272 points) and skill goals are all reached at 99
+        self.assertEqual(knight["figures"]["stat_goals_unreached"], [])
+        for w in knight["warnings"]:
+            self.assertNotIn("never reached", w)
         # a build whose plan reaches every goal has no unreached-goal warning
         for w in by["hunter_blitz"]["plan_check"]["warnings"]:
             self.assertNotIn("never reached", w)
-        self.assertEqual(knight["figures"]["stat_goals_unreached"], ["STR 90", "AGI 85"])
 
     def test_gap_list_matches_the_parts_marked_gap(self):
         doc = load_export()
@@ -235,7 +237,7 @@ class ExportTests(unittest.TestCase):
         for bid, cls in re.findall(r'^	"(\w+)": \{ID: "\w+", (?:Base: "\w+", )?Name: "[^"]*", Class: (\d+)', src, re.M):
             self.assertEqual(by[bid]["class"]["id"], int(cls), bid)
         # every stat goal of hunter, in order, as written in builds.go ("stDEX, 20, stAGI, 10, ...")
-        m = re.search(r'"hunter": \{ID:[^\n]*\n\s*Stats: st\(([^)]*)\)', src)
+        m = re.search(r'"hunter": \{ID:[^\n]*\n\s*Stats:\s+st\(([^)]*)\)', src)   # gofmt aligns the value column
         toks = [t.strip() for t in m.group(1).split(",")]
         expected = ["%s %s" % (toks[i][2:].upper(), toks[i + 1]) for i in range(0, len(toks), 2)]
         self.assertEqual([s["label"] for s in by["hunter"]["steps"]["stats"]], expected)

@@ -13,15 +13,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   points. (2026-11-14)
 - Healers carry few HP potions and mostly SP potions (EC29). Ayla's party keeps its priest when others rotate jobs (AY15).
 
-### Priest: "Full Support Priest" (plan `priest`, end goal High Priest)
+### Priest: "Full Support Priest" (plan `priest`, end goal Priest)
 - **Party role:** healer and buffer; never the damage dealer.
-- **Stats:** INT 99 first, then DEX 40, VIT 40 -> DEX 70, VIT 70 -> DEX 90, VIT 90 (old INT/VIT/DEX steps kept in
-  `LegacyStats`; every new point goes to INT until 99).
-- **Skills (order):** Heal 5 first, Divine Protection 5, Blessing 10, Increase AGI 10, Heal 10, Cure 1, Ruwach 1,
-  Angelus 2 | Priest: Kyrie Eleison 10, Magnificat 3, Impositio Manus 3, Suffragium 3, Sanctuary 7, Gloria 1,
-  Teleport 2, Warp Portal 4, Pneuma 1, Aqua Benedicta 1, Aspersio 4, Lex Divina 3, Magnificat 5, Status Recovery 1,
-  Increase SP Recovery 4, Resurrection 1, Turn Undead 3, Lex Divina 5, Lex Aeterna 1, Safety Wall 1, Magnus
-  Exorcismus 10, Gloria 5.
+- **Stats:** INT 20, DEX 15, VIT 15, INT 40, DEX 30, VIT 30, INT 60, DEX 45, VIT 45, INT 80, DEX 60, VIT 60, INT 99, VIT 70.
+- **Skills (order):** Heal 10, Divine Protection 5, Blessing 10, Increase AGI 10, Angelus 2, Ruwach 1, Aqua Benedicta 1, Kyrie Eleison 8, Magnificat 5, Impositio Manus 3, Aspersio 4, Sanctuary 3, Status Recovery 1, Resurrection 1, Increase SP Recovery 4, Lex Divina 5, Lex Aeterna 1, Turn Undead 3, Safety Wall 1, Magnus Exorcismus 10.
 - **Use:** heal the most hurt party mate within 9 cells under 80% (self under 60%), standing up to cast; buffs
   (Blessing, Increase AGI, Kyrie on the tank) only above 60% SP; Heal as an attack on Undead-element monsters (solo
   keeps 20% SP, a party healer 50%); Magnus Exorcismus on 4+ undead/demons (Blue Gemstone, long cast). A solo support
@@ -46,16 +41,10 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
   Aeterna, Magnus Exorcismus 10 early, then Magnificat 5, Kyrie 10, Sanctuary 7, Gloria 5. Heals the party first;
   Magnus Exorcismus on 4+ undead/demons (crowdSkills, Blue Gemstone).
 
-### Monk: "AGI/STR Combo Monk" (plan `monk`, end goal Champion)
+### Monk: "AGI/STR Combo Monk" (plan `monk`, end goal Monk)
 - **Party role:** melee DPS / off-tank.
-- **Stats:** STR 20, AGI 20, VIT 15, DEX 15 -> STR 40, AGI 40, VIT 25, DEX 25 -> STR 60, AGI 60, VIT 40, DEX 35,
-  INT 15 -> STR 80, AGI 80, VIT 50, DEX 45 -> STR 90.
-- **Skills (order, build review run 3):** Heal 3 first (a monk-plan acolyte may be the party's only support), Divine
-  Protection 10, Demon Bane 10, Increase AGI 10, Blessing 6 | Monk: Iron Fists (Iron Hand) 5, Summon Spirit Sphere 5,
-  Dodge (Flee) 5, Raging Trifecta Blow (Triple Attack) 5, Raging Quadruple Blow (Chain Combo) 5, Raging Thrust (Combo
-  Finish) 5, Triple Attack 10, Absorb Spirit Sphere 1, Fury (Critical Explosion) 3, Iron Fists 10, Occult Impaction
-  (Investigate) 3, Throw Spirit Sphere 3, Asura Strike 5. (The combo comes before Triple Attack 10: DB 2026-11-14 had
-  only 9 of 75 Monks with Chain Combo and 1 with Combo Finish. Old order in `Legacy`.)
+- **Stats:** STR 20, AGI 20, VIT 15, DEX 15, STR 40, AGI 40, VIT 25, DEX 25, STR 60, AGI 60, VIT 40, DEX 35, STR 80, AGI 80, VIT 50, STR 85, AGI 85.
+- **Skills (order):** Heal 3, Divine Protection 10, Demon Bane 10, Increase AGI 10, Iron Fists 5, Summon Spirit Sphere 5, Dodge 5, Raging Trifecta Blow 10, Raging Quadruple Blow 5, Raging Thrust 3, Absorb Spirit Sphere 1, Fury 3, Occult Impaction 3, Throw Spirit Sphere 3, Asura Strike 5, Heal 4, Heal 5, Heal 6, Heal 7, Heal 8, Heal 9, Iron Fists 6.
 - **Use:** combo Triple Attack -> Chain Combo -> Combo Finish (weaponskill.go comboNext, sent when the previous step
   hits). Asura Strike only as the combo's finisher after Combo Finish, on a tough target (boss or 5,000+ HP), with SP
   >= 85% and 4+ spirit spheres - never on trash. Combo Finish spends a spirit sphere: once it (or Asura) is learned,
@@ -71,10 +60,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - **Boss role:** tank/DPS: Triple Attack -> Chain Combo -> Combo Finish; Asura Strike burst later.
 
 ### Variant: "Asura Strike Monk" (plan `monk_asura`, Base monk; run 4)
-- **Stats:** STR 90, INT 70, DEX 55, VIT 50 (STR/INT/DEX/VIT steps; INT = SP for Asura and SP regen).
-- **Skills:** Acolyte part as the combo Monk | Monk: Iron Fists 5, Summon Spirit Sphere 5, Absorb Spirit Sphere 1, Fury
-  3, Occult Impaction 3, Throw Spirit Sphere 3, Asura Strike 5, Dodge 5, Root 2, Spiritual Cadence 5, Fury 5, Iron
-  Fists 10, Triple Attack 5.
+- **Stats:** STR 20, INT 15, DEX 15, VIT 15, STR 40, INT 30, DEX 30, VIT 25, STR 60, INT 45, DEX 45, VIT 40, STR 80, INT 60, DEX 55, VIT 50, STR 85, INT 70.
+- **Skills (order):** Heal 3, Divine Protection 10, Demon Bane 10, Increase AGI 10, Blessing 6, Iron Fists 10, Summon Spirit Sphere 5, Absorb Spirit Sphere 1, Fury 5, Occult Impaction 3, Throw Spirit Sphere 3, Asura Strike 5, Dodge 5, Root 2, Spiritual Cadence 5, Raging Trifecta Blow 5.
 - **Use (weaponskill.go `asuraBurst`, after fightSkills in fight()):** keeps 5 spheres (Call Spirits); on a boss /
   champion or a monster with HP >= 20 x its base level, at 85%+ SP with 5 spheres: Fury (3 min), then (spheres back)
   Asura Strike; trash gets auto-attacks. The combo Monk never bursts outside its combo.
@@ -86,8 +73,8 @@ General class rules: `all.md`. Owner words: `docs/rules/archive.md`.
 - Plan budget at level 99 (1,273 stat points, 88 skill points), before and after the 2026-11-15 rebalance:
   - `priest` (Full Support Priest): stat goals 1,688 before (budget 1,273), skill points 110 before (budget 88), not reached before: VIT 70; DEX 90; VIT 90; Gloria 1/5; Lex Divina 3/5; Resurrection 0/1; Turn Undead 0/3; Lex Aeterna 0/1; Safety Wall 0/1; Magnus Exorcismus 0/10; now stat goals 1,233 (spare 40), skill points 88, ends VIT 70, INT 99, DEX 60, not reached now: none.
   - `priest_me` (Magnus Exorcismus Priest): stat goals 1,500 before (budget 1,273), skill points 100 before (budget 88), not reached before: DEX 90; VIT 70; Kyrie Eleison 7/10; Sanctuary 3/7; Gloria 0/5; now stat goals 1,233 (spare 40), skill points 88, ends VIT 60, INT 99, DEX 70, not reached now: none.
-  - `monk` (AGI/STR Combo Monk): stat goals 1,351 before (budget 1,273), skill points 94 before (budget 88), not reached before: STR 90; Throw Spirit Sphere 2/3; Asura Strike 0/5; now stat goals 1,264 (spare 9), skill points 81, ends STR 85, AGI 85, VIT 50, DEX 35, not reached now: none.
+  - `monk` (AGI/STR Combo Monk): stat goals 1,351 before (budget 1,273), skill points 94 before (budget 88), not reached before: STR 90; Throw Spirit Sphere 2/3; Asura Strike 0/5; now stat goals 1,264 (spare 9), skill points 88, ends STR 85, AGI 85, VIT 50, DEX 35, not reached now: none.
   - `monk_asura` (Asura Strike Monk): stat goals 1,294 before (budget 1,273), skill points 88 before (budget 88), not reached before: INT 70; now stat goals 1,244 (spare 29), skill points 88, ends STR 85, VIT 50, INT 70, DEX 55, not reached now: none.
-  - `priest_battle` (STR/INT Battle Priest): stat goals 1,270 before (budget 1,273), skill points 82 before (budget 88), not reached before: none; now stat goals 1,270 (spare 3), skill points 82, ends STR 90, VIT 60, INT 70, DEX 40, not reached now: none.
+  - `priest_battle` (STR/INT Battle Priest): stat goals 1,270 before (budget 1,273), skill points 82 before (budget 88), not reached before: none; now stat goals 1,270 (spare 3), skill points 88, ends STR 90, VIT 60, INT 70, DEX 40, not reached now: none.
   - `monk_occult` (VIT/STR Occult Tank Monk): stat goals 1,283 before (budget 1,273), skill points 88 before (budget 88), not reached before: VIT 80; now stat goals 1,238 (spare 35), skill points 88, ends STR 90, AGI 10, VIT 75, INT 35, DEX 50, not reached now: none.
 - Existing characters: a changed plan keeps the earlier goals in `Legacy` / `LegacyStats` (builds.go), so they are not wrong builds; `tests/tools/test_wrongbuilds_replay.py` replays the pre-rebalance plans through the wrongbuilds.py rules.

@@ -18,13 +18,13 @@ the classic name in brackets where they differ. The owner's words for each class
   support), spread across the bots, each with its own gear table in buildgear.json. A bot's goal is to complete its build: it
   farms the drops and zeny for its next gear piece or trades for it. The build/class master compares each class with good
   online Renewal guides and improves the engine. (2026-11-14)
-- Related general rules: EC01, EC02 (wrong build), ST01 (trans cap; the end goal of each plan is its transcendent class), EC20
+- Related general rules: EC01, EC02 (wrong build), ST01 (trans cap; no rebirth, the end goal of each plan is its 2nd job, G10), EC20
   (gear upgrades), EC26 and EC29 (utilities, SP potions), PT23 (errands), EC19 (boss hunts).
 
 ### Build variants (2026-11-14)
 - builds.go: a variant is its own plan with `Base: "<main plan>"` (same class, 1st job and branch), its own stat/skill
   order and its own buildgear.json table (falls back to the main plan's). planForClass gives new characters the main
-  plan 3 times in 5 and a variant otherwise; existing characters keep their plan. Code that asks "which build" uses
+  plan 2 times in 5 (40%) and a variant otherwise (one variant: 50/50); existing characters keep their plan. Code that asks "which build" uses
   `p.base()` (gear style, alchemy, buildgear); planWeaponSubs and trans lists fall back to the main plan
   (`transFor` keeps only the transcendent skills). tools/wrongbuilds.py maps variants to their base.
 - Step 1 (built): knight_spear, crusader_gc, hunter_blitz, priest_me. Run 4 (built 2026-11-14): sage_support,
