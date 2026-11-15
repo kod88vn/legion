@@ -1126,6 +1126,17 @@ $('parties').addEventListener('click', ev => {
   if (r) { const id = r.dataset.p; P.open.has(id) ? P.open.delete(id) : P.open.add(id); renderParties(); }
 });
 
+// the longer windows from Ayla's own files (/offline): exp per map over its whole stay, kills since kills_since
+function AYX() {
+  const A = OFF.d && OFF.d.ayla, st = A && A.status, mx = A && A['ayla_mapexp.json'], out = {kpmLong: null, kpmMin: 0, mapLine: ''};
+  if (st && st.kills != null && st.kills_since && st.ts > st.kills_since + 300) {
+    out.kpmMin = Math.round((st.ts - st.kills_since) / 60);
+    out.kpmLong = st.kills / out.kpmMin;
+  }
+  const ms = mx && mx.maps ? Object.entries(mx.maps).filter(([, v]) => v.s > 600) : [];
+  if (ms.length) out.mapLine = ms.map(([m, v]) => `${m}: ${fmt(Math.round(v.e * 3600 / v.s))}/h over ${Math.round(v.s / 60)} min`).join(', ');
+  return out;
+}
 // ---- key numbers of Ayla's party: kills per minute, exp and zeny per hour, leaderboard rank
 function renderAylaKpis() {
   const ps = Array.isArray(P.data) ? P.data.filter(p => p.human) : [];
@@ -1139,8 +1150,10 @@ function renderAylaKpis() {
   const on = aylaPartyRanks().filter(x => x.r).sort((a, b) => a.r.rank - b.r.rank);
   const none = '<span class="st-unk">–</span>';
   $('kpisAyla').innerHTML =
-    kpi('Kills / min', d ? fmt1(d.kpm || 0) : (botKpm != null ? fmt1(botKpm) : none), `${d ? esc(lead.name) + `, last ${d.meter_min || 0} min` : 'no leader status'}${botKpm != null ? ' · friends avg ' + fmt1(botKpm) : ''}`) +
-    kpi('Base exp / h', d ? fmt(d.exp_h || 0) : none, d ? `job ${fmt(d.job_exp_h || 0)} / h · base ${d.base_exp_pct || 0}%` : 'no leader status') +
+    // status.json rates are her last 10 min scaled to an hour, and kpm counts every exp share (party kills too);
+    // the longer view is her per-map record (ayla_mapexp.json) and her running kill total since kills_since
+    kpi('Kills / min', d ? fmt1(d.kpm || 0) : (botKpm != null ? fmt1(botKpm) : none), `${d ? `party kills she shared, last ${d.meter_min || 0} min` + (AYX().kpmLong != null ? ` · ${fmt1(AYX().kpmLong)} over ${AYX().kpmMin} min` : '') : 'no leader status'}${botKpm != null ? ' · friends avg ' + fmt1(botKpm) : ''}`) +
+    kpi('Base exp / h', d ? fmt(d.exp_h || 0) : none, d ? `last ${d.meter_min || 0} min scaled to 1 h` + (AYX().mapLine ? ' · ' + AYX().mapLine : '') + ` · job ${fmt(d.job_exp_h || 0)} / h · base ${d.base_exp_pct || 0}%` : 'no leader status') +
     kpi('Zeny / h', zph != null ? fmt(Math.round(zph)) : none, zph != null ? `friends avg (${neo.window})${aw ? ' · her purse ' + fmt(Math.round(aw.zph_purse)) + ' / h' : ''}` : 'meter not reading') +
     kpi('Leaderboard rank', on.length ? '#' + fmt(on[0].r.rank) : none, on.length ? `best: ${esc(on[0].m.name)} · ${on.length} on the board` : 'no member on the board') +
     kpi('Together', `${fmt(p.together)} / ${fmt(p.online)}`, `on ${esc(p.map || '?')} · ${mem.length} members`) +
@@ -1420,7 +1433,7 @@ function renderPlayer() {
       ['stats', `STR ${c.str} · AGI ${c.agi} · VIT ${c.vit} · INT ${c.int} · DEX ${c.dex} · LUK ${c.luk}`],
       ['unused points', `${fmt(c.status_point)} status · ${fmt(c.skill_point)} skill`]]) + '</div>';
     h += '<div>' + kvRows([
-      ['online', c.online ? '<span class="st-up">yes (server flag)</span>' : 'no'], ['last map', `${esc(c.last_map || '?')} ${c.last_x},${c.last_y}`],
+      ['online', c.online == null ? '<span style="color:var(--muted)">unknown (game server not running)</span>' : c.online ? '<span class="st-up">yes (server flag)</span>' : 'no'], ['last map', `${esc(c.last_map || '?')} ${c.last_x},${c.last_y}`],
       ['save point', `${esc(c.save_map || '?')} ${c.save_x},${c.save_y}`], ['last login', esc(c.last_login || '–')],
       ['guild', d.guild ? `${esc(d.guild.name)} <span style="color:var(--muted)">lv ${esc(d.guild.guild_lv)} · master ${esc(d.guild.master)}</span>` : (c.guild_id ? 'id ' + c.guild_id : 'none')],
       ['party', d.party ? `${esc(d.party.name)} <span style="color:var(--muted)">leader char ${esc(d.party.leader_char)}</span>` : (c.party_id ? 'id ' + c.party_id : 'none')],

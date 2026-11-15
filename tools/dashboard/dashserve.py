@@ -578,9 +578,17 @@ class Players:
                 "snap_every_s": SNAP_EVERY, "skill_names": bool(offline.skills(SNAP_DIR)),
                 "item_names": len(offline.items())}
 
+    def online_flag_valid(self):
+        """char.online is set by the map server; while ro-rathena is not running it is left over, not true"""
+        return self.watch.running("ro-rathena")
+
     def search(self, q, limit):
         out = offline.search(self.current(), q, limit)
+        if not self.online_flag_valid():
+            for r in out["rows"]:
+                r["online"] = None
         out.update(self.info())
+        out["online_flag"] = "game server running" if self.online_flag_valid() else "unknown: the game server is not running"
         return out
 
     def char(self, char_id, name):
@@ -591,6 +599,8 @@ class Players:
             except Exception as e:
                 err = str(e)[:200]
         out = offline.character(self.current(), live, char_id, name, offline.skills(SNAP_DIR))
+        if out.get("char") and not self.online_flag_valid():
+            out["char"]["online"] = None
         out["live_error"] = err
         out.update(self.info())
         return out
