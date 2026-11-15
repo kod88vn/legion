@@ -506,3 +506,51 @@ class TestAgentsAndSkill(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# the real engine shapes (legion/meterapi.go), checked at the integration pass
+ENGINE_METER = {"window": "1h", "server": {"bots": 120, "kpm": 1.5, "zph": 15000, "deaths_h": 0.2, "kpm_median": 1.4,
+                                           "zph_median": 11000, "shares": {"fighting": 0.6, "searching": 0.3}},
+                "cohorts": [
+                    {"key": "swordman|41-60|solo", "line": "swordman", "band": "41-60", "mode": "solo", "n": 40,
+                     "kpm": {"mean": 1.2, "median": 1.1, "p75": 1.6, "par": 1.6, "gap": 0.4, "prize": 16},
+                     "zph": {"mean": 9000, "median": 8000, "p75": 13000, "par": 13000, "gap": 4000, "prize": 160000},
+                     "deaths_h": 0.9, "shares": {"fighting": 0.6, "searching": 0.3, "stuck": 0.01}},
+                    {"key": "merchant|41-60|vendor", "line": "merchant", "band": "41-60", "mode": "vendor", "n": 60,
+                     "kpm": {"mean": 0, "p75": 0}, "zph": {"mean": 500, "p75": 900}, "deaths_h": 0,
+                     "shares": {"town": 0.98, "travelling": 0.02}}]}
+
+
+class TestEngineShapes(Env):
+    def test_meterlib_reads_engine(self):
+        import meterlib as M
+        cs = M.cohorts(ENGINE_METER)
+        sw = cs[0]
+        self.assertEqual(sw["key"], "swordman|41-60|solo")
+        self.assertEqual(sw["kpm"]["p75"], 1.6)
+        self.assertEqual(sw["deaths_ph"], 0.9)
+        self.assertEqual(M.prize(sw, "zph"), 4000 * 40)
+        s = M.server(ENGINE_METER)
+        self.assertEqual((s["kpm"]["mean"], s["deaths_ph"], s["n"]), (1.5, 0.2, 120))
+        self.assertEqual([c["key"] for c in M.fighters(cs)], ["swordman|41-60|solo"])
+
+    def test_sentinel_ignores_vendors(self):
+        import sentinel
+        f = sentinel.meter_findings(ENGINE_METER)
+        self.assertFalse(f["farming"][0])       # vendors' town time is not a farming problem
+        self.assertTrue(f["meter_deaths"][0])   # deaths_h is read
+
+    def test_history_rows_and_neo(self):
+        import league
+        rows = [{"t": T0 - 1800, "kind": "server", "window": "1h", "n": 100, "deaths_h": 5.0},
+                {"t": T0 - 1800, "kind": "cohort", "key": "archer|21-40|solo", "n": 10, "deaths_h": 0.5,
+                 "kpm": {"mean": 1.0}, "zph": {"mean": 900}},
+                {"t": T0 - 1800, "kind": "neo", "n": 6, "neo": {"party": {"n": 6}}}]
+        self.assertEqual(league.window_mean(rows, "deaths", "", T0 - 3600, T0), 0.5)  # server row not mixed in
+        neo = {"window": "1h", "ayla": {"name": "Ayla", "windows": {"1h": {"zph_purse": 4000, "par_zph": 9000}}},
+               "party_summary": {"n": 1}, "party": [{"name": "Kira", "kpm": 0.5, "par_kpm": 1.0, "zph": 1, "par_zph": 2}],
+               "starveil_summary": {"n": 0}, "starveil": []}
+        text = "\n".join(league.neo_section(neo, []))
+        self.assertIn("party: Kira", text)
+        self.assertIn("Ayla (purse z/h, OpenKore)", text)
+        self.assertNotIn("party_summary", text)

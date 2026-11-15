@@ -247,7 +247,7 @@ def meter_findings(meter):
     """{key: (bad, detail)} from a /api/meter payload; {} when the meter has no usable data (checks then fall back)."""
     if METER is None or not meter:
         return {}
-    cs = METER.cohorts(meter)
+    cs = METER.fighters(METER.cohorts(meter))   # vendors vend all day: not part of the farming share
     tot = sum(c['n'] for c in cs)
     if tot < 20:
         return {}

@@ -1,7 +1,9 @@
 """Defensive reader for the engine's meter (/api/meter, /api/meter/neo, legion/data/meter.jsonl).
 
-The exact JSON of package M was not merged when this was written (docs/design/meter.md), so every accessor tries
-several spellings and returns None when a number is absent. Normalized cohort:
+Engine shapes (docs/design/meter.md, legion/meterapi.go; checked at the integration pass): /api/meter has
+server{bots, kpm, zph, deaths_h, kpm_median, zph_median, shares} and cohorts[{key, line, band, mode, n,
+kpm{mean,median,p75,par,gap,prize}, zph{...}, deaths_h, shares}]; meter.jsonl rows carry kind cohort|server|neo with
+the same cohort fields. Accessors still try older spellings and return None when a number is absent. Normalized cohort:
   {key, line, band, mode, n, kpm{mean,median,p75}, zph{...}, shares{bucket: 0..1}, deaths_ph}
 Par = the cohort's p75 (or an explicit "par" field if the engine gives one).
 """
@@ -62,7 +64,7 @@ def cohort(d):
         d.get("line") or d.get("class_line") or "?", d.get("band") or d.get("level_band") or "?",
         d.get("mode") or ("party" if d.get("party") else "solo"))
     n = num(d.get("n", d.get("bots", d.get("count")))) or 0
-    dp = d.get("deaths_per_hour", d.get("deaths_ph", d.get("deaths")))
+    dp = d.get("deaths_h", d.get("deaths_per_hour", d.get("deaths_ph", d.get("deaths"))))
     return {"key": str(key), "line": d.get("line") or d.get("class_line"), "band": d.get("band") or d.get("level_band"),
             "mode": d.get("mode"), "n": n, "kpm": stat(d, "kpm", "kills_per_min", "kills_per_minute"),
             "zph": stat(d, "zph", "zeny_per_hour", "zeny_ph"), "shares": shares(d),
@@ -72,7 +74,7 @@ def cohort(d):
 def cohorts(meter):
     """List of normalized cohorts from /api/meter (cohorts as list or dict keyed by name) or history rows."""
     if isinstance(meter, list):
-        raw = meter
+        raw = [r for r in meter if not isinstance(r, dict) or r.get("kind", "cohort") == "cohort"]  # history rows
     else:
         raw = (meter or {}).get("cohorts", [])
     if isinstance(raw, dict):
@@ -83,7 +85,13 @@ def cohorts(meter):
 def server(meter):
     s = (meter or {}).get("server") or (meter or {}).get("totals") or {}
     return {"kpm": stat(s, "kpm", "kills_per_min", "kills_per_minute"), "zph": stat(s, "zph", "zeny_per_hour"),
-            "shares": shares(s), "deaths_ph": num(s.get("deaths_per_hour")), "n": num(s.get("n", s.get("bots_online")))}
+            "shares": shares(s), "deaths_ph": num(s.get("deaths_h", s.get("deaths_per_hour"))),
+            "n": num(s.get("n", s.get("bots", s.get("bots_online"))))}
+
+
+def fighters(cs):
+    """cohorts of fighting bots: vendor cohorts (mode vendor: vending is their job) are left out of farming checks"""
+    return [c for c in cs if str(c.get("mode") or "").lower() != "vendor"]
 
 
 def rel_gap(c, metric):

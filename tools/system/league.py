@@ -74,7 +74,16 @@ def neo_section(neo, cs):
     if not neo:
         return L + ["(no data from /api/meter/neo)"]
     entries = []
-    if isinstance(neo, dict):
+    if isinstance(neo, dict) and isinstance(neo.get("party"), list):  # engine shape: ayla, party[], starveil[], summaries
+        a = neo.get("ayla") or {}
+        aw = (a.get("windows") or {}).get(neo.get("window") or "1h") or {}
+        if aw:
+            entries.append(("Ayla (purse z/h, OpenKore)", {"zph": aw.get("zph_purse"), "par_zph": aw.get("par_zph")}))
+        for grp in ("party", "starveil"):
+            for x in neo.get(grp) or []:
+                if isinstance(x, dict):
+                    entries.append(("%s: %s" % (grp, x.get("name", "?")), x))
+    elif isinstance(neo, dict):
         for k, v in neo.items():
             if isinstance(v, dict) and (_m(v, "kpm", "kills_per_min") is not None or _m(v, "zph", "zeny_per_hour") is not None):
                 entries.append((k, v))
@@ -131,6 +140,8 @@ def window_mean(rows, metric, sub, t0, t1):
     for r in rows:
         t = C.to_epoch(r.get("t", r.get("ts", r.get("time"))))
         if t is None or not (t0 <= t < t1):
+            continue
+        if r.get("kind", "cohort") != "cohort":  # meter.jsonl also has server and neo rows
             continue
         c = M.cohort(r)
         if sub and sub.lower() not in c["key"].lower():
