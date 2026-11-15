@@ -2,7 +2,7 @@
 
 Owner's standing orders. They override defaults and earlier designs. Details live in topic files; the owner's original words are in `docs/rules/archive.md` (never auto-loaded).
 
-**Goal (PR03).** See Constitution 2.1. Everything built is on (G21, PR37); ask only before hard-to-reverse actions (G22).
+**Goal (PR03).** See Constitution 2.1.
 
 ## The Constitution comes first
 `CONSTITUTION.md` is loaded before this file and stands above everything here and in `docs/rules/`.
@@ -28,7 +28,7 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 - G18 (CT05) See Constitution 2.2; "a script" counts too.
 - G19 (AY03) Ayla and her party are always online. A planned restart allowed by G15-G17, or a crash restart, is not a breach if she is back within 5 min. (G19 to G23 confirmed as hard gates by the owner, 2026-11-14.)
 - G20 Ayla's party is never subjected to kicks, resets or build resets. (Human part removed by the owner 2026-11-14; see G25.)
-- G21 Nothing is started until the owner says so. The owner said so on 2026-11-14: all systems are on (PR37); no further asking.
+- G21 Nothing is started until the owner says so, part by part in the redesign. The 2026-11-14 "all systems on" order is void.
 - G22 Ask the owner before outward-facing or hard-to-reverse actions (installing external tools, deleting data).
 - G23 Tests and experiments never touch live data: not `ro-db`, not `~/.wine-ro`, not the running-state files in `legion/data`.
 - G24 (PR31) The deploy agent may `docker stop`/`docker kill` stray golang test or build containers that block a deploy, NEVER rathena, Ayla, legion or the db.

@@ -1,11 +1,10 @@
 # Redesign brief (approved by the owner 2026-11-14)
 
 The single brief for every Phase 2 agent. The rules behind it are in `RULES.md` (sections 0, 3b, 4, 5).
-Read `STATUS.md` first. **Nothing may be started**: no containers, no servers, no loops, no minds. The owner tests
-after restarting the machine.
+Read `STATUS.md` first. The Constitution (2026-11-15) stands above this brief; where they differ it wins.
 
 ## 1. The design in one page
-- **The world runs without AI.** The Go engine (`legion/`) plays every bot. AI adds direction and words on top.
+- **The goal: a world that runs without AI** (Constitution 2.9; not today's state). The Go engine (`legion/`) plays every bot.
 - **One goal per bot:** its ultimate build. The engine already works it down: next build step -> how to get it ->
   where to farm -> solo or party -> routine. Plans last about 2 hours.
 - **The two metrics that matter per bot:** kills per minute and zeny per hour.
@@ -16,7 +15,7 @@ after restarting the machine.
     Ayla for Starveil), economy/market, build/class, chat. Each runs as its own one-shot agent outside the main
     session (`claude -p`, Haiku unless stated), woken by a dispatcher script on a schedule or an event.
   - System agents (outside the world; never steer the game): sentinel and other scripts, party watcher, class QA,
-    fixers, deploy agent, analyst. The main session listens to the owner and to bug reports and assigns fixers.
+    fixers, deploy agent, analyst. The main session: Constitution Article 1.
 - **Guilds compete on rank and wealth.** Leaders are frenemies. Guild wars come later.
 - **Guild direction, no bounties.** A leader posts a few standing directions. Every member owes the guild about
   2 hours a day on a direction that is safe for it and that it can do; otherwise it is excused. Members who do not
@@ -27,7 +26,7 @@ after restarting the machine.
 - **Ayla is Neo.** She, her party and her guild Starveil must be at the top of the two metrics against comparable
   bots. Her cheat code is a direct, instant line to the system: improvement requests that jump the bug queue.
 - **Deploys every 3 hours** (critical unblocking fixes excepted). One deploy, then about 3 hours of measurement.
-- **Token efficiency.** Scripts do the watching. Most agents are Haiku. Sonnet: main session, Ayla's mind,
+- **Token efficiency.** Scripts watch alongside the system agents (PR36). Most agents are Haiku. Sonnet: main session, Ayla's mind,
   build/class master, routine fixers, deploy. Strongest model only on demand (hard fixes, escalations).
 
 ## 2. Ground rules for every Phase 2 agent
@@ -157,7 +156,8 @@ Always on, read-only for behaviour.
   by violations and for a 30-minute review.
 - Agent definitions with their models (`.claude/agents/`): fixer (Sonnet), hard-fixer (strongest, on demand),
   deploy (Sonnet), watcher (Haiku), qa (Haiku or Sonnet), analyst-review (Sonnet). Each gets a short brief.
-- New session skill replacing `legion-session`: what to start, in what order, and that the owner decides when.
+- New session skill replacing `legion-session`: the startup order, carried out by an agent the main session assigns on
+  the owner's word (Constitution 1.3).
 
 ### R. Rules trim (Sonnet) - branch `feat/rules`, owns the rule and doc files
 - Sort every current rule in `RULES.md` and `CLASSES.md` into: hard gate, behaviour spec, process rule, server

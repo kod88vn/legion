@@ -182,7 +182,7 @@ Counts by kind: behaviour spec 109, hard gate 20, process 19, replaced 5, server
 | CL12 | Transcendent path and cap in class form | server setting | CLASSES Trans (l.216) | docs/classes/transcendent.md | merged into ST01 (class data kept) |
 | CL13 | Arrows are basic utilities; buying arrows is an errand | behaviour spec | CLASSES Archer (l.439) | docs/classes/archer.md | merged into EC26 and PT23 |
 | CL14 | Merchant: guild Alchemist brews potions (pointer) | behaviour spec | CLASSES Merchant (l.605) | docs/classes/merchant.md | merged into EC11 |
-| PR37 | All systems on whenever the world runs; do not re-ask what the owner already answered | process | owner 2026-11-14 | docs/rules/process.md | new rule |
+| PR37 | All systems on whenever the world runs | process | owner 2026-11-14 | docs/rules/process.md | voided 2026-11-15 (shutdown, restart from the constitution); G21, PR36, DB04 amended to fit the constitution |
 | AY18 | Ayla has zero downtime, never idle or stuck | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
 | AY19 | Ayla plays like a normal bot without any AI; the mind only adds | ayla | owner 2026-11-14 | docs/rules/ayla.md | new rule |
 | EC35 | Shop merchants occasionally announce rare items in #trade | economy | owner 2026-11-14 | docs/rules/economy.md | new rule |

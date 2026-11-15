@@ -46,9 +46,7 @@ python tools/legionctl.py nearby <map>                # who's on a map and what 
 python tools/legionctl.py humans                      # where the real players are
 python tools/legionctl.py guild guild03               # guild roster
 python tools/legionctl.py leader guild03              # guild leader (always online): rank, party, free members
-python tools/legionctl.py leader-party guild03 [map]   # form the leader's tank/priest/ranged party; leaderboard [N]
-python tools/legionctl.py party "<leader>" "<a>" "<b>" --map pay_fild09
-python tools/legionctl.py goal "<name>" hunt gef_fild10
+python tools/legionctl.py leaderboard [N]              # guild ranking
 python tools/legionctl.py market ; shop "<vendor>" "S> Elu, Oridecon, cheap pots!" --markup 1.6
 python tools/legionctl.py remember "<name>" --note "..." --person "<other>" --relation friend
 python tools/legionctl.py drops "SS card" --for Ayla  # who drops an item (rate %), maps ranked by rate x spawns, party fit, danger
@@ -57,6 +55,8 @@ python tools/legionctl.py mapinfo pay_dun01 [--for X]  # what spawns on a map (c
 python tools/legionctl.py orders <mind> ; think <mind> "..." [--kind decision] ; minds   # minds bus
 python tools/legionctl.py help                         # everything
 ```
+Blocked for puppet masters by the dispatcher (PR09): `goal`, `guild-goal`, `party`, `leader-party`, `boss-hunt`,
+`boss-cancel`, `guild-kick`.
 
 ## Where things are
 - `docker-compose.yml`, `.env`: the stack. `README.md`: server and client details. `legion/README.md`: engine internals and

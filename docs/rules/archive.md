@@ -1931,6 +1931,11 @@ Resolved by newest owner word per PR41; see coverage.md.
 "the constitution must be read upfront. You do not need to repeat the points. Just make it so every agent read it at first. Avoid duplication as general rule to avoid wasting tokens"
 ```
 
+## PR37 voided; G21, PR36, DB04 amended (2026-11-15)
+```text
+"fix the 3 conflicts you found. Like I said we're starting over and the constitution is the law of the land"
+```
+
 ## DB05 / DB06
 ```text
 "redesign dashboard. It's too cluttered now. I want tabs, each represent an important aspect: server status is always on top, then tabs: Ayla party, Legion, Economy, Puppet Master decisions, Leaderboard, and System (including all agent status). This page must always be on"

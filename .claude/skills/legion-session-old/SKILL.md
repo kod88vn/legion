@@ -1,10 +1,10 @@
 ---
 name: legion-session-old
-description: Start (or resume) a live session of the AI-Lab Ragnarok world - checks the server and Legion bot engine, then spawns sub-agents that act as the minds of the players (chat director, ambient life, guild leaders, market). Also restores the full main-session setup (background loops, standing agents; HANDOVER.md section 0) at the start of every new session. Use when asked to "start the bot legion", "bring the server to life", or "run the masterminds".
+description: SUPERSEDED history of the 2026-11-14 setup (15 minds, standing agents, the main session starting loops). Do not use; the main session's job is Constitution Article 1 and the legion-session skill.
 ---
 
-> **SUPERSEDED 2026-11-14:** the restart order / agent roster described here belongs to the old setup. Read
-> `STATUS.md` at the repo root first and start nothing (containers, loops, minds, agents) without the owner's word.
+> **SUPERSEDED (history only).** Nothing below is an instruction. Where it has the main session start, restart,
+> observe or run anything, the Constitution (Article 1) and the `legion-session` skill apply instead.
 
 # Start a Legion session
 

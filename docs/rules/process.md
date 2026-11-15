@@ -10,9 +10,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - PR23 / G13. See Constitution 1.3. The owner's own instructions to Ayla (AY20) and owner-ordered restarts of her OpenKore go through an agent. (2026-11-14, amended 2026-11-15)
 - PR31 / G24. Only the deploy agent runs go vet/test and image builds; fixers hand over "code ready". The deploy agent may stop
   stray golang build/test containers that block a deploy, never rathena, Ayla, legion or the db. (2026-11-14)
-- PR36. (from the approved redesign brief, not an owner quote) Scripts do the watching (sentinel, partycheck, league analyst, dispatcher and sentinel heartbeats). An AI agent is
-  woken only by a violation, an outage, a Neo request, or a scheduled review. A script reports problems into the bug queue.
-  (2026-11-14, replaces the always-running watcher, QA and watchdog agents)
+- PR36. Scripts (sentinel, partycheck, league analyst) watch alongside the system agents and file into the bug queue; they replace no agent (Constitution 2.6, 2.9, 3.8). (2026-11-14, amended 2026-11-15: the retirement of the watcher, QA and watchdog agents is void)
 - PR24. See Constitution 3.3. Reports go through the bug queue with `legionctl bug` (it arrives with the puppet package). (2026-11-14)
 - PR18. Ayla is the test system, so a dedicated agent observes her party and reports bugs. Scripted checks (`partycheck`) run every
   minute; an AI watcher is woken by violations and for a periodic review. Restart it whenever it stops. (2026-11-14, restated)
@@ -42,7 +40,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - PR35. Write everything down for the next AI in `HANDOVER.md`, and keep the rule files current. (2026-11-13)
 - PR13. The AI harness lives in the git repository `G:\RO\legion`. (2026-11-14)
 
-- PR37. All systems are on whenever the world runs: every built system is switched on (tuning flags included: guild duty, exchange, meter, puppet masters, sentinel, party check, watchers, Ayla's Haiku helper and her OpenKore log terminal, and the dashboard). Do not ask the owner whether to turn something on; the owner has already answered. Ask only when something is hard to reverse. (2026-11-14)
+- PR37. Void since the owner's shutdown of 2026-11-15 and the restart from the constitution. What runs is decided by the owner again, part by part (G21). (2026-11-14, voided 2026-11-15)
 
 ## Recording rules and deploys
 - PR02. When the owner states a rule ("must", "always", "never", "should", "apply to all ..."), the same turn: one short line
@@ -59,7 +57,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - DB01. The dashboard shows world data, the minds (the owner can talk to them there), guilds, and parties with each member's HP, SP
   and zeny. (2026-11-14)
 - DB02. The owner can close and reopen the mind chats. (2026-11-14)
-- DB04. Retired agents (no activity: watcher, watchdog, qa-travel, life, deploy, econ) sit under a collapsed "Retired" section on the dashboard; nothing is removed. Chat, market, guild leaders, build and Ayla stay in the main grid, because they are the running system. (2026-11-15)
+- DB04. Only agents the owner has retired sit under a collapsed "Retired" section on the dashboard; nothing is removed. None is retired now (Constitution 2.9). (2026-11-15, amended 2026-11-15)
 - DB05. The dashboard is one page with the server status always on top and tabs below it: Ayla's party, Legion, Economy, Puppet master decisions, Leaderboard, System (with every agent's status). No clutter; nothing is removed (G08), it moves into its tab. (2026-11-15)
 - DB06. The dashboard page is always on, also when the stack or the agents are down; it then shows what is down. (2026-11-15)
 - PR38. See Constitution 2.7, 2.8 and 2.9. Ayla's Haiku helper steers her only through guarded commands (AY05); until the goal of 2.9 is reached AY05 and PR18 run. (2026-11-14)
