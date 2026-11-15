@@ -1,5 +1,11 @@
 """Tests for the standalone dashboard server. No docker, no engine, no live data: temp folders and a fake engine.
 Run: python -m unittest discover -s tests/dashboard -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import json
 import os
 import shutil
@@ -64,7 +70,7 @@ class Base(unittest.TestCase):
             self.fake.shutdown(); self.fake.server_close()
         shutil.rmtree(self.d, ignore_errors=True)
         shutil.rmtree(self.cache, ignore_errors=True)
-        os.environ.pop("LEGION_DATA", None)
+        testenv.isolate()
 
     def status(self):
         code, _, body = get(self.url + "/status")

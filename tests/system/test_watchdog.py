@@ -1,6 +1,12 @@
 """Tests for tools/system/watchdog.py and the heartbeat changes (bugq watch, keeper, unwall, dashboard).
 Offline: fake heartbeat files in a temp data dir, a fake clock, fake ops (no docker, no processes).
 Run: python -m unittest discover -s tests/system -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import io
 import json
 import os
@@ -56,8 +62,8 @@ class Env(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.d, ignore_errors=True)
-        for k in ("LEGION_DATA", "LEGION_FAKE_NOW"):
-            os.environ.pop(k, None)
+        os.environ.pop("LEGION_FAKE_NOW", None)
+        testenv.isolate()
 
     def put(self, name, content="", age=0, base=T0):
         p = os.path.join(self.d, name)

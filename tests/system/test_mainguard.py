@@ -1,5 +1,11 @@
 """Tests for tools/system/mainguard.py (Constitution 1.3 / 1.9). Offline: sample hook inputs only.
 Run: python -m unittest discover -s tests/system -p "test_mainguard.py" -v"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import json
 import os
 import subprocess

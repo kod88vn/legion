@@ -1,5 +1,11 @@
 """Tests for the system-agent harness. No server, no docker; a fake clock and temp data dirs.
 Run: python -m unittest discover -s tests/system -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import io
 import json
 import os
@@ -25,7 +31,7 @@ class Env(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.d, ignore_errors=True)
-        os.environ.pop("LEGION_DATA", None)
+        testenv.isolate()
         os.environ.pop("LEGION_FAKE_NOW", None)
 
     def clock(self, t):
