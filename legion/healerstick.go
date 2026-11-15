@@ -228,7 +228,7 @@ func (b *Bot) selfHealOK() bool {
 	if c == 0 || b.SP < c {
 		return false
 	}
-	return (b.SP-c)*100/b.MaxSP >= 20 || b.hpFrac() < 0.4
+	return (b.SP-c)*100/b.MaxSP >= b.selfSPFloor() || b.hpFrac() < 0.4 // a Monk keeps 35% for its combos
 }
 
 // selfHeal (b.mu held): cast Heal on ourselves (standing up first). Always owns the tick while HP is being restored:
@@ -307,3 +307,47 @@ func (b *Bot) selfKyrie(now time.Time) bool {
 
 // healerMoveSitSP: % SP under which a party healer still rests while the leader moves or fights (priestSitLine).
 const healerMoveSitSP = 30
+
+// ---- self-buffs for every non-healer with Blessing / Increase AGI (owner 2026-11-15: "monk should also know to buff
+// and heal themselves"; PR16: any bot with those skills) ----
+
+// selfSPFloor: % SP a non-healer keeps for its own fighting skills after a self-buff / self-heal - a Monk-line bot keeps
+// 35% for its combos / Asura Strike, others 20%.
+func (b *Bot) selfSPFloor() int {
+	if family(b.Class) == famAcolyte && !b.isHealer() {
+		return 35
+	}
+	return 20
+}
+
+// selfBuffLead: a self-buff is recast this long before it runs out (or at once when its status icon goes off).
+const selfBuffLead = 20 * time.Second
+
+// selfBuffs (b.mu held, every think after the urgent heals): a non-healer bot with Blessing / Increase AGI keeps them
+// on itself outside towns. The party healer's buffs on it count (buffRecv books any caster's buff that lands on us).
+func (b *Bot) selfBuffs(now time.Time) bool {
+	if !healerStickOn() || b.isHealer() || b.Dead || b.Sitting || b.MaxSP <= 0 || isTown(b.MapName) || townOf(b.MapName) != "" ||
+		now.Before(b.skillReady) || now.Before(b.buffAt["selfbuffgap"]) || b.hpFrac() < 0.5 {
+		return false
+	}
+	for _, id := range []int{alBlessing, alIncAgi} {
+		si := b.skills[id]
+		if si == nil || si.Lv == 0 {
+			continue
+		}
+		k := fmt.Sprintf("got:%d", id)
+		if now.Before(b.buffAt[k].Add(-selfBuffLead)) || now.Before(b.buffAt[fmt.Sprintf("selfcast:%d", id)]) {
+			continue
+		}
+		if cost := max(si.SP, 1); b.SP < cost || (b.SP-cost)*100/b.MaxSP < b.selfSPFloor() {
+			continue
+		}
+		b.buffAt[fmt.Sprintf("selfcast:%d", id)] = now.Add(8 * time.Second) // until buffRecv books it (or retry)
+		b.buffAt["selfbuffgap"] = now.Add(activeBuffGap)
+		b.skillReady = now.Add(1000 * time.Millisecond)
+		b.setState(skillTalk(id) + " on myself")
+		go b.useSkill(id, si.Lv, b.aid)
+		return true
+	}
+	return false
+}

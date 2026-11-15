@@ -196,3 +196,43 @@ func TestSelfKyrie(t *testing.T) {
 		t.Fatal("no Kyrie in town")
 	}
 }
+
+// owner 2026-11-15: "monk should also know to buff and heal themselves" (LilLilyblade lv81: Heal 3, Agi 10, Blessing 6)
+func TestMonkSelfBuffAndHeal(t *testing.T) {
+	now := time.Now()
+	m := &Bot{P: &Persona{Name: "zz_hsmonk2", Chars: []CharSpec{{Name: "zz_hsmonk2"}}}, Class: 15, HP: 1000, MaxHP: 1000,
+		SP: 600, MaxSP: 1000, MapName: "gef_fild10", X: 50, Y: 50, aid: 5, rng: rand.New(rand.NewSource(1)),
+		skills: map[int]*SkillInfo{alHeal: {Lv: 3, SP: 19}, alBlessing: {Lv: 6, SP: 40}, alIncAgi: {Lv: 10, SP: 45}},
+		buffAt: map[string]time.Time{}, ents: map[uint32]*Entity{}}
+	if m.isHealer() {
+		t.Skip("class 15 counts as a healer here: test needs a Monk")
+	}
+	if !m.selfBuffs(now) || m.State != "Blessing on myself" {
+		t.Fatalf("no Blessing on us: cast it, state %q", m.State)
+	}
+	m.skillReady, m.buffAt["selfbuffgap"] = time.Time{}, time.Time{}
+	if !m.selfBuffs(now.Add(3*time.Second)) || m.State != "Increase AGI on myself" {
+		t.Fatalf("then Increase AGI, state %q", m.State)
+	}
+	m.skillReady, m.buffAt["selfbuffgap"] = time.Time{}, time.Time{}
+	m.buffAt["got:34"] = now.Add(200 * time.Second)
+	m.buffAt["got:29"] = now.Add(200 * time.Second)
+	if m.selfBuffs(now.Add(5 * time.Second)) {
+		t.Fatal("both on: nothing to cast")
+	}
+	delete(m.buffAt, "got:34") // Blessing icon off
+	delete(m.buffAt, "selfcast:34")
+	m.SP = 370 // 37%: a cast would leave under the 35% combo floor
+	if m.selfBuffs(now.Add(5 * time.Second)) {
+		t.Fatal("combo SP floor: no buff")
+	}
+	m.SP, m.HP = 800, 300
+	if !m.selfHealOK() {
+		t.Fatal("a Monk with Heal heals itself instead of resting")
+	}
+	m.MapName = "geffen"
+	m.HP = 1000
+	if m.selfBuffs(now.Add(10 * time.Second)) {
+		t.Fatal("no self-buffs in town")
+	}
+}
