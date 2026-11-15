@@ -2786,6 +2786,10 @@ sub pack_tick {
 	my $farm = $huntMap ne '' && $here eq $huntMap ? 1 : 0;
 	my $town = is_townmap($here);
 	my $leaving = $town && (($dm ne '' && !is_townmap($dm)) || $rallyTravel) ? 1 : 0;
+	# AY22 in towns too (live 03:47: 6 min "waiting for the party" in prontera, the priest 42 cells away in the same
+	# town): with the priest beyond 15 cells (or on another map) and no errand running, she goes to it like on a field
+	my $townCollect = $town && !$leaving && !$errand && grep({ ($_->[1] || '') =~ /priest|acolyte/i } @fr) && priest_dist() > 15 ? 1 : 0;
+	$leaving = 1 if $townCollect;
 	return 0 if $town && !$leaving && !$pk{wf};       # town errands / shopping / the Kafra regroup
 	return 0 if !$farm && $dm ne '' && is_townmap($dm) && !$pk{wf} && !$rallyTravel; # a town run back (the party meets at the Kafra)
 	# the party (with the priest) already gathered at a Kafra of THIS town: she never walks away from it - the rally
@@ -2957,6 +2961,7 @@ sub pack_tick {
 		if ($am ne '') {
 			# one owner of movement: lockMap set aside while she collects (no lockMap route between the ticks)
 			if (($config{lockMap} || '') ne '') { $pk{lmHold} = $config{lockMap}; $config{lockMap} = '' }
+			if ($holding) { restore(); $config{lockMap} = '' if ($pk{lmHold} || '') ne '' } # a town / party hold doesn't block the collect
 			if ($pk{goName} ne $an->[0]) { $pk{goName} = $an->[0]; $pk{goAt} = time; $regroupTo = $am; pk_say("coming to u, $an->[0]"); message "[partylead] AY22: $an->[0] fell behind ($am) - walking back to them\n", 'system' }
 			my ($rdm) = route_maps();
 			# the route is made once and kept (re-made every 10 s it flipped between the Kafra and the walk: aldebaran <->
@@ -3569,7 +3574,8 @@ sub tick {
 				if ($pos && blockDistance($char->{pos_to}, $pos) > ($townWaitAt ? RESUME : TOGETHER)) { $far = $u->{name}; last }
 			}
 			# AY22: the priest within 6 cells - no town wait for anyone else, she sets off ("going to <map>, follow me")
-			if ($far ne '' && (my $pd = priest_dist()) <= 6) {
+			my $pd = priest_dist();
+			if ($far ne '' && ($pd <= 6 || $pd <= 15 && $townWaitAt && time - $townWaitAt > 30)) { # priest close (7-15: after 30 s)
 				restore() if $holding; $townWaitAt = 0;
 				my $dest = $gotoMap ne '' ? $gotoMap : ($config{lockMap} || $homeMap || '');
 				if ($dest ne '' && $dest ne $here && ($meetAnn || '') ne $dest) { $meetAnn = $dest; psay("going to $dest, follow me", 1, 0) }
