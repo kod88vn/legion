@@ -286,3 +286,80 @@ func TestAylaGiftCapG12(t *testing.T) {
 		t.Fatalf("other characters keep their gift, got %d", got)
 	}
 }
+
+func TestStarveilLeadTickInterval(t *testing.T) {
+	withAylaEngine(t, false, false, func() {
+		if got := starveilLeadTick(); got != time.Minute {
+			t.Fatalf("switch off: lead loop every %v, want 1m0s (unchanged)", got)
+		}
+	})
+	withAylaEngine(t, true, false, func() {
+		if got := starveilLeadTick(); got != 15*time.Second {
+			t.Fatalf("switch on: lead loop every %v, want 15s", got)
+		}
+	})
+}
+
+func TestStarveilTargetOKG20(t *testing.T) {
+	core := []*Bot{{aid: 2000001, cid: 150001, cur: &CharSpec{Name: "Core1"}}}
+	cases := []struct {
+		name string
+		o    starveilOrder
+		want bool
+	}{
+		{"invite a core bot by account", starveilOrder{Kind: "invite", AID: 2000001}, false},
+		{"kick a core bot by char id", starveilOrder{Kind: "kick", CID: 150001, Char: "Core1"}, false},
+		{"kick a core bot by name, other case", starveilOrder{Kind: "kick", Char: "core1"}, false},
+		{"kick Ayla by name", starveilOrder{Kind: "kick", Char: "Ayla"}, false},
+		{"invite an outside player", starveilOrder{Kind: "invite", AID: 2100005, Char: "Outsider"}, true},
+		{"kick an outside member", starveilOrder{Kind: "kick", AID: 2100006, CID: 150777, Char: "Member"}, true},
+	}
+	for _, c := range cases {
+		if got := starveilTargetOK(core, c.o); got != c.want {
+			t.Errorf("%s: starveilTargetOK = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestStarveilExecRefusesCoreTargets(t *testing.T) {
+	core := []*Bot{{aid: 2000001, cid: 150001, cur: &CharSpec{Name: "Core1"}}}
+	before := func() int {
+		starveilLead.Lock()
+		defer starveilLead.Unlock()
+		return starveilLead.counters["engine refused: kick aimed at a core bot or Ayla"] +
+			starveilLead.counters["engine refused: invite aimed at a core bot or Ayla"]
+	}
+	n := before()
+	// the master bot has no connection: a refused order returns before anything is sent
+	master := &Bot{cur: &CharSpec{Name: "Ayla"}}
+	starveilExec(master, starveilOrder{Kind: "kick", CID: 150001, Char: "Core1"}, core)
+	starveilExec(master, starveilOrder{Kind: "invite", AID: 2000001}, core)
+	if got := before(); got != n+2 {
+		t.Fatalf("refused core targets: counted %d, want %d", got, n+2)
+	}
+}
+
+func TestG12MailCallSiteKeepsFloor(t *testing.T) {
+	// 12,000z: a 5,000z gift costs 5,100 with the RODEX fee and would leave Ayla under 10,000z
+	b := &Bot{cur: &CharSpec{Name: "Ayla"}, Zeny: 12000}
+	if b.mailZeny("Outsider", 5000, "gift", "", nil) {
+		t.Fatal("Ayla's mail gift must not take her under 10,000z (G12)")
+	}
+}
+
+func TestG12TradeAndGiftCallSites(t *testing.T) {
+	ayla := &Bot{cur: &CharSpec{Name: "Ayla"}, Zeny: 12000, P: &Persona{}}
+	if ayla.zenyPayOK(5000) {
+		t.Fatal("Ayla's trade payment of 5,000z from 12,000z leaves her under the floor (G12, strict)")
+	}
+	if !ayla.zenyPayOK(2000) {
+		t.Fatal("a 2,000z payment from 12,000z keeps exactly 10,000z")
+	}
+	human := &Bot{cur: &CharSpec{Name: "Outsider"}, Zeny: 12000, P: &Persona{}}
+	if !human.zenyPayOK(12000) {
+		t.Fatal("other characters are not limited by the floor here")
+	}
+	if g := ayla.giftableZeny(); g > 2000 {
+		t.Fatalf("Ayla with 12,000z may give at most 2,000z to a gear pool, got %d", g)
+	}
+}

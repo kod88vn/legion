@@ -234,6 +234,12 @@ func aylaSpendOK(name string, zeny, amount int) bool {
 	return amount > 0 && zeny-amount >= aylaZenyFloor
 }
 
+// zenyPayOK (G12, strict): may this bot hand `price` zeny to another player in a trade? It must have it and, for Ayla,
+// keep the floor: paying a player is sending zeny away, so Ayla's deals stop under 10,000z.
+func (b *Bot) zenyPayOK(price int) bool {
+	return b.Zeny >= price && aylaSpendOK(b.charName(), b.Zeny, price)
+}
+
 // aylaGiftCap (G12): the most zeny a bot may hand out of its purse: for Ayla, what is left above the floor.
 func aylaGiftCap(name string, zeny, gift int) int {
 	if !isAyla(name) {

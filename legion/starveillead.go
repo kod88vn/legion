@@ -50,6 +50,15 @@ const (
 // where Ayla's engine bot is the master (the coreInstance gate is relaxed for Starveil only).
 func starveilAutoLead() bool { return tune().StarveilAutoLead && (!coreInstance() || aylaEngineOn()) }
 
+// starveilLeadTick: the lead loop's interval. 60 s while the switch is off (unchanged); 15 s with Ayla on the engine,
+// so the engine's orders go out within 15 s (starveilEngineDrain).
+func starveilLeadTick() time.Duration {
+	if aylaEngineOn() {
+		return 15 * time.Second
+	}
+	return time.Minute
+}
+
 // aylaEngineOn: Ayla is played by the engine (package D). The one switch is package C's tuning engine_parties: Ayla is
 // on the engine while "Ayla" is listed there, the same check as enginePartyOn("Ayla") in engineparty.go. Off changes nothing.
 func aylaEngineOn() bool { return nameSet(tune().EngineParties)["ayla"] }
@@ -204,12 +213,11 @@ func starveilKeepAmount(gearShort int) int {
 
 // starveilLeadManager: Starveil's funding, keep gifts and member parties (main instance; registerGuildDuty hook)
 func starveilLeadManager(bots []*Bot) {
-	t := time.NewTicker(15 * time.Second) // the engine's orders go out within 15 s (starveilEngineDrain)
-	defer t.Stop()
 	fundAt := time.Now().Add(5 * time.Minute) // after login settles
 	partyAt := time.Now().Add(8 * time.Minute)
 	recruitAt := time.Now().Add(6 * time.Minute)
-	for range t.C {
+	for {
+		time.Sleep(starveilLeadTick())
 		if !starveilAutoLead() {
 			continue
 		}
@@ -372,8 +380,32 @@ func starveilMasterBot(bots []*Bot, guild string) *Bot {
 	return nil
 }
 
+// starveilTargetOK (G20): a kick or invite may never aim at Ayla or at any bot of this (core) instance, whatever main
+// sends. Ayla's party lives here; a member on this instance is never warned, expelled or recruited by the engine.
+func starveilTargetOK(bots []*Bot, o starveilOrder) bool {
+	if isAyla(o.Char) {
+		return false
+	}
+	for _, b := range bots {
+		if b == nil {
+			continue
+		}
+		if o.AID != 0 && b.aid == o.AID || o.CID != 0 && b.cid == o.CID {
+			return false
+		}
+		if o.Char != "" && strings.EqualFold(b.charName(), o.Char) {
+			return false
+		}
+	}
+	return true
+}
+
 // starveilExec: one order, done by the master bot l (core instance). The waits are its own; b.mu is not held across them.
-func starveilExec(l *Bot, o starveilOrder) {
+func starveilExec(l *Bot, o starveilOrder, bots []*Bot) {
+	if (o.Kind == "kick" || o.Kind == "invite") && !starveilTargetOK(bots, o) {
+		starveilCount("engine refused: " + o.Kind + " aimed at a core bot or Ayla")
+		return
+	}
 	switch o.Kind {
 	case "say", "warn":
 		l.mu.Lock()
@@ -429,7 +461,7 @@ func registerStarveilEngine(mux *http.ServeMux, bots []*Bot) {
 			return
 		}
 		for _, o := range orders {
-			go starveilExec(l, o)
+			go starveilExec(l, o, bots)
 		}
 		writeJSON(w, map[string]any{"master": l.P.Name, "orders": len(orders)})
 	})

@@ -1692,7 +1692,7 @@ func (b *Bot) onMarketTrade(op uint16, pk []byte) bool {
 				cancel("not enough zeny")
 				return true
 			}
-			if !aylaSpendOK(b.charName(), b.Zeny, d.Price) { // G12: Ayla's own deal keeps her at 10,000z
+			if !b.zenyPayOK(d.Price) { // G12: Ayla's own deal keeps her at 10,000z
 				cancel("zeny floor (G12)")
 				return true
 			}
