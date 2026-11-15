@@ -687,6 +687,9 @@ func (b *Bot) bossEscape(hp float64, now time.Time) (handled, fled bool) {
 	if hp >= 0.25 {
 		return true, false
 	}
+	if h, f := b.stickEscape(maps[b.MapName], hp, 1, false, false, now, "boss hunt: low HP"); h { // partystick.go PT31
+		return true, f
+	}
 	if b.escItemOK(itemFlyWing, now) {
 		b.escapeAt = now.Add(4 * time.Second)
 		b.target, b.path = 0, nil

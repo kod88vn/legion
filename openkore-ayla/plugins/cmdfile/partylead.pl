@@ -912,9 +912,11 @@ sub sweep_next {
 # targets: everything she meets, except monsters standing near a portal (no chase onto the stairs)
 sub area_target {
 	my (undef, $args) = @_;
-	return unless $field && $huntMap ne '' && $field->baseName eq $huntMap;
+	return unless $field && $char && $char->{pos_to};
 	my $m = $args->{monster} or return;
 	return unless $m->{pos_to} && defined $m->{pos_to}{x};
+	if (!stick_target($m)) { $args->{return} = 0; return } # PT04/PT06: not beyond 20 cells of the friends near her
+	return unless $huntMap ne '' && $field->baseName eq $huntMap;
 	$args->{return} = 0 if near_portal($field->baseName, $m->{pos_to}{x}, $m->{pos_to}{y});
 }
 sub area_tick { } # (the grinding anchor is gone: the sweep replaced it)
@@ -1846,6 +1848,138 @@ sub restore {
 	$holding = 0;
 }
 
+# ---- PT31 / PT04 / PT06 (owner 2026-11-14: "staying close to the party is rule number one"): while friends are online
+# she never escapes alone with a random Teleport (live 2026-11-14: "You are casting Teleport on yourself" on gef_fild08,
+# then 51% HP with monsters on her, the friends in geffen / gef_fild07). In danger she falls back to the priest / tank
+# (else the nearest friend) on her map, drinks (useSelf_item), says "help, N on me" in party chat; only about to die
+# (< 20% HP and still being hit) a Butterfly Wing to her save Kafra, announced ("winged to <town> kafra ... back to
+# <map>"). A boss in sight: the party pulls back together (announced), not her alone. No friend online: the old solo
+# escape rules (teleportAuto 35% / 6 monsters). Her targets stay within 20 cells of the friends near her
+# (stick_target, from area_target). conf partylead_stick 0 turns it off.
+use constant STICK_DEADLY => 0.20;
+my ($stickHelpAt, $stickRunAt, $stickWingAt, $stickBossAt, $stickHp, $stickHitAt, $stickDeadly) = (0, 0, 0, 0, 1, 0, undef);
+our $stickWinged; # {town, back, at}: her last announced wing (the town-run line says the same)
+sub stick_on { return !defined $config{partylead_stick} || $config{partylead_stick} ne '0' }
+# online friends (not on an errand) on her map with a known cell: [name, pos, class]
+sub stick_mates {
+	my $here = $field->baseName;
+	my @m;
+	foreach my $u (values %{$char->{party}{users} || {}}) {
+		next if !$u || !$u->{online} || $u->{name} eq $char->{name} || on_errand($u->{name});
+		next if friend_map($u) ne $here;
+		my ($pos) = friend_pos($u, $here);
+		next unless $pos && defined $pos->{x};
+		my $a = $apiPos{$u->{name}};
+		push @m, [$u->{name}, $pos, ($a && $a->{cls}) || ''];
+	}
+	return @m;
+}
+# the friend to fall back to: the priest / acolyte, else a tank, else the nearest
+sub stick_anchor {
+	my ($best, $bs);
+	foreach my $f (@_) {
+		my $d = blockDistance($char->{pos_to}, $f->[1]);
+		my $s = $d + ($f->[2] =~ /priest|acolyte/i ? -1000 : $f->[2] =~ /knight|crusader|paladin|swordman|swordsman/i ? -500 : 0);
+		($best, $bs) = ($f, $s) if !defined $bs || $s < $bs;
+	}
+	return $best;
+}
+# a boss / MVP in sight (OpenKore's monster flags, else the well-known boss / MVP names)
+my $STICK_BOSS = qr/^(Eddga|Osiris|Baphomet|Doppelganger|Golden Thief Bug|Moonlight Flower|Phreeoni|Mistress|Maya|Orc Hero|Orc Lord|Drake|Pharaoh|Dark Lord|Turtle General|Stormy Knight|Hatii|Garm|Amon Ra|Lord of the Dead|Samurai Specter|Tao Gunka|Atroce|Ifrit|Detardeurus|Angeling|Deviling|Archangeling|Ghostring|Mysteltainn|Ogretooth|Executioner|Eclipse|Mastering|Dragon Fly|Vagabond Wolf|Toad|Vocal|King Dramoh|Chepet|Dark Priest)$/;
+sub stick_boss {
+	foreach my $m (@{$monstersList ? $monstersList->getItems() : []}) {
+		next unless $m->{pos_to} && defined $m->{pos_to}{x} && !$m->{dead};
+		return $m if $m->{boss} || $m->{mvp} || ($m->{name} || '') =~ $STICK_BOSS;
+	}
+	return undef;
+}
+# solo again: OpenKore's one-hit-deadly teleport back as config.txt had it
+sub stick_solo_cfg {
+	$config{teleportAuto_deadly} = $stickDeadly if defined $stickDeadly && ($config{teleportAuto_deadly} || 0) != $stickDeadly;
+}
+# her targets (area_target): a monster that would take her beyond TOGETHER cells of a friend near her is skipped -
+# unless it is hitting her or a friend. 0 = skip.
+sub stick_target {
+	my $m = shift;
+	return 1 unless stick_on() && $char->{party} && !is_townmap($field->baseName);
+	return 1 if $m->{dmgToYou} || $m->{missedYou} || $m->{dmgToParty} || $m->{castOnToParty} || $m->{missedToParty};
+	foreach my $f (stick_mates()) {
+		my $now = blockDistance($char->{pos_to}, $f->[1]);
+		next if $now > TOGETHER; # a lost friend: the fetch logic, not the target choice
+		my $d = blockDistance($m->{pos_to}, $f->[1]);
+		return 0 if $d > TOGETHER && $d > $now;
+	}
+	return 1;
+}
+# every tick (from tick): 1 = it acted, the tick ends
+sub stick_tick {
+	return 0 unless stick_on() && $char->{hp_max};
+	my @friends = online_friends();
+	return 0 unless @friends; # nobody to stay with: solo rules (the escape block in tick)
+	my $here = $field->baseName;
+	# no random Teleport while friends are online (OpenKore's teleportAuto: HP, crowd, one-hit-deadly)
+	$config{teleportAuto_hp} = 0 if $config{teleportAuto_hp};
+	$config{teleportAuto_minAggressives} = 0 if $config{teleportAuto_minAggressives};
+	$config{teleportAuto_minAggressivesInLock} = 0 if $config{teleportAuto_minAggressivesInLock};
+	if ($config{teleportAuto_deadly}) { $stickDeadly = $config{teleportAuto_deadly}; $config{teleportAuto_deadly} = 0 }
+	return 0 if is_townmap($here);
+	my $hpp = $char->{hp} / $char->{hp_max};
+	$stickHitAt = time if $hpp < $stickHp - 0.004;
+	$stickHp = $hpp;
+	my $aggr = scalar(AI::ai_getAggressives());
+	my @mates = stick_mates();
+	my $an = stick_anchor(@mates);
+	my $ad = $an ? blockDistance($char->{pos_to}, $an->[1]) : -1;
+	my ($cx, $cy) = ($char->{pos_to}{x}, $char->{pos_to}{y});
+	# about to die and still being hit: Butterfly Wing to the save Kafra (not a random cell), and say where and what next
+	if ($hpp < STICK_DEADLY && $aggr >= 1 && time - $stickHitAt < 3 && time - $stickWingAt > 10 && $char->inventory->getByName('Butterfly Wing')) {
+		$stickWingAt = time;
+		my $town = $config{saveMap} || 'town';
+		my $back = $homeMap ne '' ? $homeMap : $here;
+		$stickWinged = {town => $town, back => $back, at => time};
+		message sprintf("[partylead] PT31: about to die (HP %d%%, %d monsters on her): Butterfly Wing to %s\n", $hpp * 100, $aggr, $town), 'system';
+		AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto');
+		AI::ai_useTeleport(2); # 2 = the respawn point (Butterfly Wing), never 1 (a random cell)
+		psay(pick("almost died, winged to $town kafra. meet me there, then we go back to $back",
+			"had to wing to the $town kafra (nearly dead) - regroup there, then back to $back"), 0, 0);
+		return 1;
+	}
+	# a boss in sight: the party pulls back together, announced - she walks away from it, toward a friend farther from it
+	if (my $boss = stick_boss()) {
+		my $bd = blockDistance($char->{pos_to}, $boss->{pos_to});
+		if ($bd <= 14 && time - $stickBossAt > 3) {
+			$stickBossAt = time;
+			psay(pick("$boss->{name} here! pull back with me", "careful, $boss->{name}! everyone fall back this way", "$boss->{name} coming, back off together"), 0, 30);
+			my ($dx, $dy) = ($cx - $boss->{pos_to}{x}, $cy - $boss->{pos_to}{y});
+			my $n = sqrt($dx * $dx + $dy * $dy) || 1;
+			my ($tx, $ty) = (int($cx + $dx * 8 / $n), int($cy + $dy * 8 / $n));
+			($tx, $ty) = ($an->[1]{x}, $an->[1]{y}) if $an && blockDistance($an->[1], $boss->{pos_to}) > $bd;
+			if (eval { $field->isWalkable($tx, $ty) }) {
+				AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
+				main::ai_route($here, $tx, $ty, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 0);
+				message "[partylead] PT31: $boss->{name} $bd cells away - the party pulls back together\n", 'system';
+				return 1;
+			}
+		}
+	}
+	# in danger: fall back to the priest / tank and ask for help (no wing, no teleport)
+	if ($aggr >= 3 || $hpp < 0.45 && $aggr >= 1) {
+		if (time - $stickHelpAt > 45) {
+			$stickHelpAt = time;
+			psay(pick("help, $aggr on me", "help! $aggr on me ($here $cx,$cy)", "$aggr mobs on me, need help"), 0, 0);
+		}
+		if ($an && $ad > 3 && time - $stickRunAt > 2) {
+			$stickRunAt = time;
+			Commands::run('stand') if $char->{sitting};
+			AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather');
+			main::ai_route($here, $an->[1]{x}, $an->[1]{y}, distFromGoal => 2, maxRouteTime => 6, noMapRoute => 1, attackOnRoute => 0);
+			message sprintf("[partylead] PT31: falling back to %s (%d cells; HP %d%%, %d monsters on her)\n", $an->[0], $ad, $hpp * 100, $aggr), 'system';
+			return 1;
+		}
+	}
+	return 0;
+}
+
 sub tick {
 	return if time - $last < 0.5;
 	$last = time;
@@ -1863,9 +1997,12 @@ sub tick {
 		AI::clear('attack', 'route', 'move', 'items_take', 'take', 'items_gather', 'sitting', 'sitAuto') if AI::action() ne 'teleport';
 		return;
 	}
-	# escape rules (main 2026-11-14): with the party's healer on her map she wings out only at HP < 45% with 4+ monsters
-	# on her, or under 30% HP; alone at 6+ monsters or 35% HP; an MVP/boss in sight always (mon_control teleport flag)
-	{
+	# PT31: with friends online no random Teleport - fall back to the party, ask for help, Butterfly Wing only when dying
+	return if stick_tick();
+	# escape rules (main 2026-11-14), solo since PT31 (no friend online): at 6+ monsters or 35% HP; an MVP/boss in sight
+	# always (mon_control teleport flag). The healer branch below only runs with partylead_stick 0.
+	if (!stick_on() || !online_friends()) {
+		stick_solo_cfg();
 		my $withHealer = 0;
 		foreach my $u (values %{$char->{party}{users} || {}}) {
 			next if !$u || !$u->{online} || $u->{name} eq $char->{name};
@@ -1961,6 +2098,7 @@ sub tick {
 			my $hm = ($saved && $saved->{lockMap}) ? $saved->{lockMap} : ($config{lockMap} || $field->baseName);
 			my $need = AI::inQueue('sellAuto', 'storageAuto') ? 'bag full' : 'low on pots';
 			$need = 'i died and respawned here, regroup at the kafra' if $diedAt && time - $diedAt < 300; # not "bag full" (QA 20:15)
+			$need = "winged out nearly dead, regroup at the kafra then back to $stickWinged->{back}" if $stickWinged && time - $stickWinged->{at} < 300 && $field->baseName eq $stickWinged->{town}; # PT31: the same story as her wing line
 			if ($townReason ne '') { $need = $townReason; $townReason = '' } # a friend's call (not "bag full" at 26% - QA 20:28)
 			elsif ($need eq 'bag full' && $char->{weight_max} && $char->{weight} / $char->{weight_max} < 0.45 && !($diedAt && time - $diedAt < 300)) { $need = AI::inQueue('storageAuto') ? 'storage run' : 'restock' }
 			my $gr = defined &aylagear::run_start ? eval { aylagear::run_start($hm) } : undef;
