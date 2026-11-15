@@ -287,6 +287,10 @@ type Tuning struct {
 	// pt32.go (PT32/PR16, 2026-11-14): a party member fights in place - a new target within 8 cells of it or a party
 	// mate, no other aggressive monster on the way, none while 2+ monsters are on it. ON (owner rule).
 	PartyFightInPlaceOn bool `json:"party_fight_in_place_on"`
+	// aylarotate.go (AY15, 2026-11-15): Ayla's party swaps one non-priest member every ayla_rotation_hours (0 = 3)
+	// for an online bot of an untested class/build in the same role. ON by default (ayla_rotation_off true stops it).
+	AylaRotationOff   bool    `json:"ayla_rotation_off"`
+	AylaRotationHours float64 `json:"ayla_rotation_hours"`
 }
 
 // defaultTuning: exactly the values the code used before tuning.json existed.

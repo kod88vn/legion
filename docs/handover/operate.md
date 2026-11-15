@@ -104,8 +104,15 @@
 - Deploy core: `docker compose up -d legion-core` (after the build above; same image). **Only when party-relevant code
   changed** (party.go, partyroles.go, humanparty.go, ai.go fighting/healing, ...) and you want Ayla's friends on it -
   it logs the three out for ~1 min. Otherwise the core keeps running the older build, which is fine.
-- Rotating a member of Ayla's party: change `LEGION_CORE` in `.env` (both services read it - they must match, or a bot
-  is double-logged or orphaned), update `data/human-parties.json`, then `up -d legion-core legion`.
+- Rotating a member of Ayla's party: automatic since AY15 (`legion/aylarotate.go`, tuning `ayla_rotation_hours`
+  default 3, `ayla_rotation_off`): one non-priest, non-party-leader member every N hours is swapped for an online bot
+  of the same role and an untested class/build; the accounts move between the instances live through
+  `data/instance_handoff.json` (core writes) + `data/instance_handoff_main.json` (main writes) - no container recreate,
+  no `.env` edit (both instances apply the overrides at startup too). Log: `data/ayla_rotation.json`; candidates:
+  `data/rotation_candidates.json` (main, every 2 min); each swap is an `INFO AY15 rotation` item in the bug queue.
+  Manual rotation (old way): change `LEGION_CORE` in `.env` (both services read it - they must match, or a bot is
+  double-logged or orphaned), update `data/human-parties.json`, then `up -d legion-core legion`. Tools that read
+  `LEGION_CORE` (sentinel.py, progress_report.py, watch/*, wrongbuilds.py PARTY) do not follow live rotations.
 - rAthena config / NPC changes need `docker compose restart rathena` (kicks everyone, including Ayla; she reconnects).
 - DB: `docker exec -i ro-db mariadb -uragnarok -pragnarok ragnarok`. Bot accounts `lg0001..` (password `legion`),
   account ids 2100001-2199999. Owner account `player`/`player` (id 2000000, group 99) holds Admin, kitty (200001, Doram)
