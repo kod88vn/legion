@@ -69,6 +69,17 @@ class BuildMilestonesTest(unittest.TestCase):
                     self.assertGreaterEqual(s["lv"], last.get(s["id"], 0), (bid, r["range"], s["name"]))
                     last[s["id"]] = s["lv"]
 
+    def test_plans_fit_budgets_and_reach_their_goals(self):
+        # 1,273 stat points at level 99; 88 skill points (first job 39 + second job 49); every goal reached (plan_check
+        # replays the server's skill tree at level 99; the Go side checks the budgets and the key skills).
+        for bid, b in DOC["builds"].items():
+            pc = b["plan_check"]
+            self.assertEqual(pc["stat_points_at_99"], 1273, bid)
+            self.assertLessEqual(pc["stat_points_goals_cost"], 1273, bid)
+            self.assertLessEqual(pc["skill_points_listed"], 88, bid)
+            self.assertEqual(pc["stat_goals_unreached"], [], bid)
+            self.assertEqual(pc["skills_unreached_at_99"], [], bid)
+
     def test_playstyle_defined_for_solo_mvp_pvp(self):
         for bid, b in DOC["builds"].items():
             for k in ("solo", "mvp", "pvp"):
