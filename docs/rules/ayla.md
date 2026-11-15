@@ -22,7 +22,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
 - AY07. Ayla's party, like every party, farms the map that best fits its level and its gear (a poorly equipped party farms an easier map than its level suggests; gear counts as much as level); a wanted item is farmed where it
   drops best (rate x spawns) at a fitting level, not on a beginner map. (2026-11-14)
 - AY09 / G12. Nothing (her mind, aylagear top-ups, guild funding, gifts, deals) may send away Ayla's zeny if it would leave her under
-  10,000z; under 10,000z she sends none and saves up. (2026-11-14)
+  10,000z; under 10,000z she sends none and saves up. Under the engine the floor follows the engine party (`engine_parties`), not her name. (2026-11-14, amended 2026-11-15)
 - AY23. Ayla collects her group: when a member lags, she waits about 10 s for it to catch up, then goes back to collect it if it hasn't; she does not bounce back and forth. A member on a town run is left to come back on its own. (2026-11-15)
 - GD06. The owner's GM account `wander` (Wanderer) joins Ayla's guild Starveil. It is not a party member and does not trade or talk in public. (2026-11-15)
 - AY11. The party has five members: Ayla, Priest, Crusader, Hunter, Wizard (bot characters of a fitting level, run like her other friends; members who leave stay in Starveil as independent bots). Earlier rosters of seven (Knight, Monk, Alchemist; AY10) are superseded. (2026-11-15)
