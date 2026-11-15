@@ -626,6 +626,17 @@ class OwnerToolEngineDown(Base):
 
 
 class Small(unittest.TestCase):
+    def test_ctl_spots_escapes_every_engine_field(self):
+        """ctlSpots writes the engine's spot fields into innerHTML: each one goes through esc() (additive, G08)"""
+        import re
+        html = open(os.path.join(REPO, "legion", "dashboard.html"), encoding="utf-8").read()
+        m = re.search(r"async function ctlSpots\(lv\) \{(.*?)\n\}", html, re.S)
+        self.assertIsNotNone(m)
+        body = m.group(1)
+        for field in ("Map", "MinLv", "MaxLv", "Mobs"):
+            self.assertIn("esc(s.%s)" % field, body, field)
+            self.assertIsNone(re.search(r"\$\{s\.%s\}" % field, body), field)
+
     def test_go_time(self):
         import dashserve
         self.assertAlmostEqual(dashserve.go_time("2026-11-15T01:06:12.123456789Z"), 1794704772.123456, places=3)
