@@ -2031,12 +2031,14 @@ sub plan_change {
 # "new spot: <map>, meet at the kafra in <town>" - Legion's rally.go rallyLineRe reads it as the party's newest meeting
 # point and drops an older rally (live: after the false gef_fild03 plan, Zendancer84 / LilLilyblade waited at the
 # Geffen Kafra while she was back on pay_dun01)
+our ($meetTown, $meetTownAt) = ('', 0); # the meeting Kafra town she announced last
 sub announce_plan {
 	my $new = shift || '';
 	return if $new eq '' || is_townmap($new);
 	my $t = town_of_map($new);
 	return unless $KAFRA{$t};
 	psay("new spot: $new, meet at the kafra in $t", 1, 0);
+	($meetTown, $meetTownAt) = ($t, time);
 }
 sub lockmap_guard {
 	return unless $net && $net->getState() == 5 && $char && $field && $char->{party} && $char->{party}{users};
@@ -2788,6 +2790,21 @@ sub pack_tick {
 	my $leaving = $town && (($dm ne '' && !is_townmap($dm)) || $rallyTravel) ? 1 : 0;
 	# AY22 in towns too (live 03:47: 6 min "waiting for the party" in prontera, the priest 42 cells away in the same
 	# town): with the priest beyond 15 cells (or on another map) and no errand running, she goes to it like on a field
+	# her own meeting point in this town (announced in the last 15 min), or the party gathered at a Kafra here: she goes
+	# to that Kafra and the rally (60 s cap, then AY22) takes over - the collect never holds her away from it (live:
+	# "waiting for Zendancer84 (payon 22 cells)" while the priest waited at the Payon Kafra she had named)
+	if ($town && !$errand && !$rally && $KAFRA{$here} && time - ($pk{meetRallyAt} || 0) > 300 && (($meetTown eq $here && time - $meetTownAt < 900) || gathered_kafra($here, \@fr))) {
+		my $k = gathered_kafra($here, \@fr) || $KAFRA{$here}[0];
+		$rallyNext = 0;
+		start_rally($here, $k->[0], $k->[1], "her meeting point", 0);
+		$pk{meetRallyAt} = time; # one meeting-point rally per 5 min (it ends after 60 s at the Kafra)
+		if ($rally) {
+			$rally->{saved} = 1; $rally->{dest} = plan_map() || $homeMap || ''; $rally->{mind} = 1;
+			($meetTown, $meetTownAt) = ('', 0);
+			message "[partylead] going to the meeting Kafra in $here ($k->[0],$k->[1])\n", 'system';
+			return 0;
+		}
+	}
 	my $townCollect = $town && !$leaving && !$errand && grep({ ($_->[1] || '') =~ /priest|acolyte/i } @fr) && priest_dist() > 15 ? 1 : 0;
 	$leaving = 1 if $townCollect;
 	return 0 if $town && !$leaving && !$pk{wf};       # town errands / shopping / the Kafra regroup
@@ -2814,10 +2831,13 @@ sub pack_tick {
 	my ($prRow) = sort { (($a->[2] eq $here && defined $a->[3]) ? $a->[3] : 9999) <=> (($b->[2] eq $here && defined $b->[3]) ? $b->[3] : 9999) } grep { ($_->[1] || '') =~ /priest|acolyte/i } @fr;
 	my $prD = $prRow && $prRow->[2] eq $here && defined $prRow->[3] ? $prRow->[3] : undef;
 	if ($prRow && ($pk{prMap} || '') ne $prRow->[2]) { ($pk{prMap}, $pk{prMapAt}) = ($prRow->[2], time) }
-	if (defined $prD) {
-		if (!defined $pk{prBest} || $prD < $pk{prBest}) { ($pk{prBest}, $pk{prBestAt}) = ($prD, time) }
-		elsif ($prD > $pk{prBest} + 3) { $pk{prBest} = $prD }
-	} else { $pk{prBest} = undef }
+	if (defined $prD && $prRow->[4]) {
+		my $pc = "$prRow->[4]{x},$prRow->[4]{y}";
+		if (($pk{prCell} || '') ne $pc) { # the priest moved: closer to her than before?
+			$pk{prBestAt} = time if defined $pk{prBest} && $prD < $pk{prBest};
+			($pk{prCell}, $pk{prBest}) = ($pc, $prD);
+		}
+	} else { ($pk{prBest}, $pk{prCell}) = (undef, '') }
 	my $shrinking = defined $prD ? (time - ($pk{prBestAt} || 0) < 10 ? 1 : 0) : ($prRow && time - ($pk{prMapAt} || 0) < 20 ? 1 : 0);
 	if (defined $prD && $prD <= 6) { $pk{nearSince} ||= time } else { $pk{nearSince} = 0 }
 	my ($act, $an) = pack_decide({here => $here, friends => \@fr, farm => $farm, leaving => ($leaving || $pk{wf} ? 1 : 0), cross => $cross,
