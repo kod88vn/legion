@@ -464,7 +464,7 @@ func (b *Bot) browseShops(now time.Time) {
 					continue
 				}
 				v := b.cardValue(x.ID)
-				if v < 2 || l.Price > bidPrice(b.P, x.ID)*6/5 {
+				if v < 2 || l.Price > b.wantBid(x.ID)*6/5 {
 					continue
 				}
 				n, score, why = 1, float64(v)*1000/float64(l.Price), "card for my gear"

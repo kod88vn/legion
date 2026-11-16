@@ -133,7 +133,7 @@ func priceOf(id int) int {
 	if st != nil && st.N >= 3 && p > 0 {
 		p = (7*p + 3*int(st.Sum/int64(st.N))) / 10
 	}
-	if f := marketFactor(id); f != 1 && p > 0 { // market.go (batch 21): supply and demand
+	if f := marketFactor(id); f != 1 && p > 0 && !dynamicPriceOn() { // flag on: scarcity is in the seller's ask (pricedyn.go), not a factor here // market.go (batch 21): supply and demand
 		p = max(int(float64(p)*f), sellPrice(id))
 	}
 	return roundPrice(p)
@@ -396,7 +396,7 @@ func (b *Bot) econWant() *Want {
 	lv := b.BaseLvOr()
 	// field restock: out of potions far from a shop
 	if lv >= 5 && b.potionCount() < 5 && townOf(b.MapName) == "" && b.Zeny > 1500 {
-		each := bidPrice(b.P, itemRedPotion)
+		each := b.wantBid(itemRedPotion)
 		n := 10
 		if each*n <= b.Zeny/3 {
 			return &Want{ItemID: itemRedPotion, Count: n, Each: each, Why: "potions"}
@@ -421,7 +421,7 @@ func (b *Bot) econWant() *Want {
 		pc = gearGoalPiece(*goal, lv)
 	}
 	if pc != nil && pc.NPC == 0 && (pc.Source == "trade" || pc.Source == "drop") {
-		if bid := bidPrice(b.P, pc.ItemID); bid > 0 && bid <= budget && (onBoard(pc.ItemID) || cfloat() < 0.2) {
+		if bid := b.wantBid(pc.ItemID); bid > 0 && bid <= budget && (onBoard(pc.ItemID) || cfloat() < 0.2) {
 			return &Want{ItemID: pc.ItemID, Count: 1, Each: bid, Why: "for my build"}
 		}
 	}
@@ -447,7 +447,7 @@ func (b *Bot) econWant() *Want {
 			if gain <= bestGain {
 				continue
 			}
-			bid := bidPrice(b.P, id)
+			bid := b.wantBid(id)
 			if bid <= 0 || bid > budget {
 				continue
 			}
@@ -493,7 +493,7 @@ func (b *Bot) econWant() *Want {
 				if gain <= bestGain {
 					continue
 				}
-				bid := bidPrice(b.P, e.ID)
+				bid := b.wantBid(e.ID)
 				if bid <= 0 || bid > budget {
 					continue
 				}

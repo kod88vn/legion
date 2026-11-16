@@ -900,7 +900,7 @@ func (b *Bot) alchemyWant() *Want {
 		if h != itemYellowHerb && marketSupply(h) >= 0 && marketSupply(h) < 5 {
 			continue
 		}
-		each := bidPrice(b.P, h)
+		each := b.wantBid(h)
 		n := min(40-have, max(0, (b.Zeny-1000)/max(each, 1)))
 		if n >= 5 {
 			return &Want{ItemID: h, Count: n, Each: each, Why: "brewing", Partial: true}
@@ -933,7 +933,7 @@ func (b *Bot) spPotionWant(leaderParty bool) *Want {
 	if target <= 0 || have >= max(1, target/2) {
 		return nil
 	}
-	each := bidPrice(b.P, itemBluePotion)
+	each := b.wantBid(itemBluePotion)
 	n := min(target-have, max(0, (b.Zeny-b.gearReserve())/3/max(each, 1)))
 	if n < 1 && leaderParty {
 		n = min(5, target-have)

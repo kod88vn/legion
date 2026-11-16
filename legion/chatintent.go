@@ -257,7 +257,7 @@ func intentFromBot(b *Bot, in *chatIntent, now time.Time) map[string]any {
 	std := priceOf(in.ItemID) // econ.mu: not held
 	b.mu.Lock()
 	online, mapN, name := b.Online, b.MapName, b.charName()
-	each := bidPrice(b.P, in.ItemID)
+	each := b.wantBid(in.ItemID)
 	b.mu.Unlock()
 	if !online || name != in.From {
 		return map[string]any{"ok": false, "error": in.From + " is not online"}

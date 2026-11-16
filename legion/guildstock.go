@@ -342,7 +342,7 @@ func (b *Bot) creamyWant() *Want {
 	if b.BaseLvOr() < 15 || b.charRole() == "vendor" || b.hasCard(itemCreamyCard) {
 		return nil
 	}
-	bid := bidPrice(b.P, itemCreamyCard)
+	bid := b.wantBid(itemCreamyCard)
 	if bid <= 0 || b.Zeny-b.gearReserve() < bid {
 		return nil
 	}

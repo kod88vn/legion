@@ -72,27 +72,64 @@ func lowestOtherShop(id int, self *Bot) int {
 }
 
 // interestedBuyers: the bots that want the item (wants on the board, not the seller itself) and the best of them:
-// how many, the most the best one pays, its need and its budget. A want from a bot with no zeny at all is not counted.
-// Reads the buyer's zeny without its lock, as market.go does (an int snapshot is fine here).
-func interestedBuyers(id, ref int, self string) (n, bestW int, bestNeed float64, bestBudget int) {
+// how many, the most the best one pays and its need. The need is the buyer's own (Bot.dynNeed, set when it posted the
+// want by wantBid); a buyer with no zeny at all is not counted. Reads the buyer's fields without its lock, as market.go
+// does (an int or float snapshot is fine here).
+func interestedBuyers(id, ref int, self string) (n, bestW int, bestNeed float64) {
 	econ.mu.Lock()
 	defer econ.mu.Unlock()
 	for name, w := range econ.wants {
 		if w == nil || w.ItemID != id || w.Buyer == nil || name == self {
 			continue
 		}
-		budget := w.Buyer.Zeny
-		W := Willingness(ref, dynWantNeed, budget, name+"|"+strconv.Itoa(id))
+		need := w.Buyer.dynNeed
+		if need <= 0 {
+			need = dynWantNeed
+		}
+		W := Willingness(ref, need, w.Buyer.Zeny, name+"|"+strconv.Itoa(id))
 		if W == 0 {
 			continue
 		}
 		n++
 		if W > bestW {
-			bestW, bestNeed, bestBudget = W, dynWantNeed, budget
+			bestW, bestNeed = W, need
 		}
 	}
 	return
 }
+
+// wantBid: what this bot offers for an item it wants (the want-posting calls). Flag off: the fixed bidPrice, unchanged.
+// Flag on: the buyer's willingness from its need (the milestone gap for its gated piece, 0.3 otherwise) and its purse,
+// so a poor bot that needs the piece bids what it can pay and a rich calm bot bids more. Caller holds b.mu. The need is
+// kept on the bot for the sellers' clearing step (interestedBuyers).
+func (b *Bot) wantBid(id int) int {
+	if !dynamicPriceOn() {
+		return bidPrice(b.P, id)
+	}
+	b.dynNeed = b.buildNeed(id)
+	bid := roundPrice(Willingness(priceOf(id), b.dynNeed, b.Zeny, b.P.Name+"|"+strconv.Itoa(id)))
+	if np := npcMatPrice[id]; np > 0 {
+		bid = min(bid, np) // as bidPrice: nobody bids over Dietrich's price for refine materials
+	}
+	return bid
+}
+
+// buildNeed (b.mu held): the need of this bot for the item. The gated gear piece of its build (gearGate) carries the
+// milestone gap; any other want is a generic 0.3.
+func (b *Bot) buildNeed(id int) float64 {
+	_, goal := b.gearGate(b.BaseLvOr())
+	if goal == nil || goal.Item != id {
+		return dynGenericNeed
+	}
+	price := 0
+	if it := items[goal.Item]; it != nil {
+		price = it.Buy
+	}
+	return milestoneNeed(price, b.Zeny)
+}
+
+// dynGenericNeed: need of a bot for a want that is not its gated build piece
+const dynGenericNeed = 0.3
 
 // dynWantNeed: the need of a buyer with an open want for the item. Fixed until the build's milestone gap is passed
 // through the want (buildmilestones.go gatedPrice); see the header of pricedyn.go.
@@ -123,10 +160,10 @@ func (b *Bot) vendPriceDyn(id int) int {
 	if low := lowestOtherShop(id, b); low > 0 && p > low {
 		p = max(low*98/100, in.Floor) // undercut the lowest other shop by 2%
 	}
-	n, bestW, bestNeed, bestBudget := interestedBuyers(id, ref, b.P.Name)
+	n, bestW, bestNeed := interestedBuyers(id, ref, b.P.Name)
 	urgency := dynClamp01(0.6*zn + 0.4*pr)
-	p = Clear(ClearIn{Ask: p, Floor: in.Floor, Ref: ref, Buyers: n, BestWilling: bestW, BestNeed: bestNeed,
-		BestBudget: bestBudget, SellerUrgency: urgency})
+	p = Clear(ClearIn{Ask: p, Floor: in.Floor, Buyers: n, BestWilling: bestW, BestNeed: bestNeed,
+		SellerUrgency: urgency})
 	p = npcMatCap(id, npcGearCap(id, p))
 	out := npcWindow(id, max(roundPrice(p), in.Floor, 2))
 	if fresh {

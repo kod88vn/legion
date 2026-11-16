@@ -22,16 +22,20 @@ package main
 //
 //   Willingness (buyer's most, Willingness):
 //     w = min(ref x (0.8 + 0.3 x need) x jitter, budget)
-//       need    0..1: how badly the buyer needs the piece (a milestone gap, a build that stops without it)
+//       need    0..1: how badly the buyer needs the piece (milestoneNeed)
 //       budget  zeny the buyer can spend now (its purse less its reserve)
 //
 //   Clear (price the posted listing is pulled to when a buyer is interested, Clear):
 //     if no buyer or the best buyer already pays the ask, the ask stands.
 //     otherwise the seller concedes part of the gap between ask and that buyer's willingness:
-//       concession = clamp(0.5 x sellerUrgency + 0.5 x desperation, 0, 1)
-//       desperation = need x poverty x single,  poverty = 1 - budget/ref (0..1),  single = 1/(1 + (buyers-1)/2)
+//       concession = clamp(0.5 x sellerUrgency + desperation, 0, 1)
+//       desperation = need x single,  single = 1/(1 + (buyers-1)/2)
 //       price = max(floor, ask - gap x concession)
-//     So a poor, desperate buyer who is the only one interested pulls the price down, and a seller in a hurry does too.
+//     A poor buyer's budget is already in its willingness (the gap is measured to what it can pay), so a poor, desperate
+//     lone buyer pulls the listing all the way to what it can pay (the sale happens at once), a calm rich buyer pulls
+//     little, and a seller in a hurry pulls half the gap whatever the buyer.
+//   Milestone need (milestoneNeed): a bot short of the zeny for its gated gear piece needs it more: 0.5 + 0.5 x gap/price,
+//     where gap = price - zeny (0 when it has the zeny); a generic want has need 0.3.
 //
 // Flag off: none of these functions is called (vend.go / vendbuy.go / economy.go keep their fixed code paths).
 
@@ -131,11 +135,9 @@ func Willingness(ref int, need float64, budget int, seed string) int {
 type ClearIn struct {
 	Ask           int     // the seller's posted price (Ask)
 	Floor         int     // lowest price the seller takes
-	Ref           int     // reference value (for the buyer's poverty)
 	Buyers        int     // interested buyers (0: nothing to pull toward)
 	BestWilling   int     // the most the best buyer pays (Willingness)
 	BestNeed      float64 // that buyer's need 0..1
-	BestBudget    int     // that buyer's spendable zeny
 	SellerUrgency float64 // 0 (no hurry) .. 1 (must sell now): dynZenyNeed and dynPressure combined by the caller
 }
 
@@ -146,14 +148,19 @@ func Clear(in ClearIn) int {
 		return in.Ask
 	}
 	gap := float64(in.Ask - in.BestWilling)
-	poverty := 0.0
-	if in.Ref > 0 {
-		poverty = dynClamp01(1 - float64(in.BestBudget)/float64(in.Ref))
-	}
 	single := 1 / (1 + float64(in.Buyers-1)/2)
-	desperation := dynClamp01(in.BestNeed) * poverty * single
-	concession := dynClamp01(0.5*dynClamp01(in.SellerUrgency) + 0.5*desperation)
+	desperation := dynClamp01(in.BestNeed) * single
+	concession := dynClamp01(0.5*dynClamp01(in.SellerUrgency) + desperation)
 	return clampInt(int(math.Round(float64(in.Ask)-gap*concession)), in.Floor, in.Ask)
+}
+
+// milestoneNeed: a bot's need for its gated gear piece (price of the piece, zeny it holds). 0.5 when the piece has no
+// shop price; 0.5 + 0.5 x the share of the price still missing otherwise.
+func milestoneNeed(price, zeny int) float64 {
+	if price <= 0 {
+		return 0.5
+	}
+	return 0.5 + 0.5*dynClamp01(float64(price-zeny)/float64(price))
 }
 
 func clampInt(v, lo, hi int) int {

@@ -134,7 +134,7 @@ func (b *Bot) refineWant() *Want {
 	if need <= 0 {
 		return nil
 	}
-	each := bidPrice(b.P, mat)
+	each := b.wantBid(mat)
 	spare := b.Zeny - b.gearReserve() - 500
 	n := min(need, spare/max(1, each+refineFee(weaponLv(x))))
 	if n < 1 {

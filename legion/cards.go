@@ -473,7 +473,7 @@ func (b *Bot) cardWant(budget int) *Want {
 		if v < 2 || wantsFor(o.ItemID, b.charName()) >= 2*o.Sellers {
 			continue // 2026-11-14: 25 bots asked for the same 2 Hornet Cards; ask for one that is still to be had
 		}
-		bid := bidPrice(b.P, o.ItemID)
+		bid := b.wantBid(o.ItemID)
 		if bid > budget || o.LowAsk > bid {
 			continue
 		}
@@ -504,7 +504,7 @@ func (b *Bot) slotWant(budget int) *Want {
 				if vx == nil || vx.Slots == 0 || b.ownsUnequipped(v) || !onBoard(v) {
 					continue
 				}
-				if bid := bidPrice(b.P, v); bid <= budget {
+				if bid := b.wantBid(v); bid <= budget {
 					return &Want{ItemID: v, Count: 1, Each: bid, Why: "slot for my " + c.Name}
 				}
 			}
@@ -537,7 +537,7 @@ func (b *Bot) bareWant(budget int) *Want {
 			if x == nil || gearSlot(x.Loc) != slot || !b.canEquip(x) || b.gearFailed[x.ID] || b.itemScore(x) <= 0 {
 				continue
 			}
-			bid := max(bidPrice(b.P, o.ItemID)*6/5, o.LowAsk) // urgent: pays up to the lowest ask
+			bid := max(b.wantBid(o.ItemID)*6/5, o.LowAsk) // urgent: pays up to the lowest ask
 			if bid > max(budget, 0) || bid > o.Standard*3/2 {
 				continue
 			}

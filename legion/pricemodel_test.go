@@ -35,11 +35,11 @@ func TestAskRisesWithScarcity(t *testing.T) {
 func TestClearFallsWhenOnlyBuyerIsPoorAndDesperate(t *testing.T) {
 	const ask, ref = 1000, 1000
 	// a rich buyer with no need: pays the ask
-	rich := ClearIn{Ask: ask, Floor: 100, Ref: ref, Buyers: 1,
-		BestWilling: Willingness(ref, 0, 100000, "rich|1"), BestNeed: 0, BestBudget: 100000}
+	rich := ClearIn{Ask: ask, Floor: 100, Buyers: 1,
+		BestWilling: Willingness(ref, 0, 100000, "rich|1"), BestNeed: 0}
 	// the only buyer: short of money (300z) and desperate for the piece
-	poor := ClearIn{Ask: ask, Floor: 100, Ref: ref, Buyers: 1,
-		BestWilling: Willingness(ref, 1, 300, "poor|1"), BestNeed: 1, BestBudget: 300}
+	poor := ClearIn{Ask: ask, Floor: 100, Buyers: 1,
+		BestWilling: Willingness(ref, 1, 300, "poor|1"), BestNeed: 1}
 	r, p := Clear(rich), Clear(poor)
 	if r != ask {
 		t.Fatalf("a rich buyer with no need should not pull the price: %d", r)
@@ -91,12 +91,12 @@ func TestFloorAndCeilingHold(t *testing.T) {
 		t.Fatalf("ask below the floor: %d (want the floor 700)", a)
 	}
 	// a clear never goes under the floor nor above the ask
-	c := Clear(ClearIn{Ask: 1000, Floor: 800, Ref: 1000, Buyers: 1, BestWilling: 1, BestNeed: 1, BestBudget: 1,
+	c := Clear(ClearIn{Ask: 1000, Floor: 800, Buyers: 1, BestWilling: 1, BestNeed: 1,
 		SellerUrgency: 1})
 	if c != 800 {
 		t.Fatalf("clear below the floor: %d", c)
 	}
-	if c := Clear(ClearIn{Ask: 1000, Floor: 100, Ref: 1000, Buyers: 1, BestWilling: 5000}); c != 1000 {
+	if c := Clear(ClearIn{Ask: 1000, Floor: 100, Buyers: 1, BestWilling: 5000}); c != 1000 {
 		t.Fatalf("clear above the ask: %d", c)
 	}
 	if w := Willingness(1000, 1, 250, "x"); w > 250 {

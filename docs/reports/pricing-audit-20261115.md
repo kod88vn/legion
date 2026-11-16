@@ -1,93 +1,98 @@
 # Pricing audit, 2026-11-15
 
-Scope: how prices are formed in the Go engine at `main` 7984c90, against EC48 ("prices are never fixed; they move with
-supply and demand, with how fast someone is trying to sell, and with how badly a buyer needs the piece and how much money
-they have"). Each row says what the number is, where it is, and which of the three forces it ignores: scarcity (supply vs
-demand), urgency (seller's zeny need, stock age, bag pressure, time listed) and budget (buyer's purse and need).
+Scope: how prices are formed in the Go engine (`legion/`) at `main` 7984c90, against EC48 ("prices are never fixed; they
+move with supply and demand, with how fast someone is trying to sell, and with how badly a buyer needs the piece and how
+much money they have"). Each row says what the number is, where it is, and which force it ignores: scarcity (supply vs
+demand), urgency (seller's zeny need, bag pressure, time listed) and budget (buyer's purse and need).
 
-Files are in `legion/` (the Go engine). Line numbers are as read at 7984c90.
+Line numbers are as read at 7984c90. "Flag on" means `dynamic_price_on` (default off, tuning.go) and the code paths in
+`pricedyn.go` and `pricemodel.go`. Every flag-on change is behind `dynamicPriceOn()`; with the flag off the old code runs.
 
-## A. Reference prices (what everything else is based on)
+## A. Reference prices (the base the model starts from)
 
-| # | Where | What is fixed | Scarcity | Urgency | Budget |
-|---|---|---|---|---|---|
-| A1 | economy.go `fixedStandardPrice` | Cards 3,000 default, 500 + mob level x 250 (cap 50,000), boss cards 250,000; gear 800 + MinLv x 150 + Atk x 30 + Def x 500, slots x (10+3s)/10; Etc sell x 2.5 or x 1.2 | no | no | no |
-| A2 | economy.go `standardPrice` | NPC-sold items use the NPC buy price, always | no | no | no |
-| A3 | economy.go `priceOf` | reference = standardPrice blended 30% with the average of the last trades (3+ trades); market factor 0.6 to 2.0 (1.0 ceiling for NPC goods) | yes (through A7) | no | no |
-| A4 | pricing.go `priceRound` (flag `dynamic_prices`, default off) | rarity table: buyers vs copies in circulation; boss-only items cost max(median guild wealth, 20,000) | yes | no | yes (purses, not urgency) |
+| # | Where | What is fixed | Scarcity | Urgency | Budget | Flag on |
+|---|---|---|---|---|---|---|
+| A1 | economy.go `fixedStandardPrice` | Cards 3,000 default, 500 + mob level x 250 (cap 50,000), boss cards 250,000; gear 800 + MinLv x 150 + Atk x 30 + Def x 500, slots x (10+3s)/10; Etc sell x 2.5 or x 1.2 | no | no | no | kept as the fallback for items with no market data (see H) |
+| A2 | economy.go `standardPrice` | NPC-sold items use the NPC buy price | no | no | no | kept as the reference for NPC-sold items (see H) |
+| A3 | economy.go `priceOf` | reference = standardPrice blended 30% with the average of the last trades (3+ trades); then the market factor | via B1 | no | no | market factor removed; the trade blend stays as market data |
+| A4 | pricing.go `priceRound` (flag `dynamic_prices`, default off) | rarity table: buyers vs copies; boss-only items cost max(median guild wealth, 20,000) | yes | no | yes | used as the reference only when `dynamic_prices` is also on (off by default) |
 
-## B. Market factor and markdown (market.go)
+## B. Market factor, glut and floor (market.go, farm.go)
 
-| # | Where | What is fixed | Scarcity | Urgency | Budget |
-|---|---|---|---|---|---|
-| B1 | market.go `marketTick` | factor +4% per tick when wants exceed units, -3% when units are more than twice the wants, else drift 5% home; bounds 0.6 to 2.0 | yes | no | partly (a want counts only as many units as the buyer can pay for) |
-| B2 | market.go `glutMul` | farming value down to 0.1 for a glut (units above 3 x (wants + 10)) | yes | no | no |
-| B3 | market.go `markdown` | 45 min, then 5% per 30 min, at most 6 steps, never under `marketFloor` | no | time only | no |
-| B4 | market.go `marketFloor` | NPC sell value; half the reference for cards, valuable materials and drop-only gear | no | no | no |
-
-B3 is the only urgency rule that exists, and it is time only: it does not look at the seller's zeny, the bags, or how
-much stock is left. It also keeps its own step counter, so a restart of the clock is possible.
+| # | Where | What is fixed | Scarcity | Urgency | Budget | Flag on |
+|---|---|---|---|---|---|---|
+| B1 | market.go `marketTick` factor | +4% per tick when wants exceed units, -3% when units are over twice the wants, else drift 5% home; bounds 0.6 to 2.0 | yes | no | partly (a want counts only the units the buyer can pay for) | removed from `priceOf`; scarcity is now the `Ask` model's input (`dynScarcity`); the factor is still computed for the report |
+| B2 | market.go `glutMul` | farming value down to 0.1 for a glut (units above 3 x (wants + 10)); 0.7 when a glut line was said on #trade | yes | no | no | still applies to the farming choice (farm.go: what a bot farms) and the count of units listed (vend.go openShop, max 10). Neither is the asking price. Kept on purpose: it steers which item a bot farms (EC34) |
+| B3 | market.go `markdown` | 45 min, then 5% per 30 min, at most 6 steps, never under the floor | no | time only | no | replaced by the continuous markdown in `Ask` (same clock: `listingHours` uses the same `market2.md` entries) |
+| B4 | market.go `marketFloor` | NPC sell value (sellPrice); half the reference for cards, valuable materials and drop-only gear | no | no | no | kept (see H) |
 
 ## C. Sellers (asks and vending)
 
-| # | Where | What is fixed | Scarcity | Urgency | Budget |
-|---|---|---|---|---|---|
-| C1 | economy.go `askPrice` (holdings for #trade, alchemy.go) | greed 0.85 to 1.15 (x) personal +-5% per persona and item, then B3 markdown, then the NPC window | via priceOf | time only | no |
-| C2 | vend.go `vendPrice` | margin 0.95 + 0.35 x greed (or the market mind's markup) x personal +-5%; undercut the lowest other shop by 2% (fixed); B3 markdown; NPC window | via priceOf | time only | no |
-| C3 | vend.go `openShop` | at most 10 units of a glutted item on the shelf (fixed count) | yes | no | no |
-| C4 | economy.go `npcWindow` (EC15) | for an item an NPC sells: between 62% and 76% of the NPC buy price (fixed band; a rule of the owner) | no | no | no |
-| C5 | economy.go `npcGearCap` | used gear an NPC also sells: 93% of the NPC buy price (fixed) | no | no | no |
-| C6 | dietrich.go `npcMatCap` | Dietrich's price cap for Phracon / Emveretarcon (fixed) | no | no | no |
+| # | Where | What is fixed | Flag on |
+|---|---|---|---|
+| C1 | economy.go `askPrice` | greed 0.85 to 1.15 x personal +-5%, time markdown, NPC window | `askPriceDyn`: `Ask` model (scarcity, greed, time markdown, jitter), then the NPC window (C4) |
+| C2 | vend.go `vendPrice` | margin 0.95 + 0.35 x greed x personal, undercut the lowest other shop by 2% (fixed), markdown, NPC window | `vendPriceDyn`: `Ask` (adds seller zeny need and bag pressure), undercut 2%, then `Clear` against the interested buyers |
+| C3 | vend.go `openShop` | at most 10 units of a glutted item on the shelf | kept as a listing-count guard (not a price) |
+| C4 | economy.go `npcWindow` (EC15) | for an item an NPC sells: 62% to 76% of the NPC buy price | kept as a guard rail (see H) |
+| C5 | economy.go `npcGearCap` | used gear an NPC also sells: 93% of the NPC buy price | kept as a guard rail (see H) |
+| C6 | dietrich.go `npcMatCap` | Dietrich's price cap for Phracon / Emveretarcon | kept as a guard rail (see H) |
 
-No seller-side rule uses the seller's zeny need or the bag pressure. `vendPrice` and `askPrice` do not know who the buyer is.
+## D. Buyers (bids, wants and purchases)
 
-## D. Buyers (bids and purchases)
-
-| # | Where | What is fixed | Scarcity | Urgency | Budget |
-|---|---|---|---|---|---|
-| D1 | economy.go `bidPrice` | priceOf x (1.15 - 0.25 x greed), +0.2 for consumables; capped at the Dietrich price for refine materials | via priceOf | no | no |
-| D2 | ~15 want-posting call sites (economy.go 391-488, cards.go 476/507/540, chatintent.go 260, alchemy.go 903/936, refine.go 137, huntfit.go 187, guildstock.go 345) | all of them use D1 | via priceOf | no | no |
-| D3 | vendbuy.go shop scan | accept a listing at or under the want's Each x 1.1 (fixed); spare potions at the want's Each; cards at bidPrice x 1.2; gear at priceOf x 1.2 | via priceOf | no | the purse only: listings over `budget` are skipped |
-| D4 | vendbuy.go stock-for-shop bid | priceOf x 0.9 (fixed), quantity min(3, budget / bid, gap) | via priceOf | no | yes (quantity only) |
-| D5 | cards.go 540 | "urgent" bid = max(bidPrice x 1.2, lowest ask), fixed multiplier | via priceOf | a fixed flag, not measured | no |
-| D6 | market.go `marketTick` demand | a want counts min(count, buyer's zeny / Each) units | yes | no | yes (count only) |
-
-The buyer side has no need term at all. A bot short of money for a build piece bids exactly what a rich bot bids
-(D1 uses greed only). The purse caps how many units are bought, not how much is offered.
+| # | Where | What is fixed | Flag on |
+|---|---|---|---|
+| D1 | economy.go `bidPrice` | priceOf x (1.15 - 0.25 x greed), +0.2 for consumables | not used when the flag is on: `wantBid` (pricedyn.go) gives the willingness from the buyer's purse and need |
+| D2 | the want-posting sites (alchemy.go 903/936, cards.go 476/507, chatintent.go 260, economy.go 399/424/450/496, guildstock.go 345, huntfit.go 187, refine.go 137, vendbuy.go 467) | all used D1 | all now call `b.wantBid(id)` (one function; flag off = `bidPrice`, byte-identical) |
+| D3 | vendbuy.go shop scan | accept a listing at or under the want's Each x 1.1 | `wantCap`: the buyer's willingness from its purse and need |
+| D4 | vendbuy.go stock-for-shop bid | priceOf x 0.9 | `stockBid`: willingness from the purse and a stock need of 0.3 |
+| D5 | cards.go 540 "urgent" bid | `max(bidPrice x 1.2, lowest ask)` | `max(wantBid x 1.2, lowest ask)`: the same function as D2 |
+| D6 | market.go `marketTick` demand | a want counts min(count, zeny / Each) units | kept (the budget already enters demand) |
 
 ## E. Other places a price is set
 
-| # | Where | What is fixed | Note |
+| # | Where | What is fixed | How handled |
 |---|---|---|---|
-| E1 | chatter.go 238 | chat offers of sellPrice x (1.2 to 2.2, random) | Not market-based. Chat text only, but it is a price a human reads. |
-| E2 | meterapi.go 124 `meterPriceOf` | max(priceOf, sellPrice) | Used by the meter's zeny value; follows A3. |
-| E3 | farm.go 49 and 133 | value of a drop = priceOf x glut (down to 0.1) | Follows B2; farming choice is driven by these fixed values. |
-| E4 | mailtrade.go 44 `startMailTrade` | the price is passed in by the caller (not read in this audit) | Not audited in detail; the caller's formula is unknown here. |
-| E5 | town.go (potion buys, pickHPPotion, emergencyStack) | NPC buy prices, fixed | NPC is the last resort (EC47); fixed by the NPC shop. |
-| E6 | guildduty / guildpool / lfg_human | priceOf for trades and guild valuations | Follow A3. |
+| E1 | chatter.go 238 `trade` chat line | sellPrice x (1.2 to 2.2, random) | flag on: the base is `max(priceOf, sellPrice)`, so the chat line quotes the model's reference |
+| E2 | meterapi.go 124 `meterPriceOf` | max(priceOf, sellPrice) | a measurement, not a trade price: follows the model reference automatically |
+| E3 | farm.go 49 and 133 | value of a drop = priceOf x glut | kept: farming choice (see B2); priceOf is the model reference when the flag is on |
+| E4 | economy.go 1106 `startMailTrade` (mailtrade.go) | the price comes from the deal match (`m.price`) | kept: the match takes the seller's ask and the buyer's want (both model prices when the flag is on). Not verified in a live run |
+| E5 | town.go potion buys (pickHPPotion, emergencyStack) | NPC buy prices, fixed by the NPC shop | kept: an NPC sells at its own price; NPC is the last resort (EC47) |
+| E6 | guildduty.go, guildpool.go, guildstock.go, lfg_human.go, lootflow.go | priceOf for valuations and stock gaps | follow the model reference (priceOf without the market factor when the flag is on) |
 
-## F. What is missing entirely
+## F. Still missing before this change
 
-1. Seller zeny need. Nothing reads how badly a seller needs the money.
-2. Bag / inventory pressure on a price. Only the vendor's cart space limits what is listed.
-3. Buyer need (milestone gap) in a bid. The gate price in buildmilestones.go `gatedPrice` exists, but a want does not carry it.
-4. A clearing rule. A posted price is never pulled toward the buyer who is actually there; a poor desperate buyer
-   and a rich buyer see the same listing.
-5. Time on the market as a price input other than the 5% steps (B3): no stock-age term for cards or gear held in bags.
+1. Seller zeny need, bag pressure: added (`Ask`, flag on).
+2. Buyer need: added. `Bot.dynNeed` is set by `wantBid` (milestone gap for the gated gear piece, 0.3 otherwise).
+3. Clearing toward the buyer present: added (`Clear`, flag on), using each buyer's posted need and purse.
+4. Stock age for cards and gear held in bags: not added (the time-on-market markdown covers listed goods only).
 
-## G. Result of the audit
+## G. Flag on: what is still fixed, and why
 
-With `dynamic_price_on` off (the shipped default) every row above is what the engine does. With it on, the following
-replace the fixed code (see `legion/pricedyn.go` and `legion/pricemodel.go`):
+| Constant or rule | Where | Why it stays |
+|---|---|---|
+| NPC sell value as the floor | `marketFloor` / `sellPrice` = Buy / 2 | Item-db fact (what an NPC pays). Nobody sells under what an NPC pays for the same item; without it a glut would sell junk for 2z. Rule EC15/EC34 |
+| Half the reference floor for valuable goods | `marketFloor` (cards, valuable materials, gear no NPC sells) | Guard against a glut or a lone desperate buyer pulling a card to nothing. Constant to tune with metrics |
+| NPC buy price as the reference for NPC-sold items | `standardPrice` / `fixedStandardPrice` (A2) | Item-db reference: the NPC shop sells at this price, so the reference is the NPC price. The model moves the player price inside the window below |
+| NPC window 62% to 76% of the NPC buy price | `npcWindow` (C4) | Owner rule EC15: goods are cheaper than the NPC and the seller gets more than the NPC pays. A rule of the owner, not a market price. Guard rail |
+| Used gear at 93% of the NPC buy price | `npcGearCap` (C5) | Measured in batch 18: asks above the NPC price for used gear got no buyers. Guard rail |
+| Dietrich's price cap | `npcMatCap` (C6) | The NPC sells Phracon / Emveretarcon at a fixed price, buyers never pay over it. Guard rail |
+| Fallback formula (fixedStandardPrice) | A1 | Used only where the item has no market data (no trade, no NPC price). Its constants (500 + 250 x level, 800 + 150 x MinLv, ...) are reference values, not asks |
+| Dynamic rarity table | A4 (`dynamic_prices`, off) | Its own flag; not used when `dynamic_price_on` is set unless `dynamic_prices` is also on |
+| Glut (farming value, listing count) | B2, C3, E3 | Steers which item a bot farms (EC34). It does not set the asking price. Owner-visible through metrics |
+| Trade blend 30% after 3 trades | A3 | Market data, not a fixed price. Kept |
 
-- C2 `vendPrice` -> `vendPriceDyn` (vend listing, undercut and markdown in one function, supply/demand from B1, seller
-  zeny need and bag pressure, and the buyer clearing step).
-- C1 `askPrice` -> `askPriceDyn` (persona ask, time-based markdown).
-- B3 `markdown` steps -> continuous markdown in the ask model (the same 45-min / 30-min clock; `listingHours` keeps the
-  same `market2.md` entries, so `marketSold` and the want reset in `marketTick` still work).
-- D3 shop-listing acceptance `w.Each*11/10` -> `wantCap` (a buyer's willingness from its purse and need).
-- D4 stock bid `priceOf*9/10` -> `stockBid` (willingness from the purse and a stock need of 0.3).
+## H. Constants that need metrics before anyone calls the flag better
 
-Still fixed with the flag on (not replaced): A1, A2, A4 (the table is off unless `dynamic_prices` is set), B1, B2, B4,
-C4, C5, C6, D1 and the want-posting call sites in D2 (so a want's `Each` stays at the old bid until those move too), D5,
-E1 to E6. These are listed so the owner can see what the model does not yet touch.
+- Zeny at which a seller is in no need: 20,000 (`dynZenyFullNeed`, zeny need = 1 - zeny/20,000).
+- Urgency weights: 0.30 for zeny need, 0.15 for bag pressure, combined as 0.6 x need + 0.4 x pressure in the clearing step.
+- Scarcity band: sqrt((demand+1)/(supply+1)) clamped to [0.6, 1.6].
+- Markdown: 45 min free, 5% per 30 min, 6 steps (kept from market.go, never measured against sales).
+- Jitter band: 0.97 to 1.03.
+- Willingness: 0.8 + 0.3 x need, capped at the purse.
+- Buyer need: generic 0.3 (`dynGenericNeed`); want 0.6 (`dynWantNeed`) in the fallback; stock 0.3; milestone need 0.5 + 0.5 x gap/price.
+- Concession: 0.5 x seller urgency + need x (1 / (1 + (buyers-1)/2)), clamped to 1.
+- Undercut: 2% under the lowest other shop.
+- Floor for valuable goods: half the reference.
+
+Every one of these is a first guess. Measure zeny per hour and kills per minute (Article 3.2) with the flag off, then on in
+a test party, before any of them is changed.
