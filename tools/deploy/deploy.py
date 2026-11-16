@@ -17,7 +17,15 @@ Gates, in order; a refusal stops before anything is changed:
   services  only legion and legion-core, always with --no-deps (G15)                               exit 3
   review    every fix has a --reviewed commit with a merge review whose LAST line is `verdict: merge`
             (Constitution 4.2), and that commit is an ancestor of HEAD                             exit 5 / 4
-  source    (build only) legion/ build inputs have no uncommitted changes: only committed code is built  exit 4
+  merges    every merge commit that ships has a review (Constitution 4.2): base..HEAD, where base is
+            the sha of the last deploy (a record without a sha: the newest HEAD commit before that
+            deploy; no deploy recorded: the whole history). Each merge needs
+            docs/reports/reviews/<its second parent>.md, read from HEAD, whose LAST line is
+            `verdict: merge`; `verdict: do not merge` refuses. A sync merge of main (subject
+            "Merge branch 'main' into ...", "Merge main into ...", "Merge branch main into ...", and whose
+            second parent is on main's first-parent chain) is exempt. No override.
+            The dry run lists every merge that would ship with its verdict.                        exit 9
+  source   (build only) legion/ build inputs have no uncommitted changes: only committed code is built  exit 4
   interval  3 hours between regular deploys (G17) unless --critical "<reason>"; >= 1 fix           exit 5
             (checked again under the lock)
   hold      legion/data/stack.hold: the owner has the stack stopped (G21); only --owner-lifts-hold  exit 6
@@ -39,7 +47,8 @@ it also runs league.py --compare-deploy and writes revert.txt. A dry run only pr
 
 Exit codes: 0 ok (or dry run ok), 1 build/up/verify failed, 2 rathena/db would change or could not be confirmed
 (or a usage error, argparse), 3 service not allowed, 4 source not committed or not an ancestor of HEAD, 5 review/
-interval/no fix/bad fix, 6 stack hold, 7 lock held, 8 Ayla not back in time.
+interval/no fix/bad fix, 6 stack hold, 7 lock held, 8 Ayla not back in time, 9 a merge that ships has no merge
+review (or its review says do not merge, or has no verdict on its last line).
 Every applied run writes legion/data/deploy-runs/deploy-<stamp>/ (run.log, pre-league.md, override.yml, revert.txt).
 Standard library only. Tests: python -m unittest discover -s tests/system -p test_deploy.py (from the repo root).
 """
@@ -80,7 +89,10 @@ METRICS = ("kpm", "zph", "deaths")
 BUILD_PATHS = ("legion/Dockerfile", "legion/go.mod", "legion/recvpackets.txt", "legion/*.go", "legion/*.html")
 SNAPSHOT_FILES = ("Dockerfile", "go.mod", "recvpackets.txt")
 
-OK, FAILED, DRIFT, SERVICE, SOURCE, GATE, HOLD, LOCKED, AYLA_LATE = 0, 1, 2, 3, 4, 5, 6, 7, 8
+OK, FAILED, DRIFT, SERVICE, SOURCE, GATE, HOLD, LOCKED, AYLA_LATE, UNREVIEWED = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+REVIEWS_REL = "docs/reports/reviews"
+MERGE_VERDICT = re.compile(r"^verdict:\s*(merge|do not merge)\s*$", re.I)
+SYNC_SUBJECT = re.compile(r"^Merge (?:branch )?'?main'?( of \S+)? into ", re.I)
 
 
 class Refused(Exception):
@@ -133,6 +145,80 @@ def run_dir_name(tag):
     return "deploy-" + tag.split("deploy-")[-1]
 
 
+def merge_verdict(text):
+    """'merge' or 'do not merge' when the LAST non-empty line of a review is that verdict, else None."""
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    m = MERGE_VERDICT.match(lines[-1]) if lines else None
+    return m.group(1).lower() if m else None
+
+
+def _epoch_of(rec):
+    return C.to_epoch(rec.get("epoch", rec.get("t"))) or 0.0
+
+
+def ship_base(root, head, run=execute):
+    """(base sha or None, note): the commit the last deploy was built from. The newest deploy record carries its sha;
+    a record written before shas were recorded falls back to the newest first-parent commit of HEAD committed before
+    that deploy. No deploy recorded: None, so the whole history of HEAD is checked (fail closed)."""
+    recs = deploylog.deploy_records()
+    if not recs:
+        return None, "no deploy recorded: the whole history of HEAD"
+    last = max(recs, key=_epoch_of)
+    label = "last deploy %s (%s)" % (last.get("tag", "?"), last.get("t", "?"))
+    if last.get("sha"):
+        return last["sha"], label + " was built from %s" % last["sha"]
+    rc, out = run(["git", "-C", root, "log", "-1", "--first-parent", "--before=@%d" % int(_epoch_of(last)),
+                   "--format=%H", head])
+    base = out.strip() if rc == 0 else ""
+    if not base:
+        return None, label + " has no sha and no HEAD commit before it: the whole history of HEAD"
+    return base, label + " has no sha; base is the HEAD commit before it: %s" % base
+
+
+def merge_gate(root, head, base, run=execute):
+    """Every merge commit in base..head (all merges of head when base is None) with its review verdict.
+    Returns (rows, offenders). A row: sha, subject, verdict ('merge', 'do not merge', 'none', 'bad parents', 'sync'),
+    review (the path read from head's tree) and why. Refuses (SOURCE) when git cannot list the merges."""
+    rng = "%s..%s" % (base, head) if base else head
+    rc, out = run(["git", "-C", root, "log", "--merges", "--reverse", "--format=%H%x1f%P%x1f%s", rng])
+    if rc != 0:
+        raise Refused(SOURCE, "REFUSED: git log failed; cannot list the merges that ship: %s" % out.strip()[-300:])
+    rows = []
+    main_chain = None  # first-parent history of main, read on first use (a failed read exempts nothing)
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        sha, parents, subject = (line.split("\x1f") + ["", ""])[:3]
+        parents = parents.split()
+        row = {"sha": sha, "subject": subject, "verdict": None, "review": "", "why": ""}
+        if len(parents) != 2:
+            row.update(verdict="bad parents", why="not a two-parent merge: its review cannot be found")
+            rows.append(row)
+            continue
+        row["review"] = "%s/%s.md" % (REVIEWS_REL, parents[1])
+        if SYNC_SUBJECT.match(subject):
+            if main_chain is None:
+                rc_m, chain = run(["git", "-C", root, "rev-list", "--first-parent", "main"])
+                main_chain = set(chain.split()) if rc_m == 0 else set()
+            # a sync brings main's own history into the branch: its second parent is on main's first-parent chain
+            if parents[1] in main_chain:
+                row.update(verdict="sync", why="sync merge of main (exempt)")
+                rows.append(row)
+                continue
+        rc, text = run(["git", "-C", root, "show", "%s:%s" % (head, row["review"])])
+        v = merge_verdict(text) if rc == 0 else None
+        if rc != 0:
+            row.update(verdict="none", why="no review file %s" % row["review"])
+        elif v == "merge":
+            row.update(verdict="merge", why="review says merge")
+        elif v == "do not merge":
+            row.update(verdict="do not merge", why="review says 'verdict: do not merge' (%s)" % row["review"])
+        else:
+            row.update(verdict="none", why="review %s does not end with 'verdict: merge'" % row["review"])
+        rows.append(row)
+    return rows, [r for r in rows if r["verdict"] not in ("merge", "sync")]
+
+
 class Deploy:
     """One deploy batch. Reads go through self.run (always executed); changes go through self.act (executed only with
     apply, printed otherwise). Tests inject `execute_fn`, `sleep`, `reviews_dir` and `resolve`."""
@@ -147,6 +233,7 @@ class Deploy:
         self.resolve = resolve or reviewcheck.resolve
         self.out = out
         self.logpath = None
+        self.head = None  # full sha of HEAD, read once by batch(): the merges are checked and the deploy recorded for it
 
     # ---------------------------------------------------------------- output and execution
     def say(self, msg):
@@ -187,6 +274,28 @@ class Deploy:
                 raise Refused(SOURCE, "REFUSED: reviewed commit %s is not an ancestor of HEAD; only committed, merged "
                                       "code can be deployed" % sha[:12])
         return msg
+
+    def gate_merges(self):
+        """Constitution 4.2 for the whole batch: every merge that ships since the last deploy has a merge review. The
+        deploy ships HEAD, so every merge in base..HEAD ships, not only the --reviewed ones. Lists them all (dry run too)."""
+        rc, head = self.run(["git", "-C", self.root, "rev-parse", "HEAD"])
+        if rc != 0 or not head.strip():
+            raise Refused(SOURCE, "REFUSED: cannot read HEAD: %s" % self.tail(head, 3))
+        self.head = head.strip()
+        base, note = ship_base(self.root, self.head, self.run)
+        rows, offenders = merge_gate(self.root, self.head, base, self.run)
+        self.say("merges that would ship (%s):" % note)
+        if not rows:
+            self.say("  none: no merge commit since that deploy")
+        for r in rows:
+            self.say("  %s  review: %-13s %s" % (r["sha"], r["verdict"], r["subject"]))
+        if offenders:
+            lines = ["  %s  %s\n      reason: %s" % (r["sha"], r["subject"], r["why"]) for r in offenders]
+            raise Refused(UNREVIEWED, "REFUSED (Constitution 4.2): %d merge(s) that would ship have no merge review. "
+                                      "Each needs docs/reports/reviews/<second parent>.md with its last line "
+                                      "'verdict: merge' (read from HEAD). Nothing ships until then:\n%s"
+                          % (len(offenders), "\n".join(lines)))
+        return note
 
     def gate_source(self):
         """Build mode: the inputs of the image must be committed. Fails closed if git cannot say."""
@@ -426,6 +535,7 @@ class Deploy:
                           % (", ".join(ALLOWED), ", ".join(bad) or "nothing"))
         fixes = [parse_fix(t) for t in fix_texts]
         self.say("review: " + self.gate_review(fix_texts, reviewed).replace("\n", "; "))
+        self.gate_merges()
         self.say("interval: " + self.gate_interval(critical, len(fixes)))
         self.gate_hold(lifted)
         self.gate_lock()
@@ -470,6 +580,9 @@ class Deploy:
             self.say("  reviewed: %s" % ", ".join(reviewed))
             if not image:
                 rc, head = self.run(["git", "-C", self.root, "rev-parse", "HEAD"])
+                if rc != 0 or head.strip() != self.head:
+                    raise Refused(SOURCE, "REFUSED: HEAD moved from %s to %s while the batch was checked (merge review "
+                                          "gate). Nothing deployed; rerun." % (self.head, head.strip()))
                 self.say("  HEAD: %s" % head.strip())
                 self.stop_stray_golang()
                 self.build(tag)
@@ -493,7 +606,8 @@ class Deploy:
                     self.ensure_core_container()
                 self.verify_image(svc, tag)
                 # recorded per service: a failure of the next service leaves this one on record
-                rec = deploylog.record(tag, [svc], critical, fixes if i == 0 else [])
+                rec = deploylog.record(tag, [svc], critical, fixes if i == 0 else [],
+                                       sha=None if image else self.head)
                 self.say("recorded deploy %s for %s (%d fixes)" % (rec["tag"], svc, len(rec["fixes"])))
             if not self.wait_ayla(start_epoch, start_iso):
                 raise Refused(AYLA_LATE, "G19: Ayla is not back in game within %d s after the deploy. Look at "
