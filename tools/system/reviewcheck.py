@@ -6,7 +6,7 @@
       per --fix. COMMIT is the fix's commit (any git rev). Its review is docs/reports/reviews/<full sha>.md and must
       have a line `verdict: merge` (or `verdict: ok`). `verdict: do not merge` or a missing file is refused.
 
-Called by tools/deploy/guard.sh (deploy_gate) before every deploy, critical ones included.
+Called by tools/deploy/deploy.py (gate_review) before every deploy, critical ones included.
 Standard library only. Tests: python -m unittest discover -s tests/system -v (from the repo root).
 """
 import argparse

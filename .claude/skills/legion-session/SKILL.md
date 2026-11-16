@@ -10,8 +10,8 @@ Read `STATUS.md` first. The old setup is in `legion-session-old` (history only).
 ## The main session's job
 Constitution Article 1; it starts and stops nothing itself, and the harness blocks it (`tools/system/mainguard.py`).
 - Assign: queue items to `fixer` (`hard-fixer` for locking, networking, deploy scripts, or a bug that failed twice); one
-  fixer per item, resumed with SendMessage, never a duplicate. Before each 3-hour deploy: `analyst-review`, then the
-  `deploy` agent with the batch (G17).
+  fixer per item, resumed with SendMessage, never a duplicate. Before each 3-hour deploy: `analyst-review`, then an
+  agent assigned to run `tools/deploy/deploy.py` with the batch (G17, PR47); the main session never runs it.
 - Watch the state through: `python tools/system/bugq.py rank`, `python tools/system/league.py`, the dashboard
   `http://127.0.0.1:8090/dashboard` (always on, DB06), and the 30-minute report of every system agent (Constitution 3.8).
 - Wake `watcher` on `partycheck` violations and for its 30-minute review; `qa` for class sampling.
@@ -41,6 +41,6 @@ gate stay quiet), then the loops, then `docker compose stop`.
 - `mainguard.py` (PreToolUse): blocks the main session's system-changing tools; denials in `logs/constitution-denied.log`.
 - `mindgate.py` (hooks): while `stack.up` exists it checks the dispatcher and sentinel heartbeats, once per problem.
   Pause: file `tools/mindgate.paused`.
-- Deploy scripts: 3 hours between deploys unless `--critical "<reason>"`; `--fix "<what>|<metric>|<cohort>"` per fix;
-  rathena at most once an hour (G15-G17).
+- Deploy script (`tools/deploy/deploy.py`, dry run unless `--apply`): 3 hours between deploys unless `--critical "<reason>"`;
+  `--fix "<what>|<metric>|<cohort>"` and `--reviewed <commit>` per fix; rathena never recreated by it (G15-G17).
 - Reports: `python tools/system/league.py`, `--compare-deploy` (keep or revert the last deploy's fixes).

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Deploy guard backend, called by tools/deploy/guard.sh (WSL python3). Standard library only.
+"""Deploy guard backend, called by tools/deploy/deploy.py and tools/deploy/guard.sh (WSL python3). Standard library only.
 
   deploylog.py check [--min-gap SEC] [--critical REASON] [--tag TAG] [--fixes N]
       exit 0 = allowed, 5 = refused (too soon / no fix list). A deploy of the SAME image tag as the last record
-      (the core step after dep3.sh) is always allowed. --critical needs a non-empty reason and skips both checks.
+      (a second run of the same image) is always allowed. --critical needs a non-empty reason and skips both checks.
   deploylog.py record --tag TAG [--services legion,legion-core] [--critical REASON] [--fix "text|metric|cohort"]...
       appends to legion/data/deploys.jsonl: t, epoch, tag, services, critical, reason, fixes[{text,metric,cohort}].
       A record for the same tag without --fix copies the fixes of the earlier record of that tag.

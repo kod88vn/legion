@@ -80,28 +80,15 @@ Details of the watch view: section 4. Never drive any client with the real mouse
    never any ai toggle.
 7. **Fixer subagents** on demand, one per bug, briefed with the evidence. They **build only** (report "built") and
    never restart `legion` / `legion-core`.
-8. **Deploy agent**, one per batch (every 3 hours since 2026-11-14, RULES.md "Batch deploys"): waits for its slot, checks no build
-   is running, `gofmt` (`-w` if the diff is only formatting), `go vet`, `go test` (re-run once on failure; abort if it
-   fails again), deploys `tools/deploy/dep3.sh` (main) then `tools/deploy/depcore_nobuild.sh` (core, on the same
-   image), measures at +10 and +25 min and reports.
-   **Frozen snapshot (2026-11-14):** other agents edit `legion/*.go` all the time, so `dep3.sh` copies the Dockerfile's
-   inputs (Dockerfile, go.mod, *.go, *.html, recvpackets.txt) to `/tmp/legion-snap-*`, runs gofmt -w (snapshot only;
-   it lists the files it fixed), go vet and `go test -count=1` on that copy (one retry on a fresh snapshot after 60 s,
-   in case a file was half-saved), and `docker build`s the image from the same copy, tagged
-   `ro-legion:deploy-<YYYYmmdd-HHMMSS>` and `ro-legion:latest`. The tag goes to `/tmp/legion-deploy.tag` (WSL). legion
-   is started pinned to that tag (compose override `/tmp/legion-deploy-override.yml`, `--no-deps --no-build --pull
-   never`), so a `:latest` moved by someone else's build is never picked up; `depcore_nobuild.sh [TAG]` deploys the
-   core on the tag from the file (or the TAG given) and refuses if there is none. `depcore.sh` = its own snapshot build
-   + core. Tested = shipped; the deploy agent no longer runs gofmt/vet/test on the live tree itself.
-   **Rathena guard (RULES.md 0, after 10:12 2026-11-14):** the scripts only ever run `docker compose up -d --no-deps
-   legion|legion-core` (never rathena/db/agency/openkore*; `guard.sh` refuses any other service). Before building and
-   again before `up`, `guard.sh` compares `docker compose config --hash db|rathena` with the running containers'
-   `com.docker.compose.config-hash` label and asks compose (`up --dry-run` with deps) whether db/rathena would be
-   recreated. If so it prints "rathena config changed — needs an owner-approved rathena recreate; not deploying" and
-   exits 2 with nothing built or deployed: the deploy agent then **stops and reports to main** (never works around it,
-   never runs a plain `docker compose up`). First run `DRY_RUN=1 bash .../dep3.sh` (checks only) to see the guard
-   result. It also prints a NOTE if the rathena/db image tag was rebuilt (no block) and a WARNING if ro-openkore-ayla /
-   ro-openkore sit on a dead namespace (= Ayla offline: tell main at once).
+8. **Deploy batch (PR47)**, every 3 hours (RULES.md G17): the tested script `tools/deploy/deploy.py`, run by an agent that an
+   assigned task names (the main session assigns; it never runs the script itself). Dry run unless `--apply`. Every gate is in
+   code: review of each fix (`--reviewed <commit>`), 3-hour gap (or `--critical "<reason>"`), `stack.hold` (G21, owner flag),
+   rathena and db unchanged (G15, compose config hash and compose dry-run, fail closed), stray golang containers stopped
+   (G24, never protected names), gofmt/vet/test and the image build on one frozen snapshot, a pre-deploy league snapshot,
+   `up --no-deps` of legion then legion-core on that one image, the record in `legion/data/deploys.jsonl`, and Ayla back in
+   game within 5 minutes (G19). `deploy.py compare` writes the keep/revert list 3 hours later.
+   Example: `python3 tools/deploy/deploy.py --fix "<what>|kpm|<cohort>" --reviewed <sha> --apply` (WSL, from the repo root).
+   Its tests: `python -m unittest discover -s tests/system -p test_deploy.py`.
    **Owner-approved rathena recreate:** `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/deploy/rathena_recreate.sh`
    (plan only) then `... rathena_recreate.sh --yes` (`--build` to rebuild the image first). It recreates ro-db if its
    config changed, then `--force-recreate rathena`, waits for "Map-server 0 loading complete", force-recreates every
@@ -115,13 +102,8 @@ Details of the watch view: section 4. Never drive any client with the real mouse
    main picks the moment and tells the owner.
 
 ### 0.5 Scripts kept in the repo (copied 2026-11-14 from the session scratchpad, which is per-session)
-Run the deploy scripts in WSL: `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/deploy/dep3.sh`.
-- `tools/deploy/dep3.sh`: frozen-snapshot build (gofmt/vet/go test + docker build from one copy of legion/, tag
-  `ro-legion:deploy-<time>` + `:latest`), then `up --no-deps legion` pinned to that tag (main). `DRY_RUN=1` = checks only.
-- `tools/deploy/depcore.sh`: same snapshot build, then legion-core on it; fixes a stray `<hash>_ro-legion-core`
-  container and checks the core runs the deploy image.
-- `tools/deploy/depcore_nobuild.sh [TAG]`: core restart on the last deploy tag (`/tmp/legion-deploy.tag`), no rebuild.
-- `tools/deploy/guard.sh`: sourced by the three above (rathena/db change check, `--no-deps` only, `DRY_RUN=1`).
+Deploys: `python3 tools/deploy/deploy.py` (see 0.4 item 8; the dep3/depcore shell scripts were replaced on 2026-11-15).
+- `tools/deploy/guard.sh`: helpers for `rathena_recreate.sh` (the rathena gate, config-drift checks).
 - `tools/measure/sktree.py`: `dump <Job>...` prints a job's Renewal skill tree; `check <1st job> <2nd job> "<sk(...) pairs>"` checks a builds.go plan (prerequisites, max levels, points); copies skill_tree.yml / skill_db.yml from ro-rathena into tools/measure/rd on first run.
 - `tools/deploy/rathena_recreate.sh [--yes] [--build]`: the only way to recreate rathena; brings Ayla and every
   service:rathena container back with it (0.4 item 8).

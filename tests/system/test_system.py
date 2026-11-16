@@ -324,15 +324,6 @@ class TestDeployGuard(Env):
             env = dict(os.environ, PYTHON=py)
             env.update(env_extra or {})
             return subprocess.run([bash, "-c", ". '%s'; %s" % (guard, body)], capture_output=True, text=True, env=env)
-        r = sh('parse_deploy_args --fix "b|kpm|y"; deploy_gate')
-        self.assertEqual(r.returncode, 5, r.stdout + r.stderr)
-        r = sh('parse_deploy_args --critical "api wedge"; deploy_gate')
-        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        r = sh('DRY_RUN=1; parse_deploy_args --fix "b|kpm|y"; deploy_gate')
-        self.assertEqual(r.returncode, 0)
-        self.assertIn("would be refused", r.stdout)
-        r = sh('parse_deploy_args --critical "wedge" --fix "q|kpm" img9; echo "pos=${POS_ARGS[*]} fixes=${#FIX_ARGS[@]}"')
-        self.assertIn("pos=img9 fixes=1", r.stdout)
         D.main(["rathena-record"])
         r = sh("rathena_gate")
         self.assertEqual(r.returncode, 5)
@@ -343,8 +334,7 @@ class TestDeployGuard(Env):
         bash = shutil.which("bash")
         if not bash:
             self.skipTest("no bash")
-        for f in ("deploy/guard.sh", "deploy/dep3.sh", "deploy/depcore.sh", "deploy/depcore_nobuild.sh",
-                  "deploy/rathena_recreate.sh", "rogui/keeper.sh"):
+        for f in ("deploy/guard.sh", "deploy/rathena_recreate.sh", "rogui/keeper.sh"):
             r = subprocess.run([bash, "-n", os.path.join(REPO, "tools", f)], capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, f + r.stderr)
             with open(os.path.join(REPO, "tools", f), "rb") as fh:
@@ -583,7 +573,7 @@ class TestPartyCheck(Env):
 class TestAgentsAndSkill(unittest.TestCase):
     def test_agent_frontmatter(self):
         # Constitution 4.1-4.2 (PR45): Haiku implements, Sonnet reviews
-        want = {"fixer": "haiku", "hard-fixer": "haiku", "deploy": "haiku", "watcher": "haiku", "qa": "haiku",
+        want = {"fixer": "haiku", "hard-fixer": "haiku", "watcher": "haiku", "qa": "haiku",
                 "analyst-review": "sonnet", "reviewer": "sonnet"}
         for name, model in want.items():
             p = os.path.join(REPO, ".claude", "agents", name + ".md")

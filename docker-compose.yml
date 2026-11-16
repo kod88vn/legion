@@ -168,7 +168,7 @@ services:
   legion-core:
     # the bots of Ayla's core test party (pinned via legion/data/human-parties.json) in their own Legion instance, so
     # deploying the main one doesn't log them out. Redeploy only when party-relevant code changes:
-    #   tools/deploy/depcore.sh  (= docker compose build legion && docker compose up -d --no-deps legion-core)
+    #   python3 tools/deploy/deploy.py --apply ...  (builds the image, then up --no-deps legion-core; see deploy.py)
     # Never a plain `up` without --no-deps: it recreates rathena when its config changed and strands Ayla.
     # API on 127.0.0.1:8091 inside the rathena namespace; the main instance merges/forwards it on :8090.
     # LEGION_CORE must list the same names here and in legion's -exclude (a bot run by both = double logins).
@@ -185,7 +185,7 @@ services:
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro   # drop rates (droprate.go)
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
-    # ayla-switch (AY24, package C): nothing changes until cut-over. At cut-over (deploy agent, once, see the
+    # ayla-switch (AY24, package C): nothing changes until cut-over. At cut-over (an agent assigned to run it, once, see the
     # cut-over steps in the ayla-switch report): add Ayla to LEGION_CORE in .env and to the -exclude list of legion,
     # run tools/system/ayla_engine_migrate.py, then set tuning engine_parties to "Ayla". Until then Ayla is not in -only.
     # Stop openkore-ayla (ro-openkore-ayla) BEFORE legion-core logs her in: two sessions on one account kick each other (G19).

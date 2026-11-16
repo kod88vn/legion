@@ -40,15 +40,14 @@ check is used only when the meter has no data), `sentinel.heartbeat` each cycle.
 into the queue (deduped, key `sentinel:<key>`); only `OUTAGE_KEYS` (`legion_api`, `population`, `ayla`) print and exit 2.
 Mute still works. All other checks unchanged.
 
-## Deploy guard (`tools/deploy/guard.sh` + `tools/system/deploylog.py`)
-- `dep3.sh`, `depcore.sh`, `depcore_nobuild.sh` take `--critical "<reason>"` and repeatable `--fix "<what>|<metric>|<cohort>"`.
+## Deploy guard (`tools/deploy/deploy.py` + `tools/system/deploylog.py`)
+- `deploy.py` takes `--critical "<reason>"` and repeatable `--fix "<what>|<metric>|<cohort>"` with one `--reviewed <commit>` per fix.
   A regular deploy within 3 hours of the last record, or without any `--fix`, exits 5 with nothing built or deployed.
-  `--critical` needs a reason and skips both checks. The core step with the same image tag as the last record passes.
-  `DRY_RUN=1` reports "would be refused" and continues. Each successful deploy appends `{t, epoch, tag, services, critical,
+  `--critical` needs a reason and skips the 3-hour check (the review check still applies). A dry run is the default; `--apply` acts. Each successful deploy appends `{t, epoch, tag, services, critical,
   reason, fixes[{text, metric, cohort}]}` to `deploys.jsonl` (the core record copies the fixes of its tag).
 - `rathena_recreate.sh`: a real run (`--yes`) is refused with exit 5 if a recreate was recorded in the last hour; plan-only
   runs only report. Owner/emergency override: `RATHENA_HOUR_OVERRIDE="<reason>"` (logged). The record is written just before
-  the recreate. All old guards (guard_core, `--no-deps`, image pinning, Ayla wait) are untouched.
+  the recreate. The batch never recreates rathena or db; its `--no-deps` checks are in `deploy.py`.
 - `keeper.sh`: does nothing (no docker call) while `stack.hold` exists; logs once.
 - `LEGION_FAKE_NOW` pins the clock for tests.
 

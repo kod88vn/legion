@@ -50,8 +50,8 @@ wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/rogui/ayla.sh log 30     # wh
 - `wsl -d Ubuntu-24.04 -- python3 /mnt/g/RO/legion/tools/sentinel.py` (exits on a problem; restart after acting on it).
 - `python tools/unwall.py --loop` (from G:\RO\legion): moves OFFLINE lg* bot chars off blocked cells every 30 s. Walled-in
   bots log out for 3 min so it can fix their row; without this loop they come back on the same cell.
-- Deploys: only the main thread runs dep3.sh/depcore.sh (scratchpad), batched; subagents report "built".
-  The scripts now live in `tools/deploy/` (section 0.5); a per-batch deploy agent runs them (section 0.4 item 8).
+- Deploys: only the deploy script runs (`tools/deploy/deploy.py`, PR47), batched; subagents report "built".
+  An agent assigned by the main session runs it (section 0.4 item 8).
 - Deploy cadence (2026-11-14 02:50): every main/core restart makes all bots relog and re-evaluate needs at once, giving a
   ~15 min wave of town/Kafra trips and split parties (QA measured it after each deploy). Now that the big fixes are out,
   deploy at most once an hour, and only when a batch has real fixes; critical crash fixes are the exception.

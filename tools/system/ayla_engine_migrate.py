@@ -20,7 +20,7 @@ named exactly "Ayla pt", and the roster of human-parties.json (Zen.fox included)
 Refusals (nothing written): human-parties.json names another human; a required value is missing (--map, a login); the
 pre-flight fails; parties_engine.json holds other parties; the kept .pre-ayla-engine file exists.
 
-Run once at cut-over, by the deploy agent, with legion and legion-core stopped and ro-openkore-ayla stopped (G15, G17,
+Run once at cut-over, by an agent assigned to run it, with legion and legion-core stopped and ro-openkore-ayla stopped (G15, G17,
 G19). A re-run after success changes nothing.
 
 usage: python tools/system/ayla_engine_migrate.py --data legion/data --map MAP [--apply]
