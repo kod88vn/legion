@@ -14,7 +14,7 @@
   Check the log line `tuning: <field> old -> new`. Move a constant there when you expect to tune it again.
 - **Two Legion instances** (`legion/instances.go`): `legion` (main, ~900 bots, API :8090, dashboard, minds bus) runs
   with `-exclude` the core party; `legion-core` (container `ro-legion-core`, API 127.0.0.1:8091) runs only Ayla's
-  friends (`LEGION_CORE`, default `Zendancer84,Echobunny,Zen.fox`) and owns `data/human-parties.json`. :8090 forwards
+  friends (`LEGION_CORE`, default `Zendancer84,Zen.fox,xXRinfangXx,vex_x18`, AY11) and owns `data/human-parties.json`. :8090 forwards
   `/api/human-party`, `/api/bots/<core member>`, `/api/memory/<core member>` to the core and merges Ayla's party into
   `/api/parties/detail`, so the tools keep using :8090.
 - **Bot parties survive restarts** (2026-11-14, `legion/partypersist.go`): the main instance saves every bot-led party

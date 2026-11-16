@@ -39,7 +39,7 @@
 
 ## 6i2. Guild loyalty and mutual help (2026-11-14, `legion/loyalty.go`; RULES.md 3b "Guild loyalty and mutual help")
 - Built on friends.go, saved in the same friends files (`loyalty`, `help`, `loyalty_counters`). Starveil members may now
-  move like anyone; only Ayla's six pinned party friends stay fixed.
+  move like anyone; only Ayla's pinned party friends (AY11: four bots and Ayla) stay fixed.
 - Loyalty per character to its current guild, 0-100 (50 when first seen or after a guild change). Gains: zeny mail from
   a guild mate +6, trade with one +1, heal from one +0.15 (1/min), a minute partied with guild mates +0.05 (+0.05 when
   carried, 10+ levels under them), help answered +8, a leader's keep gift +12; gains shrink near 100. Losses: -3/day

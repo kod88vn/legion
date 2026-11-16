@@ -157,3 +157,68 @@ func (b *Bot) shouldBait() bool {
 	}
 	return false
 }
+
+// Ayla's party composition (AY11, owner 2026-11-15): five members, Ayla included: two frontlines (melee or tank; Ayla, an
+// Assassin, is one), two ranged, one support - Ayla, Crusader, Hunter, Wizard, Priest. A replacement keeps it: a swap
+// never changes a member's slot. compSlot classifies by class alone (no stats, so an Assassin is a frontline whatever its
+// AGI); it agrees with partyRole for every class at its default stats (TestCompSlotMatchesPartyRole).
+const (
+	slotFront = iota
+	slotRanged
+	slotSupport
+	slotNone
+)
+
+// AylaPartySize and AylaPartyShape: the roster AY11 asks for (frontline, ranged, support).
+const AylaPartySize = 5
+
+var AylaPartyShape = [3]int{2, 2, 1}
+
+// compSlot: the composition slot of a class (slotNone for a Novice or an unknown class).
+func compSlot(class int) int {
+	c := class
+	if base, ok := transToSecond[c]; ok {
+		c = base
+	}
+	if c == 15 || c == 4016 { // Monk / Champion: frontline (as partyRole)
+		return slotFront
+	}
+	switch family(class) {
+	case famSword, famThief, famMerchant:
+		return slotFront
+	case famArcher, famMage:
+		return slotRanged
+	case famAcolyte:
+		return slotSupport
+	}
+	return slotNone
+}
+
+// rosterComposition: the count of each slot over the classes, and how many fit no slot.
+func rosterComposition(classes []int) (front, ranged, support, none int) {
+	for _, c := range classes {
+		switch compSlot(c) {
+		case slotFront:
+			front++
+		case slotRanged:
+			ranged++
+		case slotSupport:
+			support++
+		default:
+			none++
+		}
+	}
+	return
+}
+
+// compositionOK: the party is five with the AY11 shape (2 frontline, 2 ranged, 1 support) and no member fits no slot.
+func compositionOK(classes []int) bool {
+	f, r, s, n := rosterComposition(classes)
+	return len(classes) == AylaPartySize && n == 0 &&
+		f == AylaPartyShape[0] && r == AylaPartyShape[1] && s == AylaPartyShape[2]
+}
+
+// swapKeepsComposition: replacing a member of class out by a candidate of class in keeps the slot counts.
+func swapKeepsComposition(out, in int) bool {
+	return compSlot(out) == compSlot(in) && compSlot(in) != slotNone
+}
