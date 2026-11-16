@@ -208,11 +208,20 @@ func perfVerdict(n int, minutes float64, kills, fair, deaths int) int {
 // offset: the current step for key (a bot or a party leader) on map m, updating it from the counters (cumulative:
 // kills, fair kills, deaths summed over n members). A new map or member count starts a new window; town time pauses it.
 func (t *perfTracker) offset(key, m string, town bool, n, kills, fair, deaths int, now time.Time) int {
+	return t.offsetCons(key, m, town, n, kills, fair, deaths, now, false)
+}
+
+// offsetCons: offset with the party rule of partycons.go when cons is set (start under the level, one death steps down
+// at once, a step up only after 20+ min of success, floor partyConsMin).
+func (t *perfTracker) offsetCons(key, m string, town bool, n, kills, fair, deaths int, now time.Time, cons bool) int {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	s := t.s[key]
 	if s == nil {
 		s = &perfState{}
+		if cons {
+			s.off = partyConsStart
+		}
 		t.s[key] = s
 	}
 	if town || m == "" {
@@ -223,12 +232,26 @@ func (t *perfTracker) offset(key, m string, town bool, n, kills, fair, deaths in
 		s.m, s.at, s.kills, s.fair, s.deaths, s.n = m, now, kills, fair, deaths, n
 		return s.off
 	}
+	if cons && deaths > s.deaths { // partycons.go: one death steps the party down at once
+		s.off = max(partyConsMin, s.off+partyConsDeathStep)
+		s.changed = now
+		s.at, s.kills, s.fair, s.deaths = now, kills, fair, deaths
+		return s.off
+	}
 	el := now.Sub(s.at)
 	if el < perfWindow {
 		return s.off
 	}
-	if v := perfVerdict(n, el.Minutes(), kills-s.kills, fair-s.fair, deaths-s.deaths); v != 0 {
-		s.off = max(perfMin, min(perfMax, s.off+v))
+	v := perfVerdict(n, el.Minutes(), kills-s.kills, fair-s.fair, deaths-s.deaths)
+	if cons && v > 0 && el < partyConsUpAfter {
+		return s.off // partycons.go: a step up only after 20+ min of measured success: keep counting
+	}
+	if v != 0 {
+		lo := perfMin
+		if cons {
+			lo = partyConsMin
+		}
+		s.off = max(lo, min(perfMax, s.off+v))
 		s.changed = now
 	}
 	s.at, s.kills, s.fair, s.deaths = now, kills, fair, deaths
@@ -254,7 +277,7 @@ func partyPerfOffset(ms []*Bot) int {
 		n++
 		k, f, d = k+s.MKills, f+s.MFair, d+s.MDeaths
 	}
-	return partyPerf.offset(ms[0].P.Name, ls.Map, isTown(ls.Map), n, k, f, d, time.Now())
+	return partyPerf.offsetCons(ms[0].P.Name, ls.Map, isTown(ls.Map), n, k, f, d, time.Now(), partyConsFor(ms))
 }
 
 // partyPerfAdjust: the party pickers' hook - the weakest-member level and target filter moved by the party's step.
