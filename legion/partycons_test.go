@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -73,5 +74,55 @@ func TestPartyConsOffKeepsOldStart(t *testing.T) {
 	tr := &perfTracker{s: map[string]*perfState{}}
 	if o := tr.offset("p", "pay_dun02", false, 5, 0, 0, 0, time.Now()); o != 0 {
 		t.Fatalf("start without the rule %d, want 0", o)
+	}
+}
+
+// pubSet publishes a member's state the way the engine reads it (peek).
+func pubSet(name string, s pubState) {
+	v := &atomic.Value{}
+	v.Store(s)
+	pubs.Store(name, v)
+}
+
+// The rule end to end through partyPerfOffset: an engine party's leader (pinned to a character in engine_parties) starts
+// at -10 and a death steps it down; a plain bot party is unaffected until the flag is on, and a tracker made before the
+// flag flips starts at -10 once it is on.
+func TestPartyConsEndToEnd(t *testing.T) {
+	withTuning(t, func(tn *Tuning) { tn.GearPerfOn = true; tn.PartyConservativeOn = false; tn.EngineParties = "AylaOwn" })
+	eng := &Bot{P: &Persona{Name: "ConsE2ELead"}, pin: &Pin{Char: "AylaOwn"}}
+	mem := &Bot{P: &Persona{Name: "ConsE2EMem"}}
+	plain := &Bot{P: &Persona{Name: "ConsE2EPlain"}}
+	plainMem := &Bot{P: &Persona{Name: "ConsE2EPlainMem"}}
+	all := []*Bot{eng, mem, plain, plainMem}
+	for _, b := range all {
+		pubSet(b.P.Name, pubState{Name: b.P.Name, Map: "pay_dun02", Online: true, Known: true})
+		partyPerf.mu.Lock()
+		delete(partyPerf.s, b.P.Name)
+		partyPerf.mu.Unlock()
+	}
+	t.Cleanup(func() {
+		for _, b := range all {
+			pubs.Delete(b.P.Name)
+			partyPerf.mu.Lock()
+			delete(partyPerf.s, b.P.Name)
+			partyPerf.mu.Unlock()
+		}
+	})
+	engParty := []*Bot{eng, mem}
+	if o := partyPerfOffset(engParty); o != partyConsStart {
+		t.Fatalf("engine party start %d, want %d", o, partyConsStart)
+	}
+	pubSet(mem.P.Name, pubState{Name: mem.P.Name, Map: "pay_dun02", Online: true, Known: true, MDeaths: 1})
+	if o := partyPerfOffset(engParty); o != partyConsStart+partyConsDeathStep {
+		t.Fatalf("engine party after a death %d, want %d", o, partyConsStart+partyConsDeathStep)
+	}
+	plainParty := []*Bot{plain, plainMem}
+	if o := partyPerfOffset(plainParty); o != 0 {
+		t.Fatalf("plain bot party with the flag off: %d, want 0", o)
+	}
+	// the flag goes on: the tracked plain party starts at -10 at once
+	withTuning(t, func(tn *Tuning) { tn.GearPerfOn = true; tn.PartyConservativeOn = true; tn.EngineParties = "AylaOwn" })
+	if o := partyPerfOffset(plainParty); o != partyConsStart {
+		t.Fatalf("plain party after the flag went on: %d, want %d", o, partyConsStart)
 	}
 }

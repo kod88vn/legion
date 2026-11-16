@@ -8,6 +8,7 @@ import "time"
 // success on the map (gearscore.go offsetCons, perfVerdict). The rule applies to:
 //   - every bot party, when tuning party_conservative_on is on (default OFF until confirmed on Ayla's party);
 //   - always, an engine party: its leader is pinned to the human's character named in engine_parties (engineparty.go).
+// It runs only through partyPerfOffset, so it is inert while gear performance (gearPerfOn) is off.
 
 const (
 	partyConsStart     = -10
@@ -16,8 +17,8 @@ const (
 	partyConsUpAfter   = 20 * time.Minute
 )
 
-// partyConsFor: the conservative rule applies to this party (ms[0] = the leader). It takes no party or bot lock: the
-// leader's pin names the human's character for an engine party (engineparty.go startEnginePartyFor).
+// partyConsFor: the conservative rule applies to this party (ms[0] = the leader). The leader's pin is read under its
+// own bot lock (pinned()); partyPerfOffset's callers hold no bot lock (partyFitLv, guildlead.go).
 func partyConsFor(ms []*Bot) bool {
 	if len(ms) == 0 {
 		return false
@@ -25,5 +26,6 @@ func partyConsFor(ms []*Bot) bool {
 	if tune().PartyConservativeOn {
 		return true
 	}
-	return ms[0].pin != nil && enginePartyOn(ms[0].pin.Char)
+	p := ms[0].pinned()
+	return p != nil && enginePartyOn(p.Char)
 }

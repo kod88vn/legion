@@ -10,7 +10,7 @@ section 0 -> `process.md`, 1 -> the hard gates (`gates.md`), 2 -> `economy.md` a
 3b -> `guilds.md`, 4 -> `chat.md`, 5 -> `ayla.md`, 6 -> `process.md` (DB01, DB02); class rules -> `docs/classes/`.
 Find the rule by the quoted title in the Name column below.
 
-Counts by kind: behaviour spec 122, hard gate 20, process 34, replaced 5, server setting 8, ayla 9, economy 13, parties 6, classes 2, settings 1, total 220.
+Counts by kind: behaviour spec 122, hard gate 20, process 34, replaced 5, server setting 8, ayla 9, economy 13, parties 7, classes 2, settings 1, total 221.
 
 | ID | Name | Kind | Old location | New location | Status |
 |---|---|---|---|---|---|
@@ -234,6 +234,7 @@ Counts by kind: behaviour spec 122, hard gate 20, process 34, replaced 5, server
 | PT35 | Wider level band for forming parties (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
 | PR44 | Verify every change at once; commit as soon as verified (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PT34 | Off the roster means leave the in-game party right away (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
+| PT36 | Conservative party map choice: start -10, a death -5, step up after 20 min (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
 | ST07 | rathena chat logging on, for @partyspy (2026-11-15) | settings | owner 2026-11-15 | docs/rules/settings.md | new rule |
 | PR43 | Every main-session reply ends with its pending tasks (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR42 | Nothing is written twice; the constitution is read first and once, never restated (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |

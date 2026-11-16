@@ -167,6 +167,7 @@ type perfState struct {
 	n                   int // members counted at the baseline
 	off                 int
 	changed             time.Time
+	consOn              bool // partycons.go: the conservative rule has been applied to this tracker (start -10 once)
 }
 
 type perfTracker struct {
@@ -219,10 +220,10 @@ func (t *perfTracker) offsetCons(key, m string, town bool, n, kills, fair, death
 	s := t.s[key]
 	if s == nil {
 		s = &perfState{}
-		if cons {
-			s.off = partyConsStart
-		}
 		t.s[key] = s
+	}
+	if cons && !s.consOn { // partycons.go: the rule starts at -10, also for a tracker made before the flag or the pin
+		s.consOn, s.off, s.changed = true, partyConsStart, now
 	}
 	if town || m == "" {
 		s.m = "" // a town trip ends the window (its minutes are not farming)
@@ -259,7 +260,7 @@ func (t *perfTracker) offsetCons(key, m string, town bool, n, kills, fair, death
 }
 
 // partyPerfOffset (no bot locks): the party's performance step (ms[0] = the leader), from the members' published
-// meter counters on the leader's map.
+// meter counters on the leader's map. The party rule (partycons.go) is inert while gear performance is off: 0 here.
 func partyPerfOffset(ms []*Bot) int {
 	if len(ms) == 0 || !gearPerfOn() {
 		return 0
