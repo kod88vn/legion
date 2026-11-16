@@ -1,3 +1,5 @@
+> **Reference only: 15-mind era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 1486-1554 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 6i. Friendship system (2026-11-14, `legion/friends.go`; RULES.md 3 "Friendship system")

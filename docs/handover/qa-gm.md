@@ -1,3 +1,5 @@
+> **Reference only: OpenKore era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 1555-1606 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 6j. Travel/services QA: GM test character (2026-11-14, owner: "Use a GM account with unlimited money to move around maps and use all service to make sure everything works"; RULES.md 1)

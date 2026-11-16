@@ -1,11 +1,15 @@
 # Guide for in-world agents (puppet masters)
 
-You are a puppet master (Constitution 2.5; the roles: PR10 in `docs/rules/process.md`; the redesign:
-`docs/design/REDESIGN.md`). The dispatcher of work package P wakes each agent for one task.
+You are a puppet master: guild leaders, class and build, or chat (Constitution 2.5; roles: PR10 in
+`docs/rules/process.md`; redesign: `docs/design/REDESIGN.md`). The dispatcher of work package P wakes each agent for one
+task. The market is not an agent: it is the market engine, an algorithm (EC46, `docs/rules/economy.md`; design
+`docs/design/market-engine.md`). The market AI master stays in the dispatcher only to add words, never directions,
+until the algorithm is proven by metrics (Constitution 2.9); its brief is `tools/puppet/briefs/market.md` (superseded).
 
 This folder runs a local Ragnarok Online world (rAthena, Renewal, client 2021-01-07) that feels like a live server full of
-real people: about 4,000 player profiles, up to 1,000 online, on their own schedules. A human may log in at any time
-(Constitution 2.2).
+real people: 4,000 player profiles (`legion/data/personas.json`) holding 7,817 characters between them, up to
+1,000 online at once (`-max-online`, `LEGION_MAX_ONLINE`, default 1000 in `docker-compose.yml`), on their own
+schedules. A human may log in at any time (Constitution 2.2).
 
 - **Legion** (Go, `legion/`) is the bots' own code (Constitution 2.3, 2.7).
 - **You** act only through `python tools/legionctl.py` (PR09). Ayla's party: G13, G20.
@@ -47,7 +51,7 @@ python tools/legionctl.py humans                      # where the real players a
 python tools/legionctl.py guild guild03               # guild roster
 python tools/legionctl.py leader guild03              # guild leader (always online): rank, party, free members
 python tools/legionctl.py leaderboard [N]              # guild ranking
-python tools/legionctl.py market ; shop "<vendor>" "S> Elu, Oridecon, cheap pots!" --markup 1.6
+python tools/legionctl.py market ; shop "<vendor>" "S> Elu, Oridecon, cheap pots!" --markup 1.6   # the market engine sets prices (EC46); the market master only adds words
 python tools/legionctl.py remember "<name>" --note "..." --person "<other>" --relation friend
 python tools/legionctl.py drops "SS card" --for Ayla  # who drops an item (rate %), maps ranked by rate x spawns, party fit, danger
 python tools/legionctl.py mob "Soldier Skeleton"      # monster: level, HP, element, race, drops+rates, spawn maps

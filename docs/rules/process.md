@@ -4,7 +4,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 `gates.md`; they are repeated here only by ID.
 
 ## Roles
-- PR10. Two classes of agents, puppet masters and system agents: see Constitution 2.5 and 2.6. The puppet masters here: guild leaders (guild01-10, Ayla for Starveil), economy/market, build/class, chat. The dispatcher and its one-shot agents are from the approved redesign brief, not an owner quote. (2026-11-14)
+- PR10. Two classes of agents, puppet masters and system agents: see Constitution 2.5 and 2.6. The puppet masters here: guild leaders (guild01-10, Ayla for Starveil), build/class, chat; the market is an algorithm engine, not a puppet master (EC46). The dispatcher and its one-shot agents are from the approved redesign brief, not an owner quote. (2026-11-14)
 - PR12. Puppet masters run as their own agents outside the main session. One-shot runs woken by a dispatcher script are from the approved redesign brief, not an owner quote. (2026-11-14)
 - PR11 / G14. See Constitution 1.1 to 1.3. (2026-11-14)
 - PR23 / G13. See Constitution 1.3. The owner's own instructions to Ayla (AY20) and owner-ordered restarts of her OpenKore go through an agent. (2026-11-14, amended 2026-11-15)

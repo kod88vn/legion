@@ -13,22 +13,24 @@ commit 63ca923). Engineering history is not rewritten.
   No Go toolchain on Windows; see `docs/design/toolchain.md` for `tools/dev/gocheck.sh`.
 
 ## Index of `docs/handover/`
+Rows marked **REFERENCE** describe the OpenKore era or the 15-mind era. They are kept unchanged (nothing deleted) and each has a banner at its top; for how things run now read `STATUS.md`, `RULES.md` and the redesign (`docs/design/REDESIGN.md`).
+
 | file | old section | what |
 |---|---|---|
-| `startup-old.md` | 0 | old session start-up, standing agents, deploy scripts, pending items (0.6) |
-| `owner-wants-layout.md` | 1, 2 | what the owner wants, owner rules, folder layout |
-| `operate.md` | 3 | how to operate: WSL, docker, deploys, restarts |
-| `ayla-live-view.md` | 4 | Ayla's OpenKore, the live watch view, plugins, gotchas |
-| `legion-overview.md` | 5 | what the Legion engine does, general bot rules added 2026-11-13 |
-| `state-and-loops.md` | 6, 6b, 6c | state at 2026-11-13, the minds gate, the self-improvement loop |
+| `startup-old.md` **REFERENCE** | 0 | old session start-up, standing agents, deploy scripts, pending items (0.6) |
+| `owner-wants-layout.md` **REFERENCE** | 1, 2 | what the owner wants, owner rules, folder layout |
+| `operate.md` **REFERENCE** | 3 | how to operate: WSL, docker, deploys, restarts |
+| `ayla-live-view.md` **REFERENCE** | 4 | Ayla's OpenKore, the live watch view, plugins, gotchas |
+| `legion-overview.md` **REFERENCE** | 5 | what the Legion engine does, general bot rules added 2026-11-13 |
+| `state-and-loops.md` **REFERENCE** | 6, 6b, 6c | state at 2026-11-13, the minds gate, the self-improvement loop |
 | `guild-leaders.md` | 6d | guild leaders: always online, levelling, leaderboard |
-| `economy.md` | 6e | economy, vending, alchemy, market batches 1 to 18 |
+| `economy.md` **REFERENCE** | 6e | economy, vending, alchemy, market batches 1 to 18 |
 | `builds.md` | 6f to 6f4 | wrong builds, AoE casters, build review per class, trans cap |
 | `farming-town.md` | 6g | farming time and town trips |
-| `ayla-party-guild.md` | 6h | Ayla's party of 7 and her guild Starveil |
-| `social.md` | 6i to 6i3 | friendship, guild loyalty, name filter |
-| `qa-gm.md` | 6j | travel and services QA with the GM test character |
-| `open-issues.md` | 7, 8 | open issues, quick checks, background loops |
+| `ayla-party-guild.md` **REFERENCE** | 6h | Ayla's party of 7 and her guild Starveil |
+| `social.md` **REFERENCE** | 6i to 6i3 | friendship, guild loyalty, name filter |
+| `qa-gm.md` **REFERENCE** | 6j | travel and services QA with the GM test character |
+| `open-issues.md` **REFERENCE** | 7, 8 | open issues, quick checks, background loops |
 
 ## Other references
 - Classes and builds: `docs/classes/*`. Lessons: `legion/data/lessons.md` via `docs/rules/lessons-index.md`.
