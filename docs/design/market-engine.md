@@ -1,6 +1,6 @@
 # Market engine (EC43-EC47): design
 
-Status (2026-11-15): engine core, crier, roster tool, market metrics and dynamic pricing are merged to main (`marketengine.go` and the crier flags OFF, `dynamic_price_on` OFF); farmer orders, leader feed and the dashboard Market tab (DB11) are not yet merged. Current state: `STATUS.md`. Owner words: `docs/rules/archive.md`, section PR46 / EC43-EC47. Paths below are under `legion/` unless absolute. Go code is in `legion/legion/` (package main), static tables in `legion/legion/data/`.
+Status (2026-11-15): engine core, crier, roster tool, market metrics and dynamic pricing are merged to main (`marketengine.go` and the crier flags OFF, `dynamic_price_on` OFF); farmer orders (merged `33c0b6d`), the guild leader feed (merged `f8d21b8`) and the dashboard Market tab (DB11, merged `6a30f6a`) are merged too; all market flags are OFF (`STATUS.md`). Current state: `STATUS.md`. Owner words: `docs/rules/archive.md`, section PR46 / EC43-EC47. Paths below are under `legion/` unless absolute. Go code is in `legion/legion/` (package main), static tables in `legion/legion/data/`.
 
 Verification limit: `docker` is not installed in this session, so the read-only `docker exec ro-rathena` checks could not be run. Section 1 marks every fact as VERIFIED (in repo files) or UNVERIFIED (needs the commands in 1.1).
 

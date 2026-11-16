@@ -1,7 +1,9 @@
 # STATUS - read this first
 
-Updated 2026-11-15 (main session, evening). The Constitution (`CONSTITUTION.md`, changed 2026-11-15 with the owner's
-approval: market engine, farmers, price chain) is the highest law; then `RULES.md`. Details by topic: `docs/rules/`.
+Updated 2026-11-15 (main session, evening; docs review corrections on `docs/session-save`). The Constitution
+(`CONSTITUTION.md`, changed 2026-11-15 with the owner's approval: market engine, farmers, price chain) is the highest
+law; then `RULES.md`. Details by topic: `docs/rules/`. Read next: `PLAN.md` (what comes next, in order) and
+`PROGRESS.md` (what is done, and what is not verified live).
 GitHub Copilot or any AI can cold-start from `.github/copilot-instructions.md` (pointers to this file, the
 constitution, rules, HANDOVER and AGENTS).
 
@@ -17,15 +19,18 @@ constitution, rules, HANDOVER and AGENTS).
   started; heartbeat `aylawatch.heartbeat`; reads OpenKore or engine by `engine_parties`).
 
 ## Merged into main, not yet deployed (nothing below is in a running image)
-Every merge has a Sonnet review file `docs/reports/reviews/<second-parent-sha>.md` (24 older merges were reviewed
-retroactively; their defects are being fixed forward). The deploy is run by `tools/deploy/deploy.py` (PR47, a script
-with tests) through an assigned agent: dry run first, read by eye; the main session never runs it. A deploy gate that
-refuses unreviewed merges since the last deploy is in review (`fix/deploy-gate`).
+Review status of the 153 merges on `main` (2026-11-14 and 2026-11-15; `PROGRESS.md` section 3): not every merge has a
+Sonnet review file `docs/reports/reviews/<second-parent-sha>.md`. 95 have one with verdict "merge"; 4 were merged
+against a "do not merge" verdict (`c929057`, `e1b420c`, `50127e0`, `c43569c`) and have no follow-up review; about 44
+feature and fix merges from 2026-11-14 have no review file (built before the review gate); 10 are `main` sync merges.
+Retroactive reviews covered 24 older merges; their defects are being fixed forward. The deploy is run by
+`tools/deploy/deploy.py` (PR47, a script with tests) through an assigned agent: dry run first, read by eye; the main
+session never runs it. The deploy gate (`fix/deploy-gate`) is merged; its two holes M1 and M2 are open (`PLAN.md` step 2).
 - Constitution wiring and `mainguard`; map guard; no rebirth; party, town and rally fixes; guild ledger; metrics on disk;
   watchdog; the Ayla control panel with pending-order Confirm/Decline; dashboard tabs (Players, Builds, Market).
 - Ayla on the engine (packages A-E, G): override store/API, hook-in, switch `engine_parties` (OFF), Starveil on the
   engine, parity tests, watcher. **The cut-over waits for the owner's word "start Ayla on the engine"** and for the
-  tooling fix in review (`fix/ayla-tooling`: partycheck and sentinel must not go blind on engine parties). Steps: stop
+  tooling check (`fix/ayla-tooling`, merged: partycheck and sentinel must not go blind on engine parties; `PLAN.md` step 3). Steps: stop
   `ro-openkore-ayla`, migration dry run then `--apply`, add Ayla to `LEGION_CORE`, set `engine_parties`, recreate
   `legion-core --no-deps`, verify restore and party lead hand-over; rollback = flip the switch and restore
   `human-parties.json.pre-ayla-engine`. **Ayla's party is five (AY11): two frontlines (Ayla, Crusader), two ranged (Hunter, Wizard), one support (Priest), and it always protects its support (AY26).**
@@ -39,10 +44,12 @@ refuses unreviewed merges since the last deploy is in review (`fix/deploy-gate`)
   `docs/design/market-engine-facts.md`.
 - Tooling: test runner `tools/system/runsuites.py` (the gate), live-data audit tripwire, concurrent-safe `gocheck.sh`.
 
-## Open branches (built; under review or being fixed)
-Conservative party map rule (`fix/partycons`, PT36), market stall (`fix/market-stall-2`, reviewed: merge queued),
-travel share (`fix/travel-share-2`, reviewed: merge queued), helper last-run decoding, Ayla tooling, rotation default
-and sentinel, deploy gate, Ayla party composition check (five), protect-the-support behaviour (AY26). Old branches triaged in `docs/reports/branch-triage-20261115.md`.
+## Open branches
+None of the branches once listed here is still open: all twelve have merged into `main` (`fix/ayla-tooling`,
+`fix/deploy-gate`, `fix/sentinel-algo-2`, `fix/partycons`, `fix/protect-support`, `fix/rotation-default`,
+`fix/helper-lastrun`, `fix/market-stall-2`, `fix/travel-share-2`, `fix/ayla-party-four`, `fix/bugq-id-guard`,
+`fix/puppet-orders-test`). What is still open, in order, is in `PLAN.md`; what is done and what is not verified is in
+`PROGRESS.md`. Old branches triaged in `docs/reports/branch-triage-20261115.md`.
 The bug queue (`legion/data/bugqueue.jsonl`, `tools/system/bugq.py`): every item assigned (backlog group
 `followups-batch-2`) or has a written reason.
 
