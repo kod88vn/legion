@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "example": true,
+  "since": "2026-11-15T12:00:00+0000",
+  "target": 150,
+  "accounts": ["lg0001", "lg0002"],
+  "detail": [
+    {"account": "lg0001", "account_id": 2100001, "main_char_id": 170001, "main_name": "Example Hunter", "plan": "hunter", "vendor_present": true},
+    {"account": "lg0002", "account_id": 2100002, "main_char_id": 170002, "main_name": "Example Archer", "plan": "hunter_agi", "vendor_present": false}
+  ],
+  "vendor_adds": [
+    {"account": "lg0002", "account_id": 2100002, "char_id": 180002, "slot": 1, "name": "Example Shop", "plan": "blacksmith", "target_class": 10, "class": 0, "build": "str-dex"}
+  ]
+}

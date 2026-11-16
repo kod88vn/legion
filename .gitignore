@@ -103,3 +103,7 @@ legion/data/tuning.json.pre-*
 
 # local settings and secrets: .env stays on disk only; example.env is the tracked template (PR46)
 .env
+
+# farmer roster (WP4): the live roster is runtime data; the committed example is legion/data/farmers.example.json
+legion/data/farmers.json
+legion/data/farmers.json.tmp
