@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "example": true,
+  "since": "2026-11-15T12:00:00+0000",
+  "target": 150,
+  "notes": [
+    "Example only; the live file is runtime data (gitignored).",
+    "Phase 1 = the 85 guild-less accounts whose slot-0 main is hunter-line; all 85 already own a vendor, so vendor_adds is empty.",
+    "Phase 2 goal (design 2.1, owner decision pending): up to 150 farmers. Not reachable from the current pool: widening to any hunter-plan character would bench existing mains and is an owner-level question.",
+    "Account ids are bot-range (2100001-2199999, G06)."
+  ],
+  "accounts": [
+    "lg0001",
+    "lg0002"
+  ],
+  "detail": [
+    {
+      "account": "lg0001",
+      "account_id": 2100001,
+      "main_char_id": 210001,
+      "main_name": "Example Hunter",
+      "plan": "hunter",
+      "vendor_present": true
+    },
+    {
+      "account": "lg0002",
+      "account_id": 2100002,
+      "main_char_id": 210002,
+      "main_name": "Example Archer",
+      "plan": "hunter_agi",
+      "vendor_present": true
+    }
+  ],
+  "vendor_adds": []
+}
