@@ -612,6 +612,7 @@ type econSnap struct {
 
 func econManager(bots []*Bot, stop <-chan struct{}) {
 	loadEconCounters() // econpersist.go (run 10): counters survive deploys
+	loadKiteCounters() // kite.go (market WP1): kite steps and deaths survive deploys
 	t := time.NewTicker(econTick)
 	defer t.Stop()
 	nextSave := time.Now().Add(time.Minute)
@@ -619,6 +620,7 @@ func econManager(bots []*Bot, stop <-chan struct{}) {
 		select {
 		case <-stop:
 			saveEconCounters(time.Now())
+			saveKiteCounters(time.Now())
 			return
 		case <-t.C:
 		}
@@ -626,6 +628,7 @@ func econManager(bots []*Bot, stop <-chan struct{}) {
 		if now := time.Now(); now.After(nextSave) {
 			nextSave = now.Add(time.Minute)
 			saveEconCounters(now)
+			saveKiteCounters(now)
 		}
 	}
 }
@@ -2009,6 +2012,7 @@ func economyReport() map[string]interface{} {
 		"deals":              deals,
 		"trades":             trades,
 		"prices":             avgs,
+		"kite":               kiteCounters(), // kite.go (market WP1): kite steps and kite deaths, per bot and total
 	}
 }
 
