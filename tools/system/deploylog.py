@@ -87,7 +87,8 @@ def parse_fix(s):
     return {"text": p[0], "metric": (p[1] if len(p) > 1 and p[1] else "kpm"), "cohort": p[2] if len(p) > 2 else ""}
 
 
-def record(tag, services, critical, fixes):
+def record(tag, services, critical, fixes, sha=None):
+    """sha: the full commit the image was built from (deploy.py passes HEAD). The deploy merge gate starts from it."""
     _verdict_previous(tag)
     recs = deploy_records()
     if not fixes:
@@ -96,6 +97,8 @@ def record(tag, services, critical, fixes):
                 fixes = r["fixes"]
     rec = {"t": C.iso(), "epoch": int(C.now()), "tag": tag, "services": services, "critical": critical is not None,
            "reason": critical or "", "fixes": fixes}
+    if sha:
+        rec["sha"] = sha
     C.append_jsonl(C.dpath(DEPLOYS), rec)
     return rec
 
