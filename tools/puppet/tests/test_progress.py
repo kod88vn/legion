@@ -71,7 +71,8 @@ class MockApi:
 
 def full_api():
     return briefing.Api(fetch=MockApi({"/api/bots": BOTS, "/api/buildgear/fit": FIT, "/api/meter/bots": METER,
-                                       "/api/economy": ECON, "/api/guild-stock": STOCK}))
+                                       "/api/economy": ECON, "/api/guild-stock": STOCK,
+                                       "/api/market/engine": {"status": "off", "metrics": {}}}))
 
 
 class TestProgress(unittest.TestCase):
@@ -269,3 +270,48 @@ class TestHelpers(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMarketMetrics(unittest.TestCase):
+    """the market metrics block (marketmetrics.go) rides in the briefing; nulls stay null (WP8)"""
+
+    BLOCK = {"metrics": {
+        "coverage": {"status": "ok", "overall": 0.4, "by_band": [{"band": "novice", "need": 5, "supplied": 2,
+                                                                  "coverage": 0.4}],
+                     "by_item": [{"item_id": 501, "item": "Red Potion", "coverage": 0.4}]},
+        "price_stability": {"status": "ok", "target": 1.5, "overall": 0.47, "within_target": True, "items_over": 0,
+                            "items": [{"item_id": 7, "item": "A", "n": 3, "stddev": 0.47},
+                                      {"item_id": 8, "item": "B", "n": 4, "stddev": 0.9},
+                                      {"item_id": 9, "item": "C", "n": 5, "stddev": 0.1},
+                                      {"item_id": 10, "item": "D", "n": 5, "stddev": 0.2}]},
+        "farmers": {"status": "no_data", "offers": 0, "accepted": 0, "accept_rate": None, "declined": {},
+                    "deaths": 0, "farmer_hours": 0.0, "deaths_per_hour": None, "items_supplied": 0},
+        "kite": {"status": "no_data", "steps": 0, "deaths": 0, "deaths_per_step": None},
+        "zeny_per_hour": {"status": "no_data", "by_band": []}}}
+
+    def test_metrics_carried_compact_with_nulls_kept(self):
+        p = progress.compute(market=self.BLOCK, missing=[], now=NOW)
+        m = p["metrics"]
+        self.assertEqual(m["coverage"]["overall"], 0.4)
+        self.assertEqual(m["coverage"]["by_band"], [{"band": "novice", "coverage": 0.4}])
+        self.assertEqual(len(m["price_stability"]["worst"]), progress.MAX_WORST)
+        self.assertIsNone(m["farmers"]["accept_rate"])
+        self.assertIsNone(m["kite"]["deaths_per_step"])
+        self.assertEqual(m["zeny_per_hour"]["by_band"], [])
+        self.assertLess(len(progress.compact_json(p)), progress.MAX_JSON)
+
+    def test_engine_without_metrics_says_so(self):
+        p = progress.compute(market={"status": "off"}, missing=[], now=NOW)
+        self.assertNotIn("metrics", p)
+        self.assertTrue(any("metrics block" in n for n in p["notes"]))
+
+    def test_nothing_answers_still_no_data(self):
+        p = progress.collect(briefing.Api(fetch=MockApi({})), data_dir=tempfile.gettempdir(), now=NOW)
+        self.assertEqual(p["status"], "no_data")
+        self.assertNotIn("metrics", p)
+        self.assertIn("/api/market/engine", p["missing"])
+
+    def test_collect_reads_the_engine_metrics(self):
+        api = briefing.Api(fetch=MockApi({"/api/market/engine": self.BLOCK}))
+        p = progress.collect(api, data_dir=tempfile.gettempdir(), now=NOW)
+        self.assertEqual(p["metrics"]["coverage"]["overall"], 0.4)

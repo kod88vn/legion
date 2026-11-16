@@ -784,6 +784,7 @@ func meterHandlers(mux *http.ServeMux) {
 			"instance": x.Instance, "online": x.Online, "map": x.Map, "state": x.State, "bucket": x.Bucket,
 			"party": x.Party, "guild": x.Guild, "session_age_min": x.SessMin, "windows": wins})
 	})
+	mux.HandleFunc("/api/meter/market", marketMetricsHandler) // marketmetrics.go (WP8): flag-independent market counters
 	mux.HandleFunc("/api/meter/neo", func(w http.ResponseWriter, r *http.Request) {
 		v := view(w)
 		if v == nil {

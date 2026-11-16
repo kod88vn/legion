@@ -703,7 +703,9 @@ func marketEngineRound(snaps []*econSnap, now time.Time, stockDue bool) {
 		server.Bands = append(server.Bands, MEBand{Band: b, Bots: bandN[b]})
 	}
 	guilds := meLiveGuilds(snaps, in)
-	feed := meBuildFeed(res, in, server, guilds, meFeedMissingWP2)
+	zph := meZenyFeed() // marketmetrics.go: the meter's zeny per hour by band (WP8); the missing line goes when it is fed
+	feed := meBuildFeed(res, in, server, guilds, meFeedMissingNow(meFeedMissingWP2, len(zph) > 0))
+	feed.ZenyPerHour = zph
 	meState.Lock()
 	meState.runs++
 	meState.last = now
@@ -878,19 +880,22 @@ func writeMarketFeed(dir string, f MEFeed) error {
 // ---------------------------------------------------------------- API
 
 func registerMarketEngine(mux *http.ServeMux) {
+	// "metrics" (marketmetrics.go, WP8) is added on and off: it does not depend on the flag.
 	off := func(w http.ResponseWriter) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "off", "flag": "market_engine_on",
-			"note": "the market engine is off (tuning.json market_engine_on); nothing is computed"})
+		json.NewEncoder(w).Encode(map[string]interface{}{"status": "off", "flag": "market_engine_on",
+			"note":    "the market engine is off (tuning.json market_engine_on); nothing is computed",
+			"metrics": marketMetricsBlock(time.Now())})
 	}
 	mux.HandleFunc("/api/market/engine", func(w http.ResponseWriter, r *http.Request) {
 		if !tune().MarketEngineOn {
 			off(w)
 			return
 		}
+		metrics := marketMetricsBlock(time.Now())
 		meState.Lock()
 		defer meState.Unlock()
-		out := map[string]interface{}{"status": "no_data", "runs": meState.runs, "last_run": meState.last}
+		out := map[string]interface{}{"status": "no_data", "runs": meState.runs, "last_run": meState.last, "metrics": metrics}
 		if res := meState.result; res != nil {
 			out["status"] = "ok"
 			out["farmers"] = res.Farmers
