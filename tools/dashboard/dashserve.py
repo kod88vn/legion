@@ -42,6 +42,7 @@ sys.path.insert(0, HERE)
 import dbsnap  # noqa: E402
 import buildexport  # noqa: E402  (DB09: the Builds tab)
 import offline  # noqa: E402
+import marketview  # noqa: E402  (DB11: the Market tab)
 
 PAGE = os.path.join(REPO, "legion", "dashboard.html")
 WSL_DISTRO = C.WSL_DISTRO   # one config for WSL (common.py, LEGION_WSL_DISTRO)
@@ -495,6 +496,20 @@ class Engine:
             return None, None, short_err(e).encode()
 
 
+def engine_json(engine, path):
+    """the engine's GET answer as a JSON object, or None when it is down, refuses or answers something else (DB06)"""
+    if engine.just_failed():
+        return None
+    code, _, data = engine.call("GET", path)
+    if code != 200:
+        return None
+    try:
+        obj = json.loads(data.decode("utf-8", "replace"))
+    except ValueError:
+        return None
+    return obj if isinstance(obj, dict) else None
+
+
 def short_err(e):
     r = getattr(e, "reason", None)
     return str(r if r is not None else e)[:160]
@@ -593,6 +608,10 @@ FILE_ROUTES = {
     "/api/meter/neo": (lambda q: offline.meter_neo(), "meter.jsonl"),
     "/api/overview/history": (lambda q: offline.history(), "health.log"),
     "/api/parties/detail": (lambda q: offline.parties_detail(PLAYERS[0].current() if PLAYERS else None), "parties.json"),
+    # DB11 (Market tab): the engine's market files stand in when the engine is down
+    "/api/market/engine": (lambda q: marketview.file_obj("engine", C.dpath), "market_engine.json"),
+    "/api/market/feed": (lambda q: marketview.file_obj("feed", C.dpath), "market_feed.json"),
+    "/api/market/orders": (lambda q: marketview.file_obj("orders", C.dpath), "farmer_orders.json"),
 }
 
 
@@ -793,6 +812,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(200, buildexport.view(snap_dir=SNAP_DIR))
             except (OSError, ValueError) as e:
                 return self.send_json(500, {"error": "builds export unreadable (run tools/dashboard/buildexport.py): %s" % e})
+        if route == "/api/market/view":   # DB11: the Market tab's five sections, each with its source and age
+            try:
+                return self.send_json(200, marketview.view(lambda p: engine_json(self.server.engine, p), C.dpath,
+                                                           time.time(), tail=tail_jsonl))
+            except Exception as e:
+                return self.send_json(500, {"error": repr(e)[:300]})
         if route == "/favicon.ico":
             return self.send(204, "image/x-icon", b"")
         if route == REQ_LIST:   # owner orders awaiting a decision: read here, so it answers with the engine down
