@@ -787,7 +787,7 @@ func (b *Bot) handle(pk []byte) {
 			b.skillFailUntil[int(le.Uint16(pk[2:]))] = now.Add(60 * time.Second)
 		}
 		if len(pk) >= 4 && int(le.Uint16(pk[2:])) == mcVending {
-			b.vendPitchRefused() // vend.go: the pitch is too close to an NPC (or a no-vending cell)
+			b.vendRefused(pk, now) // vendpitch.go: only a refusal for the cell itself moves the vendor
 		}
 	case 0x01d2: // ZC_COMBODELAY: aid, delay - weaponskill.go comboNext casts the next step after it (run 6)
 		if len(pk) >= 10 && le.Uint32(pk[2:]) == b.aid {

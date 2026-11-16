@@ -30,6 +30,10 @@ type VendState struct {
 	restock    bool      // batch 18: load the bag's new goods into a cart that isn't empty
 	restockAt  time.Time // next restock check (closing the shop to restock at most every 30 min)
 	identUntil time.Time // batch 18: wait for the Magnifiers before opening, until then
+
+	shopAskAt  time.Time // vendpitch.go: when the shop list (0x01b2) last went out
+	loadTries  int       // vendpitch.go: empty-cart load rounds without a result
+	pauseUntil time.Time // vendpitch.go: vending given up until then (the cart won't load)
 }
 
 // market pitches: a grid of walkable cells at Prontera's south gate (the market place, owner's choice), 3 cells
@@ -61,6 +65,10 @@ func takePitch(b *Bot) ([2]int, bool) {
 	if p, ok := market.taken[b]; ok {
 		return p, true
 	}
+	reclaimed := 0
+	if vendPitchFixOn() {
+		reclaimed = reclaimStalePitchesLocked(time.Now()) // vendpitch.go: vendors that left the market
+	}
 	if len(market.free) == 0 {
 		return [2]int{}, false
 	}
@@ -68,6 +76,10 @@ func takePitch(b *Bot) ([2]int, bool) {
 	p := market.free[i]
 	market.free = append(market.free[:i], market.free[i+1:]...)
 	market.taken[b] = p
+	pitchTakenLocked(b, time.Now())
+	for ; reclaimed > 0; reclaimed-- {
+		econCount("vend pitch reclaimed (vendor left the market)")
+	}
 	return p, true
 }
 
@@ -78,6 +90,7 @@ func releasePitch(b *Bot) {
 		delete(market.taken, b)
 		market.free = append(market.free, p)
 	}
+	forgetPitchLocked(b)
 }
 
 // vendPrice: what a player would ask: the economy's price standard (economy.go priceOf: NPC price when an NPC sells
@@ -132,6 +145,7 @@ func (b *Bot) vendThink(gm *GameMap, moving bool, now time.Time) {
 		b.travel(gm, moving)
 		return
 	}
+	b.notePitch(now) // vendpitch.go: keeps the pitch; a lost one is retaken or replaced
 	// batch 18: the vendor's Magnifier trip (identify.go) runs from here (vendors never reach ai.go's tripThink)
 	// run 7: also the vendor-alchemist's potion-bottle trip (alchemyThink sets Why "alchemy"; it waited forever here)
 	if b.trip != nil && (b.trip.Why == "magnifier" || b.trip.Why == "alchemy") && b.tripThink(gm, moving, now) {
@@ -217,6 +231,8 @@ func (b *Bot) vendThink(gm *GameMap, moving bool, now time.Time) {
 			b.setState("loading the cart")
 			if n == 0 {
 				b.setState("vendor (nothing to sell)")
+			} else if len(b.cart) == 0 && b.cartLoadStuck(now) { // vendpitch.go: moves refused: reset / pause
+				return
 			}
 		}
 		return
@@ -339,6 +355,7 @@ func (b *Bot) openShop(slots int) {
 		return
 	}
 	go b.send(p.varlen())
+	v.shopAskAt, v.loadTries = time.Now(), 0 // vendpitch.go
 	v.Opened, v.OpenedAt, v.Items, v.Sold, v.SoldZeny = true, time.Now(), listing, 0, 0
 	b.event("market", "", fmt.Sprintf("opened shop \"%s\" at prontera %d,%d with %d items", title, b.X, b.Y, n))
 }
@@ -462,6 +479,9 @@ func (b *Bot) canVend() bool {
 	if s := b.skills[mcPushcart]; s == nil || s.Lv == 0 {
 		return false
 	}
+	if b.vendPaused(time.Now()) { // vendpitch.go: the cart wouldn't load; farm a while
+		return false
+	}
 	if b.vend != nil && b.vend.Opened || len(b.cart) > 0 {
 		return true
 	}
@@ -576,6 +596,7 @@ func (b *Bot) vendPitchRefused() {
 	}
 	market.Lock()
 	delete(market.taken, b)
+	forgetPitchLocked(b)
 	market.Unlock()
 	b.vend.Spot, b.vend.TriedAt = [2]int{}, time.Time{}
 	econCount("vend pitch refused: moved")

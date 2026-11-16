@@ -1058,6 +1058,7 @@ func econRound(bots []*Bot, now time.Time) {
 		count  int
 	}
 	var shopBuys []shopMatch
+	promised := map[shopPromise]int{} // vendpitch.go: listings matched this round
 	for _, w := range wantList {
 		buyer := online[w.Name]
 		if w.InDeal || buyer == nil || !buyer.free || used[w.Name] {
@@ -1069,7 +1070,8 @@ func econRound(bots []*Bot, now time.Time) {
 				continue
 			}
 			for _, l := range v.shop {
-				if !wantAccepts(w, l.ItemID) || l.Price > w.Each || l.Price <= 0 || (l.Count < w.Count && !w.Partial) {
+				l.Count -= shopReserved(v.b, l.ItemID, now) + promised[shopPromise{v.b, l.ItemID}] // vendpitch.go
+				if !wantAccepts(w, l.ItemID) || l.Price > w.Each || l.Price <= 0 || l.Count <= 0 || (l.Count < w.Count && !w.Partial) {
 					continue
 				}
 				n := min(w.Count, l.Count)
@@ -1090,6 +1092,7 @@ func econRound(bots []*Bot, now time.Time) {
 			delete(econ.wants, w.Name)
 			econ.nextWant[w.Name] = now.Add(5 * time.Minute)
 			shopBuys = append(shopBuys, *best)
+			promised[shopPromise{best.vendor.b, best.itemID}] += best.count
 		}
 	}
 	econ.mu.Unlock()
