@@ -86,7 +86,7 @@ Details of the watch view: section 4. Never drive any client with the real mouse
    rathena and db unchanged (G15, compose config hash and compose dry-run, fail closed), stray golang containers stopped
    (G24, never protected names), gofmt/vet/test and the image build on one frozen snapshot, a pre-deploy league snapshot,
    `up --no-deps` of legion then legion-core on that one image, the record in `legion/data/deploys.jsonl`, and Ayla back in
-   game within 5 minutes (G19). `deploy.py compare` writes the keep/revert list 3 hours later.
+   game within 5 minutes (G19). `deploy.py compare --apply` writes the keep/revert list 3 hours later (a dry run only prints).
    Example: `python3 tools/deploy/deploy.py --fix "<what>|kpm|<cohort>" --reviewed <sha> --apply` (WSL, from the repo root).
    Its tests: `python -m unittest discover -s tests/system -p test_deploy.py`.
    **Owner-approved rathena recreate:** `wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/deploy/rathena_recreate.sh`

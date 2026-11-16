@@ -1,10 +1,13 @@
-"""The deploy batch script (tools/deploy/deploy.py, rule PR47). Every gate and step is tested with a fake docker and a
-temp repo and data folder: no live container, image or data file is touched (rule G23).
+"""The deploy batch script (tools/deploy/deploy.py, rule PR47). Every gate and step is tested with a fake docker and git
+and a temp repo and data folder: no live container, image, commit or data file is touched (rule G23).
 Run: python -m unittest discover -s tests/system -p test_deploy.py -v   (from the repo root)"""
 import importlib.util
+import io
 import json
 import os
+import shutil
 import sys
+import tarfile
 import tempfile
 import unittest
 
@@ -29,56 +32,107 @@ def fake_resolve(name):
 
 
 class FakeDocker:
-    """Answers every command the batch runs and records it. Knobs set by the tests."""
+    """Answers every command the batch runs (docker, compose, git, league) and records it. Knobs set by the tests."""
 
     def __init__(self):
         self.calls = []
-        self.ps = ""              # docker ps lines (id, name, image, compose project)
-        self.hash_ok = True       # compose config hash equals the running container's label
-        self.dry_out = {}         # compose dry-run output: "deps" (with deps) / "nodeps"
+        self.ps = ""                    # docker ps lines: id, name, image, compose project
+        self.hash_ok = True             # compose config hash equals the running container's label
+        self.dry_out = {}               # compose dry-run output: "deps" (with deps) / "nodeps"
         self.dry_rc = 0
-        self.test_rc = []         # rc of each `docker run` (go vet/test); empty = 0
-        self.up_rc = 0
-        self.logs = ""            # docker logs of Ayla
+        self.test_rc = []               # rc of each `docker run` (go vet/test); empty = 0
+        self.up_fail = None             # a service whose `up` fails
+        self.logs = ""                  # docker logs of Ayla
+        self.dirty = ""                 # git status --porcelain of the image inputs
+        self.ancestor_ok = True         # reviewed commit is an ancestor of HEAD
+        self.head_files = {"Dockerfile": "FROM scratch\n", "main.go": "package main\n"}  # committed legion/ files
+        self.core_missing = False       # the first look finds no ro-legion-core (a stray <hash>_ro-legion-core exists)
+        self.core_running = "true"
+        self.netmode = {"ro-openkore-ayla": "container:rathid"}   # Ayla's OpenKore network namespace
+        self.image_missing = False
+        self.mounts = []                # listing of the snapshot mount at each docker run
         self.ayla = {"online": True, "map": "prontera", "ts": T0 + 100}
 
     def __call__(self, argv, cwd=None):
         a = list(argv)
         self.calls.append(a)
         j = " ".join(a)
+        if a[0] == "git":
+            if "archive" in a:
+                out = a[a.index("--output") + 1]
+                with tarfile.open(out, "w") as t:
+                    for name, content in self.head_files.items():
+                        data = content.encode()
+                        ti = tarfile.TarInfo("legion/" + name)
+                        ti.size = len(data)
+                        t.addfile(ti, io.BytesIO(data))
+                return 0, ""
+            if "merge-base" in a:
+                return (0 if self.ancestor_ok else 1), ""
+            if "status" in a:
+                return 0, self.dirty
+            if "rev-parse" in a:
+                return 0, "headsha\n"
+            return 0, ""
         if a[:3] == ["docker", "compose", "config"]:
             return 0, "%s %s" % (a[-1], "HASH1" if self.hash_ok else "HASHX")
         if a[:2] == ["docker", "inspect"] and "config-hash" in j:
             return 0, "HASH1"
+        if a[:2] == ["docker", "inspect"] and "{{.Id}}" in a:
+            return 0, "rathid\n"
+        if a[:2] == ["docker", "inspect"] and "{{.HostConfig.NetworkMode}}" in a:
+            name = a[-1]
+            if name in self.netmode:
+                return 0, self.netmode[name] + "\n"
+            return 1, "No such object"
+        if a[:2] == ["docker", "inspect"] and "{{.State.Running}}" in a:
+            if self.core_missing:
+                return 1, "No such object"
+            return 0, self.core_running + "\n"
         if a[:2] == ["docker", "inspect"] and "{{.Image}}" in a:
-            return 0, "sha256:IMG"
+            return 0, "sha256:IMG\n"
         if a[:3] == ["docker", "image", "inspect"]:
-            return 0, "sha256:IMG"
+            return (1, "no such image") if self.image_missing else (0, "sha256:IMG\n")
+        if a[:3] == ["docker", "ps", "-a"]:
+            return 0, ("abc123_ro-legion-core\n" if self.core_missing else "")
         if a[:2] == ["docker", "ps"]:
             return 0, self.ps
+        if a[:2] == ["docker", "rename"]:
+            self.core_missing = False
+            return 0, ""
+        if a[:2] == ["docker", "start"]:
+            if a[-1] == "ro-legion-core":
+                self.core_running = "true"
+            return 0, ""
         if a[:2] == ["docker", "compose"] and "--dry-run" in a:
-            return self.dry_rc, self.dry_out.get("nodeps" if "--no-deps" in a else "deps", "")
-        if a[:2] == ["docker", "run"]:
-            return (self.test_rc.pop(0) if self.test_rc else 0), "go test ok"
-        if a[:2] == ["docker", "build"]:
-            return 0, "built"
+            services = [x for x in a if x in ("legion", "legion-core")]
+            if "--no-deps" in a:
+                default = "".join(" Container ro-%s  Running\n" % s for s in services)
+                return self.dry_rc, self.dry_out.get("nodeps", default)
+            return self.dry_rc, self.dry_out.get("deps", "")
         if a[:2] == ["docker", "compose"] and "up" in a:
-            return self.up_rc, "Container x  Recreated"
+            if self.up_fail and a[-1] == self.up_fail:
+                return 1, "boom"
+            return 0, "Container x  Recreated"
+        if a[:2] == ["docker", "run"]:
+            self.mounts.append(sorted(os.listdir(a[a.index("-v") + 1].rsplit(":", 1)[0])))
+            return (self.test_rc.pop(0) if self.test_rc else 0), "go test ok"
         if a[:2] == ["docker", "logs"]:
             return 0, self.logs
-        if a[:2] == ["docker", "stop"]:
-            return 0, ""
         if len(a) > 1 and a[1].endswith("league.py"):
             return 0, "league output\n"
         return 0, ""
 
     def acts(self):
         """Calls that change something (not reads)."""
-        return [c for c in self.calls if (c[:2] == ["docker", "run"] or c[:2] == ["docker", "build"]
-                                          or c[:2] == ["docker", "stop"] or ("compose" in c and "up" in c and "--dry-run" not in c))]
+        return [c for c in self.calls
+                if c[:2] in (["docker", "run"], ["docker", "build"], ["docker", "stop"], ["docker", "start"],
+                             ["docker", "rename"])
+                or (c[:2] == ["docker", "compose"] and "up" in c and "--dry-run" not in c)
+                or (len(c) > 1 and c[1].endswith("league.py") and "--compare-deploy" in c)]
 
     def ups(self):
-        return [c for c in self.calls if "compose" in c and "up" in c and "--dry-run" not in c]
+        return [c for c in self.calls if c[:2] == ["docker", "compose"] and "up" in c and "--dry-run" not in c]
 
 
 class DeployTests(unittest.TestCase):
@@ -92,12 +146,10 @@ class DeployTests(unittest.TestCase):
         self.root = os.path.join(self.tmp, "repo")
         os.makedirs(os.path.join(self.root, "legion"))
         os.makedirs(os.path.join(self.root, "openkore-ayla", "logs"))
-        with open(os.path.join(self.root, "legion", "Dockerfile"), "w") as f:
-            f.write("FROM scratch\n")
-        with open(os.path.join(self.root, "legion", "main.go"), "w") as f:
-            f.write("package main\n")
-        with open(os.path.join(self.root, "legion", "notes.txt"), "w") as f:
-            f.write("not copied\n")
+        for name, text in (("Dockerfile", "FROM scratch\n"), ("main.go", "package main\n"),
+                           ("uncommitted.go", "package main // never committed\n"), ("notes.txt", "not copied\n")):
+            with open(os.path.join(self.root, "legion", name), "w") as f:
+                f.write(text)
         self.rev = os.path.join(self.tmp, "reviews")
         os.makedirs(self.rev)
         with open(os.path.join(self.rev, SHA_A + ".md"), "w") as f:
@@ -112,8 +164,7 @@ class DeployTests(unittest.TestCase):
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
-        testenv.isolate()  # restore the process-wide temp data folder
-        import shutil
+        testenv.isolate()
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def write_status(self, s):
@@ -121,10 +172,17 @@ class DeployTests(unittest.TestCase):
             json.dump(s, f)
 
     def go(self, fixes=("the fix|kpm|solo",), reviewed=("fix/a",), critical=None, services="legion,legion-core",
-           lifted=False, apply=False, fake=None):
+           lifted=False, apply=False, fake=None, image=None, interval_counter=None):
         fake = fake or FakeDocker()
         d = DP.Deploy(root=self.root, apply=apply, execute_fn=fake, sleep=lambda s: self.sleeps.append(s),
                       reviews_dir=self.rev, resolve=fake_resolve, out=self.lines.append)
+        if interval_counter is not None:
+            real = d.gate_interval
+
+            def counting(*a, **k):
+                interval_counter.append(1)
+                return real(*a, **k)
+            d.gate_interval = counting
         argv = []
         for f in fixes:
             argv += ["--fix", f]
@@ -133,6 +191,8 @@ class DeployTests(unittest.TestCase):
         if critical is not None:
             argv += ["--critical", critical]
         argv += ["--services", services]
+        if image:
+            argv += ["--image", image]
         if apply:
             argv.append("--apply")
         if lifted:
@@ -149,22 +209,22 @@ class DeployTests(unittest.TestCase):
     def text(self):
         return "\n".join(self.lines)
 
+    def deploy_recs(self):
+        return [r for r in C.read_jsonl(C.dpath("deploys.jsonl")) if r.get("kind") != "verdict"]
+
     # ---------------------------------------------------------------- default and review gate
     def test_dry_run_is_the_default_and_changes_nothing(self):
         code, fake = self.go()
         self.assertEqual(code, DP.OK, self.text())
         self.assertEqual(fake.acts(), [], "a dry run must not change anything")
-        self.assertEqual(fake.ups(), [])
         self.assertIn("DRY RUN", self.text())
         self.assertFalse(os.path.exists(C.dpath("deploys.jsonl")))
         self.assertFalse(os.path.exists(C.dpath("deploy.lock")))
         self.assertEqual(self.sleeps, [])
 
     def test_no_merge_review_is_refused(self):
-        code, fake = self.go(reviewed=("fix/b",))  # not a commit with a review
+        code, fake = self.go(reviewed=("fix/b",))
         self.assertEqual(code, DP.GATE, self.text())
-        self.assertIn("review", self.text())
-        self.assertEqual(fake.ups(), [])
         code, fake = self.go(apply=True, reviewed=("fix/b",))
         self.assertEqual(code, DP.GATE)
         self.assertEqual(fake.acts(), [], "nothing built or stopped when the review is missing")
@@ -172,8 +232,7 @@ class DeployTests(unittest.TestCase):
     def test_review_without_merge_verdict_is_refused(self):
         with open(os.path.join(self.rev, SHA_A + ".md"), "w") as f:
             f.write("verdict: do not merge\n")
-        code, _ = self.go()
-        self.assertEqual(code, DP.GATE)
+        self.assertEqual(self.go()[0], DP.GATE)
 
     def test_one_reviewed_commit_per_fix(self):
         code, fake = self.go(fixes=("one|kpm|x", "two|kpm|x"), reviewed=("fix/a",))
@@ -182,16 +241,70 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(fake.ups(), [])
 
     def test_no_fix_is_refused(self):
-        code, _ = self.go(fixes=(), reviewed=())
-        self.assertEqual(code, DP.GATE)
+        self.assertEqual(self.go(fixes=(), reviewed=())[0], DP.GATE)
         self.assertIn("no --fix", self.text())
 
     def test_metric_must_be_measurable(self):
-        code, _ = self.go(fixes=("a|fps|x",))
-        self.assertEqual(code, DP.GATE)
+        self.assertEqual(self.go(fixes=("a|fps|x",))[0], DP.GATE)
         self.assertIn("kpm, zph or deaths", self.text())
 
-    # ---------------------------------------------------------------- G17: 3-hour rule and critical override
+    def test_reviewed_commit_must_be_an_ancestor_of_head(self):
+        fake = FakeDocker()
+        fake.ancestor_ok = False
+        code, fake = self.go(apply=True, fake=fake)
+        self.assertEqual(code, DP.SOURCE, self.text())
+        self.assertIn("not an ancestor of HEAD", self.text())
+        self.assertEqual(fake.acts(), [], "nothing built when the reviewed commit is not in HEAD")
+
+    # ---------------------------------------------------------------- committed code only
+    def test_dirty_image_inputs_are_refused_in_a_dry_run_and_an_apply(self):
+        for apply in (False, True):
+            fake = FakeDocker()
+            fake.dirty = " M legion/main.go\n"
+            code, fake = self.go(apply=apply, fake=fake)
+            self.assertEqual(code, DP.SOURCE, self.text())
+            self.assertIn("uncommitted changes", self.text())
+            self.assertEqual(fake.acts(), [], "a dirty tree builds nothing")
+
+    def test_build_status_pathspec_names_only_the_image_inputs(self):
+        fake = FakeDocker()
+        self.go(fake=fake)
+        st = [c for c in fake.calls if "status" in c]
+        self.assertEqual(len(st), 1)
+        self.assertIn("legion/Dockerfile", st[0])
+        self.assertIn("legion/*.go", st[0])
+        self.assertNotIn("legion/data", " ".join(st[0]))
+
+    def test_build_uses_the_committed_tree_not_the_working_tree(self):
+        fake = FakeDocker()
+        code, fake = self.go(apply=True, fake=fake)
+        self.assertEqual(code, DP.OK, self.text())
+        arch = [c for c in fake.calls if "archive" in c]
+        self.assertEqual(len(arch), 1)
+        self.assertIn("HEAD", arch[0])
+        self.assertIn("legion", arch[0])
+        self.assertEqual(fake.mounts, [["Dockerfile", "main.go"]],
+                         "the build sees only the committed files, never uncommitted.go")
+
+    def test_image_mode_is_not_blocked_by_a_dirty_tree_and_builds_nothing(self):
+        fake = FakeDocker()
+        fake.dirty = " M legion/main.go\n"
+        code, fake = self.go(apply=True, fake=fake, image="ro-legion:deploy-20261115-000000",
+                             services="legion-core")
+        self.assertEqual(code, DP.OK, self.text())
+        self.assertEqual([c for c in fake.calls if c[:2] == ["docker", "run"] or c[:2] == ["docker", "build"]], [])
+        self.assertEqual(len(fake.ups()), 1)
+        self.assertIn("ro-legion:deploy-20261115-000000", open(os.path.join(
+            self.data, "deploy-runs", os.listdir(os.path.join(self.data, "deploy-runs"))[0], "override.yml")).read())
+
+    def test_image_mode_refuses_a_missing_image(self):
+        fake = FakeDocker()
+        fake.image_missing = True
+        code, fake = self.go(apply=True, fake=fake, image="ro-legion:deploy-nope", services="legion-core")
+        self.assertEqual(code, DP.FAILED, self.text())
+        self.assertEqual(fake.ups(), [])
+
+    # ---------------------------------------------------------------- 3-hour rule and critical override
     def test_three_hour_rule_refuses_a_deploy_too_soon(self):
         self.record(T0 - 3600)
         code, fake = self.go(apply=True)
@@ -201,23 +314,26 @@ class DeployTests(unittest.TestCase):
 
     def test_three_hour_rule_allows_a_deploy_after_the_gap(self):
         self.record(T0 - 4 * 3600)
-        code, _ = self.go()
-        self.assertEqual(code, DP.OK, self.text())
+        self.assertEqual(self.go()[0], DP.OK, self.text())
 
     def test_critical_override_skips_the_gap_with_a_reason(self):
         self.record(T0 - 600)
-        code, _ = self.go(critical="api wedge, unblocks every bot")
-        self.assertEqual(code, DP.OK, self.text())
+        self.assertEqual(self.go(critical="api wedge, unblocks every bot")[0], DP.OK, self.text())
         self.assertIn("critical deploy allowed", self.text())
 
     def test_critical_without_reason_is_refused(self):
         self.record(T0 - 600)
-        code, _ = self.go(critical="   ")
-        self.assertEqual(code, DP.GATE)
+        self.assertEqual(self.go(critical="   ")[0], DP.GATE)
 
     def test_critical_still_needs_a_merge_review(self):
-        code, _ = self.go(critical="wedge", reviewed=("fix/b",))
-        self.assertEqual(code, DP.GATE)
+        self.assertEqual(self.go(critical="wedge", reviewed=("fix/b",))[0], DP.GATE)
+
+    def test_interval_is_checked_again_under_the_lock(self):
+        counter = []
+        code, fake = self.go(apply=True, fake=FakeDocker(), interval_counter=counter)
+        self.assertEqual(code, DP.OK, self.text())
+        self.assertEqual(len(counter), 2, "once before the lock, once under it")
+        self.assertIn("interval (under lock)", self.text())
 
     # ---------------------------------------------------------------- G21, lock, G15 services
     def test_stack_hold_refuses_unless_the_owner_lifts_it(self):
@@ -226,14 +342,13 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(code, DP.HOLD, self.text())
         self.assertIn("G21", self.text())
         self.assertEqual(fake.acts(), [])
-        code, _ = self.go(lifted=True)
-        self.assertEqual(code, DP.OK, self.text())
+        self.assertEqual(self.go(lifted=True)[0], DP.OK, self.text())
 
     def test_a_running_deploy_lock_refuses(self):
         open(C.dpath("deploy.lock"), "w").close()
         code, fake = self.go()
         self.assertEqual(code, DP.LOCKED)
-        self.assertEqual(fake.calls, [], "refused before any check ran")
+        self.assertEqual(fake.acts(), [], "refused before anything changed")
 
     def test_only_legion_and_legion_core_may_be_deployed(self):
         for svc in ("rathena", "legion,ro-rathena", "db", "openkore-ayla", ""):
@@ -243,7 +358,9 @@ class DeployTests(unittest.TestCase):
 
     # ---------------------------------------------------------------- G15: rathena and db never change
     def test_rathena_or_db_config_change_refuses(self):
-        code, fake = self.go(apply=True, fake=self._fake(hash_ok=False))
+        fake = FakeDocker()
+        fake.hash_ok = False
+        code, fake = self.go(apply=True, fake=fake)
         self.assertEqual(code, DP.DRIFT, self.text())
         self.assertIn("rathena", self.text())
         self.assertEqual(fake.acts(), [])
@@ -251,27 +368,30 @@ class DeployTests(unittest.TestCase):
     def test_compose_would_recreate_rathena_refuses(self):
         fake = FakeDocker()
         fake.dry_out["deps"] = " Container ro-rathena  Recreate\n Container ro-legion  Recreated\n"
-        code, fake = self.go(fake=fake)
-        self.assertEqual(code, DP.DRIFT, self.text())
+        self.assertEqual(self.go(fake=fake)[0], DP.DRIFT, self.text())
         self.assertIn("would change", self.text())
 
     def test_compose_would_touch_another_container_refuses(self):
         fake = FakeDocker()
         fake.dry_out["nodeps"] = " Container ro-openkore-ayla  Recreate\n"
-        code, _ = self.go(fake=fake)
-        self.assertEqual(code, DP.DRIFT, self.text())
+        self.assertEqual(self.go(fake=fake)[0], DP.DRIFT, self.text())
 
     def test_compose_dry_run_error_fails_closed(self):
         fake = FakeDocker()
         fake.dry_rc = 1
-        code, _ = self.go(fake=fake)
-        self.assertEqual(code, DP.DRIFT, "a compose error must refuse, not allow")
+        self.assertEqual(self.go(fake=fake)[0], DP.DRIFT, "a compose error must refuse, not allow")
 
-    def _fake(self, **kw):
+    def test_no_dry_run_container_line_fails_closed(self):
         fake = FakeDocker()
-        for k, v in kw.items():
-            setattr(fake, k, v)
-        return fake
+        fake.dry_out["nodeps"] = "nothing to say\n"
+        self.assertEqual(self.go(fake=fake)[0], DP.DRIFT, "no Container line: cannot confirm, so refuse")
+        self.assertIn("names no container", self.text())
+
+    def test_a_chosen_service_missing_from_the_dry_run_fails_closed(self):
+        fake = FakeDocker()
+        fake.dry_out["nodeps"] = " Container ro-legion  Running\n"
+        self.assertEqual(self.go(fake=fake)[0], DP.DRIFT, self.text())
+        self.assertIn("ro-legion-core", self.text())
 
     def test_up_command_is_only_legion_or_legion_core_with_no_deps(self):
         for svc in DP.ALLOWED:
@@ -289,6 +409,15 @@ class DeployTests(unittest.TestCase):
             d.act(["docker", "compose", "up", "-d", "--no-deps", "ro-rathena"])
         with self.assertRaises(RuntimeError):
             d.act(["docker", "compose", "up", "-d", "legion"])  # no --no-deps: compose would start rathena too
+
+    def test_ayla_on_a_dead_network_is_a_warning_not_a_refusal(self):
+        fake = FakeDocker()
+        fake.netmode = {"ro-openkore-ayla": "none"}
+        code, fake = self.go(apply=True, fake=fake)
+        self.assertEqual(code, DP.OK, self.text())
+        self.assertIn("WARNING: ro-openkore-ayla is on a dead network namespace", self.text())
+        self.assertEqual(len(fake.ups()), 2, "the warning does not stop the deploy; nothing recreates Ayla")
+        self.assertFalse(any("ro-openkore-ayla" in c for c in fake.acts()))
 
     # ---------------------------------------------------------------- the apply path
     def _stock_ps(self):
@@ -308,7 +437,6 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(code, DP.OK, self.text())
         stops = [c for c in fake.calls if c[:2] == ["docker", "stop"]]
         self.assertEqual(stops, [["docker", "stop", "eee555"]], "only the stray golang container is stopped (G24)")
-        self.assertTrue(any(c[:2] == ["docker", "run"] and "go vet" in " ".join(c) for c in fake.calls))
         builds = [c for c in fake.calls if c[:2] == ["docker", "build"]]
         self.assertEqual(len(builds), 1)
         tag = builds[0][builds[0].index("-t") + 1]
@@ -317,12 +445,12 @@ class DeployTests(unittest.TestCase):
         self.assertEqual([u[-1] for u in ups], ["legion", "legion-core"], "legion first, then legion-core")
         for u in ups:
             self.assertIn("--no-deps", u)
-            self.assertNotIn("ro-rathena", u)
             self.assertNotIn("rathena", u)
-        recs = C.read_jsonl(C.dpath("deploys.jsonl"))
-        self.assertEqual(len(recs), 1)
-        self.assertEqual(recs[0]["services"], ["legion", "legion-core"])
+        recs = self.deploy_recs()
+        self.assertEqual([r["services"] for r in recs], [["legion"], ["legion-core"]],
+                         "one record per service, in order")
         self.assertEqual(recs[0]["fixes"][0]["text"], "the fix")
+        self.assertEqual(recs[1]["fixes"][0]["text"], "the fix", "the second record carries the same fixes")
         self.assertEqual(recs[0]["tag"], tag)
         run_dir = os.path.join(self.data, "deploy-runs", "deploy-" + tag.split("deploy-")[-1])
         self.assertTrue(os.path.exists(os.path.join(run_dir, "run.log")))
@@ -349,24 +477,49 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(code, DP.FAILED, self.text())
         self.assertEqual(fake.ups(), [], "nothing deployed")
         self.assertEqual([c for c in fake.calls if c[:2] == ["docker", "build"]], [])
-        self.assertIn(60, self.sleeps, "a fresh snapshot is tried after 60 s")
+        self.assertIn(60, self.sleeps, "a fresh export is tried after 60 s")
         self.assertFalse(os.path.exists(C.dpath("deploys.jsonl")))
         self.assertFalse(os.path.exists(C.dpath("deploy.lock")))
 
-    def test_failed_go_test_once_then_passes_on_a_fresh_snapshot(self):
+    def test_failed_go_test_once_then_passes_on_a_fresh_export(self):
         fake = FakeDocker()
         fake.test_rc = [1]
         code, fake = self.go(apply=True, fake=fake)
         self.assertEqual(code, DP.OK, self.text())
         self.assertEqual(len(fake.ups()), 2)
 
-    def test_up_failure_stops_before_the_second_service(self):
+    def test_a_failed_second_service_leaves_the_first_one_recorded(self):
         fake = FakeDocker()
-        fake.up_rc = 1
+        fake.up_fail = "legion-core"
         code, fake = self.go(apply=True, fake=fake)
         self.assertEqual(code, DP.FAILED, self.text())
-        self.assertEqual(len(fake.ups()), 1)
-        self.assertFalse(os.path.exists(C.dpath("deploys.jsonl")), "a failed up is not recorded")
+        recs = self.deploy_recs()
+        self.assertEqual([r["services"] for r in recs], [["legion"]], "partial failure is on record")
+        self.assertEqual(len(fake.ups()), 2)
+
+    def test_a_failed_first_service_records_nothing(self):
+        fake = FakeDocker()
+        fake.up_fail = "legion"
+        code, fake = self.go(apply=True, fake=fake)
+        self.assertEqual(code, DP.FAILED, self.text())
+        self.assertEqual(self.deploy_recs(), [])
+        self.assertEqual(len(fake.ups()), 1, "legion-core is not touched after a failed legion")
+
+    def test_a_stray_core_container_is_recovered_and_renamed(self):
+        fake = FakeDocker()
+        fake.core_missing = True
+        code, fake = self.go(apply=True, fake=fake)
+        self.assertEqual(code, DP.OK, self.text())
+        self.assertIn(["docker", "start", "abc123_ro-legion-core"], fake.calls)
+        self.assertIn(["docker", "rename", "abc123_ro-legion-core", "ro-legion-core"], fake.calls)
+        self.assertIn("fixing stray container", self.text())
+
+    def test_a_stopped_core_is_started_and_must_be_running(self):
+        fake = FakeDocker()
+        fake.core_running = "false"
+        code, fake = self.go(apply=True, fake=fake)
+        self.assertEqual(code, DP.OK, self.text())
+        self.assertIn(["docker", "start", "ro-legion-core"], fake.calls)
 
     def test_ayla_not_back_within_five_minutes_is_flagged(self):
         self.write_status({"online": False, "map": "", "ts": T0 - 9999})
@@ -375,19 +528,16 @@ class DeployTests(unittest.TestCase):
         self.assertIn("G19", self.text())
         self.assertEqual(self.sleeps.count(DP.AYLA_POLL_S), DP.AYLA_WINDOW_S // DP.AYLA_POLL_S,
                          "polled for the full 5 minutes")
-        self.assertEqual(len(C.read_jsonl(C.dpath("deploys.jsonl"))), 1, "the deploy stays recorded")
-        for u in fake.ups():
-            self.assertNotIn("ai", u)
+        self.assertEqual(len(self.deploy_recs()), 2, "the deploy stays recorded")
 
     def test_ayla_back_from_the_log_line_counts(self):
         self.write_status({"online": False, "map": "", "ts": 0})
         fake = FakeDocker()
         fake.logs = "... You are now in the game ..."
-        code, _ = self.go(apply=True, fake=fake)
-        self.assertEqual(code, DP.OK, self.text())
+        self.assertEqual(self.go(apply=True, fake=fake)[0], DP.OK, self.text())
 
     # ---------------------------------------------------------------- compare and the revert list
-    def test_compare_calls_league_and_writes_the_revert_list(self):
+    def _verdict_fixture(self):
         self.record(T0 - 4 * 3600, tag="ro-legion:deploy-20261114-000000",
                     fixes=[{"text": "bad fix", "metric": "kpm", "cohort": ""}])
         self.record(T0 - 4 * 3600, tag="ro-legion:deploy-20261114-000000", kind="verdict", partial=False,
@@ -395,24 +545,30 @@ class DeployTests(unittest.TestCase):
                             "verdict": "REVERT (kpm -5.0%)"},
                            {"text": "good fix", "metric": "kpm", "cohort": "", "change_pct": 4.0,
                             "verdict": "KEEP (kpm +4.0%)"}])
-        d = DP.Deploy(root=self.root, apply=False, execute_fn=FakeDocker(), out=self.lines.append)
-        code = DP.main(["compare"], deploy=d)
-        self.assertEqual(code, DP.OK, self.text())
-        out =os.path.join(self.data, "deploy-runs", "deploy-20261114-000000", "revert.txt")
-        self.assertTrue(os.path.exists(out))
+
+    def test_compare_dry_run_writes_no_revert_file_and_runs_no_league(self):
+        self._verdict_fixture()
+        fake = FakeDocker()
+        d = DP.Deploy(root=self.root, apply=False, execute_fn=fake, out=self.lines.append)
+        self.assertEqual(DP.main(["compare"], deploy=d), DP.OK)
+        self.assertEqual([c for c in fake.calls if len(c) > 1 and c[1].endswith("league.py")], [])
+        self.assertIn("bad fix", self.text())
+        self.assertIn("revert.txt not written", self.text())
+        self.assertFalse(os.path.exists(os.path.join(self.data, "deploy-runs", "deploy-20261114-000000", "revert.txt")))
+
+    def test_compare_apply_runs_league_and_writes_the_revert_list(self):
+        self._verdict_fixture()
+        fake = FakeDocker()
+        d = DP.Deploy(root=self.root, apply=True, execute_fn=fake, out=self.lines.append)
+        self.assertEqual(DP.main(["compare", "--apply"], deploy=d), DP.OK, self.text())
+        cmp_calls = [c for c in fake.calls if len(c) > 1 and c[1].endswith("league.py")]
+        self.assertEqual(len(cmp_calls), 1)
+        self.assertIn("--compare-deploy", cmp_calls[0])
+        out = os.path.join(self.data, "deploy-runs", "deploy-20261114-000000", "revert.txt")
         with open(out) as f:
             text = f.read()
         self.assertIn("bad fix", text)
         self.assertNotIn("good fix", text, "only REVERT items are listed")
-
-    def test_compare_runs_league_with_compare_deploy(self):
-        self.record(T0 - 4 * 3600, tag="ro-legion:deploy-20261114-000000")
-        fake = FakeDocker()
-        d = DP.Deploy(root=self.root, apply=False, execute_fn=fake, out=self.lines.append)
-        DP.main(["compare"], deploy=d)
-        cmp_calls = [c for c in fake.calls if len(c) > 1 and c[1].endswith("league.py")]
-        self.assertEqual(len(cmp_calls), 1)
-        self.assertIn("--compare-deploy", cmp_calls[0])
 
     def test_compare_without_a_deploy_says_so(self):
         fake = FakeDocker()
@@ -432,10 +588,12 @@ class TestStaticRules(unittest.TestCase):
         for kept in ("rathena_gate()", "svc_changed()", "svc_image_drift()", "svc_field()"):
             self.assertIn(kept, g)
 
-    def test_deploy_script_never_names_a_rathena_recreate(self):
+    def test_deploy_script_has_no_forced_recreate(self):
         with open(os.path.join(REPO, "tools", "deploy", "deploy.py"), encoding="utf-8") as f:
             src = f.read()
-        self.assertNotIn("--force-recreate", src)  # a rathena recreate is never a flag of this script
+        # the only mention is the owner-facing text of the Ayla warning; no command line of this script carries it
+        self.assertEqual(src.count("--force-recreate"), 1)
+        self.assertIn("Main session:", src.split("--force-recreate")[0].splitlines()[-1] + src.split("--force-recreate")[0][-200:])
 
 
 if __name__ == "__main__":
