@@ -97,7 +97,6 @@ type Bot struct {
 	rng *rand.Rand
 
 	mu      sync.Mutex
-	dynNeed float64 // pricedyn.go (EC48): the need behind this bot's last want (0 = none posted yet; read by sellers unlocked)
 	conn    *Conn       // current session's conn (guarded by wmu); nil between sessions
 	wmu     sync.Mutex  // serializes writes
 	running atomic.Bool // a run() loop is active for this Bot (only one may be)

@@ -49,9 +49,9 @@ func setMarket(id, supply, demand int) {
 
 // postBuyer: a bot with an open want for the item (as the want board holds it), with its zeny and need
 func postBuyer(name string, id, zeny int, need float64) *Bot {
-	pb := &Bot{P: &Persona{Name: name}, Zeny: zeny, dynNeed: need}
+	pb := &Bot{P: &Persona{Name: name}, Zeny: zeny}
 	econ.mu.Lock()
-	econ.wants[name] = &Want{Buyer: pb, ItemID: id, Count: 1}
+	econ.wants[name] = &Want{Buyer: pb, ItemID: id, Count: 1, Need: need}
 	econ.mu.Unlock()
 	return pb
 }
@@ -166,12 +166,12 @@ func TestSimPoorDesperateBuyerSellsSooner(t *testing.T) {
 	const grain = 25 // roundPrice rounds the listing, so a sale may be a few zeny above the willingness
 
 	// sold reports the round (half an hour each) in which the listing reaches what the buyer pays
-	sold := func(seller string, buyer *Bot) int {
+	sold := func(seller string, buyer *Bot, need float64) int {
 		s := &Bot{P: &Persona{Name: seller, Greed: 0.5}, vend: &VendState{}, Zeny: 900000}
 		for r := 0; r < 40; r++ {
 			simAge(seller, id, float64(r)*0.5)
 			listed := s.vendPrice(id)
-			w := Willingness(ref, buyer.dynNeed, buyer.Zeny, buyer.P.Name+"|"+fmt.Sprint(id))
+			w := Willingness(ref, need, buyer.Zeny, buyer.P.Name+"|"+fmt.Sprint(id))
 			if listed <= w+grain {
 				return r
 			}
@@ -182,16 +182,84 @@ func TestSimPoorDesperateBuyerSellsSooner(t *testing.T) {
 	econ.wants = map[string]*Want{}
 	econ.mu.Unlock()
 	poor := postBuyer("Poor desperate buyer", id, ref*3/4, 1.0)
-	soldPoor := sold("Sim seller poor", poor)
+	soldPoor := sold("Sim seller poor", poor, 1.0)
 	econ.mu.Lock()
 	econ.wants = map[string]*Want{}
 	econ.mu.Unlock()
 	rich := postBuyer("Rich calm buyer", id, 1000000, 0.3)
-	soldRich := sold("Sim seller rich", rich)
+	soldRich := sold("Sim seller rich", rich, 0.3)
 	if soldPoor < 0 || soldRich < 0 {
 		t.Fatalf("both listings must sell within 20 h: poor round %d, rich round %d", soldPoor, soldRich)
 	}
 	if soldPoor >= soldRich {
 		t.Fatalf("a poor desperate buyer must buy sooner: poor round %d, rich calm round %d", soldPoor, soldRich)
+	}
+}
+
+// A broke buyer with an open want does not pull the listings of a thin market down: its willingness is under the
+// floor, so it is not a customer. Several sellers keep their asks.
+func TestThinMarketBrokeBuyerDoesNotCollapse(t *testing.T) {
+	const id = 987666
+	simMarket(t, id)
+	setMarket(id, 3, 3)
+	sellers := []string{"thin seller a", "thin seller b", "thin seller c"}
+	bots := make([]*Bot, 0, len(sellers))
+	base := map[string]int{}
+	for _, name := range sellers {
+		b := &Bot{P: &Persona{Name: name, Greed: 0.5}, vend: &VendState{}, Zeny: 900000}
+		bots = append(bots, b)
+		base[name] = b.vendPrice(id)
+	}
+	ref := priceOf(id)
+	floor := marketFloor(id, ref)
+	postBuyer("broke buyer", id, 200, 1.0)
+	for _, b := range bots {
+		if got := b.vendPrice(id); got != base[b.P.Name] || got < floor {
+			t.Fatalf("%s: a broke buyer moved the listing: %d -> %d (floor %d)", b.P.Name, base[b.P.Name], got, floor)
+		}
+	}
+}
+
+// A buyer who can pay the floor does pull the listing (the same market, one buyer with 600z).
+func TestThinMarketSolventBuyerPulls(t *testing.T) {
+	const id = 987667
+	simMarket(t, id)
+	setMarket(id, 3, 3)
+	name := "solvent seller"
+	b := &Bot{P: &Persona{Name: name, Greed: 0.5}, vend: &VendState{}, Zeny: 900000}
+	before := b.vendPrice(id)
+	floor := marketFloor(id, priceOf(id))
+	postBuyer("solvent buyer", id, 600, 1.0)
+	after := b.vendPrice(id)
+	if after >= before || after < floor {
+		t.Fatalf("a solvent buyer must pull the listing down but not under the floor %d: %d -> %d", floor, before, after)
+	}
+}
+
+// Unknown supply (no market tick yet) is neutral: the scarcity term is 1.0, not an empty market.
+func TestUnknownSupplyIsNeutral(t *testing.T) {
+	const id = 987668
+	simMarket(t, id)
+	market2.Lock()
+	market2.supply = nil
+	market2.demand = map[int]int{id: 2}
+	market2.Unlock()
+	s, d := dynSupplyDemand(id)
+	if s != d || d != 2 {
+		t.Fatalf("unknown supply must equal demand: supply %d, demand %d", s, d)
+	}
+	if sc := dynScarcity(s, d); sc != 1 {
+		t.Fatalf("neutral scarcity must be 1.0, got %.2f", sc)
+	}
+}
+
+// wantCap with the flag on never pays above the want's own posted bid (x 1.1), whatever the purse.
+func TestWantCapUsesOwnBid(t *testing.T) {
+	const id = 987669
+	simMarket(t, id)
+	b := &Bot{P: &Persona{Name: "cap buyer", Greed: 0.5}, Zeny: 900000}
+	w := &Want{ItemID: id, Each: 100, Need: 1}
+	if c := wantCap(b, w, 900000); c > 110 {
+		t.Fatalf("a want posted at 100z must not accept a listing at %d", c)
 	}
 }

@@ -569,14 +569,14 @@ func (b *Bot) stockWant() *Want {
 			continue
 		}
 		if heal && (best == nil || !healItem(best.ItemID)) {
-			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Why: "stock for my shop", Partial: true}, gap
+			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Need: b.wantNeed(x.ID), Why: "stock for my shop", Partial: true}, gap
 			continue
 		}
 		if best != nil && healItem(best.ItemID) && !heal {
 			continue
 		}
 		if best == nil || gap > bestGap || gap == bestGap && bid*n > best.Each*best.Count {
-			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Why: "stock for my shop", Partial: true}, gap
+			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Need: b.wantNeed(x.ID), Why: "stock for my shop", Partial: true}, gap
 		}
 	}
 	return best

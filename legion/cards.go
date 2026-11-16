@@ -478,7 +478,7 @@ func (b *Bot) cardWant(budget int) *Want {
 			continue
 		}
 		if s := float64(v) / float64(max(bid, 1)); best == nil || s > bestScore {
-			best, bestScore = &Want{ItemID: o.ItemID, Count: 1, Each: bid, Why: "card for my gear"}, s
+			best, bestScore = &Want{ItemID: o.ItemID, Count: 1, Each: bid, Need: b.wantNeed(o.ItemID), Why: "card for my gear"}, s
 		}
 	}
 	return best
@@ -505,7 +505,7 @@ func (b *Bot) slotWant(budget int) *Want {
 					continue
 				}
 				if bid := b.wantBid(v); bid <= budget {
-					return &Want{ItemID: v, Count: 1, Each: bid, Why: "slot for my " + c.Name}
+					return &Want{ItemID: v, Count: 1, Each: bid, Need: b.wantNeed(v), Why: "slot for my " + c.Name}
 				}
 			}
 		}
@@ -546,7 +546,7 @@ func (b *Bot) bareWant(budget int) *Want {
 				if slot == 0x10 {
 					why = "no armor"
 				}
-				best = &Want{ItemID: o.ItemID, Count: 1, Each: roundPrice(bid), Why: why}
+				best = &Want{ItemID: o.ItemID, Count: 1, Each: roundPrice(bid), Need: b.wantNeed(o.ItemID), Why: why}
 			}
 		}
 		if best != nil {

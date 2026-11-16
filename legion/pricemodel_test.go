@@ -214,7 +214,8 @@ func TestFlagOnVendPriceFollowsUrgencyAndBuyers(t *testing.T) {
 	seller := &Bot{P: &Persona{Name: "Lone seller", Greed: 0.5}, vend: &VendState{}, Zeny: 900000}
 	before := seller.vendPrice(id)
 	econ.mu.Lock()
-	econ.wants["poor buyer"] = &Want{Buyer: &Bot{P: &Persona{Name: "poor buyer"}, Zeny: 200}, ItemID: id, Count: 1, Each: 100}
+	// a buyer who can pay the floor (the floor of this item is 400): it pulls
+	econ.wants["poor buyer"] = &Want{Buyer: &Bot{P: &Persona{Name: "poor buyer"}, Zeny: 600}, ItemID: id, Count: 1, Each: 100, Need: 1}
 	econ.mu.Unlock()
 	after := seller.vendPrice(id)
 	econ.mu.Lock()

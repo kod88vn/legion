@@ -140,7 +140,7 @@ func (b *Bot) refineWant() *Want {
 	if n < 1 {
 		return nil
 	}
-	return &Want{ItemID: mat, Count: n, Each: each, Why: "refining my weapon", Partial: true}
+	return &Want{ItemID: mat, Count: n, Each: each, Need: b.wantNeed(mat), Why: "refining my weapon", Partial: true}
 }
 
 // refineAfterTrip: a town trip just ended in Prontera (town.go "done"): refine now if the bag holds the material

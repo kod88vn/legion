@@ -62,7 +62,11 @@ Line numbers are as read at 7984c90. "Flag on" means `dynamic_price_on` (default
 ## F. Still missing before this change
 
 1. Seller zeny need, bag pressure: added (`Ask`, flag on).
-2. Buyer need: added. `Bot.dynNeed` is set by `wantBid` (milestone gap for the gated gear piece, 0.3 otherwise).
+2. Buyer need: added. Each want stores its need (`Want.Need`, set when the want is posted by `wantNeed`: milestone gap for the gated gear piece, 0.3 otherwise). Probes that post nothing store nothing.
+
+   Buyers' reference has no scarcity term on purpose: a buyer's willingness is its own valuation. Scarcity moves the seller's ask; `Clear` then pulls it toward the buyer. Putting scarcity on both sides would count it twice.
+
+   A buyer counts as interested only if its willingness reaches the seller's floor. A broke buyer with a want does not collapse a thin market (tests: `TestThinMarketBrokeBuyerDoesNotCollapse`, `TestThinMarketSolventBuyerPulls`).
 3. Clearing toward the buyer present: added (`Clear`, flag on), using each buyer's posted need and purse.
 4. Stock age for cards and gear held in bags: not added (the time-on-market markdown covers listed goods only).
 

@@ -903,7 +903,7 @@ func (b *Bot) alchemyWant() *Want {
 		each := b.wantBid(h)
 		n := min(40-have, max(0, (b.Zeny-1000)/max(each, 1)))
 		if n >= 5 {
-			return &Want{ItemID: h, Count: n, Each: each, Why: "brewing", Partial: true}
+			return &Want{ItemID: h, Count: n, Each: each, Need: b.wantNeed(h), Why: "brewing", Partial: true}
 		}
 	}
 	return nil
@@ -941,7 +941,7 @@ func (b *Bot) spPotionWant(leaderParty bool) *Want {
 	if n < 1 {
 		return nil
 	}
-	return &Want{ItemID: itemBluePotion, Count: n, Each: each, Why: "sp potions", Partial: true}
+	return &Want{ItemID: itemBluePotion, Count: n, Each: each, Need: b.wantNeed(itemBluePotion), Why: "sp potions", Partial: true}
 }
 
 // ---------------------------------------------------------------- API (economy.go registers it)
