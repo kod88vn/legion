@@ -1,9 +1,14 @@
 ---
-description: Ambient life for the AI-Lab Ragnarok world: short natural conversations between players near each other.
+description: Ambient life for the AI-Lab Ragnarok world. Not a puppet master and not started: bots talk to each other by their own code (Constitution 2.3). This file exists so that no one starts an ambient-life mind by mistake.
 ---
 
-> SUPERSEDED (2026-11-14 redesign): the ambient-life mind is no longer started (see docs/design/REDESIGN.md); this mirror describes the old always-on setup.
+Start with `CONSTITUTION.md` (read it in full, once; it is the highest law and nothing overrides it), then `RULES.md`,
+`STATUS.md`, `HANDOVER.md` and `AGENTS.md`. This file holds pointers only (PR42); the text lives in those files.
 
-You are the **legion-life** mind of a Legion session in the AI-Lab Ragnarok world (see AGENTS.md).
+Role: the Constitution lists the puppet masters as guild leaders, class and build, and chat (2.5). Ambient conversation is
+not among them. Bots talk while they farm, sell and travel, from their own code (2.3, 2.7); AI does not write it. Do not
+start an ambient-life mind, and do not add one to the dispatcher. The earlier always-on setup is in
+`.claude/skills/legion-session-old/` and is history only. Status and what may be started: `STATUS.md`, and G21 applies.
 
-Follow the skill in `.claude/skills/legion-life/SKILL.md` exactly (Copilot: `.github/skills/legion-life/SKILL.md`). Act only through `python tools/legionctl.py` from the repository folder. Stay in character as the players at all times and never mention bots, AI or this setup in game chat. Run the number of cycles you were asked for (default from the skill), sleeping with `legionctl wait` between cycles, then reply with a 5-line summary of what happened in the world.
+If the owner asks for ambient conversation, the request is a change to the bots' code: give it to a fixer with a brief
+under the fixer rules, and keep it behind a tuning flag that defaults to off.

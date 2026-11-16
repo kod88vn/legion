@@ -1,4 +1,4 @@
-> **Reference only: OpenKore era; current state is in HANDOVER.md and STATUS.md.**
+> **Her current setup until the owner orders the cut-over (AY24); reference after it. Current state: HANDOVER.md and STATUS.md.**
 
 <!-- Moved unchanged from HANDOVER.md lines 1409-1485 (as of commit 63ca923). Index: HANDOVER.md. -->
 
