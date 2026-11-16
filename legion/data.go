@@ -26,6 +26,7 @@ type Mob struct {
 	Race       string // mob_db Race (Undead, Demon, Brute...): card race bonuses (huntfit.go)
 	Exp        int    // BaseExp (0: plants / mushrooms - worthless targets)
 	Def        int    // Defense (hard DEF; variantskill.go Occult Impaction picks armoured targets)
+	WalkSpeed  int    // mob_db WalkSpeed: ms per cell, lower = faster (player default 150); 0 = unknown (marketengine.go)
 }
 
 var mobs = map[int]*Mob{}
@@ -239,6 +240,8 @@ func loadMobDB(path string) error {
 			cur.Exp, _ = strconv.Atoi(strings.TrimSpace(t[8:]))
 		case strings.HasPrefix(t, "Defense:") && strings.HasPrefix(l, "    Defense:"):
 			cur.Def, _ = strconv.Atoi(strings.TrimSpace(t[8:]))
+		case strings.HasPrefix(t, "WalkSpeed:"):
+			cur.WalkSpeed, _ = strconv.Atoi(strings.TrimSpace(t[10:]))
 		case strings.HasPrefix(t, "Element:"):
 			cur.Element = strings.TrimSpace(t[8:])
 		case strings.HasPrefix(t, "Race:"):

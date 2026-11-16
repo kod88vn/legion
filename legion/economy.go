@@ -1093,6 +1093,7 @@ func econRound(bots []*Bot, now time.Time) {
 	marketTick(now)             // market.go: supply and demand factors, markdown resets
 	guildPoolRound(snaps, now)  // guildpool.go: guilds pool zeny for boss-only items
 	guildStockRound(snaps, now) // guildstock.go: guild stock vs member needs, guild farmers
+	marketEngineRound(snaps, now, stockDue) // marketengine.go (WP2): market needs and feed; no-op unless market_engine_on
 	traderFundRound(snaps, now) // guildstock.go: the guild trader pays a member's stuck gear turn
 	exchangeRound(snaps, now)   // chatintent.go: humans' needs / offers registered by the chat agent
 	humanWantRound(snaps, now)  // humanwant.go: a human's B> on #trade gets an offer
@@ -1910,6 +1911,7 @@ func registerEconomy(mux *http.ServeMux) {
 	registerGuildStock(mux)    // guildstock.go: /api/guild-stock
 	registerOpportunities(mux) // opportunity.go: market opportunities and money goals
 	registerFarm(mux)          // farm.go: /api/economy/farm?lv=N (sought-after drops farmable at a level)
+	registerMarketEngine(mux)  // marketengine.go: /api/market/engine, /api/market/feed (off unless market_engine_on)
 }
 
 func economyReport() map[string]interface{} {

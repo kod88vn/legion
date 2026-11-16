@@ -60,6 +60,10 @@ package main
 //   guild_duty_kick_days      2    short days after the warning before the kick (/ strictness)
 //   guild_kicks_per_hour      2    server-wide expel cap (15 min between two, 2 h per guild)
 //   guild_kick_cooldown_h     24   hours a kicked bot refuses every guild invitation
+//   market_engine_on          false marketengine.go (WP2, EC43-EC47): computes needs, ranked gaps and farmer offers on each stock
+//                                  round and serves GET /api/market/engine and /api/market/feed, data/market_feed.json.
+//                                  Information only: no bot or guild is changed. Off: nothing is computed, endpoints say "off"
+//   guild_market_feed_on      false guild leaders' autopilot and dutyMaps read the market feed (WP5; declared in WP2, no effect yet)
 //   starveil_auto_lead        true Starveil is led with no AI (starveillead.go, AY19): duty warnings/kicks through Ayla's
 //                                  plugin, guild-pool funding, keep gifts, member parties (main instance)
 //
@@ -227,6 +231,10 @@ type Tuning struct {
 	// guildduty.go (EC43): market_directions_on lets the market puppet master set guild directions (set_by "market"):
 	// they fill a free slot only, never evict a leader's direction (default off: the engine refuses them)
 	MarketDirectionsOn bool `json:"market_directions_on"`
+	// marketengine.go (EC43-EC47, WP2): market_engine_on computes the market needs and feed (off = computes nothing);
+	// guild_market_feed_on lets guild leaders read the feed (WP5, no effect yet)
+	MarketEngineOn   bool `json:"market_engine_on"`
+	GuildMarketFeedOn bool `json:"guild_market_feed_on"`
 	// engineparty.go (AY24, ayla-switch): comma-separated human names whose party runs bot-led on the engine, the human's
 	// own bot as Leader through formPartyOpt (default empty: every human-led party stays as it is)
 	EngineParties string `json:"engine_parties"`
