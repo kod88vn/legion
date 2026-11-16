@@ -742,6 +742,7 @@ func (b *Bot) handle(pk []byte) {
 		}
 		if pk[6] == 1 && id == b.target {
 			b.Kills++
+			b.noteMapKill(now)           // travelshare.go: kills on this map (stay while it pays, roam_stay_on)
 			b.meterKill(b.ents[id], now) // meter.go: fair kill by the monster's level
 			atomic.AddInt64(&stats.kills, 1)
 		}
