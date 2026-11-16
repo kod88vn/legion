@@ -62,8 +62,11 @@ Every item below is still open. "Verified" in this repo means tests and review o
 - Stopped on purpose: `legion` (`ro-legion`), `legion-core` (`ro-legion-core`), Ayla's OpenKore (`ro-openkore-ayla`),
   the agency stand-in (`ro-agency`, see README), every agent, mind and loop.
 - `stack.hold` is set. Nothing starts without the owner (G21).
-- Bug queue: 2134 lines in `legion/data/bugqueue.jsonl` (append-only). 673 unique ids: 205 assigned, 248 closed,
-  220 duplicate. `bugq.py list` shows 204 open. (One assigned id is not in the list; not yet explained.)
+- Bug queue, recount 2026-11-15 (read only; `bugq.py` load and rank, `bugq.py list` and `summary` agree): 2136
+  lines in `legion/data/bugqueue.jsonl` (append-only). 673 unique ids: open 0, assigned 205 (all live items; no item
+  has no status), closed 248, duplicate 220. Of the 205 live items, 201 have a named assignee; 4 have none
+  (`b1794773272q31`, `b1794778775768`, `b1794780557h4f`, `b1794780764rrq`). The earlier note "204 open" was wrong:
+  the live total is 205 (`bugq.py list` prints 205 lines).
 - Stray `tools/system/aylawatch.sh` loops were stopped; their launcher is not identified (bug `b1794787166o9s`).
   The file itself is still untracked in the main checkout.
 

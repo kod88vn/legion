@@ -16,8 +16,9 @@ anything (G21). Each item ends with a verification line (Constitution 3.6): no i
 - Two deploy-gate follow-ups must be fixed before the first deploy: **M1** (the sync-merge exemption reads `main` but
   HEAD may be another branch; it must refuse unless HEAD is `refs/heads/main`), **M2** (non-merge commits on main
   are not gated). Bugs `b179479365305x` (M1) and `b1794793670m7g` (M2).
-- Bug queue (`python tools/system/bugq.py list`, read only): 204 open items, all with an assignee in the fold. Of
-  them, 92 carry the group `followups-batch-2` (the brief said about 200; the group is 92, the rest sit with named fixers).
+- Bug queue (recounted 2026-11-15, read only): 673 unique ids; open 0, assigned 205 (the live total, all in
+  `bugq.py list`), no status 0, closed 248, duplicate 220. Of the 205, 201 have a named assignee and 4 have none.
+  93 are assigned to the group `followups-batch-2` (the earlier brief said about 200; the real figure is 93).
 
 ## Order
 
@@ -44,11 +45,12 @@ anything (G21). Each item ends with a verification line (Constitution 3.6): no i
    `MarketEngineOn` and `GuildMarketFeedOn` (`b1794788146ieu`). Who: fixer, reviewer. Waits on: nothing.
    Verify: `tools/dev/gocheck.sh` gofmt step clean, and vet and test still pass.
 6. **Roster edit** (Echobunny and LilLilyblade to alumni, in `legion/data/human-parties.json` and `.env` `LEGION_CORE`,
-   together). Found on 2026-11-15: `human-parties.json` already lists both under `alumni` (the file is git-ignored,
-   so the change is not in a commit), and `.env` `LEGION_CORE` already lists only the four members
-   (Zendancer84, Zen.fox, xXRinfangXx, vex_x18). Who: ops agent checks both files agree and writes the result on the
-   bug queue. Waits on: nothing for the check. Restarting `legion-core` to apply `LEGION_CORE` waits on the owner.
-7. **followups-batch-2** (92 items, plus the rest of the 204 open). Who: named fixers by area, one change at a time
+   together). **Verified 2026-11-15 by reading only** (no write, no bug queue entry): `legion/data/human-parties.json`
+   (git-ignored) lists both under `alumni`, and `.env` `LEGION_CORE` has four entries, equal to the party's four
+   members, with neither of the two names in it. Result: the roster agrees. Still open: writing this check onto the
+   bug queue (ops agent) and, to apply `LEGION_CORE` to the running engine, restarting `legion-core`, which waits on the
+   owner.
+7. **followups-batch-2** (93 items; the other 112 live items sit with named fixers). Who: named fixers by area, one change at a time
    per part (3.5). Waits on: nothing for the fixes; each fix is verified before the next to the same part.
    Known items for this group: crier CRLF to LF churn (`b1794790977uw9`), crier `default_mode` hard-coded,
    `partycheck.py:152` blind timer, stale seed names in the docs (`owner-wants-layout.md`, `ayla-party-guild.md`).

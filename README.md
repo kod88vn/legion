@@ -158,7 +158,10 @@ Current state and what may start: `STATUS.md`. Plan and progress: `PLAN.md`, `PR
   - Walk path `max_walk_path: 32` in `battle_conf.txt`: the fix for the rubber-banding described above.
   - Job cap: 2nd classes only. No rebirth, no 3rd or 4th jobs (ST01 / G10), enforced by the NPC unloads in
     `rathena/npc-custom/scripts_custom.conf`.
-  - Level limits: `not found in repo` (no base or job level cap in `battle_conf.txt` or `settings.md`).
+  - Level limits: level 99 and 1,273 stat points at level 99; 2nd-class job level cap 50. Sources:
+    `docs/classes/all.md` (build milestones, about line 201), `docs/classes/acolyte.md` (about line 75) and
+    `docs/classes/mage.md` (about line 67). The repo has no rathena `max_base_level` or `max_job_level` override in
+    `rathena/conf/import`.
   - Capacity: about 1,024 connections; 960 normal bot slots with headroom for guild leaders, Ayla's party and humans (ST06).
   - Chat (party, guild, whisper, global) is logged so the dashboard can show it (ST07).
   - Connections from 127.0.0.1 are not limited (`conf/import/packet_conf.txt`), because every bot connects from there.
@@ -206,7 +209,9 @@ Current state and what may start: `STATUS.md`. Plan and progress: `PLAN.md`, `PR
   runs on the virtual display **:98** at 1280x720. A view-only VNC copy is served on :5998 (`docs/handover/ayla-live-view.md`).
 - Scripts for it are in `tools/rogui/` (`ai-display.sh`, `ai-client.sh`, `keeper.sh`, `ayla.sh`). The `ro.ps1` and
   `input.ps1` files that used the real mouse are disabled (G01): agents never drive a client with the real mouse or keyboard.
-- Not found in repo: the Wine build in use on the machine today. The handover describes a newer new-WoW64 build as a fix in progress.
+- Wine: the live client runs on system Wine 9.0 with the private prefix `~/.wine-ro` (`docs/handover/ayla-live-view.md`,
+  `tools/rogui/ai-client.sh`). The WoW64 fix (Wine 11.0 in new-WoW64 mode, its own prefix) is pending and not switched
+  on: `ROAI_WOW64` defaults to 0 in `tools/rogui/ai-client.sh`.
 
 ### Start and stop
 Not copied here. The order, the owner's words and the commands are in `STATUS.md` ("How to start", "Stopping"); the
