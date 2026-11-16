@@ -25,7 +25,8 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
   10,000z; under 10,000z she sends none and saves up. Under the engine the floor follows the engine party (`engine_parties`), not her name. (2026-11-14, amended 2026-11-15)
 - AY23. Ayla collects her group: when a member lags, she waits about 10 s for it to catch up, then goes back to collect it if it hasn't; she does not bounce back and forth. A member on a town run is left to come back on its own. (2026-11-15)
 - GD06. The owner's GM account `wander` (Wanderer) joins Ayla's guild Starveil. It is not a party member and does not trade or talk in public. (2026-11-15)
-- AY11. The party has five members: Ayla, Priest, Crusader, Hunter, Wizard (bot characters of a fitting level, run like her other friends; members who leave stay in Starveil as independent bots). Earlier rosters of seven (Knight, Monk, Alchemist; AY10) are superseded. (2026-11-15)
+- AY11. The party has five members, Ayla included: two frontlines (melee or tank; Ayla, an Assassin, is one), two ranged, one support: Ayla, Crusader, Hunter, Wizard, Priest (bot characters of a fitting level, run like her other friends; members who leave stay in Starveil as independent bots; a replacement keeps the composition). Earlier rosters of seven (Knight, Monk, Alchemist; AY10) and the briefly ordered four are superseded. (2026-11-15, amended twice 2026-11-15)
+- AY26. The party always protects its support: the frontlines stay between the support and the monsters, the ranged keep the support out of harm's way, and no one leaves the support behind. (2026-11-15)
 - AY12. Ayla founds the guild Starveil with /guild (no Emperium needed, `guild_emperium_check: no`) and recruits players of every
   job. (2026-11-14)
 - AY13. As Starveil's leader Ayla plans resources (zeny, storage, member gear, alchemist potion supply), grows the membership,

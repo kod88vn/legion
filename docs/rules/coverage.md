@@ -10,7 +10,7 @@ section 0 -> `process.md`, 1 -> the hard gates (`gates.md`), 2 -> `economy.md` a
 3b -> `guilds.md`, 4 -> `chat.md`, 5 -> `ayla.md`, 6 -> `process.md` (DB01, DB02); class rules -> `docs/classes/`.
 Find the rule by the quoted title in the Name column below.
 
-Counts by kind: behaviour spec 120, hard gate 20, process 30, replaced 5, server setting 8, ayla 9, economy 12, parties 6, classes 2, settings 1, total 213.
+Counts by kind: behaviour spec 122, hard gate 20, process 34, replaced 5, server setting 8, ayla 9, economy 13, parties 6, classes 2, settings 1, total 220.
 
 | ID | Name | Kind | Old location | New location | Status |
 |---|---|---|---|---|---|
@@ -153,7 +153,8 @@ Counts by kind: behaviour spec 120, hard gate 20, process 30, replaced 5, server
 | AY09 | Ayla keeps at least 10,000 zeny | hard gate | RULES 5 (l.479) | RULES.md as G12 | kept as hard gate |
 | AY10 | Ayla's party gets a Hunter and an Alchemist | behaviour spec | RULES 5 (l.482) | docs/rules/ayla.md | merged into AY11 roster line |
 | GD06 | Owner's GM account wander joins guild Starveil (2026-11-15) | behaviour spec | RULES 5 | docs/rules/ayla.md | kept |
-| AY11 | Ayla's party of 5: Ayla, Priest, Crusader, Hunter, Wizard (2026-11-15) | behaviour spec | RULES 5 (l.485) | docs/rules/ayla.md | replaced |
+| AY11 | Ayla's party of 5: 2 frontlines (melee or tank, Ayla one), 2 ranged, 1 support: Ayla, Crusader, Hunter, Wizard, Priest (2026-11-15, amended twice by the owner) | behaviour spec | owner 2026-11-15 | docs/rules/ayla.md | edited rule |
+| AY26 | The party always protects its support (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/ayla.md | new rule |
 | AY12 | Ayla founds guild Starveil, recruits all jobs, no Emperium | behaviour spec | RULES 5 (l.487) | docs/rules/ayla.md | kept |
 | AY13 | Ayla is a real guild leader: resources, balanced recruiting | behaviour spec | RULES 5 (l.491) | docs/rules/ayla.md | kept |
 | AY14 | Old seed bot AIBot is switched off | server setting | RULES 5 (l.496) | docs/rules/settings.md | moved |

@@ -1966,6 +1966,12 @@ Resolved by newest owner word per PR41; see coverage.md.
 "Constitution wording: yes, you may, build drives market, market drives farmers, farmers drive price (supply and demand rules), these are all dynamic and can be determined by an algorithm, however, I do not want to see fixed price, price should fluctuate depending on how fast someone is trying to sell. If a bot has less money and in desperate need to buy a gear which is currently available in the market, price should be lower to sell sooner. That's supply and demand in a nutshell. No need to remove passwords of fake accounts. Agent that only runs on algorithm can be a script, yes, but make sure it comes with tests. Make sure copilot can take over this project always. I have no idea about build or skills, stop asking me, do a research"
 ```
 
+## AY11 (amended: four members, then five again) / AY26
+```text
+"I change my mind, 4 in total for Ayla's party size: 2 frontlines (melee or tank), 1 range, 1 support"
+"actually, change back to 5: 2 frontline, 2 range, 1 support. Must always protect support"
+```
+
 ## DB11
 ```text
 "I also need you to update the dashboard to include facts about the stuff we designed here. Make sure the facts there always reflect the source even if we change stuff in the future"
