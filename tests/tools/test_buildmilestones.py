@@ -1,6 +1,12 @@
 """legion/data/buildmilestones.json: every build in builds.go has an entry, each range's stats fit the stat points of its
 base level, and the checkpoints follow the plans. Offline, reads only repo files.
 Run: python -m unittest discover -s tests/tools -p "test_buildmilestones.py" -v"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import json
 import os
 import sys

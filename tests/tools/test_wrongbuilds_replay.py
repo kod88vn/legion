@@ -5,6 +5,12 @@ is played as a character that followed it: first-job levels at every point count
 budgets. The current plans (with their Legacy / LegacyStats) must flag none of them, so no existing character is a
 wrong build and `wrongbuilds.py reset` cannot delete one. Offline: reads repo files only.
 Run: python -m unittest discover -s tests/tools -p "test_wrongbuilds_replay.py" -v"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import os
 import sys
 import unittest

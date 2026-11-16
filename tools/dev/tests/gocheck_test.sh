@@ -81,5 +81,34 @@ else
   ok "-run case skipped: no WSL route on this host"
 fi
 
+# 6. two runs at the same time, on two different trees: each reports its own source path and its own git HEAD sha, and
+# never the other's (a shared env or temp file would let one run read the other's tree). Two tiny Go modules, offline.
+if [ "$inside_wsl" = 1 ] || command -v wsl >/dev/null 2>&1 || [ -x /c/Windows/System32/wsl.exe ]; then
+  A="$(mktemp -d)"; B="$(mktemp -d)"
+  for X in "$A" "$B"; do
+    mkdir -p "$X/legion" && cd "$X/legion" || exit 1
+    printf 'module example.com/%s\n\ngo 1.22\n' "$(basename "$X")" > go.mod
+    printf 'package main\n\nfunc main() {}\n' > main.go
+    git init -q && git add -A && git -c user.email=t@t -c user.name=t commit -qm init
+  done
+  cd "$HERE"
+  SHA_A="$(git -C "$A/legion" rev-parse HEAD)"; SHA_B="$(git -C "$B/legion" rev-parse HEAD)"
+  WA="$(cygpath -w "$A/legion" 2>/dev/null || echo "$A/legion")"; WB="$(cygpath -w "$B/legion" 2>/dev/null || echo "$B/legion")"
+  bash "$GC" --fast "$WA" > "$A/out.txt" 2>&1 & pa=$!
+  bash "$GC" --fast "$WB" > "$B/out.txt" 2>&1 & pb=$!
+  wait "$pa"; ra=$?; wait "$pb"; rb=$?
+  okA=0; okB=0
+  grep -q "gocheck: source .*$(basename "$A")/legion  git HEAD $SHA_A" "$A/out.txt" && ! grep -q "$(basename "$B")" "$A/out.txt" && okA=1
+  grep -q "gocheck: source .*$(basename "$B")/legion  git HEAD $SHA_B" "$B/out.txt" && ! grep -q "$(basename "$A")" "$B/out.txt" && okB=1
+  if [ "$okA" = 1 ] && [ "$okB" = 1 ] && grep -q "vet: ok" "$A/out.txt" && grep -q "vet: ok" "$B/out.txt"; then
+    ok "concurrent runs: each reports its own tree and sha (exit $ra and $rb)"
+  else
+    bad "concurrent runs: A exit $ra, B exit $rb; A out: $(tail -5 "$A/out.txt"); B out: $(tail -5 "$B/out.txt")"
+  fi
+  rm -rf "$A" "$B"
+else
+  ok "concurrent case skipped: no WSL route on this host"
+fi
+
 echo "gocheck_test: $fails failure(s)"
 [ "$fails" -eq 0 ]

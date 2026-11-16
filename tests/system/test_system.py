@@ -474,6 +474,8 @@ class TestSentinelMeter(Env):
 
     def test_imports_without_legion_data(self):
         """Regression b1794706820063-060: with LEGION_DATA unset, ROOT was used before it was defined."""
+        # LEGION_TEST is dropped on purpose: this only imports the module and prints DATA, touching no file. The audit
+        # tripwire (tools/system/tripwire) still refuses any file access under the live folder in this child.
         env = {k: v for k, v in os.environ.items() if k not in ("LEGION_DATA", "LEGION_TEST")}
         r = subprocess.run([sys.executable, "-c", "import sentinel; print(sentinel.DATA)"], capture_output=True,
                            text=True, env=env, cwd=os.path.join(REPO, "tools"))

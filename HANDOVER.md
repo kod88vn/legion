@@ -29,6 +29,7 @@ commit 63ca923). Engineering history is not rewritten.
 | `social.md` | 6i to 6i3 | friendship, guild loyalty, name filter |
 | `qa-gm.md` | 6j | travel and services QA with the GM test character |
 | `open-issues.md` | 7, 8 | open issues, quick checks, background loops |
+| `testing.md` | | how to run the tests: `runsuites.py` (full, `--changed`, `--go`), timeouts, the G23 tripwire, gocheck |
 
 ## Other references
 - Classes and builds: `docs/classes/*`. Lessons: `legion/data/lessons.md` via `docs/rules/lessons-index.md`.

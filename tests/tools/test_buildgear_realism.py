@@ -7,6 +7,12 @@ it fits its slot's location; every slot has a wearable piece; no shield in a ban
 bards need an instrument, dancers a whip; a card fits its slot and is dropped by a monster at most 20 levels above
 the band top; a card's stated stat bonuses are the ones its script gives.
 Run: python -m unittest discover -s tests/tools -t tests/tools"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import json
 import os
 import re

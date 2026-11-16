@@ -3,11 +3,14 @@
 Every test process sets LEGION_TEST=1 (tests/testenv.py). With that set, the one data-folder resolver
 (tools/system/common.py data_dir) raises as soon as it would resolve to the live legion/data, so a test that
 reaches the live folder fails on the spot. This file checks that the rule holds:
-- each suite runs in a child process with LEGION_TEST=1 and LEGION_DATA unset, and every child must exit 0
-  (a timeout kills the child and fails the guard);
+- each suite runs in a child process with LEGION_TEST=1 and LEGION_DATA unset, and every child must exit 0. The
+  children come from tools/system/runsuites.py: the same discovery, a hard timeout per suite (a hang fails the
+  guard, it never stalls it) and a bounded number of children at a time;
 - a planted leak (a child that resolves the data folder with LEGION_DATA unset) must raise.
 No file comparison: the running stack writes its own files, so the tripwire is the resolver, not a snapshot.
-LEGION_GUARD_CHILD=1 makes the suite-run test skip itself, so the child runs do not start another guard.
+LEGION_GUARD_CHILD=1 makes the suite-run test skip itself: the children carry it, and runsuites.py sets it on every
+child, so when runsuites.py (gatecheck.py, or `runsuites.py` itself) runs the suites, that run is this guard's run and
+the suites are not run twice.
 """
 import os
 import subprocess
@@ -15,36 +18,28 @@ import sys
 import unittest
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+sys.path.insert(0, os.path.join(REPO, "tools", "system"))
+import runsuites  # noqa: E402
+
+# suites that must exist (discovery finds them; a missing one is a failure, not a quiet skip)
 SUITES = ["tests/system", "tests/dashboard", "tests/ayla", "tests/tools", "tools/puppet/tests"]
-CHILD_TIMEOUT = 900
-
-
-RESOLVER_OVERRIDES = ("LEGION_DATA", "AYLA_ORDERS", "AYLA_ORDERS_LOG", "LEGION_BUGQ_EXTRA")
 
 
 def _child_env(**extra):
-    """the parent's environment without the path overrides, so a child resolves its paths the way a bare run does
-    (test_constitution sets AYLA_ORDERS for the whole process; a child must not inherit that)"""
-    env = {k: v for k, v in os.environ.items() if k not in RESOLVER_OVERRIDES}
-    env["LEGION_TEST"] = "1"
+    """the tripwire environment (runsuites.tripwire_env) plus extra variables"""
+    env = runsuites.tripwire_env()
     env.update(extra)
     return env
 
 
-@unittest.skipIf(os.environ.get("LEGION_GUARD_CHILD"), "a child run of the guard")
+@unittest.skipIf(os.environ.get("LEGION_GUARD_CHILD"), "a child run of the guard: runsuites.py is the guard's run")
 class SuitesStayOffLiveData(unittest.TestCase):
     def test_every_suite_exits_zero_under_the_tripwire(self):
-        failures = []
-        for suite in SUITES:
-            cmd = [sys.executable, "-m", "unittest", "discover", "-s", suite, "-t", suite]
-            try:
-                r = subprocess.run(cmd, cwd=REPO, env=_child_env(LEGION_GUARD_CHILD="1"),
-                                   capture_output=True, text=True, timeout=CHILD_TIMEOUT)
-            except subprocess.TimeoutExpired:   # subprocess.run has killed the child
-                failures.append("%s: timed out after %ds (child killed)" % (suite, CHILD_TIMEOUT))
-                continue
-            if r.returncode != 0:
-                failures.append("%s: exit %d: %s" % (suite, r.returncode, (r.stderr or r.stdout)[-400:]))
+        suites = runsuites.suite_dirs(REPO)
+        for s in SUITES:
+            self.assertIn(s, suites, "suite %s was not found by discovery" % s)
+        results = runsuites.run_all(suites, REPO)
+        failures = [runsuites.describe(r) + "\n" + r.tail(400) for r in results if not r.ok]
         self.assertEqual(failures, [], "\n".join(failures))
 
 

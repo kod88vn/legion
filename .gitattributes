@@ -1,0 +1,2 @@
+# shell scripts run under bash (Git Bash, WSL): always LF in the working copy, even on a Windows clone with autocrlf
+*.sh text eol=lf
