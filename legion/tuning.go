@@ -190,6 +190,9 @@ type Tuning struct {
 	KafraChainOff bool `json:"kafra_chain_off"`
 	// ferry.go: the Sailor boats (Izlude <-> Byalan Island) are route edges (true = no boats: iz_dun* unreachable)
 	FerriesOff bool `json:"ferries_off"`
+	// vendpitch.go: Vending refusals burn a pitch only for the cell, stale pitches reclaimed, stuck cart loads reset,
+	// shop stock promised to walking buyers not offered twice (true = old behaviour)
+	VendPitchFixOff bool `json:"vend_pitch_fix_off"`
 	// staged rollout: with rally_enabled false, this percentage of bot parties (by party-name hash) rally
 	RallyBotShare int `json:"rally_bot_share"`
 	// rallypark.go: one owner of the rally/Kafra-wait sit, members leave a rally leg they can't travel, park cap.

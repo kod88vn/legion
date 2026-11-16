@@ -39,6 +39,7 @@ type vendBuy struct {
 	goalSet, sent    bool
 	done             bool
 	result, lastNote string
+	ended            atomic.Bool // vendpitch.go shopReserved: read without the buyer's lock
 }
 
 var vendBuys sync.Map // *Bot -> *vendBuy
@@ -139,6 +140,7 @@ func (b *Bot) endVendBuy(vb *vendBuy, why string) {
 		econCount("shop buy: " + r)
 	}
 	vb.done, vb.result = true, why
+	vb.ended.Store(true)
 	if vb.goalSet && b.Goal.Set == "vendbuy" {
 		b.Goal, b.route, b.path = vb.savedGoal, nil, nil
 	}
@@ -431,6 +433,9 @@ func (b *Bot) browseShops(now time.Time) {
 		return
 	}
 	spw := b.spPotionWant(false)
+	for i := range shops { // vendpitch.go: what buyers already walking there will take is not on offer
+		shops[i].items = shopAvailable(shops[i].vendor, shops[i].items, now)
+	}
 	var best *shopRef
 	bestID, bestN, bestPrice, bestScore, bestWhy := 0, 0, 0, 0.0, ""
 	for i := range shops {
