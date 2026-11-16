@@ -851,7 +851,7 @@ func (b *Bot) chooseHuntingGround() {
 			h := 0
 			if g.Map != b.MapName {
 				r := RouteMaps(b.MapName, b.X, b.Y, g.Map, b.powerLv())
-				if r == nil {
+				if r == nil || b.fareShort(r) { // travelshare.go: not behind a boat we can't pay
 					continue
 				}
 				h = len(r)
@@ -953,7 +953,7 @@ func (b *Bot) chooseHuntingGround() {
 	best, bs := HuntSpot{}, -1e9
 	for i := 0; i < 10; i++ {
 		s := spots[b.rng.Intn(len(spots))]
-		if s.Map == b.badMap && time.Now().Before(b.badMapUntil) {
+		if s.Map == b.badMap && time.Now().Before(b.badMapUntil) || b.pickSkip(s.Map) { // travelshare.go: walk-banned
 			continue
 		}
 		if b.PartyID == 0 && partyMapTooHard(s.Map, b.soloRateLv(b.powerLv())) {
@@ -962,7 +962,7 @@ func (b *Bot) chooseHuntingGround() {
 		hops := 0
 		if s.Map != b.MapName {
 			r := RouteMaps(b.MapName, b.X, b.Y, s.Map, b.powerLv())
-			if r == nil {
+			if r == nil || b.fareShort(r) { // travelshare.go: not behind a boat we can't pay
 				continue
 			}
 			hops = len(r)
@@ -1971,7 +1971,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		b.roamSince = now.Add(-giveUp - time.Second) // the solo give-up below fires on this tick
 	}
 	// seen.go: no monster at all in view for 60 s (not even too-high ones) - the map reads empty, move on sooner
-	if (now.Sub(b.roamSince) > giveUp || b.seesNothing(now)) && partyOf(b) == nil && b.Goal.Set == "auto" {
+	if (now.Sub(b.roamSince) > giveUp || b.seesNothing(now)) && partyOf(b) == nil && b.Goal.Set == "auto" && !b.roamStay(now) { // travelshare.go: a map that still pays is kept (roam_stay_on)
 		if b.seesNothing(now) {
 			b.event("info", "", fmt.Sprintf("no monsters in sight on %s for a minute: moving on", b.MapName))
 		}

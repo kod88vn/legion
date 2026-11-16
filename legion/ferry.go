@@ -75,6 +75,9 @@ func (b *Bot) ferryStep(gm *GameMap, w Warp, now time.Time) {
 	}
 	b.lastWarp = w
 	if b.Zeny < w.Fare {
+		if b.ferryBroke(st, now) { // travelshare.go: a solo goal is given up; no retry every tick
+			return
+		}
 		b.ferryGiveUp(st, fmt.Sprintf("can't pay the boat at %s (%dz, have %d)", w.From, w.Fare, b.Zeny), now)
 		return
 	}

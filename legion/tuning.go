@@ -204,6 +204,14 @@ type Tuning struct {
 	FarmShareOff       bool `json:"farm_share_off"`
 	KafraWaitCapSec    int  `json:"kafra_wait_cap_sec"`
 	KafraLongWalkCells int  `json:"kafra_long_walk_cells"`
+	// travelshare.go: the loop fixes (no walk-banned map re-picked, no boat the bot can't pay): ON by default
+	// (travel_share_off true switches them off)
+	TravelShareOff bool `json:"travel_share_off"`
+	// travelshare.go: NEW, OFF by default. roam_stay_on true: a solo bot stays on a map that still pays roam_stay_kpm
+	// kills/min over roam_stay_window_sec instead of roaming off it. 0 = 1.0 kills/min over 300 s
+	RoamStayOn        bool    `json:"roam_stay_on"`
+	RoamStayKpm       float64 `json:"roam_stay_kpm"`
+	RoamStayWindowSec int     `json:"roam_stay_window_sec"`
 	// farmshare.go kafraMemberWait: a party member past kafra_wait_cap_sec at the Kafra buys or flies a Butterfly Wing
 	// (once per goal), walks a safe route, or asks the party to collect it and keeps waiting. After
 	// kafra_member_wait_cap_sec (0 = 180) a stuck leader of a bot-led party moves the party once; a human-led party is
