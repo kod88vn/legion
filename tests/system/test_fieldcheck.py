@@ -322,5 +322,58 @@ class WatchdogHook(unittest.TestCase):
         self.assertNotIn("fieldcheck", " ".join(f["key"] for f in res["filed"]))
 
 
+class TownRouteTests(unittest.TestCase):
+    """the town-route check (b1794721137499): the walk between two cells of a field, 8-way, no corner cut"""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="townroute-")
+        os.makedirs(os.path.join(self.tmp, "fields-re"))
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def write_field(self, name, w, h, rows):
+        data = struct.pack("<HH", w, h) + bytes(int(c) for r in rows for c in r)
+        with gzip.open(os.path.join(self.tmp, "fields-re", name + ".fld2.gz"), "wb") as f:
+            f.write(data)
+
+    def test_open_walk_is_found(self):
+        fld = bytes([1] * 12)
+        self.assertTrue(fieldcheck.field_route(fld, 4, 3, (0, 0), (3, 2)))
+
+    def test_wall_cuts_the_walk(self):
+        rows = [[1, 0, 1], [1, 0, 1], [1, 0, 1]]           # a wall down the middle: no way across
+        fld = bytes(c for r in rows for c in r)
+        self.assertFalse(fieldcheck.field_route(fld, 3, 3, (0, 0), (2, 0)))
+
+    def test_no_corner_cut(self):
+        rows = [[1, 0], [0, 1]]                             # only the diagonal is open: corners block it
+        fld = bytes(c for r in rows for c in r)
+        self.assertFalse(fieldcheck.field_route(fld, 2, 2, (0, 0), (1, 1)))
+
+    def test_blocked_endpoint_is_no_route(self):
+        fld = bytes([0, 1, 1, 1])
+        self.assertFalse(fieldcheck.field_route(fld, 2, 2, (0, 0), (1, 1)))
+
+    def test_repo_field_route_problem_is_filed(self):
+        self.write_field("izlude", 4, 3, [[1, 0, 1, 1], [1, 0, 1, 1], [1, 0, 1, 1]])  # wall at x=1
+        routes = [("izlude", (0, 0), (3, 0), "split by a wall"), ("izlude", (0, 0), (0, 2), "same side")]
+        probs, info = fieldcheck.check_town_routes(self.tmp, routes)
+        self.assertEqual([p["kind"] for p in probs], ["route"])
+        self.assertIn("split by a wall", probs[0]["detail"])
+        self.assertEqual(info["checked"], 2)
+
+    def test_missing_field_file_is_a_problem(self):
+        probs, _ = fieldcheck.check_town_routes(self.tmp, [("morocc", (0, 0), (1, 1), "x")])
+        self.assertEqual(len(probs), 1)
+        self.assertEqual(probs[0]["kind"], "route")
+
+    def test_repo_town_routes_hold(self):
+        """the real repo field files: the izlude start cell and the izlude and morocc town walks"""
+        probs, info = fieldcheck.check_town_routes(os.path.join(REPO, "openkore"))
+        self.assertEqual(probs, [], probs)
+        self.assertEqual(info["checked"], len(fieldcheck.TOWN_ROUTES))
+
+
 if __name__ == "__main__":
     unittest.main()

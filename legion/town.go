@@ -898,6 +898,7 @@ func (b *Bot) tripThink(gm *GameMap, moving bool, now time.Time) bool {
 		}
 		if t.Why == "calling it a day" {
 			b.Goal = Goal{Mode: "idle", Map: b.MapName, Set: "auto"}
+			b.buffAt["idleAuto"] = now // ai.go probeIdleAuto: how long the session-end idle has lasted
 		}
 		if t.Shop != nil && t.Why != "magnifier" {
 			b.event("info", "", fmt.Sprintf("restocked: %d potions, %d zeny (bought-grade %d, starter kit %d)", b.potionCount(), b.Zeny, b.buyPotCount(), b.potionCount()-b.buyPotCount()))

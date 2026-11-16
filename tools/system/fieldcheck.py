@@ -63,7 +63,57 @@ def problem(source, kind, map_name, detail):
 
 KINDS = {"size": "field size", "cells": "walk cell", "flags": "snipe/water flag", "unreadable": "unreadable",
          "shadow": "uncompressed shadow", "portal-drop": "portal to drop", "portal-missing": "portal missing",
-         "patch": "patch line"}
+         "patch": "patch line", "route": "town route"}
+
+# Town routes the field files must keep walkable (b1794721137499, 2026-11-15: OpenKore's getRoute refused the start
+# cell izlude 24,98 for an hour; the field and the server cache both say it is walkable, so the check pins the cells
+# and the walk from them). (map, from, to, why). Walk = the field byte's low bit (1 = walkable), 8-way, no corner cut.
+TOWN_ROUTES = [
+    ("izlude", (24, 98), (20, 98), "the cell OpenKore refused, to the west exit (prt_fild08)"),
+    ("izlude", (195, 212), (20, 98), "the ship landing to the west exit"),
+    ("izlude", (128, 148), (110, 182), "the Kafra to the south-east exit (izlude_in)"),
+    ("morocc", (156, 97), (160, 260), "the arrival to the far exit"),
+]
+
+
+def field_route(fld, w, h, a, b):
+    """True when the walk from cell a to cell b exists in the field bytes fld (w x h), 8-way, no corner cut"""
+    def walk(x, y):
+        return 0 <= x < w and 0 <= y < h and (fld[x + y * w] & 1) == 1
+    if not walk(*a) or not walk(*b):
+        return False
+    seen, todo = {a}, [a]
+    while todo:
+        x, y = todo.pop()
+        if (x, y) == b:
+            return True
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                nx, ny = x + dx, y + dy
+                if (dx or dy) and (nx, ny) not in seen and walk(nx, ny):
+                    if dx and dy and not (walk(x + dx, y) and walk(x, y + dy)):
+                        continue
+                    seen.add((nx, ny))
+                    todo.append((nx, ny))
+    return False
+
+
+def check_town_routes(openkore_dir, routes=TOWN_ROUTES):
+    """the town routes against the repo field files. Returns (problems, info)."""
+    path = os.path.join(openkore_dir, "fields-re")
+    fields, _raws, _bad = read_field_dir(path)
+    probs, checked = [], 0
+    for name, a, b, why in routes:
+        data = fields.get(name)
+        if data is None:
+            probs.append(problem("repo fields-re", "route", name, "no field file for a town route (%s)" % why))
+            continue
+        w, h = struct.unpack("<HH", data[:4])
+        checked += 1
+        if not field_route(data[4:], w, h, a, b):
+            probs.append(problem("repo fields-re", "route", name,
+                                 "no walk from %d,%d to %d,%d: %s" % (a[0], a[1], b[0], b[1], why)))
+    return probs, {"source": "town routes", "routes": len(routes), "checked": checked, "notes": []}
 
 
 # ----------------------------------------------------------------- docker (read-only)
@@ -320,6 +370,9 @@ def run_all(server_dir=None, repo=True, containers=None, field_dirs=(), no_docke
             probs += p
             infos.append(i)
             p, i = repo_portal_patch(openkore_dir, cache, warps, anynpc)
+            probs += p
+            infos.append(i)
+            p, i = check_town_routes(openkore_dir)
             probs += p
             infos.append(i)
         for d in field_dirs:
