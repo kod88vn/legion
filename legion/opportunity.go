@@ -349,6 +349,9 @@ func (b *Bot) moneyGoalOf(now time.Time) *moneyGoal {
 // the item to farm for sale, its safe drop maps), or nil. Call it after a Prontera visit (checkMarket) or any time:
 // without a live money goal it picks one now (no event line).
 func (b *Bot) MoneyFarmGoal(now time.Time) *farmGoal {
+	if fg := b.farmerGoal(now); fg != nil { // farmers.go (WP3): a farmer's market order, when its own checks pass
+		return fg
+	}
 	g := b.moneyGoalOf(now)
 	if g == nil {
 		g = b.pickOpportunity(now)

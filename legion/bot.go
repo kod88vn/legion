@@ -724,6 +724,7 @@ func (b *Bot) handle(pk []byte) {
 				noteDeathAt(b.MapName)                 // danger.go: real deaths in a 10-minute window
 				b.noteBossDeath(time.Now())            // bossnote.go: a boss killed us here: the spot is shared for 10 min
 				b.noteKiteDeath(now)                   // kite.go (market WP1): a death within a minute of a kiting step
+				noteFarmerDeath(b, now) // farmers.go (WP3): a farmer's death counts toward its metrics
 				b.deathLog = append(b.deathLog, mapVisit{m: b.MapName, at: time.Now()})
 				leaderNoteDeath(partyLeaderName(b), b.MapName) // party.go: 2 party deaths on a map keep the leader's parties off it 1 h
 				b.diedAt = time.Now()
@@ -910,6 +911,7 @@ func (b *Bot) handle(pk []byte) {
 			it.Count += int(le.Uint16(pk[4:]))
 			b.Loots++
 			b.meterLoot(it.ItemID, int(le.Uint16(pk[4:]))) // meter.go: market value of the loot
+			noteFarmerLoot(b, it.ItemID, int(le.Uint16(pk[4:]))) // farmers.go (WP3): a farmer's loot
 			atomic.AddInt64(&stats.loots, 1)
 		}
 	case 0x0b39: // equipment list (68 bytes each after invType): idx, itemid, type, location, wearstate, ...
@@ -1552,6 +1554,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		// which of the player's characters to play this session; reset per-character state
 		b.mu.Lock()
 		b.cur = b.pickChar()
+		noteFarmerSessionStart(b, time.Now()) // farmers.go (WP3): a roster account's session starts (farmer hours)
 		b.Class, b.skills, b.stats = b.cur.Class, map[int]*SkillInfo{}, [6]int{}
 		b.inv, b.cart, b.hasCart = map[int]*InvItem{}, map[int]*InvItem{}, false
 		b.vend, b.trip, b.npcDeal, b.Goal = nil, nil, nil, Goal{}
@@ -1646,6 +1649,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		b.remember("logged off (%s), level %d %s", why, b.BaseLvOr(), className(b.Class))
 		b.mu.Unlock()
 		atomic.AddInt64(&stats.online, -1)
+		noteFarmerSessionEnd(b, time.Now()) // farmers.go (WP3): the session's time counts as farmer hours
 		b.mu.Lock()
 		b.Online, b.State = false, "offline"
 		if why != "stopped" && why != "session over" {

@@ -106,6 +106,9 @@ func (b *Bot) endMail(m *mailOut, ok bool, note string) {
 		atomic.AddInt64(&mailFailed, 1)
 		econCount("mail zeny: failed (" + note + ")")
 	}
+	if ok {
+		farmerNoteParcel(b, m.To) // farmers.go (WP3): a confirmed send to the farmer's own vendor = a parcel
+	}
 	if m.onDone != nil {
 		m.onDone(ok, note)
 	}

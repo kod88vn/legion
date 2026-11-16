@@ -139,6 +139,9 @@ func (b *Bot) pickChar() *CharSpec {
 			}
 		}
 	}
+	if c := farmerCharPick(b); c != nil { // farmers.go (WP3): a farmer plays hunter 70 / merchant 30; nil = not a farmer
+		return c
+	}
 	w := make([]float64, len(cs))
 	total := 0.0
 	for i, c := range cs {

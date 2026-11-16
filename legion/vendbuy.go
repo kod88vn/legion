@@ -307,6 +307,7 @@ func (b *Bot) onVendSold(op uint16, pk []byte) {
 		zeny = price * amt
 	}
 	b.vend.Sold += amt
+	noteFarmerSale(b, item, amt) // farmers.go (WP3): a farmer's merchant sold this (its order item only)
 	b.vend.SoldZeny += zeny
 	atomic.AddInt64(&vendSales, int64(amt))
 	atomic.AddInt64(&vendSalesZeny, int64(zeny))

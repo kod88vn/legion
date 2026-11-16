@@ -73,6 +73,9 @@ package main
 //   guild_market_feed_on      false guild leaders' autopilot and dutyMaps read the market feed as information (WP5, guildmarketfeed.go):
 //                                  the wealth direction's item is the feed's best scored short item (24 h hold). Needs market_engine_on.
 //                                  Off: the autopilot is byte-identical to before
+//   farmer_roster_on          false the accounts in data/farmers.json are farmers (farmers.go, EC45; a missing file = none)
+//   farmer_orders_on          false farmers take the market engine's offers (MoneyFarmGoal) and play hunter 70 / merchant 30
+//                                  with a forced merchant session after a parcel (pickChar). Off: nothing changes for any bot
 //   starveil_auto_lead        true Starveil is led with no AI (starveillead.go, AY19): duty warnings/kicks through Ayla's
 //                                  plugin, guild-pool funding, keep gifts, member parties (main instance)
 //
@@ -246,6 +249,11 @@ type Tuning struct {
 	// guild_market_feed_on lets guild leaders read the feed as information (WP5, guildmarketfeed.go)
 	MarketEngineOn   bool `json:"market_engine_on"`
 	GuildMarketFeedOn bool `json:"guild_market_feed_on"`
+	// farmers.go (EC45, WP3): farmer_roster_on makes the accounts in data/farmers.json farmers (missing file = none);
+	// farmer_orders_on lets farmers take the market engine's offers (their own checks decide) and play the 70/30
+	// hunter/merchant split with a forced merchant session after a parcel. Both default off: nothing changes.
+	FarmerRosterOn bool `json:"farmer_roster_on"`
+	FarmerOrdersOn bool `json:"farmer_orders_on"`
 	// engineparty.go (AY24, ayla-switch): comma-separated human names whose party runs bot-led on the engine, the human's
 	// own bot as Leader through formPartyOpt (default empty: every human-led party stays as it is)
 	EngineParties string `json:"engine_parties"`
