@@ -15,6 +15,8 @@ The routes (one per kind of agent, never two):
   C  the dispatcher        tools/puppet/dispatch.py reads the file for every call and refuses to send without it;
                            --safe-mode keeps routes A and B out of those calls.
   D  the mastermind        mastermind/mastermind.py (fallback container) reads the mounted file for every call.
+  E  GitHub Copilot        .github/ instruction files (PR48) have no run-time import: each POINTS to CONSTITUTION.md by
+                           name (check_pointers); the copy check still runs over them.
 A copy of the text anywhere else is an error: one file, loaded at run time.
 """
 import glob
@@ -46,12 +48,13 @@ SENDER_SKIP_FILES = {"tools/system/constcheck.py", "tools/system/constitution.py
 SENDER_EXT = (".py", ".sh", ".go", ".pl", ".ps1", ".cmd", ".bat", ".js", ".ts")
 
 # prompt sources that cannot load a file at run time. They are reported, never given a copy (owner, PR42).
-UNCOVERED = [
-    (".github/copilot-instructions.md", "GitHub Copilot instructions (superseded mirror of the old setup): Copilot "
-                                        "has no file import"),
-    (".github/agents/*.agent.md", "GitHub Copilot agents (superseded mirror)"),
-    (".github/prompts/*.prompt.md", "GitHub Copilot prompts (superseded mirror)"),
-]
+# Empty now: the GitHub Copilot files (PR48) are POINTER sources, checked by check_pointers below.
+UNCOVERED = []
+
+# GitHub Copilot instruction files (PR48). Copilot has no run-time import, so each file must POINT to the constitution
+# (naming CONSTITUTION.md) and must carry no copy of it (check_copies, PR42). A file that is superseded fails.
+COPILOT_SOURCES = [".github/copilot-instructions.md", ".github/agents/*.agent.md", ".github/prompts/*.prompt.md"]
+CONST_NAME_RE = re.compile(r"(?<![\w/.-])CONSTITUTION\.md(?![\w.-])")
 
 
 class Report:
@@ -465,6 +468,27 @@ def check_senders(rep, repo=None):
     return found
 
 
+def check_pointers(rep, repo=None):
+    """the GitHub Copilot files (PR48) exist, are current (no SUPERSEDED), and point to CONSTITUTION.md. A pointer
+    is a name, not a copy: the copy check (check_copies) runs over the same files."""
+    repo = repo or REPO
+    files = []
+    for pat in COPILOT_SOURCES:
+        files += sorted(glob.glob(os.path.join(repo, pat)))
+    if not files:
+        rep.fail(".github", "no GitHub Copilot instruction files (PR48: Copilot must be able to take over)")
+        return
+    for p in files:
+        src = rel(p)
+        text = read(p)
+        if "SUPERSEDED" in text:
+            rep.fail(src, "is marked SUPERSEDED: it must be current (PR48)")
+        elif not CONST_NAME_RE.search(text):
+            rep.fail(src, "does not point to CONSTITUTION.md (PR48: a pointer, not a copy)")
+        else:
+            rep.ok(src, "current; points to CONSTITUTION.md (pointer, no copy)")
+
+
 def check_uncovered(rep, strict=False, repo=None):
     repo = repo or REPO
     for pat, why in UNCOVERED:
@@ -490,6 +514,7 @@ def run(strict=False):
     check_mastermind(rep)
     check_senders(rep)
     check_copies(rep)
+    check_pointers(rep)
     check_uncovered(rep, strict)
     return rep, head
 

@@ -1,9 +1,14 @@
 ---
-description: Market mind for the AI-Lab Ragnarok world: Prontera vending shop titles, prices, ads and haggling.
+description: Market for the AI-Lab Ragnarok world. There is no market agent: the market is an algorithm engine (Constitution 2.6). Use this file to work on the engine's code under the fixer rules, not to play the market.
 ---
 
-> SUPERSEDED (2026-11-14 redesign): the market mind is a one-shot puppet master started by tools/puppet/dispatch.py with tools/puppet/briefs/market.md; this mirror describes the old always-on setup.
+Start with `CONSTITUTION.md` (read it in full, once; it is the highest law and nothing overrides it), then `RULES.md`,
+`STATUS.md`, `HANDOVER.md` and `AGENTS.md`. This file holds pointers only (PR42); the text lives in those files.
 
-You are the **legion-market** mind of a Legion session in the AI-Lab Ragnarok world (see AGENTS.md).
+Role: the market is not a puppet master and not an AI agent (Constitution 2.6, EC46). The market engine calculates what
+the server needs, gives the data to the guild leaders and advises the farmers, who weigh that advice in their own code.
+Its rules: `docs/rules/economy.md`.
 
-Follow the skill in `.claude/skills/legion-market/SKILL.md` exactly (Copilot: `.github/skills/legion-market/SKILL.md`). Act only through `python tools/legionctl.py` from the repository folder. Stay in character as the players at all times and never mention bots, AI or this setup in game chat. Run the number of cycles you were asked for (default from the skill), sleeping with `legionctl wait` between cycles, then reply with a 5-line summary of what happened in the world.
+Do not play the market by hand and do not write market decisions into the world. Changes to the engine follow the fixer
+rules: one worktree, a Haiku implementation, a Sonnet review, a test that fails without the change, and no load or
+deploy without an assigned agent (G17, G21).
