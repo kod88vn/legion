@@ -197,58 +197,41 @@ def answer(path):
     if route == "/api/stats": return {"online": 812}
     if route == "/api/market/engine": return market_engine(now)
     if route == "/api/market/feed": return market_feed(now)
-    if route == "/api/market/orders": return market_orders(now)
     if route == "/api/economy": return {"t": iso(now), "kite": market_kite(now)}
     return None
 
 
-# DB11 (Market tab) sample answers: made-up numbers for the tests only. The page never reads these as facts.
+# DB11 (Market tab): the answers come from tests/dashboard/fixtures, which hold the real shapes (the Go structs and the
+# crier's rows; test_market.py checks them against the source). The values in them are samples, not server data.
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+
+
+def fixture(name):
+    with open(os.path.join(FIXTURES, name), encoding="utf-8") as f:
+        return json.load(f)
+
+
 def market_engine(now):
-    return {"t": iso(now - 120), "status": "on", "missing": ["caps.farmer_max"],
-            "flags": {"market_engine_on": True, "farmer_orders_on": False},
-            "caps": {"per_item_max": 12, "per_map_max": 5, "online_share_pct": 30},
-            "allocation": [{"item_id": 4040, "item": "Creamy Card", "farmers": 3, "maps": {"prt_fild02": 2, "gef_fild05": 1}}],
-            "prices": [{"item_id": 4040, "item": "Creamy Card", "price": 82000, "reference": 70000, "scarcity": 1.2,
-                        "urgency": 0.4, "history": [{"t": iso(now - 3600), "price": 78000}, {"t": iso(now - 60), "price": 82000}]}],
-            "broadcast": {"cadence": {"max_per_day": 4, "min_gap_h": 3, "same_item_h": 12, "window": "08:00-23:00"}},
-            "farmers": {"zeny_h": [{"band": "18-32", "n": 120, "zph_mean": 8300}]}}
+    return fixture("market_engine.json")
 
 
 def market_feed(now):
-    return {"t": iso(now - 60), "status": "ok", "missing": [],
-            "short": [{"item_id": 4040, "item": "Creamy Card", "band": "18-32", "demand": 14, "listed": 0, "price": 82000,
-                       "drop_maps": ["prt_fild02"], "farmers_on": 3},
-                      {"item_id": 1065, "item": "Trap", "band": "33-99", "demand": 40, "listed": 5, "price": 50,
-                       "drop_maps": ["gef_fild05"], "farmers_on": 0}],
-            "glut": [], "zeny_per_hour": []}
-
-
-def market_orders(now):
-    return {"t": iso(now - 30), "orders": [{"farmer": "lg0123", "char": "Hunter01", "item_id": 4040, "item": "Creamy Card",
-                                            "maps": ["prt_fild02"], "until": iso(now + 3600)}],
-            "stats": {"accepted": 18, "declined": 6, "declines": {"unsafe map": 4, "gear gate": 2}}}
+    return fixture("market_feed.json")
 
 
 def market_kite(now):
     return {"kite_steps": 120, "kite_deaths": 3, "counters_since": iso(now - 86400), "by_bot": {}}
 
 
-def market_files(d, now=None):
-    """the files the engine and the tools write for the Market tab, as the offline stand-ins read them (DB08)"""
-    now = time.time() if now is None else now
-    farmers = {"accounts": [{"name": "lg0123", "phase": 1}, {"name": "lg0124", "phase": 1}, {"name": "lg0200", "phase": 2}],
-               "since": iso(now - 86400)}
-    kite = {"Saved": iso(now), "Since": iso(now - 86400), "Steps": {"Farm01": 70, "Farm02": 50}, "Deaths": {"Farm01": 3}}
-    notices = [{"t": iso(now - 7200), "msg": "[Prontera Merchants] Poring Coins are selling fast.", "item": 4040, "sent": True},
-               {"t": iso(now - 600), "msg": "[Geffen] Hunters wanted near field 05.", "item": 4040}]
-    files = {"market_engine.json": market_engine(now - 300), "market_feed.json": market_feed(now - 300),
-             "farmer_orders.json": market_orders(now - 300), "farmers.json": farmers, "kite_counters.json": kite,
-             "tuning.json": {"market_broadcast_on": True, "guild_market_feed_on": False}}
-    for name, obj in files.items():
-        with open(os.path.join(d, name), "w", encoding="utf-8") as f:
-            json.dump(obj, f)
-    with open(os.path.join(d, "market_notices.jsonl"), "w", encoding="utf-8") as f:
-        f.write("".join(json.dumps(n) + "\n" for n in notices))
+def market_files(d):
+    """the files the engine and the tools write for the Market tab, as the offline stand-ins read them (DB08). The engine
+    writes no market_engine.json and no farmers route: only the feed; the farmer and kite files come from their writers."""
+    import shutil
+    for name in ("market_feed.json", "farmer_orders.json", "farmers.json", "kite_counters.json", "kite_counters_core.json"):
+        shutil.copy(os.path.join(FIXTURES, name), os.path.join(d, name))
+    shutil.copy(os.path.join(FIXTURES, "market_notices.jsonl"), os.path.join(d, "market_notices.jsonl"))
+    with open(os.path.join(d, "tuning.json"), "w", encoding="utf-8") as f:
+        json.dump({"market_broadcast_on": True, "guild_market_feed_on": False}, f)
 
 
 # Owner token the fake engine expects on POST/DELETE /api/ayla/overrides (the real one is legion/data/owner.token).

@@ -51,7 +51,7 @@ process.on("unhandledRejection", e => { out.errors.push("background: " + String(
   vm.runInContext("showTab('market');", ctx);
   await vm.runInContext("refreshMarket()", ctx);
   out.cards = {};
-  for (const id of ["mkEngine", "mkFarmers", "mkPrices", "mkBroadcast", "mkFacts"]) out.cards[id] = byId(id).innerHTML;
+  for (const id of ["mkEngine", "mkMetrics", "mkFarmers", "mkPrices", "mkBroadcast", "mkFacts"]) out.cards[id] = byId(id).innerHTML;
   out.note = byId("mkNote").textContent;
   out.tabShown = vm.runInContext("curTab", ctx);
   process.stdout.write(JSON.stringify(out) + "\n");

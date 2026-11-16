@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "since": "2026-11-14T09:00:00+0000",
+  "target": 150,
+  "accounts": [
+    "lg0123",
+    "lg0124",
+    "lg0200"
+  ],
+  "detail": [
+    {
+      "account": "lg0123",
+      "account_id": 2100001,
+      "main_char_id": 150001,
+      "main_name": "Hunter01",
+      "plan": "hunter",
+      "vendor_present": true
+    },
+    {
+      "account": "lg0124",
+      "account_id": 2100002,
+      "main_char_id": 150002,
+      "main_name": "Hunter02",
+      "plan": "hunter",
+      "vendor_present": false
+    },
+    {
+      "account": "lg0200",
+      "account_id": 2100003,
+      "main_char_id": 150003,
+      "main_name": "Hunter03",
+      "plan": "hunter_agi",
+      "vendor_present": true
+    }
+  ],
+  "vendor_adds": [
+    {
+      "account": "lg0124",
+      "account_id": 2100002,
+      "slot": 1,
+      "class": "Blacksmith"
+    }
+  ]
+}

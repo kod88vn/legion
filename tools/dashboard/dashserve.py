@@ -608,10 +608,8 @@ FILE_ROUTES = {
     "/api/meter/neo": (lambda q: offline.meter_neo(), "meter.jsonl"),
     "/api/overview/history": (lambda q: offline.history(), "health.log"),
     "/api/parties/detail": (lambda q: offline.parties_detail(PLAYERS[0].current() if PLAYERS else None), "parties.json"),
-    # DB11 (Market tab): the engine's market files stand in when the engine is down
-    "/api/market/engine": (lambda q: marketview.file_obj("engine", C.dpath), "market_engine.json"),
+    # DB11 (Market tab): the feed file the engine writes stands in when the engine is down (the engine writes no other)
     "/api/market/feed": (lambda q: marketview.file_obj("feed", C.dpath), "market_feed.json"),
-    "/api/market/orders": (lambda q: marketview.file_obj("orders", C.dpath), "farmer_orders.json"),
 }
 
 
