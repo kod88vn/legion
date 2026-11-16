@@ -8,8 +8,9 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - PR12. Puppet masters run as their own agents outside the main session. One-shot runs woken by a dispatcher script are from the approved redesign brief, not an owner quote. (2026-11-14)
 - PR11 / G14. See Constitution 1.1 to 1.3. (2026-11-14)
 - PR23 / G13. See Constitution 1.3. The owner's own instructions to Ayla (AY20) and owner-ordered restarts of her OpenKore go through an agent. (2026-11-14, amended 2026-11-15)
-- PR31 / G24. Only the deploy agent runs go vet/test and image builds; fixers hand over "code ready". The deploy agent may stop
-  stray golang build/test containers that block a deploy, never rathena, Ayla, legion or the db. (2026-11-14)
+- PR31 / G24. Only the deploy script (`tools/deploy/deploy.py`, PR47) runs go vet/test and image builds; fixers hand over "code ready". The deploy script may stop
+  stray golang build/test containers that block a deploy, never rathena, Ayla, legion or the db. (2026-11-14, amended 2026-11-15)
+- PR47. An agent that only runs an algorithm is a script with tests. The deploy agent is replaced by the tested deploy script `tools/deploy/deploy.py`; an assigned agent only runs it, and the main session never runs it (Constitution 1.3). (owner decision, 2026-11-15)
 - PR36. Scripts (sentinel, partycheck, league analyst) watch alongside the system agents and file into the bug queue; they replace no agent (Constitution 2.6, 2.9, 3.8). (2026-11-14, amended 2026-11-15: the retirement of the watcher, QA and watchdog agents is void)
 - PR24. See Constitution 3.3. Reports go through the bug queue with `legionctl bug` (it arrives with the puppet package). (2026-11-14)
 - PR18. Ayla is the test system, so a dedicated agent observes her party and reports bugs. Scripted checks (`partycheck`) run every
@@ -57,7 +58,7 @@ One line per rule: ID, statement, date. The owner's words are in `archive.md`. H
 - PR43. Every reply of the main session ends with its pending tasks: each task still running or waiting, who has it, and what it waits on. (2026-11-15)
 - PR42. Nothing is written twice. A rule, fact or instruction lives in one place and everything else points to it; every agent reads the constitution first and exactly once, and no prompt, brief, skill, rule or reply restates it. (2026-11-15)
 - G15 / G16 / G17. Deploy rules: legion/legion-core only with `--no-deps`; rathena restart at most once an hour; deploys every
-  3 hours as one batch assigned by the main session, run by the deploy agent only, for both legion and legion-core (excepted: critical unblocking fixes, Ayla fixes (AY21) and owner-asked dashboard changes (DB03), deployed at once by the deploy agent with --critical); working subagents report "built" and never deploy (PR32). Details in `gates.md`; the deploy scripts are described in `docs/handover/startup-old.md` (0.4 and 0.5) and `tools/deploy/`.
+  3 hours as one batch assigned by the main session, run by the deploy script only (PR47), for both legion and legion-core (excepted: critical unblocking fixes, Ayla fixes (AY21) and owner-asked dashboard changes (DB03), deployed at once with a `--critical` reason); working subagents report "built" and never deploy (PR32). Details in `gates.md`; the script is described in `tools/deploy/deploy.py` and `docs/handover/startup-old.md` (0.4 and 0.5).
 - Engineering notes that behave like rules (Windows git, engine flags default off, lessons about locks): `docs/design/REDESIGN.md` section 2.
 
 ## Dashboard

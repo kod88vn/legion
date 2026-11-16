@@ -1,64 +1,15 @@
-# guard.sh - sourced by the Legion deploy scripts (dep3.sh, depcore.sh, depcore_nobuild.sh).
+# guard.sh - helpers sourced by tools/deploy/rathena_recreate.sh, the only script that recreates rathena (G15, G16).
 # Owner rule (RULES.md 0, 2026-11-14): "Deploys never recreate rathena by accident; Ayla follows rathena".
-# Legion deploys touch ONLY legion / legion-core, always with --no-deps. Before deploying, check that the compose
-# config (and image) of db and rathena still match the running containers; if not, a plain `docker compose up` would
-# recreate them, so STOP and leave it to tools/deploy/rathena_recreate.sh (run deliberately, owner-approved).
+# The Legion batch deploy is tools/deploy/deploy.py (PR47, tested); it checks db and rathena itself and never recreates them.
 #
-# DRY_RUN=1  -> run every check, print the build/up commands instead of running them (nothing is deployed).
+# DRY_RUN=1  -> run every check, print the recreate commands instead of running them (nothing is changed).
 
-DEPLOY_ALLOWED="legion legion-core"
 DRY_RUN=${DRY_RUN:-0}
 
-# ---- Deploy gate (redesign 2026-11-14, tools/system/deploylog.py) -------------------------------------------------
-# Regular deploys are at least 3 hours apart; `--critical "<reason>"` overrides (a fix that unblocks something).
-# Every regular deploy lists its fixes: `--fix "<what>|<metric kpm|zph|deaths>|<cohort substring>"` (repeatable).
-# Each deploy appends a record to legion/data/deploys.jsonl (tag, fixes, critical or not). LEGION_FAKE_NOW pins the clock.
+# ---- rathena gate (tools/system/deploylog.py) -----------------------------------------------------------------------
 GUARD_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SYSDIR=$GUARD_DIR/../system; [ -f "$SYSDIR/deploylog.py" ] || SYSDIR=/mnt/g/RO/legion/tools/system
 PYTHON=${PYTHON:-python3}
-CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=(); REVIEW_ARGS=()
-
-# parse_deploy_args "$@": sets HAVE_CRITICAL/CRITICAL_REASON, FIX_ARGS, REVIEW_ARGS (--reviewed COMMIT, one per fix) and
-# POS_ARGS (everything else).
-parse_deploy_args() {
-  CRITICAL_REASON=""; HAVE_CRITICAL=0; FIX_ARGS=(); POS_ARGS=(); REVIEW_ARGS=()
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      --critical) HAVE_CRITICAL=1; CRITICAL_REASON="${2:-}"; if [ $# -ge 2 ]; then shift 2; else shift; fi;;
-      --fix) FIX_ARGS+=("${2:-}"); if [ $# -ge 2 ]; then shift 2; else shift; fi;;
-      --reviewed) REVIEW_ARGS+=("${2:-}"); if [ $# -ge 2 ]; then shift 2; else shift; fi;;
-      *) POS_ARGS+=("$1"); shift;;
-    esac
-  done
-}
-
-# deploy_gate [TAG]: exit 5 (nothing deployed) when a fix has no merge review (Constitution 4.2, critical deploys too),
-# when too soon, or with no fix list; DRY_RUN only reports it.
-deploy_gate() {
-  local tag=${1:-} out ga=() ra=() r
-  for r in "${REVIEW_ARGS[@]}"; do ra+=(--reviewed "$r"); done
-  if out=$("$PYTHON" "$SYSDIR/reviewcheck.py" check --fixes "${#FIX_ARGS[@]}" "${ra[@]}" 2>&1); then echo "review: $out"
-  else
-    echo "$out"
-    if [ "$DRY_RUN" = 1 ]; then echo "DRY_RUN: this deploy would be refused (review)"; else exit 5; fi
-  fi
-  [ "$HAVE_CRITICAL" = 1 ] && ga+=(--critical "$CRITICAL_REASON")
-  [ -n "$tag" ] && ga+=(--tag "$tag")
-  ga+=(--fixes "${#FIX_ARGS[@]}")
-  if out=$("$PYTHON" "$SYSDIR/deploylog.py" check "${ga[@]}" 2>&1); then echo "gate: $out"; return 0; fi
-  echo "$out"
-  if [ "$DRY_RUN" = 1 ]; then echo "DRY_RUN: this deploy would be refused"; return 0; fi
-  exit 5
-}
-
-# record_deploy TAG SERVICES: append the deploy record (not in dry-run).
-record_deploy() {
-  local tag=$1 svc=$2 ra=() f
-  [ "$DRY_RUN" = 1 ] && return 0
-  [ "$HAVE_CRITICAL" = 1 ] && ra+=(--critical "$CRITICAL_REASON")
-  for f in "${FIX_ARGS[@]}"; do ra+=(--fix "$f"); done
-  "$PYTHON" "$SYSDIR/deploylog.py" record --tag "$tag" --services "$svc" "${ra[@]}" || echo "WARNING: could not record the deploy"
-}
 
 # rathena_gate: one recreate per hour at most (owner rule). RATHENA_HOUR_OVERRIDE="<reason>" for a broken rathena.
 rathena_gate() {
@@ -75,65 +26,6 @@ rathena_gate() {
 run() {
   if [ "$DRY_RUN" = 1 ]; then echo "DRY_RUN would run: $*"; return 0; fi
   "$@"
-}
-
-# The only allowed `up`: listed services must be legion/legion-core, always --no-deps.
-deploy_up() {
-  local s
-  for s in "$@"; do
-    case " $DEPLOY_ALLOWED " in *" $s "*) ;; *) echo "REFUSED: deploy scripts may only recreate: $DEPLOY_ALLOWED (got '$s')"; exit 3;; esac
-  done
-  run docker compose up -d --no-deps --no-build "$@"
-}
-
-# deploy_up_img TAG SVC... : same, but the services run exactly image TAG (compose override), so a :latest moved by
-# another agent's build between our build and our `up` is never picked up.
-deploy_up_img() {
-  local tag=$1 s ovr=/tmp/legion-deploy-override.yml; shift
-  for s in "$@"; do
-    case " $DEPLOY_ALLOWED " in *" $s "*) ;; *) echo "REFUSED: deploy scripts may only recreate: $DEPLOY_ALLOWED (got '$s')"; exit 3;; esac
-  done
-  echo "services:" > "$ovr"
-  for s in "$@"; do printf '  %s:\n    image: %s\n' "$s" "$tag" >> "$ovr"; done
-  run docker compose -f docker-compose.yml -f "$ovr" up -d --no-deps --no-build --pull never "$@"
-}
-
-# Frozen-snapshot build (2026-11-14): other agents edit legion/*.go all the time, so copy what the Dockerfile needs
-# to a temp dir, gofmt/vet/test THAT copy, and build the image from the same copy: what is tested is what ships.
-# Sets DEPLOY_TAG=ro-legion:deploy-<time>, also tags ro-legion:latest, records it in $DEPLOY_TAG_FILE.
-DEPLOY_TAG_FILE=/tmp/legion-deploy.tag
-SRC=/mnt/g/RO/legion/legion
-snapshot_build() {
-  local log=$1 ts snap try
-  ts=$(date +%Y%m%d-%H%M%S)
-  DEPLOY_TAG="ro-legion:deploy-$ts"
-  for try in 1 2; do
-    snap=$(mktemp -d /tmp/legion-snap-XXXXXX)
-    # exactly the Dockerfile's inputs (COPY go.mod *.go *.html recvpackets.txt) + the Dockerfile itself
-    cp "$SRC"/Dockerfile "$SRC"/go.mod "$SRC"/*.go "$SRC"/*.html "$SRC"/recvpackets.txt "$snap"/
-    echo "snapshot $snap ($(find "$snap" -name '*.go' | wc -l) .go files, try $try)"
-    if [ "$DRY_RUN" = 1 ]; then
-      run docker run --rm -v "$snap":/src -w /src golang:1.22 sh -c 'gofmt -l -w . ; go vet ./... && go test ./...'
-      run docker build -t "$DEPLOY_TAG" -t ro-legion:latest "$snap"
-      rm -rf "$snap"; return 0
-    fi
-    if docker run --rm -v "$snap":/src -w /src golang:1.22 sh -c \
-         'f=$(gofmt -l .); [ -n "$f" ] && echo "gofmt fixed (snapshot only): $f"; gofmt -w . && go vet ./... && go test -count=1 ./...' \
-         >"$log" 2>&1; then
-      grep "gofmt fixed" "$log" || true
-      if docker build -t "$DEPLOY_TAG" -t ro-legion:latest "$snap" >>"$log" 2>&1; then
-        echo "$DEPLOY_TAG" > "$DEPLOY_TAG_FILE"
-        echo "built $DEPLOY_TAG (= ro-legion:latest) from $snap"
-        rm -rf "$snap"; return 0
-      fi
-      tail -30 "$log"; rm -rf "$snap"; echo "docker build failed"; return 1
-    fi
-    rm -rf "$snap"
-    if [ "$try" = 1 ]; then
-      echo "vet/test failed on the snapshot (maybe a half-saved file); new snapshot in 60 s:"; tail -15 "$log"; sleep 60
-    fi
-  done
-  tail -30 "$log"; echo "vet/test failed twice on fresh snapshots"; return 1
 }
 
 # Is the service's container out of date vs docker-compose.yml (config hash or image)? Prints the reason.
@@ -167,52 +59,3 @@ svc_field() {  # svc_field SERVICE KEY -> value of a top-level key of the servic
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"].get(sys.argv[1],{}).get(sys.argv[2],""))' "$1" "$2" 2>/dev/null || true
 }
 
-# Main guard: call before any build/up. Exits 2 (nothing deployed) if db or rathena would change.
-guard_core() {
-  local why="" r svc line bad=0
-  for svc in db rathena; do
-    if r=$(svc_changed "$svc"); then why="$why\n  - $r"; fi
-  done
-  # What a plain `up legion legion-core` WITH deps (the 10:12 accident) would do to db/rathena, per compose itself.
-  while IFS= read -r line; do
-    case "$line" in
-      *Container*ro-rathena*Recreat*|*Container*ro-db*Recreat*|*Container*ro-rathena*Creat*|*Container*ro-db*Creat*)
-        why="$why\n  - compose dry-run (with deps):$line";;
-    esac
-  done < <(docker compose up -d --no-build --dry-run legion legion-core 2>&1 || true)
-  if [ -n "$why" ]; then
-    echo "================================================================================"
-    echo "rathena config changed — needs an owner-approved rathena recreate; not deploying"
-    printf "%b\n" "$why"
-    echo "Run deliberately (kicks everyone, Ayla included, until she logs back in):"
-    echo "  wsl -d Ubuntu-24.04 -- bash /mnt/g/RO/legion/tools/deploy/rathena_recreate.sh --yes"
-    echo "================================================================================"
-    exit 2
-  fi
-  # Belt and braces: ask compose itself what `up --no-deps legion legion-core` would touch.
-  while IFS= read -r line; do
-    case "$line" in
-      *Container*) case "$line" in *ro-legion-core*|*"ro-legion "*|*ro-legion) ;; *) echo "  dry-run touches: $line"; bad=1;; esac;;
-    esac
-  done < <(docker compose up -d --no-deps --no-build --dry-run legion legion-core 2>&1 || true)
-  if [ "$bad" = 1 ]; then echo "compose dry-run would touch containers other than legion/legion-core; not deploying"; exit 2; fi
-  for svc in db rathena; do
-    if r=$(svc_image_drift "$svc"); then echo "NOTE: $r - not deployed now; takes effect at an owner-approved rathena_recreate.sh"; fi
-  done
-  # Followers whose compose tag moved past the image they run (e.g. ro-legion:latest rebuilt by another agent).
-  # Only legion/legion-core deploys move them on purpose; rathena_recreate.sh keeps each on its running image.
-  for svc in openkore-ayla openkore legion legion-core; do
-    if r=$(svc_image_drift "$svc"); then echo "NOTE: $r - a rathena_recreate.sh keeps it on the running image"; fi
-  done
-  # Warn (don't block) if Ayla's OpenKore is not in rathena's current network namespace = she is offline.
-  local rid ns c
-  rid=$(docker inspect -f '{{.Id}}' ro-rathena 2>/dev/null || true)
-  for c in ro-openkore-ayla ro-openkore; do
-    ns=$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$c" 2>/dev/null || true)
-    if [ -n "$rid" ] && [ -n "$ns" ] && [ "$ns" != "container:$rid" ]; then
-      echo "WARNING: $c is on a dead network namespace ($ns), not ro-rathena's. Tell main; fix with:"
-      echo "  docker compose up -d --no-deps --force-recreate ${c#ro-}"
-    fi
-  done
-  echo "guard: db/rathena unchanged; deploy touches only legion/legion-core (--no-deps)"
-}

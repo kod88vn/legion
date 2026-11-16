@@ -4,9 +4,10 @@
   reviewcheck.py check --fixes N [--reviewed COMMIT]...
       exit 0 = each of the N fixes has a review, exit 5 = refused (nothing deployed). Needs exactly one --reviewed
       per --fix. COMMIT is the fix's commit (any git rev). Its review is docs/reports/reviews/<full sha>.md and must
-      have a line `verdict: merge` (or `verdict: ok`). `verdict: do not merge` or a missing file is refused.
+      have `verdict: merge` (or `verdict: ok`) as its last non-empty line. `verdict: do not merge` or a missing file is refused.
 
-Called by tools/deploy/guard.sh (deploy_gate) before every deploy, critical ones included.
+Called by tools/deploy/deploy.py (gate_review) before every deploy, critical ones included.
+The verdict must be the last non-empty line of the review file.
 Standard library only. Tests: python -m unittest discover -s tests/system -v (from the repo root).
 """
 import argparse
@@ -17,12 +18,14 @@ import sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 REVIEWS = os.path.join(ROOT, "docs", "reports", "reviews")
-VERDICT = re.compile(r"^verdict:\s*(merge|ok)\s*$", re.I | re.M)
+VERDICT = re.compile(r"^verdict:\s*(merge|ok)\s*$", re.I)
 
 
 def verdict(text):
-    """'merge' or 'ok' when the report says so, else None."""
-    m = VERDICT.search(text)
+    """'merge' or 'ok' when the LAST non-empty line of the report is the verdict, else None. A verdict line quoted
+    earlier in the text, or followed by more text, does not count."""
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    m = VERDICT.match(lines[-1]) if lines else None
     return m.group(1).lower() if m else None
 
 

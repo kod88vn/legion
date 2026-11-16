@@ -2015,3 +2015,11 @@ Resolved by newest owner word per PR41; see coverage.md.
 ```text
 "redesign dashboard. It's too cluttered now. I want tabs, each represent an important aspect: server status is always on top, then tabs: Ayla party, Legion, Economy, Puppet Master decisions, Leaderboard, and System (including all agent status). This page must always be on"
 ```
+
+## PR47 - An agent that only runs an algorithm is a script
+
+Kind: process rule. First date: 2026-11-15.
+
+```text
+Owner decision (2026-11-15): "an agent that only runs an algorithm is a script with tests, the deploy agent included."
+```

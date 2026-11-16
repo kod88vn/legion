@@ -217,6 +217,7 @@ Counts by kind: behaviour spec 120, hard gate 20, process 30, replaced 5, server
 | PR48 | Copilot can always take over the project: .github instruction files current, pointing to the constitution and handover files, tested (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR49 | Research builds and skills, do not ask the owner (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR46 | .env untracked, example.env in the repository (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PR47 | An agent that only runs an algorithm is a script with tests; the deploy agent is the tested script tools/deploy/deploy.py (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | EC44 | Market may broadcast server-wide what is worth farming, without a GM character in the world (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC45 | Farmers: guild-less bots, main hunter with Creamy card (hit and run) plus merchant second character, directed by the market and spread over wanted goods (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC46 | The market is an algorithm engine, not an AI agent (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |

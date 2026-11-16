@@ -24,14 +24,14 @@ Owner's standing orders. They override defaults and earlier designs. Details liv
 - G14 (PR11) See Constitution 1.1 to 1.3.
 - G15 (PR29) Deploys never recreate rathena by accident: only `legion`/`legion-core` with `--no-deps`. Recreating rathena also recreates Ayla's OpenKore and the legion containers.
 - G16 (PR30) Restart or recreate rathena at most once an hour.
-- G17 (PR32) Deploys every 3 hours (excepted: critical unblocking fixes, Ayla fixes (AY21) and owner-asked dashboard changes (DB03), deployed at once by the deploy agent with --critical), as one batch assigned by the main session; only the deploy agent deploys, both `legion` and `legion-core`, and it alone runs go vet/test and image builds. Working subagents report "built" and never deploy.
+- G17 (PR32) Deploys every 3 hours (excepted: critical unblocking fixes, Ayla fixes (AY21) and owner-asked dashboard changes (DB03), deployed at once with a `--critical` reason), as one batch assigned by the main session; only the deploy script deploys (`tools/deploy/deploy.py`, tested, PR47), both `legion` and `legion-core`, and it alone runs go vet/test and image builds. Working subagents report "built" and never deploy.
 - G18 (CT05) See Constitution 2.2; "a script" counts too.
 - G19 (AY03) Ayla and her party are always online. A planned restart allowed by G15-G17, or a crash restart, is not a breach if she is back within 5 min. (G19 to G23 confirmed as hard gates by the owner, 2026-11-14.)
 - G20 Ayla's party is never subjected to kicks, resets or build resets. (Human part removed by the owner 2026-11-14; see G25.)
 - G21 Nothing is started until the owner says so, part by part in the redesign. The 2026-11-14 "all systems on" order is void.
 - G22 Ask the owner before outward-facing or hard-to-reverse actions (installing external tools, deleting data).
 - G23 Tests and experiments never touch live data: not `ro-db`, not `~/.wine-ro`, not the running-state files in `legion/data`.
-- G24 (PR31) The deploy agent may `docker stop`/`docker kill` stray golang test or build containers that block a deploy, NEVER rathena, Ayla, legion or the db.
+- G24 (PR31) The deploy script may `docker stop` stray golang test or build containers that block a deploy, NEVER rathena, Ayla, legion or the db.
 - G25 No in-world discrimination between humans and other players: a human is subject to the same rules as everyone (guild tax, duty, warnings, kicks, prices, trades, chat), and nothing in the world may treat a human in a way that reveals the difference. Data safety stays (G06, G11). (2026-11-14)
 
 ## Recording a new rule (PR02)

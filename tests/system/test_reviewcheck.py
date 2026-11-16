@@ -73,6 +73,20 @@ class TestReviewGate(unittest.TestCase):
     def test_no_fixes_passes(self):
         self.assertTrue(self.check(0, [])[0])
 
+    def test_verdict_must_be_the_last_line(self):
+        self.write(SHA_A, "verdict: merge\n\nFollow-up: the lock needs a test.\n")
+        ok, msg = self.check(1, ["fix/a"])
+        self.assertFalse(ok)
+        self.assertIn("does not say 'verdict: merge'", msg)
+
+    def test_quoted_verdict_in_the_middle_does_not_count(self):
+        self.write(SHA_A, "Reviewer quote: verdict: merge\n\nverdict: do not merge\n")
+        self.assertFalse(self.check(1, ["fix/a"])[0])
+
+    def test_trailing_blank_lines_are_ignored(self):
+        self.write(SHA_A, "Looks fine.\n\nverdict: merge\n\n\n")
+        self.assertTrue(self.check(1, ["fix/a"])[0])
+
 
 if __name__ == "__main__":
     unittest.main()
