@@ -30,6 +30,8 @@ MAX_BUILDS = 12
 MAX_GEAR = 12
 MAX_GUILDS = 10
 MAX_NEEDS = 3
+MAX_BANDS = 6
+MAX_WORST = 3
 LEVEL_CAP = 99
 
 
@@ -192,8 +194,9 @@ def short_goods(gear, bands_online, names, supply, demand, needs_by_name, item_n
 
 # ----------------------------------------------------------------- the briefing
 def compute(bots=None, milestones=None, gear=None, fit=None, meter_bots=None, economy=None, stock=None,
-            missing=None, now=None):
-    """the progress briefing from already-read inputs (None = that source did not answer). Pure: tests call this."""
+            missing=None, now=None, market=None):
+    """the progress briefing from already-read inputs (None = that source did not answer). Pure: tests call this.
+    market: the /api/market/engine answer; its "metrics" block (marketmetrics.go) is carried in a compact form."""
     now = time.time() if now is None else now
     missing = sorted(set(missing or []))
     notes = []
@@ -261,6 +264,14 @@ def compute(bots=None, milestones=None, gear=None, fit=None, meter_bots=None, ec
                                      "zph_mean": round(sum(zb[lbl]) / len(zb[lbl])) if zb[lbl] else None}
                                     for lbl, _, _ in bands]
 
+    # market metrics (WP8): coverage, price stability, farmers, kiting, zeny per hour; empty numbers stay null
+    if market is not None:
+        m = market.get("metrics") if isinstance(market, dict) else None
+        if isinstance(m, dict):
+            out["metrics"] = _metrics_brief(m)
+        else:
+            notes.append("market engine answered without a metrics block: no market metrics")
+
     # goods: needs the online bots' bands make relevant, against supply and demand
     names, supply, demand = goods_names_and_flows(economy)
     needs = guild_needs(_rows(stock) if stock is not None else [])
@@ -314,6 +325,34 @@ def compute(bots=None, milestones=None, gear=None, fit=None, meter_bots=None, ec
     return out
 
 
+def _metrics_brief(m):
+    """the market metrics block (marketmetrics.go: docs/design/market-metrics.md) cut to the briefing's few numbers"""
+    def sub(k):
+        v = m.get(k)
+        return v if isinstance(v, dict) else {}
+
+    cov, ps, far, kite, zph = sub("coverage"), sub("price_stability"), sub("farmers"), sub("kite"), sub("zeny_per_hour")
+    by_band = cov.get("by_band") if isinstance(cov.get("by_band"), list) else []
+    items = ps.get("items") if isinstance(ps.get("items"), list) else []
+    return {
+        "coverage": {"status": cov.get("status"), "overall": cov.get("overall"),
+                     "by_band": [{"band": r.get("band"), "coverage": r.get("coverage")}
+                                 for r in by_band[:MAX_BANDS] if isinstance(r, dict)]},
+        "price_stability": {"status": ps.get("status"), "target": ps.get("target"), "overall": ps.get("overall"),
+                            "within_target": ps.get("within_target"), "items_over": ps.get("items_over"),
+                            "worst": [{"item": r.get("item"), "stddev": r.get("stddev")}
+                                      for r in items[:MAX_WORST] if isinstance(r, dict)]},
+        "farmers": {"status": far.get("status"), "offers": far.get("offers"), "accepted": far.get("accepted"),
+                    "accept_rate": far.get("accept_rate"), "deaths": far.get("deaths"),
+                    "deaths_per_hour": far.get("deaths_per_hour")},
+        "kite": {"status": kite.get("status"), "steps": kite.get("steps"), "deaths": kite.get("deaths"),
+                 "deaths_per_step": kite.get("deaths_per_step")},
+        "zeny_per_hour": {"status": zph.get("status"),
+                          "by_band": [{"band": r.get("band"), "n": r.get("n"), "zph_mean": r.get("zph_mean")}
+                                      for r in (zph.get("by_band") or [])[:MAX_BANDS] if isinstance(r, dict)]},
+    }
+
+
 def compact_json(prog, limit=MAX_JSON):
     """the JSON the briefing carries: compact, cut at `limit` characters (never a broken object: lists shrink first)"""
     p = dict(prog)
@@ -344,10 +383,11 @@ def collect(api, data_dir=None, now=None):
     meter = api.get("/api/meter/bots?limit=2000")
     economy = api.get("/api/economy")
     stock = api.get("/api/guild-stock")
+    market = api.get("/api/market/engine")
     # only the sources this module asked for: an endpoint another brief section missed is not this one's gap
     missing = list(seen[start:]) if isinstance(seen, list) else []
     return compute(bots=bots, milestones=milestones, gear=gear, fit=fit, meter_bots=meter, economy=economy,
-                   stock=stock, missing=missing, now=now)
+                   stock=stock, missing=missing, now=now, market=market)
 
 
 def main(argv=None):

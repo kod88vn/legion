@@ -613,6 +613,7 @@ type econSnap struct {
 func econManager(bots []*Bot, stop <-chan struct{}) {
 	loadEconCounters() // econpersist.go (run 10): counters survive deploys
 	loadKiteCounters() // kite.go (market WP1): kite steps and deaths survive deploys
+	loadMarketMetrics() // marketmetrics.go (WP8): market coverage, price stability and farmer counters survive deploys
 	t := time.NewTicker(econTick)
 	defer t.Stop()
 	nextSave := time.Now().Add(time.Minute)
@@ -621,6 +622,7 @@ func econManager(bots []*Bot, stop <-chan struct{}) {
 		case <-stop:
 			saveEconCounters(time.Now())
 			saveKiteCounters(time.Now())
+			saveMarketMetrics(time.Now())
 			return
 		case <-t.C:
 		}
@@ -629,6 +631,7 @@ func econManager(bots []*Bot, stop <-chan struct{}) {
 			nextSave = now.Add(time.Minute)
 			saveEconCounters(now)
 			saveKiteCounters(now)
+			saveMarketMetrics(now)
 		}
 	}
 }
@@ -1094,6 +1097,7 @@ func econRound(bots []*Bot, now time.Time) {
 	guildPoolRound(snaps, now)  // guildpool.go: guilds pool zeny for boss-only items
 	guildStockRound(snaps, now) // guildstock.go: guild stock vs member needs, guild farmers
 	marketEngineRound(snaps, now, stockDue) // marketengine.go (WP2): market needs and feed; no-op unless market_engine_on
+	marketMetricsRound(snaps, now)          // marketmetrics.go (WP8): flag-independent coverage and price counters
 	traderFundRound(snaps, now) // guildstock.go: the guild trader pays a member's stuck gear turn
 	exchangeRound(snaps, now)   // chatintent.go: humans' needs / offers registered by the chat agent
 	humanWantRound(snaps, now)  // humanwant.go: a human's B> on #trade gets an offer
