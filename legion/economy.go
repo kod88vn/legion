@@ -161,6 +161,14 @@ func personal(name string, id int) float64 {
 
 // askPrice: the least a seller takes (greedy sellers ask more).
 func askPrice(p *Persona, id int) int {
+	if dynamicPriceOn() { // pricedyn.go (EC48): the supply/demand ask, with the time-based markdown
+		return askPriceDyn(p, id)
+	}
+	return askPriceFixed(p, id)
+}
+
+// askPriceFixed: the ask before dynamic_price_on
+func askPriceFixed(p *Persona, id int) int {
 	ref := priceOf(id)
 	ask := npcMatCap(id, npcGearCap(id, roundPrice(int(float64(ref)*(0.85+0.3*p.Greed)*personal(p.Name, id)))))
 	return npcWindow(id, roundPrice(markdown(p.Name, id, ask, ref))) // market.go: unsold for long -> 5% steps down

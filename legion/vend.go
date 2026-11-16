@@ -84,6 +84,14 @@ func releasePitch(b *Bot) {
 // it, rarity otherwise, nudged by recent trades) with the vendor's own margin (greedier vendors ask more; the market
 // mind can set a markup). Shops priced at random never sold anything to the players that check prices.
 func (b *Bot) vendPrice(id int) int {
+	if dynamicPriceOn() { // pricedyn.go (EC48, tuning dynamic_price_on): supply, urgency and budget
+		return b.vendPriceDyn(id)
+	}
+	return b.vendPriceFixed(id)
+}
+
+// vendPriceFixed: the listing price before dynamic_price_on (greed x personal, undercut, markdown steps)
+func (b *Bot) vendPriceFixed(id int) int {
 	if items[id] == nil {
 		return 1000
 	}
