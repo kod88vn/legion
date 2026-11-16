@@ -19,13 +19,22 @@ Rules this tool enforces:
   crier.py send --kind want --item "Poring Coin" --place Prontera [--live] [--now EPOCH]
   crier.py templates
 
-Exit: 0 when sent, dry-run, held by cadence or off; 2 for a refused input.
+Clock: the game server's (UTC, SERVER_UTC_OFFSET_H = 0). Window 08:00-22:59 on that clock, matching the NPC.
+Names: item and place slots are display names made of letters, spaces, apostrophes and hyphens; digits are
+refused (write "Field Two", not "Field 02"). No computed numbers ever reach the text.
+Live rows are only read by legion_crier.txt when its window is open and the row is under 6 h old.
+
+Go-live order (deploy window only; G15, G16, G17): load rathena/sql/legion_notice.sql into ro-db, then
+`docker restart ro-rathena` (not a compose recreate), then set market_broadcast_on to true. Dry run first.
+
+Exit: 0 when sent, dry-run, held by cadence or off; 1 when a live insert failed; 2 for a refused input.
 """
 import argparse
 import json
 import os
 import random
 import re
+import calendar
 import subprocess
 import sys
 import time
@@ -41,6 +50,10 @@ DAY_S = 24 * 3600
 SAME_ITEM_S = 12 * 3600
 HOUR_FROM = 8     # inclusive
 HOUR_TO = 23      # exclusive: 22:59 is the last minute
+# One clock for the window: the game server's. The ro-rathena container runs on UTC (docker-compose sets no TZ),
+# and the NPC reads gettime(DT_HOUR) on that clock. Change this only together with legion_crier.txt.
+SERVER_UTC_OFFSET_H = 0
+ROW_MAX_AGE_NOTE = "rows older than 6 h are never announced (legion_crier.txt)"
 KINDS = ("want", "glut", "event")
 DB_CONTAINER = "ro-db"
 
@@ -62,7 +75,7 @@ TEMPLATES = {
     "event": [
         "[{place} Notice] Hunters are gathering {item} near {place}. Join them if you are close.",
         "[{place} Notice] Word is that {item} can be found around {place}. Go and see.",
-        "[{place} Traders] A trader is paying well for {item} in {place} this evening.",
+        "[{place} Traders] A trader is paying well for {item} in {place} right now.",
     ],
 }
 
@@ -124,9 +137,14 @@ def render(kind, item, place, rng=None):
     return check_text(tpl.format(item=item, place=place))
 
 
+def server_hour(now):
+    """Hour of day (0-23) on the game server's clock (SERVER_UTC_OFFSET_H from UTC)."""
+    return time.gmtime(now + SERVER_UTC_OFFSET_H * 3600).tm_hour
+
+
 def cadence_ok(now, history, item):
     """(ok, reason). history: records of live notices, each with t (epoch s) and item."""
-    hour = time.localtime(now).tm_hour
+    hour = server_hour(now)
     if not (HOUR_FROM <= hour < HOUR_TO):
         return False, "outside %02d:00-%02d:59 local time" % (HOUR_FROM, HOUR_TO - 1)
     day = [r for r in history if 0 <= now - _t(r) < DAY_S]
@@ -162,7 +180,8 @@ def insert_live(text, container=DB_CONTAINER):
 
 def send(kind, item, place, live=False, now=None, rng=None, log_path=None, insert=None, flag_path=None):
     """Decide and, when allowed, write one notice. Returns a dict with status and text.
-    status: off (flag false), held (cadence), dry (would send), sent (live row inserted)."""
+    status: off (flag false), held (cadence), dry (would send), sent (live row inserted), failed (live insert
+    raised; its cadence record is kept). Window and cadence use the server clock (server_hour)."""
     now = common.now() if now is None else float(now)
     if not flag_on(flag_path):
         return {"status": "off", "reason": "%s is not true in tuning.json" % FLAG}
@@ -174,12 +193,16 @@ def send(kind, item, place, live=False, now=None, rng=None, log_path=None, inser
         return {"status": "held", "reason": reason, "text": text}
     rec = {"t": int(now), "at": common.iso(now), "kind": kind, "item": item, "place": place, "text": text,
            "mode": "live" if live else "dry"}
-    if live:
-        (insert or insert_live)(text)
-        common.append_jsonl(path, rec)
-        return {"status": "sent", "text": text}
+    # The history record is written BEFORE the insert, so a live row can never exist without its cadence record.
+    # If the insert fails, the record stays: the failed attempt uses its cadence slot (conservative; no retry storm).
     common.append_jsonl(path, rec)
-    return {"status": "dry", "text": text}
+    if not live:
+        return {"status": "dry", "text": text}
+    try:
+        (insert or insert_live)(text)
+    except Exception as e:  # noqa: BLE001 - reported, never hidden
+        return {"status": "failed", "text": text, "reason": "%s: %s" % (type(e).__name__, e)}
+    return {"status": "sent", "text": text}
 
 
 def main(argv=None):
@@ -204,7 +227,7 @@ def main(argv=None):
         print("refused: %s" % e, file=sys.stderr)
         return 2
     print(json.dumps(out, ensure_ascii=False))
-    return 0
+    return 1 if out["status"] == "failed" else 0
 
 
 if __name__ == "__main__":

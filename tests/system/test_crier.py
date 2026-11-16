@@ -6,12 +6,12 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 import testenv  # noqa: E402
 testenv.isolate()
 
+import calendar
 import json
 import random
 import shutil
 import sqlite3
 import tempfile
-import time
 import unittest
 
 REPO = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", ".."))
@@ -23,9 +23,9 @@ HOUR = 3600
 DAY = 24 * HOUR
 
 
-def local(h, m=0, day=15):
-    """Epoch for 2026-11-<day> at local h:m."""
-    return time.mktime((2026, 11, day, h, m, 0, 0, 0, -1))
+def utc(h, m=0, day=15):
+    """Epoch for 2026-11-<day> at h:m on the server clock (UTC, C.SERVER_UTC_OFFSET_H = 0)."""
+    return calendar.timegm((2026, 11, day, h, m, 0, 0, 0, 0))
 
 
 def live_rec(t, item="Poring Coin"):
@@ -126,6 +126,12 @@ class TextRules(unittest.TestCase):
         with self.assertRaises(C.Refused):
             C.render("panic", "Poring Coin", "Prontera")
 
+    def test_no_time_of_day_words(self):
+        for kind in C.KINDS:
+            for tpl in C.TEMPLATES[kind]:
+                for w in ("evening", "tonight", "morning", "afternoon", "night", "today", "tomorrow", "now"):
+                    self.assertNotRegex(tpl.lower(), r"%s" % w, tpl)  # a notice may go out at any hour
+
     def test_every_template_is_clean(self):
         for kind in C.KINDS:
             self.assertTrue(C.TEMPLATES[kind], kind)
@@ -148,19 +154,36 @@ class TextRules(unittest.TestCase):
 
 
 class Cadence(unittest.TestCase):
-    def test_hour_window_is_0800_to_2259(self):
+    def test_hour_window_is_0800_to_2259_server_clock(self):
+        self.assertEqual(C.SERVER_UTC_OFFSET_H, 0)   # the game server runs on UTC; the NPC uses the same clock
         for h, m, ok in [(7, 59, False), (8, 0, True), (22, 59, True), (23, 0, False), (3, 0, False)]:
-            allowed = C.cadence_ok(local(h, m), [], "Poring Coin")[0]
-            self.assertEqual(allowed, ok, "%02d:%02d" % (h, m))
+            allowed = C.cadence_ok(utc(h, m), [], "Poring Coin")[0]
+            self.assertEqual(allowed, ok, "%02d:%02d UTC" % (h, m))
+
+    def test_window_uses_the_server_hour_not_the_host_zone(self):
+        self.assertEqual(C.server_hour(utc(8, 0)), 8)
+        self.assertEqual(C.server_hour(utc(22, 59)), 22)
+        self.assertEqual(C.server_hour(utc(23, 0)), 23)
+        self.assertEqual(C.server_hour(utc(7, 59)), 7)
+
+    def test_server_offset_moves_the_window(self):
+        old = C.SERVER_UTC_OFFSET_H
+        try:
+            C.SERVER_UTC_OFFSET_H = -5
+            self.assertEqual(C.server_hour(utc(13, 0)), 8)     # 13:00 UTC is 08:00 on a UTC-5 clock
+            self.assertTrue(C.cadence_ok(utc(13, 0), [], "Poring Coin")[0])
+            self.assertFalse(C.cadence_ok(utc(12, 59), [], "Poring Coin")[0])
+        finally:
+            C.SERVER_UTC_OFFSET_H = old
 
     def test_three_hours_apart(self):
-        prev = local(9, 0)
+        prev = utc(9, 0)
         hist = [live_rec(prev)]
         self.assertFalse(C.cadence_ok(prev + 3 * HOUR - 60, hist, "Osiris Card")[0])
         self.assertTrue(C.cadence_ok(prev + 3 * HOUR, hist, "Osiris Card")[0])
 
     def test_daily_cap_of_four(self):
-        now = local(20, 0)
+        now = utc(20, 0)
         three = [live_rec(now - (3 * k + 1) * HOUR, item="Item%d" % k) for k in (1, 2, 3)]
         self.assertTrue(C.cadence_ok(now, three, "Other Item")[0])
         four = three + [live_rec(now - 12 * HOUR - 60, item="Item4")]
@@ -169,12 +192,12 @@ class Cadence(unittest.TestCase):
         self.assertIn("daily cap", reason)
 
     def test_notices_older_than_a_day_do_not_count(self):
-        now = local(20, 0)
+        now = utc(20, 0)
         old = [live_rec(now - DAY - 60 * k, item="Old%d" % k) for k in range(5)]
         self.assertTrue(C.cadence_ok(now, old, "Fresh Item")[0])
 
     def test_same_item_within_twelve_hours_refused(self):
-        now = local(20, 0)
+        now = utc(20, 0)
         hist = [live_rec(now - 6 * HOUR, item="Poring Coin")]
         ok, reason = C.cadence_ok(now, hist, "Poring Coin")
         self.assertFalse(ok)
@@ -185,7 +208,7 @@ class Cadence(unittest.TestCase):
 class Send(Base):
     def test_flag_off_writes_nothing(self):
         self.set_flag(False)
-        out = C.send("want", "Poring Coin", "Prontera", now=local(12), log_path=self.log, flag_path=self.flag)
+        out = C.send("want", "Poring Coin", "Prontera", now=utc(12), log_path=self.log, flag_path=self.flag)
         self.assertEqual(out["status"], "off")
         self.assertFalse(_os.path.exists(self.log))
 
@@ -206,7 +229,7 @@ class Send(Base):
 
     def test_dry_run_is_the_default_and_writes_jsonl_only(self):
         called = []
-        out = C.send("glut", "Poring Coin", "Prontera", now=local(12), log_path=self.log, flag_path=self.flag,
+        out = C.send("glut", "Poring Coin", "Prontera", now=utc(12), log_path=self.log, flag_path=self.flag,
                      rng=random.Random(3), insert=lambda t: called.append(t))
         self.assertEqual(out["status"], "dry")
         self.assertEqual(called, [])
@@ -217,14 +240,14 @@ class Send(Base):
 
     def test_live_inserts_once_and_logs(self):
         called = []
-        out = C.send("event", "Poring Coin", "Prontera", live=True, now=local(12), log_path=self.log,
+        out = C.send("event", "Poring Coin", "Prontera", live=True, now=utc(12), log_path=self.log,
                      flag_path=self.flag, rng=random.Random(3), insert=lambda t: called.append(t))
         self.assertEqual(out["status"], "sent")
         self.assertEqual(called, [out["text"]])
         self.assertEqual(self.records()[0]["mode"], "live")
 
     def test_held_by_cadence_writes_nothing_new(self):
-        now = local(12)
+        now = utc(12)
         self.write_history([live_rec(now - 600)])
         called = []
         out = C.send("want", "Other Item", "Prontera", live=True, now=now, log_path=self.log,
@@ -234,7 +257,7 @@ class Send(Base):
         self.assertEqual(len(self.records()), 1)
 
     def test_dry_records_do_not_count_toward_cadence(self):
-        now = local(12)
+        now = utc(12)
         for _ in range(5):
             C.send("want", "Poring Coin", "Prontera", now=now, log_path=self.log, flag_path=self.flag,
                    rng=random.Random(1))
@@ -242,9 +265,33 @@ class Send(Base):
                      flag_path=self.flag, rng=random.Random(1), insert=lambda t: None)
         self.assertEqual(out["status"], "sent")
 
+    def test_failed_live_insert_keeps_its_cadence_record(self):
+        now = utc(12)
+        def boom(text):
+            raise RuntimeError("ro-db unreachable")
+        out = C.send("want", "Poring Coin", "Prontera", live=True, now=now, log_path=self.log,
+                     flag_path=self.flag, rng=random.Random(2), insert=boom)
+        self.assertEqual(out["status"], "failed")
+        self.assertIn("unreachable", out["reason"])
+        recs = self.records()
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0]["mode"], "live")
+        # the failed attempt holds the 3 h gap, so a retry storm cannot happen
+        again = C.send("want", "Osiris Card", "Prontera", live=True, now=now + 600, log_path=self.log,
+                       flag_path=self.flag, insert=lambda t: None)
+        self.assertEqual(again["status"], "held")
+
+    def test_history_is_written_before_the_insert(self):
+        seen = []
+        def check(text):
+            seen.append(len(self.records()))
+        C.send("want", "Poring Coin", "Prontera", live=True, now=utc(12), log_path=self.log,
+               flag_path=self.flag, rng=random.Random(2), insert=check)
+        self.assertEqual(seen, [1])
+
     def test_refused_text_writes_nothing(self):
         with self.assertRaises(C.Refused):
-            C.send("want", "Poring Coin 5", "Prontera", now=local(12), log_path=self.log, flag_path=self.flag)
+            C.send("want", "Poring Coin 5", "Prontera", now=utc(12), log_path=self.log, flag_path=self.flag)
         self.assertFalse(_os.path.exists(self.log))
 
 
@@ -275,9 +322,15 @@ class RepoFiles(unittest.TestCase):
         self.assertEqual(code.count("("), code.count(")"))
         self.assertRegex(src, r"-\tscript\tMarketCrier\t-1,\{")
         self.assertIn("OnTimer60000:", src)
-        self.assertIn("query_sql(", src)
-        self.assertIn("announce .@msg$, bc_all|bc_blue;", src)
-        self.assertIn("UPDATE legion_notice SET sent = 1", src)
+        self.assertIn("created_at > NOW() - INTERVAL 6 HOUR", src)          # age limit in the SELECT
+        self.assertIn("> 0) {", src)                                          # a select of -1 (failure) is not a row
+        upd = src.index("UPDATE legion_notice SET sent = 1 WHERE id = ")
+        self.assertIn("AND sent = 0\") != -1)", src)
+        ann = src.index("announce .@msg$, bc_all|bc_blue;")
+        self.assertLess(upd, ann)                                             # announce only after the claim
+        self.assertIn("!= -1)", src[upd:ann])                                 # a failing UPDATE does not announce
+        self.assertIn("gettime(DT_HOUR)", src)
+        self.assertIn("docker restart ro-rathena", src)                       # go-live order is documented
         self.assertNotIn("getcharid", src)     # no character takes part
         self.assertNotIn("getcharname", src)
 

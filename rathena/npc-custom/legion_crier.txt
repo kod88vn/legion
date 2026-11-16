@@ -2,8 +2,18 @@
 //= A floating NPC with no character taking part: it announces the oldest unsent row of legion_notice
 //= (written by tools/system/crier.py) to every online player, then marks the row sent. The text is a
 //= ready-made server notice; the NPC adds no name and no numbers.
-//= Window: announces only between 08:00 and 22:59 server time (checked in the script below).
+//= Clock: the game server's own clock (ro-rathena container, UTC: docker-compose sets no TZ). gettime(DT_HOUR)
+//= is that clock; crier.py uses the same clock (SERVER_UTC_OFFSET_H = 0). Window: 08:00-22:59 server time.
+//= Age limit: rows older than 6 h are never announced (they stay sent = 0; crier.py writes only inside the window).
 //= Table: rathena/sql/legion_notice.sql. Script loaded by rathena/npc-custom/scripts_custom.conf.
+//=
+//= GO-LIVE ORDER (deploy window only; G15, G16, G17):
+//=   1. load rathena/sql/legion_notice.sql into ro-db (ragnarok database; creates the table if missing)
+//=   2. restart the map server: `docker restart ro-rathena` (NOT a compose recreate, which would also
+//=      recreate Ayla's OpenKore; G15). Ayla back within 5 min (G19).
+//=   3. only then set market_broadcast_on to true in tuning.json (it stays false until the dry run is checked)
+//= query_sql: a result of -1 means failure; 0 or more is success. The UPDATE claims the row (sent = 0 in the
+//= WHERE) and the announce happens only when the UPDATE did not fail, so a failing UPDATE never repeats a notice.
 //============================================================================
 -	script	MarketCrier	-1,{
 	end;
@@ -14,9 +24,11 @@ OnInit:
 
 OnTimer60000:
 	.@hour = gettime(DT_HOUR);
-	if (.@hour >= 8 && .@hour < 23 && query_sql("SELECT id, `text` FROM legion_notice WHERE sent = 0 ORDER BY id LIMIT 1", .@id, .@msg$)) {
-		query_sql("UPDATE legion_notice SET sent = 1 WHERE id = " + .@id);
-		announce .@msg$, bc_all|bc_blue;
+	// query_sql returns -1 on failure (missing table, DB error); only a row count above 0 is a row
+	if (.@hour >= 8 && .@hour < 23 && query_sql("SELECT id, `text` FROM legion_notice WHERE sent = 0 AND created_at > NOW() - INTERVAL 6 HOUR ORDER BY id LIMIT 1", .@id, .@msg$) > 0) {
+		// claim the row first; announce only when the UPDATE did not fail (-1), so a failing UPDATE never repeats the notice
+		if (query_sql("UPDATE legion_notice SET sent = 1 WHERE id = " + .@id + " AND sent = 0") != -1)
+			announce .@msg$, bc_all|bc_blue;
 	}
 	initnpctimer;
 	end;
