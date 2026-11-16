@@ -1143,7 +1143,9 @@ function metricCells(m) {
 // the Haiku helper's last run for Ayla (tools/puppet/dispatch.py puppet_calls.jsonl)
 function helperLine(r) {
   if (!r) return '<div style="color:var(--muted);margin:2px 0 4px">Haiku helper: no run recorded</div>';
-  return `<div style="margin:2px 0 4px" title="${esc(r.result || '')}"><span style="color:var(--muted)">Haiku helper last ran ${agoTs(r.t)} (trigger ${esc(r.trigger || '?')}, ${r.exit || r.is_error ? '<span style="color:var(--bad, #d9534f)">failed</span>' : 'ok'}):</span> ` +
+  const st = r.status || (r.exit || r.is_error ? 'failed' : 'ok'); // status: ok, failed, timeout, refused, error
+  const stHtml = st === 'ok' ? 'ok' : `<span style="color:var(--bad, #d9534f)">${esc(st)}</span>`;
+  return `<div style="margin:2px 0 4px" title="${esc(r.result || '')}"><span style="color:var(--muted)">Haiku helper last ran ${agoTs(r.t)} (trigger ${esc(r.trigger || '?')}, ${stHtml}):</span> ` +
     `${esc((r.result || '').replace(/\s+/g, ' ').slice(0, 220))}</div>`;
 }
 function memberRows(p) {
