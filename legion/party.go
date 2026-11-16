@@ -1012,6 +1012,11 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 	if restHold && b.restGuard(members, rester, moving, now) {
 		return true
 	}
+	// AY26 (protectsupport.go): a member that is not the support keeps the support protected - walks back to it when
+	// leashed, else steps between it and the monsters (frontline) or behind it (ranged). Flag off: nothing happens here.
+	if !support && b.protectOwnSupport(p, members, gm, moving, now) {
+		return true
+	}
 	// carrying a much lower-level human: let them fight their own monsters (otherwise we take every kill and they learn
 	// nothing; this server shares exp at any gap, party_share_level 99); only step in when they're hurt or being hit
 	carry := false

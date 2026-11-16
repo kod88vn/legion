@@ -358,6 +358,9 @@ type Tuning struct {
 	// pt32.go (PT32/PR16, 2026-11-14): a party member fights in place - a new target within 8 cells of it or a party
 	// mate, no other aggressive monster on the way, none while 2+ monsters are on it. ON (owner rule).
 	PartyFightInPlaceOn bool `json:"party_fight_in_place_on"`
+	// protectsupport.go (AY26, 2026-11-15): the party always protects its support - frontlines stay between it and the
+	// monsters, ranged keep behind it, nobody is left behind (leash). OFF by default; an engine party always has it (ovEngineParty).
+	PartyProtectSupportOn bool `json:"party_protect_support_on"`
 	// chatjobs_wait.go: a listed job's grace, and the kinds the code says by itself (comma list)
 	ChatJobListedGraceSec int    `json:"chat_job_listed_grace_sec"`
 	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
