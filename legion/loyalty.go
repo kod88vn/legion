@@ -12,7 +12,7 @@ package main
 //   -3 a day, a help request nobody answered -5. Gains shrink near the top (pts x (1 - L/120)).
 //   In the guild-move rule (friends.go friendMoves) loyalty is the counterweight: the friends' pull must beat
 //   1.5x its own guild's friends + 40 + 0.8 x loyalty, the daily chance is scaled by 2 x (1 - loyalty/100), and
-//   loyalty >= 85 never moves. Only Ayla's six party friends are fixed; Starveil members may move like anyone.
+//   loyalty >= 85 never moves. Only Ayla's party friends (AY11: four bots and Ayla) are fixed; Starveil members may move like anyone.
 //
 //   At risk: loyalty < 40 and friends (score >= 35) in other guilds summing >= 60. Bot guild leaders (main instance)
 //   mail such a member zeny for its next gear (2-20k, at most 1/8 of the leader's purse, leader keeps 30k; one gift per

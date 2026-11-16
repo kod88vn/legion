@@ -38,7 +38,7 @@ for e in ev:
 print('recent events:', dict(c))
 for e in [e for e in ev if e['text'].startswith('bought ')][-6:]:
     print('  ', e['bot'], e['text'])
-names = sys.argv[1:] or ['Zendancer84', 'Echobunny', 'Zen.fox', 'xXRinfangXx', 'LilLilyblade', 'vex_x18']
+names = sys.argv[1:] or ['Zendancer84', 'Zen.fox', 'xXRinfangXx', 'vex_x18']
 for n in names:
     try:
         d = api('/api/bots/' + urllib.request.quote(n))

@@ -12,7 +12,7 @@
   a build plan, levelling strategy and equipment path to 99. 10 ambitious guild leaders found guilds and recruit.
   Parties use tank/ranged/priest roles, bait-and-carry, even EXP share. Bots prefer farming, open shops for surplus,
   and must **run away from danger**.
-- **Ayla's core test party** must **always be online**: Ayla (owner's account) + Zendancer84, Echobunny, Zen.fox, xXRinfangXx (Hunter), LilLilyblade (Monk; replaced the Alchemist Silent rogue 2026-11-14, AY11), vex_x18 (Crusader) (6h).
+- **Ayla's core test party** must **always be online**: Ayla (owner's account, Assassin, frontline) + Zendancer84 (Priest), Zen.fox (Wizard), xXRinfangXx (Hunter), vex_x18 (Crusader); five members, 2 frontline / 2 ranged / 1 support (AY11, 2026-11-15). Echobunny and LilLilyblade are no longer in the party (they live on in Starveil) (Crusader) (6h).
   Lessons from this party get built back into all bots. The owner **watches Ayla live** in a client window.
 - A **dashboard** to see the world, talk to the minds, and see guild and party data.
 

@@ -180,6 +180,7 @@ func pickRotation(members []rotMember, cands []rotCand, lg *rotLog, partyLv int,
 			switch {
 			case !c.Online || c.Pinned || c.Leader || c.Trader || c.Brewer || c.Char == "" || c.Account == "":
 			case rotRole(c.Class) != role:
+			case !swapKeepsComposition(out.Class, c.Class): // AY11: the swap keeps 2 frontline / 2 ranged / 1 support
 			case absInt(c.Lv-partyLv) > rotLevelBand:
 			case inParty[strings.ToLower(c.Char)] || recent(lg.Joined, c.Char, rotRejoinGap) || recent(lg.Left, c.Char, rotRejoinGap):
 			case partyKeys[rotKey(c.Class, c.Build)] || recent(lg.Tested, rotKey(c.Class, c.Build), rotTestedWindow):

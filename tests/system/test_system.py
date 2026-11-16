@@ -482,11 +482,16 @@ class TestSentinelMeter(Env):
 
 class TestPartyCheck(Env):
     def party(self, **over):
+        # AY11: five members, Ayla (an Assassin, frontline) included: 2 frontline, 2 ranged, 1 support
         ms = [{"name": "Ayla", "map": "pay_fild09", "state": "fighting", "human": True, "leader": True, "online": True},
               {"name": "Knight", "map": "pay_fild09", "state": "fighting", "with_leader": True, "online": True,
-               "save_map": "payon"},
+               "save_map": "payon", "role": "tank"},
+              {"name": "Hunter", "map": "pay_fild09", "state": "fighting", "with_leader": True, "online": True,
+               "save_map": "payon", "role": "ranged"},
+              {"name": "Wizard", "map": "pay_fild09", "state": "fighting", "with_leader": True, "online": True,
+               "save_map": "payon", "role": "ranged"},
               {"name": "Priest", "map": "pay_fild09", "state": "sitting", "with_leader": True, "online": True,
-               "save_map": "payon"}]
+               "save_map": "payon", "role": "support"}]
         for k, v in over.items():
             n, f = k.split("__")
             for m in ms:
@@ -497,6 +502,29 @@ class TestPartyCheck(Env):
     def test_clean_party(self):
         import partycheck as P
         self.assertEqual(P.PartyCheck().evaluate(self.party(), T0), [])
+
+    def test_composition_shape(self):
+        import partycheck as P
+        bad, text = P.composition(self.party()["members"])
+        self.assertFalse(bad, text)
+        # a Hunter in for the Crusader-less frontline: one frontline short
+        bad, text = P.composition(self.party(Knight__role="ranged")["members"])
+        self.assertTrue(bad)
+        self.assertIn("1 frontline / 3 ranged / 1 support", text)
+        # a member that fits no slot, and a party of four
+        self.assertTrue(P.composition(self.party(Wizard__role="-")["members"])[0])
+        four = [m for m in self.party()["members"] if m["name"] != "Wizard"]
+        self.assertTrue(P.composition(four)[0])
+
+    def test_composition_reported_after_ten_minutes_and_never_wakes(self):
+        import partycheck as P
+        s = self.party(Hunter__role="melee")   # 3 frontline, 1 ranged: wrong shape
+        pc = P.PartyCheck()
+        self.assertEqual(pc.evaluate(s, T0), [])                         # not yet: the swap may still be on its way
+        v = pc.evaluate(s, T0 + 601)
+        self.assertEqual([x[0] for x in v], ["composition"])
+        self.assertIn("3 frontline / 1 ranged / 1 support", v[0][3])
+        self.assertFalse(P.wants_wake("composition", "party"))          # information only: filed, no wake
 
     def test_apart_needs_time(self):
         import partycheck as P

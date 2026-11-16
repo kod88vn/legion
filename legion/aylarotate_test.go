@@ -63,10 +63,15 @@ func TestPickRotationRules(t *testing.T) {
 	if _, in, ok, _ = pickRotation(rotTestParty(), cands, lg, 80, "Starveil", now); ok {
 		t.Fatalf("swap with %s: nobody fits", in.Char)
 	}
-	// a support candidate: Monky rotates for a Bard
-	cands = append(cands, rotCand{Char: "Bardy", Account: "a7", Class: 19, Build: "bard", Lv: 76, Guild: "Starveil", Online: true})
-	if out, in, ok, _ = pickRotation(rotTestParty(), cands, lg, 80, "Starveil", now); !ok || out.Char != "Monky" || in.Char != "Bardy" {
-		t.Fatalf("got %s -> %s %v, want Monky -> Bardy", out.Char, in.Char, ok)
+	// AY11: a Monk is a frontline. A Bard (same rotRole, support, but a ranged slot) must not take its place;
+	// an Alchemist (frontline slot) may: Monky rotates for the Alchemist.
+	bard := rotCand{Char: "Bardy", Account: "a7", Class: 19, Build: "bard", Lv: 80, Guild: "Starveil", Online: true}
+	if _, in, ok, _ = pickRotation(rotTestParty(), append(cands, bard), lg, 80, "Starveil", now); ok && in.Char == "Bardy" {
+		t.Fatal("a Bard took a Monk's frontline slot")
+	}
+	cands = append(cands, rotCand{Char: "Alchy", Account: "a9", Class: 18, Build: "alchemist", Lv: 80, Guild: "Starveil", Online: true})
+	if out, in, ok, _ = pickRotation(rotTestParty(), cands, lg, 80, "Starveil", now); !ok || out.Char != "Monky" || in.Char != "Alchy" {
+		t.Fatalf("got %s -> %s %v, want Monky -> Alchy", out.Char, in.Char, ok)
 	}
 	// offline / pinned / leader / trader / brewer candidates are never taken
 	for _, c := range []rotCand{{Online: false}, {Online: true, Pinned: true}, {Online: true, Leader: true},

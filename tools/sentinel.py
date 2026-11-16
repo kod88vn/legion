@@ -130,7 +130,7 @@ def probe(n=24, secs=90):
 FARM_MIN = 0.85          # farming share of sampled bot states
 TRIP_WINDOW = 45 * 60    # at most one town trip per bot in this window
 FARM_SAMPLE_EVERY = 300  # seconds between state samples; the share is over the last 3 samples
-CORE = os.environ.get('LEGION_CORE', 'Zendancer84,Echobunny,Zen.fox,xXRinfangXx,LilLilyblade,vex_x18').split(',')
+CORE = os.environ.get('LEGION_CORE', 'Zendancer84,Zen.fox,xXRinfangXx,vex_x18').split(',')
 TOWNS = set('prontera geffen payon morocc alberta aldebaran izlude yuno comodo umbala einbroch lighthalzen rachel veins '
             'hugel niflheim louyang amatsu gonryun ayothaya moscovia brasilis dewata lutie xmas jawaii'.split())
 NOT_FARM = ('travel', 'town trip', 'roaming', 'rally', 'going to the kafra', 'heading', 'saving', 'afk', 'idle',

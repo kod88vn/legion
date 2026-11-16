@@ -4,7 +4,8 @@
   partycheck.py --once [--snapshot FILE]   one pass; time-based rules count the state NOW as long enough
   partycheck.py [--interval 60]            loop mode (writes data/partycheck.heartbeat each pass)
 
-Checks (RULES parties / Ayla): apart (not within 20 cells of the leader for > 4 min), idle (idle/afk/stuck states for
+Checks (RULES parties / Ayla): composition (AY11: five members, 2 frontline, 2 ranged, 1 support; information only, never
+acts on the party, G20), apart (not within 20 cells of the leader for > 4 min), idle (idle/afk/stuck states for
 > 3 min), deaths (2+ in 20 min), wrong save point (on a hunting map whose nearest Kafra town is not the member's save
 town), long sitting (leader, or half the party, resting > 5 min), back-and-forth between maps (4+ map changes among
 two maps in 15 min). A member on an announced errand / party town run is excused from "apart".
@@ -34,6 +35,13 @@ import common as C
 TOGETHER = 20
 APART_S, IDLE_S, SIT_S = 4 * 60, 3 * 60, 5 * 60
 DEATHS_N, DEATHS_WIN = 2, 20 * 60
+COMP_S = 10 * 60                      # a swap or a join takes a while: the composition must be wrong this long
+# AY11: five members, Ayla included: 2 frontline (melee or tank), 2 ranged, 1 support. The role names are the engine's
+# (partyroles.go roleNames); Ayla is an Assassin, a frontline (her member view says "human", not a role).
+PARTY_SIZE = 5
+SHAPE = {"front": 2, "ranged": 2, "support": 1}
+ROLE_SLOT = {"tank": "front", "melee": "front", "ranged": "ranged", "support": "support"}
+AYLA_SLOT = "front"
 FLIP_CHANGES, FLIP_WIN = 4, 15 * 60
 IDLE_STATES = ("idle", "afk", "hanging", "stuck", "no route")
 SIT_STATES = ("sit", "rest")
@@ -52,6 +60,24 @@ def hunt_town(m):
         if (m or "").startswith(pre):
             return town
     return None
+
+
+def composition(members):
+    """AY11: (bad, text). bad when the party is not five, a member fits no slot, or a slot count is off."""
+    slots, unknown = collections.Counter(), []
+    for m in members:
+        slot = AYLA_SLOT if m.get("human") else ROLE_SLOT.get(str(m.get("role", "")).lower())
+        if slot:
+            slots[slot] += 1
+        else:
+            unknown.append("%s (%s)" % (m.get("name", "?"), m.get("role", "?")))
+    off = [k for k in SHAPE if slots[k] != SHAPE[k]]
+    bad = len(members) != PARTY_SIZE or bool(unknown) or bool(off)
+    text = "party of %d, %d frontline / %d ranged / %d support, want %d / %d / %d" % (
+        len(members), slots["front"], slots["ranged"], slots["support"], SHAPE["front"], SHAPE["ranged"], SHAPE["support"])
+    if unknown:
+        text += "; no slot for " + ", ".join(unknown)
+    return bad, text
 
 
 def _num(v):
@@ -123,6 +149,9 @@ class PartyCheck:
                 out.append(("flip", name, "normal", "%s changed map %d times in %d min between %s" % (
                     name, len(maps) - 1, FLIP_WIN // 60, " and ".join(sorted(set(maps))))))
         self.aw.update(ms, leader, apart_names, now)
+        comp_bad, comp_text = composition(snap.get("members", []))
+        if self._timer("comp", "party", comp_bad, COMP_S, now):
+            out.append(("composition", "party", "normal", "Ayla's party is not the AY11 shape: " + comp_text))
         # long sitting: leader, or at least half the party
         sitting = [m for m in ms if str(m.get("state", "")).lower().startswith(SIT_STATES)]
         big = bool(ms) and (len(sitting) * 2 >= len(ms) or (leader in sitting if leader else False))
@@ -180,6 +209,8 @@ def file_priority(prio):
 def wants_wake(kind, name, pc=None):
     """every party item wakes main, except "apart": only when the member has been apart > 10 min and is not walking
     back to the leader, or is dead > 2 min (apartwake; needs the PartyCheck that saw it)"""
+    if kind == "composition":
+        return False   # information only: a filed item, no wake
     if kind != "apart":
         return True
     return pc is not None and pc.aw.wake(name)
