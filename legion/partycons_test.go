@@ -25,10 +25,10 @@ func TestPartyConsFlagOn(t *testing.T) {
 // An engine party (leader pinned to a character named in engine_parties) has the rule with the flag off.
 func TestPartyConsEngineParty(t *testing.T) {
 	withTuning(t, func(tn *Tuning) { tn.PartyConservativeOn = false; tn.EngineParties = "AylaOwn" })
-	if !partyConsFor([]*Bot{{pin: &Pin{Char: "AylaOwn"}}, {}}) {
+	if !partyConsFor([]*Bot{botPinned("ConsFlagLead", "AylaOwn"), {}}) {
 		t.Fatal("engine party with flag off: the rule did not apply")
 	}
-	if partyConsFor([]*Bot{{pin: &Pin{Char: "SomeoneElse"}}, {}}) {
+	if partyConsFor([]*Bot{botPinned("ConsOtherLead", "SomeoneElse"), {}}) {
 		t.Fatal("a party led by a character not in engine_parties got the rule")
 	}
 }
@@ -89,7 +89,7 @@ func pubSet(name string, s pubState) {
 // flag flips starts at -10 once it is on.
 func TestPartyConsEndToEnd(t *testing.T) {
 	withTuning(t, func(tn *Tuning) { tn.GearPerfOn = true; tn.PartyConservativeOn = false; tn.EngineParties = "AylaOwn" })
-	eng := &Bot{P: &Persona{Name: "ConsE2ELead"}, pin: &Pin{Char: "AylaOwn"}}
+	eng := botPinned("ConsE2ELead", "AylaOwn")
 	mem := &Bot{P: &Persona{Name: "ConsE2EMem"}}
 	plain := &Bot{P: &Persona{Name: "ConsE2EPlain"}}
 	plainMem := &Bot{P: &Persona{Name: "ConsE2EPlainMem"}}
@@ -124,5 +124,75 @@ func TestPartyConsEndToEnd(t *testing.T) {
 	withTuning(t, func(tn *Tuning) { tn.GearPerfOn = true; tn.PartyConservativeOn = true; tn.EngineParties = "AylaOwn" })
 	if o := partyPerfOffset(plainParty); o != partyConsStart {
 		t.Fatalf("plain party after the flag went on: %d, want %d", o, partyConsStart)
+	}
+}
+
+// botPinned: a bot pinned to a character, through setPin (the only writer that keeps pinSnap in step with pin).
+func botPinned(name, char string) *Bot {
+	b := &Bot{P: &Persona{Name: name}}
+	b.setPin(&Pin{Char: char})
+	return b
+}
+
+// TestPartyConsNoBotLock: the party level is computed while the leader's bot lock is HELD, as leaderPartyPick does
+// (ai.go:546/:766). The rule must not lock the bot: a lock here blocks forever, and the timeout fails the test instead.
+// Reverting partyConsFor to ms[0].pinned() makes this test fail.
+func TestPartyConsNoBotLock(t *testing.T) {
+	withTuning(t, func(tn *Tuning) { tn.GearPerfOn = true; tn.PartyConservativeOn = false; tn.EngineParties = "AylaOwn" })
+	eng := botPinned("ConsNoLockLead", "AylaOwn")
+	mem := &Bot{P: &Persona{Name: "ConsNoLockMem"}}
+	plain := &Bot{P: &Persona{Name: "ConsNoLockPlain"}}
+	plainMem := &Bot{P: &Persona{Name: "ConsNoLockPlainMem"}}
+	all := []*Bot{eng, mem, plain, plainMem}
+	for _, b := range all {
+		pubSet(b.P.Name, pubState{Name: b.P.Name, Map: "pay_dun02", Online: true, Known: true})
+		partyPerf.mu.Lock()
+		delete(partyPerf.s, b.P.Name)
+		partyPerf.mu.Unlock()
+	}
+	t.Cleanup(func() {
+		for _, b := range all {
+			pubs.Delete(b.P.Name)
+			partyPerf.mu.Lock()
+			delete(partyPerf.s, b.P.Name)
+			partyPerf.mu.Unlock()
+		}
+	})
+	// offset runs partyPerfOffset in a goroutine while lead.mu is held; it must return without waiting for lead.mu.
+	offset := func(lead *Bot, ms []*Bot) int {
+		lead.mu.Lock()
+		defer lead.mu.Unlock()
+		done := make(chan int, 1)
+		go func() { done <- partyPerfOffset(ms) }()
+		select {
+		case o := <-done:
+			return o
+		case <-time.After(2 * time.Second):
+			t.Fatal("partyPerfOffset waited for the leader's bot lock (self-deadlock)")
+			return 0
+		}
+	}
+	if o := offset(eng, []*Bot{eng, mem}); o != partyConsStart {
+		t.Fatalf("engine party with the leader's lock held: %d, want %d", o, partyConsStart)
+	}
+	if o := offset(plain, []*Bot{plain, plainMem}); o != 0 {
+		t.Fatalf("plain party with the flag off and the leader's lock held: %d, want 0", o)
+	}
+	// partyFitLv (ai.go:2310 and the pickers) runs the same offset with the leader's lock held
+	lock := func(lead *Bot, f func() int) int {
+		lead.mu.Lock()
+		defer lead.mu.Unlock()
+		done := make(chan int, 1)
+		go func() { done <- f() }()
+		select {
+		case o := <-done:
+			return o
+		case <-time.After(2 * time.Second):
+			t.Fatal("partyFitLv waited for the leader's bot lock (self-deadlock)")
+			return 0
+		}
+	}
+	if got := lock(eng, func() int { minLv, _, _, _ := partyFitLv([]*Bot{eng, mem}); return minLv }); got == 999 {
+		t.Fatal("partyFitLv returned no level for an engine party with the leader's lock held")
 	}
 }

@@ -17,8 +17,9 @@ const (
 	partyConsUpAfter   = 20 * time.Minute
 )
 
-// partyConsFor: the conservative rule applies to this party (ms[0] = the leader). The leader's pin is read under its
-// own bot lock (pinned()); partyPerfOffset's callers hold no bot lock (partyFitLv, guildlead.go).
+// partyConsFor: the conservative rule applies to this party (ms[0] = the leader). It takes NO lock: the leader's pin is
+// read from pinSnap, which setPin writes together with pin. Reason: partyPerfOffset runs under the leader's b.mu in
+// some callers (leaderPartyPick, ai.go:546 and :766), so a lock here self-deadlocks (TestPartyConsNoBotLock).
 func partyConsFor(ms []*Bot) bool {
 	if len(ms) == 0 {
 		return false
@@ -26,6 +27,6 @@ func partyConsFor(ms []*Bot) bool {
 	if tune().PartyConservativeOn {
 		return true
 	}
-	p := ms[0].pinned()
+	p := ms[0].pinSnap.Load()
 	return p != nil && enginePartyOn(p.Char)
 }

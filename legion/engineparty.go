@@ -80,7 +80,7 @@ func startEnginePartyFor(human string, members []*Bot, chars []string, hold time
 			}
 		}
 		m.mu.Lock()
-		m.pin = &Pin{Char: c, Hold: time.Now().Add(hold)}
+		m.setPin(&Pin{Char: c, Hold: time.Now().Add(hold)})
 		wrongChar := m.Online && c != "" && !strings.EqualFold(m.charName(), c)
 		m.mu.Unlock()
 		if wrongChar || (hold > 0 && m.Online) {

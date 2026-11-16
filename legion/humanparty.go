@@ -92,6 +92,12 @@ func (b *Bot) pinned() *Pin {
 	return b.pin
 }
 
+// setPin: the one writer of pin. The caller holds b.mu; pinSnap mirrors the value for lock-free readers.
+func (b *Bot) setPin(p *Pin) {
+	b.pin = p
+	b.pinSnap.Store(p)
+}
+
 // humanState: what this bot knows about the human partymate right now.
 func (b *Bot) humanState(name string, now time.Time) (pubState, bool) {
 	h, ok := humanAt(name)
@@ -534,7 +540,7 @@ func startHumanParty(human string, members []*Bot, chars []string, hold time.Dur
 	parties.Unlock()
 	for i, m := range members {
 		m.mu.Lock()
-		m.pin = &Pin{Char: chars[i], Human: human, Hold: time.Now().Add(hold)}
+		m.setPin(&Pin{Char: chars[i], Human: human, Hold: time.Now().Add(hold)})
 		wrongChar := m.Online && !strings.EqualFold(m.charName(), chars[i])
 		m.mu.Unlock()
 		mem := memoryOf(m.P)
@@ -559,7 +565,7 @@ func startHumanParty(human string, members []*Bot, chars []string, hold time.Dur
 func stopHumanParty(p *Party) {
 	for _, m := range p.Members {
 		m.mu.Lock()
-		m.pin = nil
+		m.setPin(nil)
 		m.mu.Unlock()
 	}
 	disband(p)

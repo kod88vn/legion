@@ -223,7 +223,7 @@ func (t *perfTracker) offsetCons(key, m string, town bool, n, kills, fair, death
 		t.s[key] = s
 	}
 	if cons && !s.consOn { // partycons.go: the rule starts at -10, also for a tracker made before the flag or the pin
-		s.consOn, s.off, s.changed = true, partyConsStart, now
+		s.consOn, s.off, s.changed = true, min(s.off, partyConsStart), now // never less conservative than the start
 	}
 	if town || m == "" {
 		s.m = "" // a town trip ends the window (its minutes are not farming)
