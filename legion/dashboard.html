@@ -167,6 +167,8 @@ a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; }
 .tabs .tb { font-size: 11px; margin-left: 6px; padding: 0 6px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); font-weight: 500; }
 .tabs .tb.bad { background: #5a2020; color: #ffb3b3; }
 .tab { display: none; } .tab.cur { display: block; }
+.mk-part { margin-top: 12px; } .mk-h { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.mk-src { color: var(--muted); font-size: 11.5px; } .mk-miss { color: var(--muted); font-size: 12px; margin: 4px 0 0 18px; }
 .bd-card { margin-top: 12px; } .bd-part { margin: 4px 0; font-size: 12.5px; line-height: 1.45; }
 .bd-gap { color: var(--muted); font-style: italic; }
 .bd-draft { display: inline-block; font-size: 10.5px; padding: 0 5px; border: 1px solid var(--muted); border-radius: 3px; color: var(--muted); vertical-align: 1px; }
@@ -202,6 +204,7 @@ td.wrapc { white-space: normal; max-width: 640px; }
       <button type="button" data-tab="players">Players<span class="tb" id="tb-players" hidden></span></button>
       <button type="button" data-tab="system">System<span class="tb" id="tb-system" hidden></span></button>
       <button type="button" data-tab="builds">Builds<span class="tb" id="tb-builds" hidden></span></button>
+      <button type="button" data-tab="market">Market<span class="tb" id="tb-market" hidden></span></button>
     </nav>
   </div>
 </div>
@@ -363,6 +366,20 @@ td.wrapc { white-space: normal; max-width: 640px; }
     </div>
     <div id="bdCards"><div class="empty">loading builds...</div></div>
   </section>
+
+  <!-- ============ Market (DB11): the engine, the farmers, the prices, the crier's notices and the game facts behind them.
+       Every number comes from /api/market/view with its source and age; a section with no source says so. ============ -->
+  <section class="tab" id="tab-market">
+    <div class="card"><h2>Market <small id="mkNote"></small> <button type="button" id="mkReload" class="lnk" style="font-size:12px">reload</button></h2>
+      <div style="font-size:12.5px;color:var(--muted)">Read-only. Each row names the file or API it came from and how old it is. Where a source does not exist yet, the section says which one is missing.</div>
+    </div>
+    <div class="card" id="mkEngine"><h2>Market engine</h2><div class="empty">loading...</div></div>
+    <div class="card" id="mkMetrics"><h2>Metrics</h2><div class="empty">loading...</div></div>
+    <div class="card" id="mkFarmers"><h2>Farmers</h2><div class="empty">loading...</div></div>
+    <div class="card" id="mkPrices"><h2>Prices</h2><div class="empty">loading...</div></div>
+    <div class="card" id="mkBroadcast"><h2>Broadcast</h2><div class="empty">loading...</div></div>
+    <div class="card" id="mkFacts"><h2>Game facts</h2><div class="empty">loading...</div></div>
+  </section>
 </div>
 <div id="tip" hidden></div>
 
@@ -502,7 +519,7 @@ const downMsg = (res, what) => `<div class="empty">${SRC.engine === false ? 'Eng
 const staleSfx = res => res && res.stale != null ? ` · saved data, ${ageTxt(res.stale)} old` : '';
 
 // ======================= tabs (DB05) =======================
-const TABS = ['ayla', 'legion', 'economy', 'puppet', 'leaderboard', 'players', 'system', 'builds'];
+const TABS = ['ayla', 'legion', 'economy', 'puppet', 'leaderboard', 'players', 'system', 'builds', 'market'];
 let curTab = 'ayla';
 const onShow = {};  // tab -> function that redraws what depends on the visible width
 function showTab(t, keepHash) {
@@ -1684,6 +1701,118 @@ async function refreshBuilds() {
 }
 $('bdReload').addEventListener('click', () => refreshBuilds());
 onShow.builds = () => { if (!BD) refreshBuilds(); };
+
+// ======================= Market (DB11): engine, metrics, farmers, prices, broadcast, game facts =======================
+// Only layout here. Every number is what /api/market/view sent, with its source and age; a section the server could not
+// source says "source not available" and names it. No fact is typed into this page (tests/dashboard/test_market.py).
+let MK = null;
+const mkNum = v => v == null || v === '' ? '–' : typeof v === 'number' ? (Number.isInteger(v) ? v.toLocaleString('en-US') : String(v)) : esc(String(v));
+const mkSrc = (src, s) => `<span class="mk-src">${src ? esc(src) : 'no source'}${s != null ? ' · ' + ageTxt(s) + ' old' : ''}</span>`;
+const mkMiss = list => list && list.length ? '<ul class="mk-miss">' + list.map(m => `<li>${esc(m)}</li>`).join('') + '</ul>' : '';
+const mkTbl = (head, rows) => rows.length ? `<div class="tbl"><table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : '<div class="empty">no rows</div>';
+const mkTd = (v, cls) => `<td${cls ? ' class="' + cls + '"' : ''}>${mkNum(v)}</td>`;
+const mkPart = (label, body) => `<div class="mk-part"><div class="mk-h">${esc(label)}</div>${body}</div>`;
+const mkSub = html => `<div style="font-size:12.5px">${html}</div>`;
+const mkList = a => Array.isArray(a) ? esc(a.join(', ')) : mkNum(a);
+const mkName = k => esc(String(k).replace(/_/g, ' '));
+const mkStatus = s => s.status === 'off' ? 'engine says off' : s.status;
+function mkCard(id, s, body) { $(id).innerHTML = `<h2>${esc(s.title)} <small>${esc(mkStatus(s))}</small></h2>${body}`; }
+
+function mkEngineBody(s) {
+  const head = mkSub(`Engine status: <b>${mkNum(s.engine_status || 'not reported')}</b>${s.flag_note ? ' (' + mkNum(s.flag_note) + ' off)' : ''} · last run ${mkNum(s.last_run)} · ${mkSrc(s.source, s.age_s)}` +
+    `<br>runs ${mkNum(s.runs)} · farmers ${mkNum(s.farmers)} · ordered ${mkNum(s.ordered)} · unassigned ${mkNum(s.unassigned)} · largest item share ${mkNum(s.max_item_share)}`);
+  const feed = s.feed ? mkSub(`Feed: status <b>${mkNum(s.feed.status)}</b> · ${mkSrc(s.feed.source, s.feed.age_s)}`) + mkMiss(s.feed.missing) : mkSub('Feed: source not available');
+  const flags = mkPart('Flags (tuning.json)', mkTbl(['flag', 'state', 'source'], s.flags.map(f =>
+    `<tr><td>${mkNum(f.flag)}</td><td>${mkNum(f.state)}</td><td>${mkSrc(f.source)}</td></tr>`)));
+  const needs = mkPart('Server needs, ranked', mkTbl(['rank', 'band', 'item', 'item id', 'kind', 'demand', 'need', 'remain', 'listed', 'price', 'farmers on', 'drop maps'], s.needs.map(r =>
+    `<tr>${mkTd(r.rank)}<td>${mkNum(r.band)}</td><td>${mkNum(r.item)}</td>${mkTd(r.item_id)}<td>${mkNum(r.kind)}</td>${mkTd(r.demand)}${mkTd(r.need)}${mkTd(r.remain)}${mkTd(r.listed)}${mkTd(r.price)}${mkTd(r.farmers_on)}<td>${mkList(r.drop_maps)}</td></tr>`)));
+  const alloc = mkPart('Allocation: farmers per item and the maps they work', mkTbl(['item', 'item id', 'count', 'maps'], s.allocation.map(r =>
+    `<tr><td>${mkNum(r.item)}</td>${mkTd(r.item_id)}${mkTd(r.count)}<td>${mkList(r.maps)}</td></tr>`)));
+  const maps = mkPart('Farmers per map', mkTbl(['map', 'count'], s.by_map.map(r => `<tr><td>${mkNum(r.map)}</td>${mkTd(r.count)}</tr>`)));
+  const caps = mkPart('Caps in force', mkTbl(['cap', 'value'], s.caps.map(c => `<tr><td>${mkName(c.name)}</td>${mkTd(c.value)}</tr>`)));
+  return head + feed + flags + needs + alloc + maps + caps + mkMiss(s.missing);
+}
+
+function mkBlock(b) {
+  let h = mkSub(Object.entries(b).filter(([k, v]) => v == null || typeof v !== 'object')
+    .map(([k, v]) => `${mkName(k)}: <b>${mkNum(v)}</b>`).join(' · '));
+  for (const [k, v] of Object.entries(b).filter(([k, v]) => v && typeof v === 'object')) {
+    if (Array.isArray(v)) {
+      if (!v.length) continue;
+      const cols = Object.keys(v[0]);
+      h += mkPart(k.replace(/_/g, ' '), mkTbl(cols.map(c => c.replace(/_/g, ' ')), v.map(r =>
+        `<tr>${cols.map(c => mkTd(r[c] != null && typeof r[c] === 'object' ? JSON.stringify(r[c]) : r[c])).join('')}</tr>`)));
+    } else {
+      h += mkPart(k.replace(/_/g, ' '), mkTbl(['key', 'value'], Object.entries(v).map(([kk, vv]) => `<tr>${mkTd(kk)}${mkTd(vv)}</tr>`)));
+    }
+  }
+  return h;
+}
+
+function mkMetricsBody(s) {
+  const head = mkSub(`${mkSrc(s.source, s.age_s)} · counting since ${mkNum(s.counters_since)} · rounds ${mkNum(s.rounds)}`);
+  return head + Object.entries(s.blocks).map(([name, b]) => mkPart(name.replace(/_/g, ' '), mkBlock(b))).join('') + mkMiss(s.missing);
+}
+
+function mkFarmersBody(s) {
+  const r = s.roster, o = s.orders, a = s.acceptance, k = s.kite;
+  const roster = mkPart('Roster', mkSub(`${mkNum(r.count)} accounts · target ${mkNum(r.target)} · vendor characters added ${mkNum(r.vendor_adds)} · with a vendor now ${mkNum(r.vendor_present)} · since ${mkNum(r.since)} · ${mkSrc(r.source, r.age_s)}`));
+  const orders = mkPart('Orders in force', mkSub(`${mkNum(o.count)} orders · ${mkSrc(o.source, o.age_s)}`) +
+    mkTbl(['farmer', 'char', 'item', 'item id', 'mob', 'maps', 'start', 'until'], o.rows.map(x =>
+      `<tr><td>${mkNum(x.farmer)}</td><td>${mkNum(x.char)}</td><td>${mkNum(x.item)}</td>${mkTd(x.item_id)}<td>${mkNum(x.mob)}</td><td>${mkNum(x.maps)}</td><td>${mkNum(x.start)}</td><td>${mkNum(x.until)}</td></tr>`)));
+  const acc = mkPart('Acceptance and decline reasons', mkSub(`accepted ${mkNum(a.accepted)} · declined ${mkNum(a.declined)} · accept rate (fraction) ${mkNum(a.rate)} · ${mkSrc(a.source)}`) +
+    mkTbl(['decline reason', 'n'], s.declines.map(d => `<tr><td>${mkNum(d.reason)}</td>${mkTd(d.n)}</tr>`)));
+  const spread = mkPart('Supplied and looted per item', mkTbl(['item', 'supplied', 'looted'], s.supplied.map(x =>
+    `<tr><td>${mkNum(x.item)}</td>${mkTd(x.n)}${mkTd((s.looted.find(l => l.item === x.item) || {}).n)}</tr>`)));
+  const deaths = mkPart('Farmer deaths by account', mkTbl(['account', 'deaths'], s.deaths.map(d => `<tr><td>${mkNum(d.account)}</td>${mkTd(d.n)}</tr>`)));
+  const kite = mkPart('Kite steps and deaths', k ? mkSub(`steps ${mkNum(k.steps)} · deaths ${mkNum(k.deaths)}${k.since ? ' · counting since ' + mkNum(k.since) : ''} · ${mkSrc(k.source, k.age_s)}`) : mkSub('source not available'));
+  const zeny = mkPart('Zeny per hour (feed)', mkTbl(['band', 'farmers', 'zeny/h mean'], s.zeny_h.map(z => `<tr><td>${mkNum(z.band)}</td>${mkTd(z.n)}${mkTd(z.zph_mean)}</tr>`)));
+  return roster + orders + acc + spread + deaths + kite + zeny + mkMiss(s.missing);
+}
+
+function mkPricesBody(s) {
+  return mkSub(mkSrc(s.source, s.age_s)) + mkTbl(['item', 'item id', 'price', 'reference', 'vs reference %', 'scarcity', 'urgency', 'history', 'first to last'], s.rows.map(p =>
+    `<tr><td>${mkNum(p.item)}</td>${mkTd(p.item_id)}${mkTd(p.price)}${mkTd(p.reference)}${mkTd(p.vs_reference_pct == null ? null : Math.round(p.vs_reference_pct))}` +
+    `${mkTd(p.scarcity)}${mkTd(p.urgency)}${mkTd(p.history_n)}<td>${mkNum(p.first)} → ${mkNum(p.last)}</td></tr>`)) + mkMiss(s.missing);
+}
+
+function mkBroadcastBody(s) {
+  const flag = mkSub(`market_broadcast_on: <b>${mkNum(s.flag.state)}</b> · ${mkSrc(s.flag.source)}`);
+  const notices = mkPart('Notices (market_notices.jsonl)', mkSub(`${mkNum(s.notices.length)} rows · ${mkNum(s.live_n)} sent (live) · ${mkNum(s.dry_n)} dry run · ${mkSrc(s.notices_source, s.notices_age_s)}`) +
+    mkTbl(['when', 'kind', 'item', 'place', 'text', 'mode'], s.notices.map(n =>
+      `<tr><td>${mkNum(n.at || (n.t != null ? clock(n.t) : null))}</td><td>${mkNum(n.kind)}</td><td>${mkNum(n.item)}</td><td>${mkNum(n.place)}</td><td>${mkNum(n.text)}</td><td>${n.mode === 'live' ? 'sent (live)' : 'dry run'}</td></tr>`)));
+  const cad = mkPart('Cadence rules in force (crier.py rules)', mkTbl(['rule', 'value'], s.cadence.map(c => `<tr><td>${mkName(c.name)}</td>${mkTd(c.value)}</tr>`)) +
+    (s.cadence_source ? mkSub(mkSrc(s.cadence_source)) : ''));
+  return flag + notices + cad + mkMiss(s.missing);
+}
+
+function mkFactsBody(s) {
+  return mkSub(`${mkSrc(s.source, s.age_s)}${s.checked ? ' · read ' + mkNum(s.checked) : ''}`) +
+    mkTbl(['group', 'fact', 'value', 'unit', 'source', 'age'], s.rows.map(f =>
+      `<tr><td>${mkNum(f.group)}</td><td>${mkNum(f.label)}</td><td class="r">${mkNum(f.value)}</td><td>${mkNum(f.unit)}</td>` +
+      `<td class="mk-src">${mkNum(f.source)}${f.derived ? ' (derived)' : ''}</td><td>${f.age_s != null ? ageTxt(f.age_s) + ' old' : '–'}</td></tr>`)) + mkMiss(s.missing);
+}
+
+async function refreshMarket() {
+  const r = await eget('/api/market/view');
+  if (!r.ok) {
+    const msg = downMsg(r, 'the market view');
+    ['mkEngine', 'mkMetrics', 'mkFarmers', 'mkPrices', 'mkBroadcast', 'mkFacts'].forEach(id => { $(id).innerHTML = msg; });
+    return;
+  }
+  MK = r.data;
+  const S = MK.sections;
+  mkCard('mkEngine', S.engine, mkEngineBody(S.engine));
+  mkCard('mkMetrics', S.metrics, mkMetricsBody(S.metrics));
+  mkCard('mkFarmers', S.farmers, mkFarmersBody(S.farmers));
+  mkCard('mkPrices', S.prices, mkPricesBody(S.prices));
+  mkCard('mkBroadcast', S.broadcast, mkBroadcastBody(S.broadcast));
+  mkCard('mkFacts', S.facts, mkFactsBody(S.facts));
+  $('mkNote').textContent = `as of ${clock(MK.t)} · every row names its source`;
+}
+$('mkReload').addEventListener('click', () => refreshMarket());
+onShow.market = () => refreshMarket();
+setInterval(() => { if (curTab === 'market') refreshMarket(); }, 30000);
 
 // ======================= From files (DB08): /offline on the dashboard server =======================
 // Fills what the engine would show when it is down: the sentinel's last health line, the level book, the economy

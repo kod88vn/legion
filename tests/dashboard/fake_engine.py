@@ -195,7 +195,43 @@ def answer(path):
     if route == "/api/friends": return friends()
     if route == "/api/guild-rank": return guild_rank(now)
     if route == "/api/stats": return {"online": 812}
+    if route == "/api/market/engine": return market_engine(now)
+    if route == "/api/market/feed": return market_feed(now)
+    if route == "/api/economy": return {"t": iso(now), "kite": market_kite(now)}
     return None
+
+
+# DB11 (Market tab): the answers come from tests/dashboard/fixtures, which hold the real shapes (the Go structs and the
+# crier's rows; test_market.py checks them against the source). The values in them are samples, not server data.
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+
+
+def fixture(name):
+    with open(os.path.join(FIXTURES, name), encoding="utf-8") as f:
+        return json.load(f)
+
+
+def market_engine(now):
+    return fixture("market_engine.json")
+
+
+def market_feed(now):
+    return fixture("market_feed.json")
+
+
+def market_kite(now):
+    return {"kite_steps": 120, "kite_deaths": 3, "counters_since": iso(now - 86400), "by_bot": {}}
+
+
+def market_files(d):
+    """the files the engine and the tools write for the Market tab, as the offline stand-ins read them (DB08). The engine
+    writes no market_engine.json and no farmers route: only the feed; the farmer and kite files come from their writers."""
+    import shutil
+    for name in ("market_feed.json", "farmer_orders.json", "farmers.json", "kite_counters.json", "kite_counters_core.json"):
+        shutil.copy(os.path.join(FIXTURES, name), os.path.join(d, name))
+    shutil.copy(os.path.join(FIXTURES, "market_notices.jsonl"), os.path.join(d, "market_notices.jsonl"))
+    with open(os.path.join(d, "tuning.json"), "w", encoding="utf-8") as f:
+        json.dump({"market_broadcast_on": True, "guild_market_feed_on": False}, f)
 
 
 # Owner token the fake engine expects on POST/DELETE /api/ayla/overrides (the real one is legion/data/owner.token).

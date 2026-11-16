@@ -18,6 +18,7 @@ Rules this tool enforces:
 
   crier.py send --kind want --item "Poring Coin" --place Prontera [--live] [--now EPOCH]
   crier.py templates
+  crier.py rules          (read-only: the cadence and wording rules as JSON, for the dashboard)
 
 Clock: the game server's (UTC, SERVER_UTC_OFFSET_H = 0). Window 08:00-22:59 on that clock, matching the NPC.
 Names: item and place slots are display names made of letters, spaces, apostrophes and hyphens; digits are
@@ -137,6 +138,14 @@ def render(kind, item, place, rng=None):
     return check_text(tpl.format(item=item, place=place))
 
 
+def rules():
+    """The cadence and wording rules in force, published for the dashboard's Market tab (DB11). Read-only: it only
+    reports the constants above, so the page never types them in."""
+    return {"flag": FLAG, "max_chars": MAX_CHARS, "max_per_day": MAX_PER_DAY, "gap_h": GAP_S // 3600,
+            "same_item_h": SAME_ITEM_S // 3600, "hour_from": HOUR_FROM, "hour_to": HOUR_TO,
+            "server_utc_offset_h": SERVER_UTC_OFFSET_H, "kinds": list(KINDS), "default_mode": "dry"}
+
+
 def server_hour(now):
     """Hour of day (0-23) on the game server's clock (SERVER_UTC_OFFSET_H from UTC)."""
     return time.gmtime(now + SERVER_UTC_OFFSET_H * 3600).tm_hour
@@ -215,7 +224,11 @@ def main(argv=None):
     s.add_argument("--live", action="store_true", help="insert into ro-db (default: dry run to the jsonl only)")
     s.add_argument("--now", type=float, default=None, help="epoch seconds (tests)")
     sub.add_parser("templates")
+    sub.add_parser("rules")
     a = ap.parse_args(argv)
+    if a.cmd == "rules":
+        print(json.dumps(rules(), ensure_ascii=False))
+        return 0
     if a.cmd == "templates":
         for k in KINDS:
             for t in TEMPLATES[k]:

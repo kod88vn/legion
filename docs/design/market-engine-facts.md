@@ -92,3 +92,46 @@ incarnations (110, lv 132) are not a farmer map. Most farm mobs walk at 200-400,
 6. **Docker**: the design says docker was not installed in its session. It is installed now and `ro-rathena` was running
    during this check; the facts above come from read-only copies (nothing was started or changed).
 7. **Teleport card (design 1.2)**: confirmed. Card = `AL_TELEPORT,1`, accessory-slotted, Belt slot 1, Creamy the mob.
+
+## 6. Machine-readable facts (Market tab, DB11)
+
+The dashboard's Market tab reads this block at serve time (`tools/dashboard/marketview.py`); it never types these
+values into the page. Each value is copied from the sections above, with its source. Derived values (effective drop
+chance, kills per card) are computed by the dashboard from these inputs and are not stored here. `checked` is the day
+the values were read from the container.
+
+<!-- facts-json: DB11 -->
+```json
+{"checked": "2026-11-15", "facts": [
+ {"id": "creamy.card.id", "group": "Creamy card", "label": "item id", "value": 4040, "unit": "", "source": "db/re/item_db_etc.yml:3200 (Creamy_Card)"},
+ {"id": "creamy.card.script", "group": "Creamy card", "label": "script", "value": "skill AL_TELEPORT,1;", "unit": "", "source": "db/re/item_db_etc.yml:3200"},
+ {"id": "creamy.card.slot", "group": "Creamy card", "label": "slot", "value": "Both_Accessory (no slot of its own)", "unit": "", "source": "db/re/item_db_etc.yml:3200"},
+ {"id": "creamy.belt.id", "group": "Creamy card", "label": "accessory that takes it: Belt item id", "value": 2627, "unit": "", "source": "db/re/item_db_equip.yml:33725"},
+ {"id": "creamy.belt.slots", "group": "Creamy card", "label": "Belt slots", "value": 1, "unit": "", "source": "db/re/item_db_equip.yml:33725"},
+ {"id": "creamy.belt.equip_level_min", "group": "Creamy card", "label": "Belt minimum level", "value": 25, "unit": "", "source": "db/re/item_db_equip.yml:33725"},
+ {"id": "creamy.drop.normal_rate", "group": "Creamy card", "label": "card rate, Creamy (mob 1018)", "value": 1, "unit": "per rate base", "source": "db/re/mob_db.yml:901"},
+ {"id": "creamy.drop.champion_rate", "group": "Creamy card", "label": "card rate, Swift Creamy (mob 2863)", "value": 5, "unit": "per rate base", "source": "db/re/mob_db.yml:76377"},
+ {"id": "rate.base", "group": "Creamy card", "label": "rate base (card rate units)", "value": 10000, "unit": "", "source": "market-engine-facts.md section 1 (rates are per 10000)"},
+ {"id": "rate.scale_base", "group": "Creamy card", "label": "rate scale of 100 percent", "value": 100, "unit": "", "source": "market-engine-facts.md section 1 (500 read as x5)"},
+ {"id": "server.item_rate_card", "group": "Server rates", "label": "item_rate_card (card drops)", "value": 500, "unit": "percent", "source": "conf/import/battle_conf.txt (container)"},
+ {"id": "mob.creamy.walk_speed", "group": "Mob speed", "label": "Creamy (1018) WalkSpeed", "value": 150, "unit": "ms per cell", "source": "db/re/mob_db.yml:877 (checked 2026-11-15 in the container)"},
+ {"id": "mob.swift_creamy.walk_speed", "group": "Mob speed", "label": "Swift Creamy (2863) WalkSpeed", "value": 112, "unit": "ms per cell", "source": "db/re/mob_db.yml:76352 (checked 2026-11-15 in the container)"},
+ {"id": "mob.creamy_fear.walk_speed", "group": "Mob speed", "label": "Creamy Fear (1293) WalkSpeed", "value": 155, "unit": "ms per cell", "source": "db/re/mob_db.yml:14107 (checked 2026-11-15 in the container)"},
+ {"id": "player.default_walk_speed", "group": "Mob speed", "label": "default player walk speed", "value": 150, "unit": "ms per cell", "source": "src/common/mmo.hpp:93"},
+ {"id": "skill.double_strafe.max_level", "group": "Hunter skills", "label": "Double Strafe (46) max level", "value": 10, "unit": "", "source": "db/re/skill_db.yml (AC_DOUBLE)"},
+ {"id": "skill.ankle_snare.max_level", "group": "Hunter skills", "label": "Ankle Snare (117) max level", "value": 5, "unit": "", "source": "db/re/skill_db.yml (HT_ANKLESNARE)"},
+ {"id": "skill.blitz_beat.max_level", "group": "Hunter skills", "label": "Blitz Beat (129) max level", "value": 5, "unit": "", "source": "db/re/skill_db.yml (HT_BLITZBEAT)"},
+ {"id": "skill.al_teleport.max_level", "group": "Hunter skills", "label": "Teleport (26) max level", "value": 2, "unit": "", "source": "db/re/skill_db.yml (AL_TELEPORT)"},
+ {"id": "item.trap.id", "group": "Hunter skills", "label": "Trap item id (Booby_Trap)", "value": 1065, "unit": "", "source": "db/re/item_db_etc.yml:1904"},
+ {"id": "item.trap.buy", "group": "Hunter skills", "label": "Trap buy price", "value": 50, "unit": "zeny", "source": "db/re/item_db_etc.yml:1904"},
+ {"id": "engine.item_creamy_card", "group": "Engine constants", "label": "itemCreamyCard", "value": 4040, "unit": "", "source": "legion/guildstock.go:36"},
+ {"id": "engine.item_creamy", "group": "Engine constants", "label": "itemCreamy", "value": 4040, "unit": "", "source": "legion/teleport.go:19"},
+ {"id": "engine.item_trap", "group": "Engine constants", "label": "itemTrap", "value": 1065, "unit": "", "source": "legion/kite.go:26"},
+ {"id": "spawn.creamy.prt_fild02", "group": "Creamy spawns", "label": "Creamy on prt_fild02", "value": 40, "unit": "spawns", "source": "npc/re/mobs/fields/prontera.txt:39"},
+ {"id": "spawn.creamy.gef_fild05", "group": "Creamy spawns", "label": "Creamy on gef_fild05", "value": 143, "unit": "spawns", "source": "npc/re/mobs/fields/geffen.txt:93"},
+ {"id": "spawn.creamy.pay_fild07", "group": "Creamy spawns", "label": "Creamy on pay_fild07", "value": 26, "unit": "spawns", "source": "npc/re/mobs/fields/payon.txt:79"},
+ {"id": "chars.max_packetver_20180124", "group": "Character slots", "label": "characters per account, PACKETVER >= 20180124", "value": 15, "unit": "", "source": "src/common/mmo.hpp:66-72"},
+ {"id": "chars.max_packetver_20100413", "group": "Character slots", "label": "characters per account, PACKETVER >= 20100413", "value": 12, "unit": "", "source": "src/common/mmo.hpp:66-72"},
+ {"id": "chars.max_older", "group": "Character slots", "label": "characters per account, older PACKETVER", "value": 9, "unit": "", "source": "src/common/mmo.hpp:66-72"}
+]}
+```

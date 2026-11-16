@@ -1,0 +1,39 @@
+{
+  "t": "2026-11-15T11:59:00Z",
+  "status": "ok",
+  "missing": [
+    "zeny_per_hour: meter feed not wired (WP8)"
+  ],
+  "server": {
+    "bots": 4000,
+    "online": 850,
+    "bands": [
+      {
+        "band": "18-32",
+        "bots": 410
+      }
+    ]
+  },
+  "short": [
+    {
+      "item_id": 4040,
+      "item": "Creamy Card",
+      "kind": "short",
+      "band": "18-32",
+      "demand": 14,
+      "listed": 0,
+      "price": 82000,
+      "drop_maps": [
+        "prt_fild02"
+      ],
+      "farmers_on": 3
+    }
+  ],
+  "glut": [
+    {
+      "item": "Poring Coin",
+      "listed": 60
+    }
+  ],
+  "zeny_per_hour": []
+}

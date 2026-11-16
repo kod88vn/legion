@@ -1,0 +1,16 @@
+{
+  "flag": "market_broadcast_on",
+  "max_chars": 120,
+  "max_per_day": 4,
+  "gap_h": 3,
+  "same_item_h": 12,
+  "hour_from": 8,
+  "hour_to": 23,
+  "server_utc_offset_h": 0,
+  "kinds": [
+    "want",
+    "glut",
+    "event"
+  ],
+  "default_mode": "dry"
+}
