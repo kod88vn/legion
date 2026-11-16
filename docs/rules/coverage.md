@@ -10,7 +10,7 @@ section 0 -> `process.md`, 1 -> the hard gates (`gates.md`), 2 -> `economy.md` a
 3b -> `guilds.md`, 4 -> `chat.md`, 5 -> `ayla.md`, 6 -> `process.md` (DB01, DB02); class rules -> `docs/classes/`.
 Find the rule by the quoted title in the Name column below.
 
-Counts by kind: behaviour spec 122, hard gate 20, process 34, replaced 5, server setting 8, ayla 9, economy 13, parties 7, classes 2, settings 1, total 221.
+Counts by kind: behaviour spec 123, hard gate 21, process 35, replaced 5, server setting 8, ayla 9, economy 13, parties 7, classes 2, settings 1, constitution 1, total 225.
 
 | ID | Name | Kind | Old location | New location | Status |
 |---|---|---|---|---|---|
