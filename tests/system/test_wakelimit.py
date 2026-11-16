@@ -8,6 +8,7 @@ import testenv  # noqa: E402
 testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
 
 import io
+import json
 import os
 import sys
 import unittest
@@ -114,6 +115,20 @@ class TestApartWake(unittest.TestCase):
         self.assertTrue(aw.wake("Knight"))
 
 
+    def test_going_to_leader_is_capped_at_30_min(self):
+        # AY24 review db27aef: a member stuck on a blocked route with "going to Ayla" must not be exempt for ever
+        import apartwake
+        aw = apartwake.ApartWake()
+        m = self.m(state="going to Ayla")
+        aw.update([self.L, m], self.L, ["Knight"], T0)
+        aw.update([self.L, m], self.L, ["Knight"], T0 + 300)
+        self.assertFalse(aw.wake("Knight"))           # 5 min apart, walking back: no wake
+        aw.update([self.L, m], self.L, ["Knight"], T0 + 1500)
+        self.assertFalse(aw.wake("Knight"))           # 25 min: still within the cap
+        aw.update([self.L, m], self.L, ["Knight"], T0 + 1860)
+        self.assertTrue(aw.wake("Knight"))            # 31 min apart and still "going to": stuck, wake main
+
+
 class TestPartyCheckWake(Env):
     def party(self, **knight):
         k = {"name": "Knight", "map": "payon", "state": "travel -> pay_fild09", "with_leader": False, "online": True,
@@ -171,6 +186,72 @@ class TestSentinelPartyWake(Env):
         self.assertTrue(sentinel.party_split_wake(aw, ap, T0 + 1100))
         sentinel.file_problem("party", "split: Knight(payon: dead)", wake=True)
         self.assertEqual([k for k, _, _ in bugq.wake_reasons()], ["urgent"])
+
+
+def _party(members, human=None):
+    d = {"name": "Ayla core", "members": members, "online": len(members), "together": len(members)}
+    if human is not None:
+        d["human"] = human
+    return d
+
+
+def _member(name, leader=False, **kw):
+    d = {"name": name, "map": "pay_fild09", "x": 100, "y": 100, "state": "farming", "online": True,
+         "with_leader": True, "leader": leader}
+    d.update(kw)
+    return d
+
+
+class TestAylaPartyEra(Env):
+    """AY24: Ayla's party is found by member name in the engine era (an engine party has no human) and by human in the
+    OpenKore era. No party found is a loud "party blind" item, never a silent pass (retroactive review db27aef)."""
+
+    def set_engine(self, on):
+        with open(os.path.join(self.d, "tuning.json"), "w") as f:
+            json.dump({"engine_parties": "ayla" if on else ""}, f)
+
+    def test_engine_party_found_by_member_name(self):
+        import aylaparty
+        self.set_engine(True)
+        eng = _party([_member("Bob"), _member("Ayla", leader=True)])
+        other = _party([_member("Cy")], human="Zen")
+        self.assertIs(aylaparty.find_party([other, eng], aylaparty.engine_era()), eng)
+        self.assertIsNone(aylaparty.find_party([other], aylaparty.engine_era()))
+
+    def test_openkore_party_found_by_human(self):
+        import aylaparty
+        self.set_engine(False)
+        human_led = _party([_member("Ayla", leader=True)], human="Ayla")
+        self.assertIs(aylaparty.find_party([human_led], aylaparty.engine_era()), human_led)
+        # a member named Ayla alone does not make the OpenKore-era party
+        self.assertIsNone(aylaparty.find_party([_party([_member("Ayla", leader=True)])], False))
+
+    def test_sentinel_view_is_loud_when_blind(self):
+        import sentinel
+        self.set_engine(True)
+        ap, blind = sentinel.ayla_party_view([_party([_member("Bob")])])
+        self.assertIsNone(ap)
+        self.assertIn("no party with Ayla", blind)
+        eng = _party([_member("Ayla", leader=True)])
+        ap, blind = sentinel.ayla_party_view([eng])
+        self.assertIs(ap, eng)
+        self.assertEqual(blind, "")
+
+    def test_partycheck_files_blind_item(self):
+        import bugq
+        import partycheck as P
+        self.set_engine(True)
+        snap = os.path.join(self.d, "snap.json")
+        with open(snap, "w") as f:
+            json.dump({"members": [], "events": [], "party_found": False, "era": "engine"}, f)
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(P.main(["--snapshot", snap, "--once"]), 0)
+        keys = [e.get("key") for e in bugq.load().values()]
+        self.assertIn("partycheck:blind", keys)
+        blind = [e for e in bugq.load().values() if e.get("key") == "partycheck:blind"][0]
+        self.assertEqual(blind.get("priority"), "high")
+        self.assertIn("engine era", blind.get("text", ""))
+
 
 
 if __name__ == "__main__":

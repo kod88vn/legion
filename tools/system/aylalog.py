@@ -33,6 +33,8 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common as C
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "puppet"))
+import aylaswitch  # noqa: E402  AY24: in the engine era her OpenKore console is not written, so nothing is read or filed
 
 FROM = "ayla-log"
 WINDOW = 600                 # one queue write per key per 10 min
@@ -294,6 +296,20 @@ class Tracker(object):
     def kpm(self, t, span=3600):
         n = sum(1 for x in self.exp_times if t - span <= x <= t)
         return n / (span / 60.0)
+
+    def state(self):
+        """What a resumed run needs: the map, the last exp/log times and the last hour of exp gains (kills per
+        minute reads from these; without them a resumed run reads 0 for an hour and files a false below-par item)."""
+        last = self.last_t or 0
+        return {"map": self.map, "cell": self.cell, "map_since": self.map_since, "last_exp": self.last_exp,
+                "last_t": self.last_t, "exp_times": [x for x in self.exp_times if x >= last - 3600]}
+
+    def restore(self, st):
+        self.map, self.cell = st.get("map", ""), st.get("cell", "")
+        self.map_since, self.last_exp = st.get("map_since"), st.get("last_exp")
+        self.last_t = st.get("last_t")
+        last = self.last_t or 0
+        self.exp_times = [float(x) for x in st.get("exp_times", []) if isinstance(x, (int, float)) and x >= last - 3600]
 
 
 # ------------------------------------------------------------------ log tailing
@@ -557,43 +573,71 @@ def backlog(path, tracker, hours, utc_off):
     return [e for e in evs if e.t >= end - hours * 3600], tail
 
 
+ENGINE_NOTE = "engine era (AY24): her OpenKore console is not read; nothing filed"
+
+
+def setup(a, st, filer, tracker, now):
+    """The first pass of an era: resume the saved state when it is fresh, else seed the queue from the backlog.
+    Returns the Tail to follow, or None when the log is missing and --once was asked."""
+    path = a.log
+    if st.get("path") == path and now - st.get("saved", 0) < a.backlog_h * 3600:
+        tracker.restore(st)
+        return Tail(path, st.get("offset", 0), st.get("head", ""))
+    if not os.path.exists(path):
+        print("aylalog: log not found: %s" % path, file=sys.stderr)
+        if a.once:
+            return None
+    evs, tail = backlog(path, tracker, a.backlog_h, a.log_utc_offset)
+    print("aylalog: backlog %gh of %s: %d problem events" % (a.backlog_h, path, len(evs)), file=sys.stdout)
+    if a.dry_run or a.summary:
+        cnt = {}
+        for e in evs:
+            cnt[e.kind] = cnt.get(e.kind, 0) + 1
+        print("aylalog: kinds in backlog: " + ", ".join("%s=%d" % kv for kv in sorted(cnt.items(), key=lambda kv: -kv[1])),
+              file=sys.stdout)
+    n = filer.seed(evs, now, a.backlog_h)
+    print("aylalog: backlog %s %d queue items" % ("would file" if a.dry_run else "filed", n), file=sys.stdout)
+    return tail
+
+
 def run(a):
     out = sys.stdout
     path = a.log
-    st = {} if a.dry_run else load_state()
-    filer = Filer(a.dry_run, st, out)
-    tracker = Tracker()
-    tail = None
-    now = C.now()
-    fresh = st.get("path") == path and now - st.get("saved", 0) < a.backlog_h * 3600
-    if fresh:
-        tail = Tail(path, st.get("offset", 0), st.get("head", ""))
-        tracker.map, tracker.cell = st.get("map", ""), st.get("cell", "")
-        tracker.map_since, tracker.last_exp = st.get("map_since"), st.get("last_exp")
-        tracker.last_t = st.get("last_t")
-    else:
-        if not os.path.exists(path):
-            print("aylalog: log not found: %s" % path, file=sys.stderr)
-            if a.once:
-                return 2
-        evs, tail = backlog(path, tracker, a.backlog_h, a.log_utc_offset)
-        print("aylalog: backlog %gh of %s: %d problem events" % (a.backlog_h, path, len(evs)), file=out)
-        if a.dry_run or a.summary:
-            cnt = {}
-            for e in evs:
-                cnt[e.kind] = cnt.get(e.kind, 0) + 1
-            print("aylalog: kinds in backlog: " + ", ".join("%s=%d" % kv for kv in sorted(cnt.items(), key=lambda kv: -kv[1])), file=out)
-        n = filer.seed(evs, now, a.backlog_h)
-        print("aylalog: backlog %s %d queue items" % ("would file" if a.dry_run else "filed", n), file=out)
-    last_meter = 0
     locked = not (a.once or a.dry_run)   # single instance for the loop: legion/data/aylalog.lock
     if locked and not C.take_lock("aylalog.lock", 300):
         print("aylalog: another copy holds legion/data/aylalog.lock; not starting", file=sys.stderr)
         return 3
+    last_meter = 0
+    tail = filer = tracker = None
+    engine_seen = False
     while True:
         now = C.now()
-        lines = tail.read()
-        for e in process_lines(lines, tracker, a.log_utc_offset):
+        if aylaswitch.engine_on():
+            # AY24 engine era: her party runs on the engine and her OpenKore log is not written. Keep the single
+            # instance and the heartbeat (the watchdog reads both); read nothing, file nothing.
+            if not engine_seen:
+                print("aylalog: " + ENGINE_NOTE, file=out)
+                engine_seen = True
+            tail = None
+            if locked and not C.refresh_lock("aylalog.lock"):
+                print("aylalog: lock taken by another copy; exiting", file=sys.stderr)
+                return 3
+            if not a.dry_run:
+                C.heartbeat("aylalog", ENGINE_NOTE)
+            if a.once:
+                return 0
+            time.sleep(a.interval)
+            continue
+        engine_seen = False
+        if tail is None:
+            # first pass, or the switch has just gone back to OpenKore: state is read again, so nothing is replayed
+            st = {} if a.dry_run else load_state()
+            filer = Filer(a.dry_run, st, out)
+            tracker = Tracker()
+            tail = setup(a, st, filer, tracker, now)
+            if tail is None:
+                return 2
+        for e in process_lines(tail.read(), tracker, a.log_utc_offset):
             filer.add(e)
         try:
             mt = os.path.getmtime(path)
@@ -612,8 +656,7 @@ def run(a):
                 filer.add(e)
         filer.flush(now)
         if not a.dry_run:
-            save_state(dict(filer.state(), path=path, offset=tail.offset, head=tail.head, saved=now, map=tracker.map,
-                            cell=tracker.cell, map_since=tracker.map_since, last_exp=tracker.last_exp, last_t=tracker.last_t))
+            save_state(dict(filer.state(), path=path, offset=tail.offset, head=tail.head, saved=now, **tracker.state()))
             if locked and not C.refresh_lock("aylalog.lock"):
                 print("aylalog: lock taken by another copy; exiting", file=sys.stderr)
                 return 3

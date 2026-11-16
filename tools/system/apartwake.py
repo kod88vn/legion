@@ -6,6 +6,8 @@ Members walking back to the leader are normal: a split is still filed to the bug
     (state "going to <leader>" / "going to <leader's map>" / "travel -> <leader's map>", or the distance to the leader
     on the same map shrank since the last pass), or
   - the member is dead for more than DEAD_WAKE_S (2 min).
+A member "going to <leader>" counts as walking back only for HEADING_CAP_S (30 min) of the split: a member stuck on a
+blocked route with that state text wakes main like any other stuck member (retroactive review db27aef).
 """
 import re
 
@@ -13,6 +15,7 @@ APART_WAKE_S = 10 * 60
 DEAD_WAKE_S = 2 * 60
 CLOSING_CELLS = 2          # same map, the distance shrank by at least this much since the last pass = walking back
 PREV_MAX_AGE = 5 * 60      # an older distance sample says nothing about walking
+HEADING_CAP_S = 30 * 60    # "going to <leader>" exempts a member from the wake for this long, no longer
 
 
 def _num(v):
@@ -83,7 +86,8 @@ class ApartWake:
             closing = d is not None and p is not None and p[1] is not None and now - p[0] <= PREV_MAX_AGE \
                 and p[1] - d >= CLOSING_CELLS
             self.prev[n] = (now, d)
-            moving = heading_to(m.get("state"), leader) or closing
+            heading = heading_to(m.get("state"), leader) and (self.k == 0 or now - t0 <= HEADING_CAP_S * self.k)
+            moving = heading or closing
             long_apart = now - t0 > APART_WAKE_S * self.k or self.k == 0
             self.ok[n] = long_apart and not moving
         for n in list(self.apart_since):

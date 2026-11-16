@@ -8,7 +8,9 @@ Checks (RULES parties / Ayla): apart (not within 20 cells of the leader for > 4 
 > 3 min), deaths (2+ in 20 min), wrong save point (on a hunting map whose nearest Kafra town is not the member's save
 town), long sitting (leader, or half the party, resting > 5 min), back-and-forth between maps (4+ map changes among
 two maps in 15 min). A member on an announced errand / party town run is excused from "apart".
-Data: GET /api/parties/detail (party with human == "Ayla"), GET /api/events (deaths). Field names are read
+Data: GET /api/parties/detail (Ayla's party: the one with human "Ayla" in the OpenKore era, the one with a member named
+Ayla in the engine era, aylaparty.py), GET /api/events (deaths). No party found, or a failed pass, is filed as a
+"party blind" item that wakes main: the checks never pass silently (AY24). Field names are read
 defensively (x, y, save_map|save|respawn, with_leader, dist_leader). Every violation is about Ayla's party, so it is
 filed at least "high" with the wake flag (an "apart" item only after 10 min apart and not walking back to the
 leader, or dead > 2 min: apartwake.py): bugq touches data/bugq.wake and the bug-queue watcher (bugq.py watch) exits on
@@ -24,6 +26,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import aylaparty
 import apartwake
 import bugq
 import common as C
@@ -148,7 +151,8 @@ def snapshot_from_api(base):
         with urllib.request.urlopen(base + path, timeout=10) as r:
             return json.load(r)
     parties = get("/api/parties/detail")
-    ap = next((p for p in parties if p.get("human") == "Ayla"), None)
+    engine = aylaparty.engine_era()
+    ap = aylaparty.find_party(parties, engine)
     ms = []
     if ap:
         for m in ap.get("members", []):
@@ -159,7 +163,13 @@ def snapshot_from_api(base):
         ev = get("/api/events").get("events", [])
     except Exception:
         ev = []
-    return {"members": ms, "events": ev}
+    return {"members": ms, "events": ev, "party_found": ap is not None, "era": "engine" if engine else "openkore"}
+
+
+def file_blind(why):
+    """The checks have nothing to look at: a high item that wakes main (deduped; a repeat bumps the count)"""
+    bugq.add("partycheck", "high", "[party blind] %s: the party checks see nothing" % why, evidence=why,
+             key="partycheck:blind", metric="kpm", bump_min_secs=900, wake=True)
 
 
 def file_priority(prio):
@@ -199,25 +209,34 @@ def main(argv=None):
         return 3
     pc = PartyCheck(instant=a.once)
     while True:
+        blind = ""
         try:
             if a.snapshot:
                 with open(a.snapshot, encoding="utf-8") as f:
                     snap = json.load(f)
             else:
                 snap = snapshot_from_api(a.base)
+            if not snap.get("party_found", True):
+                blind = "Ayla's party not found in /api/parties/detail (%s era)" % snap.get("era", "?")
+                print("%s party blind: %s" % (C.iso(), blind))
+                if not a.dry_run:
+                    file_blind(blind)
             vios = pc.evaluate(snap)
             for kind, name, prio, text in vios:
                 print("%s party %s (%s): %s" % (C.iso(), kind, prio, text))
             if vios and not a.dry_run:
                 file_violations(vios, pc)
-            if not vios and a.once:
+            if not vios and a.once and not blind:
                 print("party ok (%d members checked)" % len(snap.get("members", [])))
         except Exception as e:
+            blind = "party pass failed: %s" % e
             sys.stderr.write("partycheck pass failed: %s\n" % e)
+            if not a.dry_run:
+                file_blind(blind)
         if locked and not C.refresh_lock("partycheck.lock"):
             print("partycheck: lock taken by another copy; exiting", file=sys.stderr)
             return 3
-        C.heartbeat("partycheck")
+        C.heartbeat("partycheck", note=("blind: " + blind) if blind else "")
         if a.once:
             return 0
         time.sleep(a.interval)
