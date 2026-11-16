@@ -7,10 +7,13 @@ commit 63ca923). Engineering history is not rewritten.
 ## Current state (2026-11-15, redesign in progress; the live status is `STATUS.md`)
 - The harness is `G:\RO\legion` (git, branch `main`); the Go engine is `G:\RO\legion\legion`. The redesign work packages
   are in `docs/design/REDESIGN.md`. Nothing is started without the owner (G21).
-- Ayla runs on the Legion engine plan (AY24, `docs/rules/ayla.md`). OpenKore-era sections are reference only until the
-  switch is live.
+- Ayla's target is the Legion engine plan (AY24, `docs/rules/ayla.md`). Until the owner orders the cut-over ("start Ayla
+  on the engine"), the OpenKore-era sections of `docs/handover/` describe her actual current setup and stay current for
+  her; after the cut-over they become reference.
 - The market is an algorithm engine, not an agent (EC46, `docs/rules/economy.md`). The farmers take its advice in their own code.
-- The dashboard is always on at `http://127.0.0.1:8090/dashboard` (DB06); its data is `GET /api/overview` (`legion/dashboard.go`).
+- The dashboard is `tools/dashboard/dashserve.py` on `http://127.0.0.1:8099` (kept on by `tools/dashboard/keep.cmd`, DB06);
+  it reads ro-db as `dash_ro`. The Legion API it reads is on port 8090 and is stopped when the engine is down. What runs
+  now is in `STATUS.md`.
 - GitHub Copilot can take over from repository access alone: `.github/copilot-instructions.md` is the entry point (PR48).
 - Old session start-up (sections 0.1 to 0.6: loops, 15 minds, standing agents) is superseded by RULES.md and the redesign; it
   stays as reference for how things are wired.

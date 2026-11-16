@@ -478,6 +478,8 @@ def check_pointers(rep, repo=None):
     if not files:
         rep.fail(".github", "no GitHub Copilot instruction files (PR48: Copilot must be able to take over)")
         return
+    if not os.path.isfile(os.path.join(repo, ".github", "copilot-instructions.md")):
+        rep.fail(".github/copilot-instructions.md", "missing: the Copilot entry point (PR48)")
     for p in files:
         src = rel(p)
         text = read(p)

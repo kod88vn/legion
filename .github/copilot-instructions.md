@@ -1,8 +1,8 @@
 # GitHub Copilot entry point
 
 This repository (git root `legion/`, branch `main`) is a private, local Ragnarok Online world: a Go bot engine (Legion)
-runs about 7,800 bot players, and AI puppet masters and system agents steer and keep it running. The goal is a world
-that runs without AI, where only the puppet masters run, once a day.
+runs the bot players, and AI puppet masters and system agents steer and keep it running. The goal is a world that runs
+without AI, where only the puppet masters run, once a day. The live numbers are in `STATUS.md`, not here.
 
 Read these in order before any change. Each is the only copy of its text; do not copy from them.
 

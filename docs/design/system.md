@@ -72,5 +72,5 @@ Violations are filed to the queue (source `partycheck`, key `partycheck:<kind>:<
 `.claude/agents/`: fixer (Sonnet), hard-fixer (opus), deploy (Sonnet), watcher (Haiku), qa (Haiku), analyst-review (Sonnet).
 The four old mind agent files (`legion-chat`, `-guild`, `-life`, `-market`) and their skills stay untouched: package P's role
 briefs reuse their in-world realism text; they are no longer started by the session. `legion-session` is rewritten for
-the new startup order; the old text is `legion-session-old`. The `.github/` mirrors were not updated (they still describe
-the old setup).
+the new startup order; the old text is `legion-session-old`. The GitHub Copilot entry point is `.github/copilot-instructions.md`
+(pointers only, PR48); it has no skill mirrors.

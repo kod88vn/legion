@@ -94,6 +94,16 @@ class CopilotTakeover(unittest.TestCase):
             with self.subTest(command=path):
                 self.assertTrue(os.path.exists(os.path.join(REPO, path)), "%s missing" % path)
 
+    def test_missing_entry_point_is_caught(self):
+        """check_pointers fails when copilot-instructions.md is missing, even if other Copilot files exist"""
+        d = tempfile.mkdtemp(prefix="copilot-missing-")
+        os.makedirs(os.path.join(d, ".github", "agents"))
+        with open(os.path.join(d, ".github", "agents", "x.agent.md"), "w", encoding="utf-8") as f:
+            f.write("Start with CONSTITUTION.md.\n")
+        rep = constcheck.Report()
+        constcheck.check_pointers(rep, repo=d)
+        self.assertTrue(any("copilot-instructions.md" in b and "missing" in b for b in rep.bad), rep.bad)
+
     def test_a_bad_file_is_caught(self):
         """the checks fail on a superseded file, a file without a pointer, and a file with a copy (negative test)"""
         d = tempfile.mkdtemp(prefix="copilot-test-")
