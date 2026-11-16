@@ -665,6 +665,18 @@ class OwnerOrderTests(unittest.TestCase):
         self.assertEqual(orders.open_orders(self.path), [])
         self.assertIn("not carried out", orders.results(self.path)[-1]["result"])
 
+    def test_same_second_orders_get_distinct_ids(self):
+        # two orders in one second whose random byte is equal must not share an id (a shared id hid the newer order
+        # as already closed, so no result was ever written for it)
+        import unittest.mock as mock
+        with mock.patch.object(orders.random, "randrange", side_effect=[7, 7, 8]):
+            a = orders.add("wait for the priest", path=self.path, now=NOW)
+            b = orders.add("go farm gl_church", path=self.path, now=NOW)
+        self.assertNotEqual(a["id"], b["id"])
+        self.assertEqual([o["id"] for o in orders.open_orders(self.path)], [a["id"], b["id"]])
+        dispatch.close_unreported([b["id"]], {"exit": "timeout"}, self.path)
+        self.assertIn("not carried out", orders.results(self.path)[-1]["result"])
+
     def test_nap_wakes_on_new_order(self):
         import threading
         threading.Timer(0.3, lambda: orders.add("town run", path=self.path)).start()

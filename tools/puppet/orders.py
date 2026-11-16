@@ -80,6 +80,19 @@ def _append(row, path):
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+def new_id(now, path):
+    """an order id unique in its file. The id is the second plus one random byte, so two orders in the same second
+    could share an id (1 in 256); a shared id made the newer order look already closed, so it was never carried out.
+    Ids already in the file are never reused."""
+    stamp = time.strftime("%m%d%H%M%S", time.localtime(now))
+    taken = {r.get("id") for r in read(path)}
+    for _ in range(1000):
+        oid = "o" + stamp + "%02x" % random.randrange(256)
+        if oid not in taken:
+            return oid
+    raise RuntimeError("no free order id for " + stamp)
+
+
 def add(text, who="owner", path=None, now=None, requests=None):
     """an owner order. Before the switch: an open order for her OpenKore helper (as ever). After the switch (AY24):
     a pending request for the dashboard to confirm (AY25); nothing is open for any helper, so nothing wakes one."""
@@ -87,13 +100,18 @@ def add(text, who="owner", path=None, now=None, requests=None):
     if not text:
         raise ValueError("empty order")
     now = time.time() if now is None else now
-    oid = "o" + time.strftime("%m%d%H%M%S", time.localtime(now)) + "%02x" % random.randrange(256)
+    if aylaswitch.engine_on():
+        target = requests or requests_path()
+        oid = new_id(now, target)
+        row = {"kind": "order", "id": oid, "t": now, "iso": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
+               "from": who, "text": text}
+        _append(dict(row, kind="request", status="pending"), target)
+        return dict(row, kind="request", status="pending")
+    target = path or orders_path()
+    oid = new_id(now, target)
     row = {"kind": "order", "id": oid, "t": now, "iso": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
            "from": who, "text": text}
-    if aylaswitch.engine_on():
-        _append(dict(row, kind="request", status="pending"), requests or requests_path())
-        return dict(row, kind="request", status="pending")
-    _append(row, path or orders_path())
+    _append(row, target)
     return row
 
 
