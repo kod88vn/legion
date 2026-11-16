@@ -28,7 +28,7 @@ refuses unreviewed merges since the last deploy is in review (`fix/deploy-gate`)
   tooling fix in review (`fix/ayla-tooling`: partycheck and sentinel must not go blind on engine parties). Steps: stop
   `ro-openkore-ayla`, migration dry run then `--apply`, add Ayla to `LEGION_CORE`, set `engine_parties`, recreate
   `legion-core --no-deps`, verify restore and party lead hand-over; rollback = flip the switch and restore
-  `human-parties.json.pre-ayla-engine`. **Ayla's party is four in total (AY11): Ayla, Crusader, Hunter, Priest.**
+  `human-parties.json.pre-ayla-engine`. **Ayla's party is five (AY11): two frontlines (Ayla, Crusader), two ranged (Hunter, Wizard), one support (Priest), and it always protects its support (AY26).**
 - Builds: gear alternatives, card and refine plan (EC40, EC41), plan realism (skill lock, 88 points), wizard plan
   (Meteor Storm 10), numbers tests (EC42).
 - Market (EC43-EC48), all flags OFF: `marketengine.go` (`market_engine_on`, `guild_market_feed_on`), market metrics,
@@ -42,7 +42,7 @@ refuses unreviewed merges since the last deploy is in review (`fix/deploy-gate`)
 ## Open branches (built; under review or being fixed)
 Conservative party map rule (`fix/partycons`, PT36), market stall (`fix/market-stall-2`, reviewed: merge queued),
 travel share (`fix/travel-share-2`, reviewed: merge queued), helper last-run decoding, Ayla tooling, rotation default
-and sentinel, deploy gate, Ayla party of four. Old branches triaged in `docs/reports/branch-triage-20261115.md`.
+and sentinel, deploy gate, Ayla party composition check (five), protect-the-support behaviour (AY26). Old branches triaged in `docs/reports/branch-triage-20261115.md`.
 The bug queue (`legion/data/bugqueue.jsonl`, `tools/system/bugq.py`): every item assigned (backlog group
 `followups-batch-2`) or has a written reason.
 
