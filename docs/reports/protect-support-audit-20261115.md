@@ -62,3 +62,27 @@ monsters, the ranged keep the support out of harm's way, and no one leaves the s
 - Party kills per minute, before and after (the ranged step-back and the leash may cost kills).
 - Ping-pong: a ranged member stepping back and the normal fight walking it forward again. The guard and back gaps and
   the act distance (6) are guesses to tune from the logs.
+
+## Revision after review (docs/reports/reviews/01acf19ec5d0d7f930f117fcfe74866a4e9adec8.md)
+
+The numbers above are the first version; this section supersedes them where they differ.
+
+- Hook placement: after the tank's and melee's own jobs (tankFallBack, protectSupport, tankTakeAggro, tankGoHelp,
+  meleePeel) and the fight a member is already in; before the assist and ranged fight. It no longer zeroes a target
+  that is in melee or whose target is hitting the support (engagedNow).
+- Real threat only (supportInDanger): a monster within 3 cells of the support that targets it, or while the support is
+  being hit, called for help, or below 70% HP.
+- Ranged step-back only while a monster is chasing it (targets it, within 6 cells).
+- Hysteresis: one repositioning per 3 s per member (buffAt protspot). The test runs 12 s of ticks with the threat in place
+  and asserts 1 to 5 repositionings.
+- Leash: 18 cells (not tighter than the 16-cell tank pull range). The existing regroup starts beyond 20 cells (party.go
+  and together.go regroupNeeded), so the leash acts between 18 and 20; beyond 20 the regroup owns the walk.
+- Walkable check on every spot (a wall spot is refused).
+- Nearest support on the map, not the first in the list.
+- Off switch: party_protect_support_off (default false) wins over the on flag and over the engine default. Ayla's party
+  can be reverted by tuning.
+- Bot party leader (engine-era Ayla): the rule protects the SUPPORT, and Ayla is not the support (her members are: the
+  priest is the support). Her own hunt is in ai.go, outside the member flow, and AY26 does not ask for her protection.
+  So the leader's hunt tick is deliberately not hooked; if the owner wants the leader protected, that is a new rule.
+- Tests drive partyThink with real mob entities (protectsupport_test.go). Mutation: disabling the hook in party.go fails
+  5 of them (frontline guard, ranged behind, leash, no-ping-pong, lock).

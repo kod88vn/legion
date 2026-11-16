@@ -1012,11 +1012,6 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 	if restHold && b.restGuard(members, rester, moving, now) {
 		return true
 	}
-	// AY26 (protectsupport.go): a member that is not the support keeps the support protected - walks back to it when
-	// leashed, else steps between it and the monsters (frontline) or behind it (ranged). Flag off: nothing happens here.
-	if !support && b.protectOwnSupport(p, members, gm, moving, now) {
-		return true
-	}
 	// carrying a much lower-level human: let them fight their own monsters (otherwise we take every kill and they learn
 	// nothing; this server shares exp at any gap, party_share_level 99); only step in when they're hurt or being hit
 	carry := false
@@ -1106,6 +1101,12 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 	// melee damage dealers protect the back line too (owner 2026-11-14: "tanks and melee need to protect range and
 	// support"): a monster on a ranged / support member is taken off it before anything else (together.go meleePeel)
 	if partyRole(b) == roleMelee && !support && !carry && (b.protectSupport(gm, members, moving, now) || b.meleePeel(members, moving, now)) {
+		return true
+	}
+	// AY26 (protectsupport.go): after the tank's and melee's own jobs, a member that is not the support keeps the support
+	// protected: walks back to it when leashed, steps between it and a real threat (frontline) or behind it when chased
+	// (ranged). Flag off: nothing happens here.
+	if !support && b.protectOwnSupport(p, members, gm, moving, now) {
 		return true
 	}
 	// ranged / melee members join the tank's fight (it opens the fights; tanklead.go)
