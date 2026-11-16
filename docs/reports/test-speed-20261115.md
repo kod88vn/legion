@@ -44,7 +44,7 @@ Go (`tools/dev/gocheck.sh`, before): `--fast` 11 s; full 53 s (`go test` 41.6 s,
 | `gatecheck.py` (all suites, once) | exit 0, OK: 25 gates, fields 0 mismatches, every suite passes | **148** |
 | Go `--fast` | gofmt, vet, build | **8** |
 | Go full | 566 pass, 28 skip, 0 fail (`go test` 37.0 s) | **49** |
-| `runsuites.py --changed` | CHANGED_DEMO | |
+| `runsuites.py --changed` (this branch vs `main`) | the diff includes the shared runner files, so every suite ran ("shared module changed"); Go `--fast` ran too | **152.5** total (Go fast 10.4) |
 
 The tests/system child took 54 s before and 30 s after. Most of that difference is load (the before run was sequential under
 other agents' load); the test code did not get faster. The reduction is structural: no suite runs twice, the suites run in
