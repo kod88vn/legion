@@ -441,7 +441,7 @@ func (b *Bot) browseShops(now time.Time) {
 			}
 			n, score, why := 0, 0.0, ""
 			switch {
-			case w.ItemID != 0 && wantAccepts(&w, l.ItemID) && l.Price <= w.Each*11/10:
+			case w.ItemID != 0 && wantAccepts(&w, l.ItemID) && l.Price <= wantCap(b, &w, budget): // pricedyn.go
 				n, score, why = min(w.Count, l.Count), 1e6, w.Why
 				if !w.Partial && l.Count < w.Count {
 					n = 0
@@ -464,7 +464,7 @@ func (b *Bot) browseShops(now time.Time) {
 					continue
 				}
 				v := b.cardValue(x.ID)
-				if v < 2 || l.Price > bidPrice(b.P, x.ID)*6/5 {
+				if v < 2 || l.Price > b.wantBid(x.ID)*6/5 {
 					continue
 				}
 				n, score, why = 1, float64(v)*1000/float64(l.Price), "card for my gear"
@@ -557,7 +557,7 @@ func (b *Bot) stockWant() *Want {
 		if gap <= 0 {
 			continue
 		}
-		bid := roundPrice(priceOf(x.ID) * 9 / 10)
+		bid := stockBid(b, x.ID, budget) // pricedyn.go (EC48): fixed 0.9 x priceOf unless dynamic_price_on
 		if bid <= 0 || o.LowAsk > bid || wantsFor(x.ID, b.charName()) >= o.Sellers {
 			continue
 		}
@@ -569,14 +569,14 @@ func (b *Bot) stockWant() *Want {
 			continue
 		}
 		if heal && (best == nil || !healItem(best.ItemID)) {
-			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Why: "stock for my shop", Partial: true}, gap
+			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Need: b.wantNeed(x.ID), Why: "stock for my shop", Partial: true}, gap
 			continue
 		}
 		if best != nil && healItem(best.ItemID) && !heal {
 			continue
 		}
 		if best == nil || gap > bestGap || gap == bestGap && bid*n > best.Each*best.Count {
-			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Why: "stock for my shop", Partial: true}, gap
+			best, bestGap = &Want{ItemID: x.ID, Count: n, Each: bid, Need: b.wantNeed(x.ID), Why: "stock for my shop", Partial: true}, gap
 		}
 	}
 	return best

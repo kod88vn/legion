@@ -473,12 +473,12 @@ func (b *Bot) cardWant(budget int) *Want {
 		if v < 2 || wantsFor(o.ItemID, b.charName()) >= 2*o.Sellers {
 			continue // 2026-11-14: 25 bots asked for the same 2 Hornet Cards; ask for one that is still to be had
 		}
-		bid := bidPrice(b.P, o.ItemID)
+		bid := b.wantBid(o.ItemID)
 		if bid > budget || o.LowAsk > bid {
 			continue
 		}
 		if s := float64(v) / float64(max(bid, 1)); best == nil || s > bestScore {
-			best, bestScore = &Want{ItemID: o.ItemID, Count: 1, Each: bid, Why: "card for my gear"}, s
+			best, bestScore = &Want{ItemID: o.ItemID, Count: 1, Each: bid, Need: b.wantNeed(o.ItemID), Why: "card for my gear"}, s
 		}
 	}
 	return best
@@ -504,8 +504,8 @@ func (b *Bot) slotWant(budget int) *Want {
 				if vx == nil || vx.Slots == 0 || b.ownsUnequipped(v) || !onBoard(v) {
 					continue
 				}
-				if bid := bidPrice(b.P, v); bid <= budget {
-					return &Want{ItemID: v, Count: 1, Each: bid, Why: "slot for my " + c.Name}
+				if bid := b.wantBid(v); bid <= budget {
+					return &Want{ItemID: v, Count: 1, Each: bid, Need: b.wantNeed(v), Why: "slot for my " + c.Name}
 				}
 			}
 		}
@@ -537,7 +537,7 @@ func (b *Bot) bareWant(budget int) *Want {
 			if x == nil || gearSlot(x.Loc) != slot || !b.canEquip(x) || b.gearFailed[x.ID] || b.itemScore(x) <= 0 {
 				continue
 			}
-			bid := max(bidPrice(b.P, o.ItemID)*6/5, o.LowAsk) // urgent: pays up to the lowest ask
+			bid := max(b.wantBid(o.ItemID)*6/5, o.LowAsk) // urgent: pays up to the lowest ask
 			if bid > max(budget, 0) || bid > o.Standard*3/2 {
 				continue
 			}
@@ -546,7 +546,7 @@ func (b *Bot) bareWant(budget int) *Want {
 				if slot == 0x10 {
 					why = "no armor"
 				}
-				best = &Want{ItemID: o.ItemID, Count: 1, Each: roundPrice(bid), Why: why}
+				best = &Want{ItemID: o.ItemID, Count: 1, Each: roundPrice(bid), Need: b.wantNeed(o.ItemID), Why: why}
 			}
 		}
 		if best != nil {

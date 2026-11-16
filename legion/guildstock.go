@@ -342,14 +342,14 @@ func (b *Bot) creamyWant() *Want {
 	if b.BaseLvOr() < 15 || b.charRole() == "vendor" || b.hasCard(itemCreamyCard) {
 		return nil
 	}
-	bid := bidPrice(b.P, itemCreamyCard)
+	bid := b.wantBid(itemCreamyCard)
 	if bid <= 0 || b.Zeny-b.gearReserve() < bid {
 		return nil
 	}
 	if !b.creamyReady(bid) {
 		return nil // teleslot.go: no slotted accessory to put it in (and no money for a Belt [1] too)
 	}
-	return &Want{ItemID: itemCreamyCard, Count: 1, Each: bid, Why: "teleport card"}
+	return &Want{ItemID: itemCreamyCard, Count: 1, Each: bid, Need: b.wantNeed(itemCreamyCard), Why: "teleport card"}
 }
 
 // ---------------------------------------------------------------- the trader funds gear turns (economy run 9)

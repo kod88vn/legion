@@ -184,7 +184,7 @@ func (b *Bot) fitArrowWant() *Want {
 			continue
 		}
 		gain := ammoFit(id, m) - have
-		bid := bidPrice(b.P, id)
+		bid := b.wantBid(id)
 		extra := max(0, bid-arrowPrice())
 		if bid <= 0 || gain <= 0 || gain*100 < float64(extra*per) || gain <= bestGain {
 			continue
@@ -194,7 +194,7 @@ func (b *Bot) fitArrowWant() *Want {
 			continue
 		}
 		bestGain = gain
-		bestW = &Want{ItemID: id, Count: count, Each: bid, Why: "ammo"}
+		bestW = &Want{ItemID: id, Count: count, Each: bid, Need: b.wantNeed(id), Why: "ammo"}
 	}
 	return bestW
 }

@@ -52,7 +52,7 @@ func (b *Bot) guildPoolWant() *Want {
 	if p == nil || b.countItem(p.ItemID) > 0 || b.Zeny < p.Price {
 		return nil
 	}
-	return &Want{ItemID: p.ItemID, Count: 1, Each: p.Price, Why: "guild buy"}
+	return &Want{ItemID: p.ItemID, Count: 1, Each: p.Price, Need: b.wantNeed(p.ItemID), Why: "guild buy"}
 }
 
 // buildWants: the build (plan) of this character wants the item at its level (b.mu held)

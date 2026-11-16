@@ -16,6 +16,12 @@ package main
 //
 // Fields (JSON name, default, meaning):
 //
+//   Pricing (pricemodel.go, pricedyn.go, EC48)
+//   dynamic_price_on          false  true = asks follow scarcity (supply vs demand), the seller's urgency (zeny, bag
+//                                    pressure), a time markdown (5% per 30 min after 45 min), and buyers' willingness
+//                                    (need, budget) pulls a listing down to the best interested buyer; default: the fixed
+//                                    formulas (vendPriceFixed, askPriceFixed, w.Each*11/10, priceOf*0.9)
+//
 //   Parties (party.go)
 //   party_leash               8    members only start fights within this many cells of the leader, catch up beyond it
 //   regroup_extra             4    a member farther than party_leash+regroup_extra cells walks back before anything else
@@ -221,6 +227,9 @@ type Tuning struct {
 	// pricing.go (economy batch 21): standardPrice uses the wealth x rarity table (off by default; the table is always
 	// computed and shown at /api/economy/pricing)
 	DynamicPrices bool `json:"dynamic_prices"`
+	// pricedyn.go (EC48, economy batch 22): true = listing prices, undercut, markdown, seller asks and buy offers follow
+	// the supply/demand, urgency and budget model in pricemodel.go. Off by default: the fixed formulas run as before
+	DynamicPriceOn bool `json:"dynamic_price_on"`
 	// mailtrade.go (economy run 7): far-apart sales of cards/gear worth 1,000z+ by RODEX (item mail + payment mail).
 	// Off by default; mail_trade_test_bots (comma-separated names, seller or buyer) for a live test first.
 	MailTrades        bool   `json:"mail_trades"`

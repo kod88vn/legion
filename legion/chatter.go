@@ -235,7 +235,11 @@ func (s chatSnap) lfp() string {
 func (s chatSnap) trade() string {
 	if len(s.loot) > 0 && cfloat() < 0.6 {
 		id := s.loot[crand(len(s.loot))]
-		pr := sellPrice(id) * (12 + crand(10)) / 10
+		base := sellPrice(id) // EC48: the chat price follows the model's reference when dynamic_price_on (pricedyn.go)
+		if dynamicPriceOn() {
+			base = max(priceOf(id), base)
+		}
+		pr := base * (12 + crand(10)) / 10
 		return pick(fmt.Sprintf("S> %s %dz ea", itemName(id), max(pr, 2)), fmt.Sprintf("selling %s, pm offers", itemName(id)),
 			fmt.Sprintf("S> %s cheap, pm", itemName(id)))
 	}

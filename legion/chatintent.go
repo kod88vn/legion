@@ -257,7 +257,7 @@ func intentFromBot(b *Bot, in *chatIntent, now time.Time) map[string]any {
 	std := priceOf(in.ItemID) // econ.mu: not held
 	b.mu.Lock()
 	online, mapN, name := b.Online, b.MapName, b.charName()
-	each := bidPrice(b.P, in.ItemID)
+	each := b.wantBid(in.ItemID)
 	b.mu.Unlock()
 	if !online || name != in.From {
 		return map[string]any{"ok": false, "error": in.From + " is not online"}
@@ -273,7 +273,7 @@ func intentFromBot(b *Bot, in *chatIntent, now time.Time) map[string]any {
 		return map[string]any{"ok": false, "id": in.ID, "status": in.Status}
 	}
 	econ.wants[name] = &Want{Buyer: b, Name: name, Map: mapN, ItemID: in.ItemID, Item: in.Item, Count: in.Count, Each: each,
-		Why: "said so in chat", Created: now, Standard: std, Partial: in.Count > 1}
+		Need: b.wantNeed(in.ItemID), Why: "said so in chat", Created: now, Standard: std, Partial: in.Count > 1}
 	econ.nextWant[name] = now.Add(econWantLife) // its own needs are not re-checked over it meanwhile
 	econ.mu.Unlock()
 	in.Status, in.Done = fmt.Sprintf("want registered at %dz each", each), true

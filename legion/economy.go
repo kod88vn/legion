@@ -133,7 +133,9 @@ func priceOf(id int) int {
 	if st != nil && st.N >= 3 && p > 0 {
 		p = (7*p + 3*int(st.Sum/int64(st.N))) / 10
 	}
-	if f := marketFactor(id); f != 1 && p > 0 { // market.go (batch 21): supply and demand
+	// flag on: scarcity is in the seller's ask (pricedyn.go), not a factor here
+	// market.go (batch 21): supply and demand
+	if f := marketFactor(id); f != 1 && p > 0 && !dynamicPriceOn() {
 		p = max(int(float64(p)*f), sellPrice(id))
 	}
 	return roundPrice(p)
@@ -161,6 +163,14 @@ func personal(name string, id int) float64 {
 
 // askPrice: the least a seller takes (greedy sellers ask more).
 func askPrice(p *Persona, id int) int {
+	if dynamicPriceOn() { // pricedyn.go (EC48): the supply/demand ask, with the time-based markdown
+		return askPriceDyn(p, id)
+	}
+	return askPriceFixed(p, id)
+}
+
+// askPriceFixed: the ask before dynamic_price_on
+func askPriceFixed(p *Persona, id int) int {
 	ref := priceOf(id)
 	ask := npcMatCap(id, npcGearCap(id, roundPrice(int(float64(ref)*(0.85+0.3*p.Greed)*personal(p.Name, id)))))
 	return npcWindow(id, roundPrice(markdown(p.Name, id, ask, ref))) // market.go: unsold for long -> 5% steps down
@@ -230,6 +240,7 @@ type Want struct {
 	InDeal   bool      `json:"in_deal"`
 	Standard int       `json:"standard"`
 	Partial  bool      `json:"partial,omitempty"` // any amount up to Count will do (herbs for an alchemist, potions)
+	Need     float64   `json:"-"`                // pricedyn.go (EC48, flag on): the buyer's need when it posted the want (0 = not set)
 }
 
 type offerRow struct {
@@ -388,10 +399,10 @@ func (b *Bot) econWant() *Want {
 	lv := b.BaseLvOr()
 	// field restock: out of potions far from a shop
 	if lv >= 5 && b.potionCount() < 5 && townOf(b.MapName) == "" && b.Zeny > 1500 {
-		each := bidPrice(b.P, itemRedPotion)
+		each := b.wantBid(itemRedPotion)
 		n := 10
 		if each*n <= b.Zeny/3 {
-			return &Want{ItemID: itemRedPotion, Count: n, Each: each, Why: "potions"}
+			return &Want{ItemID: itemRedPotion, Count: n, Each: each, Need: b.wantNeed(itemRedPotion), Why: "potions"}
 		}
 	}
 	// huntfit.go: an elemental arrow that fits the hunting map, from the market (no NPC shop sells one on this server)
@@ -413,8 +424,8 @@ func (b *Bot) econWant() *Want {
 		pc = gearGoalPiece(*goal, lv)
 	}
 	if pc != nil && pc.NPC == 0 && (pc.Source == "trade" || pc.Source == "drop") {
-		if bid := bidPrice(b.P, pc.ItemID); bid > 0 && bid <= budget && (onBoard(pc.ItemID) || cfloat() < 0.2) {
-			return &Want{ItemID: pc.ItemID, Count: 1, Each: bid, Why: "for my build"}
+		if bid := b.wantBid(pc.ItemID); bid > 0 && bid <= budget && (onBoard(pc.ItemID) || cfloat() < 0.2) {
+			return &Want{ItemID: pc.ItemID, Count: 1, Each: bid, Need: b.wantNeed(pc.ItemID), Why: "for my build"}
 		}
 	}
 	if goal != nil {
@@ -439,7 +450,7 @@ func (b *Bot) econWant() *Want {
 			if gain <= bestGain {
 				continue
 			}
-			bid := bidPrice(b.P, id)
+			bid := b.wantBid(id)
 			if bid <= 0 || bid > budget {
 				continue
 			}
@@ -464,7 +475,7 @@ func (b *Bot) econWant() *Want {
 					why = "shop is far"
 				}
 			}
-			best, bestGain = &Want{ItemID: id, Count: 1, Each: bid, Why: why}, gain
+			best, bestGain = &Want{ItemID: id, Count: 1, Each: bid, Need: b.wantNeed(id), Why: why}, gain
 		}
 	}
 	// buildgear.go (batch 21 step 3): the build table's other suitable items (the guide's picks, drop-only gear) when
@@ -485,11 +496,11 @@ func (b *Bot) econWant() *Want {
 				if gain <= bestGain {
 					continue
 				}
-				bid := bidPrice(b.P, e.ID)
+				bid := b.wantBid(e.ID)
 				if bid <= 0 || bid > budget {
 					continue
 				}
-				best, bestGain = &Want{ItemID: e.ID, Count: 1, Each: bid, Why: "for my build"}, gain
+				best, bestGain = &Want{ItemID: e.ID, Count: 1, Each: bid, Need: b.wantNeed(e.ID), Why: "for my build"}, gain
 			}
 		}
 	}
