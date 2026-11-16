@@ -58,20 +58,24 @@ AI, and nothing in the world treats a human player differently from anyone else.
 
 2.3 The people. Every bot is a person with one goal, its ultimate build. It works toward that goal by its own code,
 with no AI: it farms, sells, buys, gears up, joins parties, follows its guild, talks and travels. Like most people,
-it mostly lives its routine.
+it mostly lives its routine. A farmer is a person with the same goal; it earns for that goal by working the market's
+wants, as a worker takes jobs.
 
 2.4 The society. Roles are not handed out by the system. They come from leaders and from the market. Demand comes
 from every bot's need to finish its build, the variety of builds makes the variety of demand, and supply and demand
-drive the economy. Guilds compete on rank and wealth. Their leaders are frenemies and look after their members, and
+drive the economy: builds drive the market, the market drives the farmers, and the farmers drive the price. Guilds
+compete on rank and wealth. Their leaders are frenemies and look after their members, and
 members give their guild about two hours a day. Chat carries people's needs to each other.
 
-2.5 Puppet masters are the AI agents that act inside the world: guild leaders, market, class and build, chat. They
+2.5 Puppet masters are the AI agents that act inside the world: guild leaders, class and build, chat. They
 influence the way a leader or a market does, with priorities, directions and words. They never drive a character. A
 bot that hears nothing from a puppet master carries on with its life.
 
 2.6 System agents are the AI agents and scripts outside the world: watchdog, sentinel, party watcher, QA, analyst,
-fixers, deploy. They keep everything running, find bugs and improve the bots' code. They never steer the game,
-except as 2.8 says.
+fixers, deploy, and the market engine (an algorithm, not an agent): it computes what the server needs, feeds the
+guild leaders, and gives farmers advice they weigh in their own code. They keep everything running, find bugs and
+improve the bots' code. They never steer the game, except as 2.8 says and as the market engine's advice to the
+guild leaders and the farmers.
 
 2.7 Code decides. What a bot does is decided by its own code. AI observes and improves that code, so that the bot
 decides better on its own. Whenever an AI has to step in for a bot, that is a gap in the code and is filed as a bug.
