@@ -377,7 +377,8 @@ type Tuning struct {
 	IdleErrandSlots       int  `json:"idle_errand_slots"`
 	IdleErrandCooldownMin int  `json:"idle_errand_cooldown_min"`
 	// aylarotate.go (AY15, 2026-11-15): Ayla's party swaps one non-priest member every ayla_rotation_hours (0 = 3)
-	// for an online bot of an untested class/build in the same role. ON by default (ayla_rotation_off true stops it).
+	// for an online bot of an untested class/build in the same role. OFF by default (AY15, stopped 2026-11-15);
+	// ayla_rotation_off false turns it on again, and a tuning.json without the key keeps it off.
 	AylaRotationOff   bool    `json:"ayla_rotation_off"`
 	AylaRotationHours float64 `json:"ayla_rotation_hours"`
 	// lfg.go (PT35, 2026-11-15): the widest base-level spread (strongest - weakest) a bot party takes. Default 99 =
@@ -429,6 +430,7 @@ var defaultTuning = Tuning{
 	AmbientTalkOn: true, AmbientTalkDiv: 150, AmbientTalkMaxPerMin: 3,
 	IdleErrandWaitSec: 45, IdleErrandWeightPct: 35, IdleErrandSlots: 85, IdleErrandCooldownMin: 10,
 	PartyLvSpread: 99,
+	AylaRotationOff: true,
 	PotBudgetPct: 15, PotBudgetFloor: 1000, PotMinHealPct: 2, ArrowGainPerZ: 4,
 }
 
