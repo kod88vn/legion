@@ -1961,6 +1961,16 @@ Resolved by newest owner word per PR41; see coverage.md.
 ".env should not be tracked but there should be an example.env. I am not an expert on wizard build, check online. no clue about your shop purchases. In general buying from NPC is bad, should try p[layer] market. the market mind should give signals, it provides information, it always should. The guild leaders are driven separately and make decision on their own. Their advantage is they have knowledge of the market so they can take advantage to better build their guild. If anything, the market bot can influence the economy by using GM broadcast to inform the entire legion what should be farmed on so independent bots know what to farm. I have a better idea. There are a separate group of bots who are not part of a guild, they should be the farms who has 1 main character which is a hunter with creamy card so they can hit and run, and their second character a merchant. These can be the main bots that are influenced by the market agent to tell them what to hunt for. They should not be all hunting for something, they should be distributed appropriately. Now, thinking about this, all of these can be done with an algorithm, there's no need for AI. Make the market agent a algorithm engine that calculate what the server needs and provide data to the guild leaders and tell the merchant/farmers army to act accordingly. Also tell me what else we can do using algorithm in stead of AI. Can guild leaders farming decision be done using algorithm?"
 ```
 
+## EC48 / PR47 / PR48 / PR49 / Constitution 2.3, 2.4, 2.5, 2.6 (market engine wording)
+```text
+"Constitution wording: yes, you may, build drives market, market drives farmers, farmers drive price (supply and demand rules), these are all dynamic and can be determined by an algorithm, however, I do not want to see fixed price, price should fluctuate depending on how fast someone is trying to sell. If a bot has less money and in desperate need to buy a gear which is currently available in the market, price should be lower to sell sooner. That's supply and demand in a nutshell. No need to remove passwords of fake accounts. Agent that only runs on algorithm can be a script, yes, but make sure it comes with tests. Make sure copilot can take over this project always. I have no idea about build or skills, stop asking me, do a research"
+```
+
+## DB11
+```text
+"I also need you to update the dashboard to include facts about the stuff we designed here. Make sure the facts there always reflect the source even if we change stuff in the future"
+```
+
 ## DB09
 ```text
 "I need to review the build agent. In dashboard, list the end goal of each class/build path, including items, stats, and skills, as well as playstyle for farming solo, in a party, MVP, PVP"

@@ -211,6 +211,11 @@ Counts by kind: behaviour spec 120, hard gate 20, process 30, replaced 5, server
 | AY24 | Ayla played by the Legion engine; OpenKore retired for her; Haiku watcher, code improved for her first (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
 | AY25 | Owner overrides puppet-master directives for Ayla, logged, with expiry (2026-11-15) | ayla | owner 2026-11-15 | docs/rules/ayla.md | new rule |
 | DB10 | Dashboard tool to guide Ayla (farm map, guild direction, party orders) and override puppet masters (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| DB11 | Dashboard facts of market engine, farmers, pricing, crier and game facts, always read from the source, tested against hard-coding (2026-11-15) | behaviour spec | owner 2026-11-15 | docs/rules/process.md | new rule |
+| EC48 | Prices never fixed: they move with supply, demand, seller hurry and buyer need and money; builds drive market, market drives farmers, farmers drive price (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
+| PR47 | Algorithm-only agents are scripts with tests, deploy agent included (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PR48 | Copilot can always take over the project: .github instruction files current, pointing to the constitution and handover files, tested (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
+| PR49 | Research builds and skills, do not ask the owner (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR46 | .env untracked, example.env in the repository (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | EC44 | Market may broadcast server-wide what is worth farming, without a GM character in the world (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
 | EC45 | Farmers: guild-less bots, main hunter with Creamy card (hit and run) plus merchant second character, directed by the market and spread over wanted goods (2026-11-15) | economy | owner 2026-11-15 | docs/rules/economy.md | new rule |
