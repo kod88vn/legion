@@ -31,6 +31,7 @@ try:
 except Exception as e:
     sys.exit('sentinel: cannot import common, so its single-instance lock cannot be taken: %s' % e)
 DATA = SYSC.data_dir()   # the one resolver (rule G23)
+import aylaparty as AYLAPARTY   # Ayla's party in both eras (AY24); no try: a broken import stops the sentinel, loudly
 LOG = os.path.join(DATA, 'health.log')
 try:
     import bugq as BUGQ, meterlib as METER
@@ -45,7 +46,7 @@ URGENT_KEYS = {'party', 'stuck', 'frozen'}            # Ayla's party / stuck bot
 METRIC_OF = {'kills': 'kpm', 'farming': 'kpm', 'trips': 'kpm', 'bad_trips': 'kpm', 'frozen': 'kpm', 'stuck': 'kpm',
              'deaths': 'deaths', 'meter_deaths': 'deaths'}
 PRIO_OF = {'kills': 'high', 'farming': 'high', 'deaths': 'high', 'meter_deaths': 'high', 'frozen': 'high',
-           'dispatcher': 'high', 'stuck': 'high', 'party': 'high'}
+           'dispatcher': 'high', 'stuck': 'high', 'party': 'high', 'party_blind': 'high'}
 DISPATCH_FILES = ['dispatch.heartbeat', 'dispatcher.heartbeat', 'puppet.heartbeat']
 ONCE = '--once' in sys.argv
 
@@ -332,6 +333,14 @@ def party_split_wake(aw, ap, now):
     return aw.any_wake()
 
 
+def ayla_party_view(parties):
+    """(Ayla's party view or None, blind text): by member name in the engine era, by human in the OpenKore era
+    (aylaparty.py). Blind text is '' when the party is found."""
+    era = AYLAPARTY.engine_era()
+    ap = AYLAPARTY.find_party(parties, era)
+    return ap, ('' if ap else 'no party with Ayla in /api/parties/detail (%s era)' % ('engine' if era else 'openkore'))
+
+
 SENTINEL_LOCKED = False   # single instance: legion/data/sentinel.lock (common.take_lock), refreshed each cycle
 
 
@@ -410,17 +419,22 @@ def main():
                 found.append(P.check(k, settled and bad, 300 if k != 'meter_deaths' else 600, det))
             line['meter'] = int(meter_ok)
             # Ayla's party
+            # found by member name in the engine era, by human in the OpenKore era (aylaparty.py); a party that cannot be
+            # found is a loud "party_blind" problem, never a silent pass (AY24)
+            blind = ''
             try:
-                p = get('/api/parties/detail')
-                ap = next((x for x in p if x.get('human') == 'Ayla'), None)
+                ap, blind = ayla_party_view(get('/api/parties/detail'))
                 if ap:
-                    line.update(party_on=ap['online'], party_tog=ap['together'])
-                    away = ['%s(%s: %s)' % (m['name'], m['map'], m['state']) for m in ap['members'] if m['online'] and not m.get('with_leader') and not m.get('human')]
+                    ms = ap.get('members') or []
+                    line.update(party_on=ap.get('online'), party_tog=ap.get('together'))
+                    away = ['%s(%s: %s)' % (m.get('name'), m.get('map'), m.get('state')) for m in ms
+                            if m.get('online') and not m.get('with_leader') and not m.get('human')]
                     found.append(P.check('party', settled and bool(away), 480, "Ayla's party is split for 8+ min: " + '; '.join(away)))
                     if AW is not None:
                         party_wake = party_split_wake(AW, ap, time.time())
-            except Exception:
-                pass
+            except Exception as e:
+                blind = 'party check failed: %s' % e
+            found.append(P.check('party_blind', bool(blind) and settled, 300, "Ayla's party cannot be checked: " + blind))
         # farming time: share of states, trips per bot, unnecessary trips
         try:
             F.poll_events()
@@ -468,7 +482,7 @@ def main():
         heartbeat()
         # every problem goes into the bug queue (deduped); only an outage also wakes the main session by exiting
         for k, d in found:
-            file_problem(k, d, wake=party_wake if k == 'party' else None)
+            file_problem(k, d, wake=party_wake if k == 'party' else (True if k == 'party_blind' else None))
         outages = [(k, d) for k, d in found if k in OUTAGE_KEYS]
         if found and not outages:
             line['filed'] = [k for k, _ in found]

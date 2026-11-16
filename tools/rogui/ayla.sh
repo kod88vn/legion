@@ -37,42 +37,67 @@
 #   orders [N]     open owner orders + the last N results ("[owner] <order> -> <action>", also logs/owner_orders.log)
 #   done ID TEXT   (her helper) close owner order ID with what was done
 # The plugin (partylead.pl) obeys these orders at once: the mind's explicit order wins over its own decisions.
-CMDS=/mnt/g/RO/legion/openkore-ayla/control/commands.txt
+CMDS=${AYLA_CMDS:-/mnt/g/RO/legion/openkore-ayla/control/commands.txt}   # AYLA_CMDS: tests only (G23)
 HERE=$(dirname "$(readlink -f "$0")")
 clean() { sed -e 's/\x1b\][0-9];[^\x07]*\x07//g' -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' -e 's/\]2;[^]]*OpenKore//g' | grep -v '^\s*$'; }
 # one console line per send: a CR/LF inside an argument must never smuggle in a second (free) console command (G05)
-send() { local l="$*"; l=${l//$'\r'/ }; l=${l//$'\n'/ }; printf '%s\n' "$l" >> "$CMDS"; }
+# Refused (G05, cmdfile.pl): a separator OpenKore may split a line on (';;', '&&', '|') would smuggle a second, free
+# command past cmdfile.pl, which checks only the start of a line; a bare 'ai', 'ai off' or 'ai manual' stops her AI.
+bad_text() {
+  local l=$1
+  [[ $l == *";;"* || $l == *"&&"* || $l == *"|"* ]] && return 0
+  local lc=${l,,}   # cmdfile.pl matches case-insensitively
+  [[ $lc =~ ^[[:space:]]*ai[[:space:]]*$ || $lc =~ ^[[:space:]]*ai[[:space:]]+(off|manual)([[:space:]]|$) ]] && return 0
+  return 1
+}
+# rally TOWN [MAP] or rally cancel: one or two names, letters, digits and _ @ . - only
+rally_args_ok() {
+  local w n=0 words
+  [ "$1" = cancel ] && return 0
+  read -r -a words <<< "$1"
+  for w in "${words[@]}"; do n=$((n+1)); [[ $w =~ ^[A-Za-z0-9_@.-]+$ ]] || return 1; done
+  [ "$n" -ge 1 ] && [ "$n" -le 2 ]
+}
+send() {
+  local l="$*"; l=${l//$'\r'/ }; l=${l//$'\n'/ }
+  if bad_text "$l"; then echo "refused (separator or AI toggle, G05): $l" >&2; return 1; fi
+  printf '%s\n' "$l" >> "$CMDS"
+}
+# only when executed: sourcing this file (tests/system/test_ayla_sh.py) stops here, before any action
+if [ "${BASH_SOURCE[0]}" != "$0" ]; then return 0 2>/dev/null; fi
 ORDERS="python3 $HERE/../puppet/orders.py"
 a=$1; shift
 case "$a" in
   log) docker logs --tail "${1:-40}" ro-openkore-ayla 2>&1 | clean | tail -n "${1:-40}";;
   chat) docker logs --tail "${1:-400}" ro-openkore-ayla 2>&1 | clean | grep -E '^\[(Party|Guild)\]|^\(From:|^\(To:|^[^[(][^:]{1,30} : ' | tail -n 30;;
-  status) send s; send i eq; sleep 2.5; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | sed -n '/Status/,$p' | head -45;;
-  cmd) send "$*"; echo "sent: $*";;
-  say) send "c $*"; echo ok;;
-  party) send "p $*"; echo ok;;
-  whisper) to=$1; shift; send "pm \"$to\" $*"; echo ok;;
+  status) send s && send i eq || exit 1; sleep 2.5; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | sed -n '/Status/,$p' | head -45;;
+  cmd) send "$*" && echo "sent: $*";;
+  say) send "c $*" && echo ok;;
+  party) send "p $*" && echo ok;;
+  whisper) to=$1; shift; send "pm \"$to\" $*" && echo ok;;
   tell) [ -n "$*" ] || { echo 'usage: ayla.sh tell "<plain text>"'; exit 1; }; $ORDERS add "$*";;
   orders) $ORDERS list "${1:-10}";;
   done) $ORDERS done "$@";;
-  map) send "partylead goto $1"; echo "asked partylead to go to $1 (rejected if far above the party: see ayla.sh log)";;
-  rally) send "partylead rally $*"; echo "sent: partylead rally $*";;
-  guild-create) [ -n "$*" ] || { echo "usage: ayla.sh guild-create NAME"; exit 1; }; send "guild create $*"; sleep 3; docker logs --tail 20 ro-openkore-ayla 2>&1 | clean | grep -i guild | tail -3;;
+  map) [[ "$1" =~ ^[A-Za-z0-9_@.-]+$ ]] || { echo "usage: ayla.sh map NAME (letters, digits, _ @ . -)"; exit 1; }
+       send "partylead goto $1" && echo "asked partylead to go to $1 (rejected if far above the party: see ayla.sh log)";;
+  rally) rally_args_ok "$*" || { echo "usage: ayla.sh rally cancel | rally TOWN [MAP] (letters, digits, _ @ . -)"; exit 1; }
+         send "partylead rally $*" && echo "sent: partylead rally $*";;
+  guild-create) [ -n "$*" ] || { echo "usage: ayla.sh guild-create NAME"; exit 1; }; send "guild create $*" || exit 1; sleep 3; docker logs --tail 20 ro-openkore-ayla 2>&1 | clean | grep -i guild | tail -3;;
   guild) curl -s -m 8 "http://127.0.0.1:8090/api/human-guild" | python3 "$HERE/ayla_guild.py" guild;;
   guild-fund) [ -n "$2" ] || { echo "usage: ayla.sh guild-fund NAME AMOUNT [WHY]"; exit 1; }; python3 -c 'import json,sys; print(json.dumps({"to":sys.argv[1],"amount":int(sys.argv[2]),"why":" ".join(sys.argv[3:]) or "gear"}))' "$@" | curl -s -m 8 -H "Content-Type: application/json" -d @- "http://127.0.0.1:8090/api/human-guild/fund"; echo;;
   recruits) curl -s -m 8 "http://127.0.0.1:8090/api/guild-recruits?n=${1:-5}" | python3 "$HERE/ayla_guild.py" recruits;;
-  recruit) curl -s -m 8 "http://127.0.0.1:8090/api/guild-recruits?mark=1&n=${1:-3}" | python3 "$HERE/ayla_guild.py" recruit | while IFS= read -r l; do case "$l" in ginvite*) send "${l%%	#*}"; echo "invited: ${l#ginvite }";; *) echo "$l";; esac; done;;
-  guild-tax) [ -n "$1" ] || { echo "usage: ayla.sh guild-tax MEMBER% [MASTER%] | off"; exit 1; }; send "gtax $*"; sleep 4; docker logs --tail 40 ro-openkore-ayla 2>&1 | clean | grep "\[guildrecruit\]" | tail -3;;
-  guild-skill) send "gskill ${*:-auto}"; sleep 4; docker logs --tail 40 ro-openkore-ayla 2>&1 | clean | grep "\[guildrecruit\]" | tail -3;;
-  guild-info) send ginfo; sleep 4; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | grep "\[guildrecruit\]" | tail -5;;
-  global) send "pm \"#global\" $*"; echo "sent to #global: $*";;
-  trade) send "pm \"#trade\" $*"; echo "sent to #trade: $*";;
-  guildchat) send "g $*"; echo ok;;
-  give) [ -n "$2" ] || { echo 'usage: ayla.sh give NAME ZENY [WHY]  (quote names with spaces)'; exit 1; }; to=$1; z=$2; shift 2; send "give \"$to\" $z $*"; sleep 12; docker logs --tail 80 ro-openkore-ayla 2>&1 | clean | grep -aE "\[aylagear\]|rodex mail|Party\] Ayla : sent" | tail -4;;
+  recruit) curl -s -m 8 "http://127.0.0.1:8090/api/guild-recruits?mark=1&n=${1:-3}" | python3 "$HERE/ayla_guild.py" recruit | while IFS= read -r l; do case "$l" in ginvite*) send "${l%%	#*}" && echo "invited: ${l#ginvite }";; *) echo "$l";; esac; done;;
+  guild-tax) [ -n "$1" ] || { echo "usage: ayla.sh guild-tax MEMBER% [MASTER%] | off"; exit 1; }; send "gtax $*" || exit 1; sleep 4; docker logs --tail 40 ro-openkore-ayla 2>&1 | clean | grep "\[guildrecruit\]" | tail -3;;
+  guild-skill) send "gskill ${*:-auto}" || exit 1; sleep 4; docker logs --tail 40 ro-openkore-ayla 2>&1 | clean | grep "\[guildrecruit\]" | tail -3;;
+  guild-info) send ginfo || exit 1; sleep 4; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | grep "\[guildrecruit\]" | tail -5;;
+  global) send "pm \"#global\" $*" && echo "sent to #global: $*";;
+  trade) send "pm \"#trade\" $*" && echo "sent to #trade: $*";;
+  guildchat) send "g $*" && echo ok;;
+  give) [ -n "$2" ] || { echo 'usage: ayla.sh give NAME ZENY [WHY]  (quote names with spaces)'; exit 1; }; to=$1; z=$2; shift 2; send "give \"$to\" $z $*" || exit 1; sleep 12; docker logs --tail 80 ro-openkore-ayla 2>&1 | clean | grep -aE "\[aylagear\]|rodex mail|Party\] Ayla : sent" | tail -4;;
   deals) tail -n "${1:-15}" /mnt/g/RO/legion/openkore-ayla/logs/deals.log 2>/dev/null || echo "(no deals yet)";;
-  gear) send "gear ${*}"; sleep 3; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | grep -a "\[aylagear\]" | tail -15;;
-  townrun) send "idleerrands townrun ${1:-}"; sleep 3; docker logs --tail 40 ro-openkore-ayla 2>&1 | clean | grep -a "\[idleerrands\]" | tail -3;;
-  errands) send "idleerrands status"; sleep 1.5; docker logs --tail 30 ro-openkore-ayla 2>&1 | clean | grep -a "\[idleerrands\]" | tail -3;;
-  lead) send "partylead status"; sleep 1.5; docker logs --tail 30 ro-openkore-ayla 2>&1 | clean | grep "\[partylead\]" | tail -3;;
+  gear) send "gear ${*}" || exit 1; sleep 3; docker logs --tail 60 ro-openkore-ayla 2>&1 | clean | grep -a "\[aylagear\]" | tail -15;;
+  townrun) send "idleerrands townrun ${1:-}" || exit 1; sleep 3; docker logs --tail 40 ro-openkore-ayla 2>&1 | clean | grep -a "\[idleerrands\]" | tail -3;;
+  errands) send "idleerrands status" || exit 1; sleep 1.5; docker logs --tail 30 ro-openkore-ayla 2>&1 | clean | grep -a "\[idleerrands\]" | tail -3;;
+  lead) send "partylead status" || exit 1; sleep 1.5; docker logs --tail 30 ro-openkore-ayla 2>&1 | clean | grep "\[partylead\]" | tail -3;;
   *) echo "usage: ayla.sh log|chat|status|cmd|say|party|whisper|map|rally|lead|townrun|errands|guild|guild-create|guild-fund|recruit|recruits|global|trade|guildchat|guild-tax|guild-skill|guild-info|give|gear|deals ..."; exit 1;;
 esac

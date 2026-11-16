@@ -12,6 +12,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "tools", "system"))
@@ -325,6 +326,80 @@ class TestDryRun(unittest.TestCase):
         finally:
             testenv.isolate()
             shutil.rmtree(d, ignore_errors=True)
+
+
+class TestEngineEraAndResume(unittest.TestCase):
+    """AY24: in the engine era her OpenKore log is not written, so the reporter reads and files nothing (it keeps its
+    heartbeat). A resumed run keeps the last hour of kills, so kills per minute do not read 0 after a restart."""
+
+    def setUp(self):
+        import json  # noqa: F401
+        self.d = tempfile.mkdtemp()
+        os.environ["LEGION_DATA"] = os.path.join(self.d, "data")
+        os.makedirs(os.environ["LEGION_DATA"])
+        os.environ["LEGION_FAKE_NOW"] = str(T0)
+        self.log = os.path.join(self.d, "console.txt")
+        with open(self.log, "wb") as f:
+            f.write(ts(T0 - 7200) + b"Map Change: pay_dun00.gat (139, 22)\n")
+        os.utime(self.log, (T0 - 7200, T0 - 7200))   # the log has not been written for two hours
+
+    def tearDown(self):
+        testenv.isolate()
+        os.environ.pop("LEGION_FAKE_NOW", None)
+        shutil.rmtree(self.d, ignore_errors=True)
+
+    def set_engine(self, on):
+        import json
+        with open(os.path.join(os.environ["LEGION_DATA"], "tuning.json"), "w") as f:
+            json.dump({"engine_parties": "ayla" if on else ""}, f)
+
+    def run_once(self):
+        with redirect_stdout(io.StringIO()):
+            return A.main(["--log", self.log, "--once", "--no-meter"])
+
+    def test_engine_era_files_nothing_and_keeps_heartbeat(self):
+        import bugq
+        self.set_engine(True)
+        self.assertEqual(self.run_once(), 0)
+        self.assertEqual(list(bugq.load().values()), [])
+        with open(os.path.join(os.environ["LEGION_DATA"], "aylalog.heartbeat")) as f:
+            self.assertIn("engine era", f.read())
+
+    def test_openkore_era_still_files_a_silent_log(self):
+        import bugq
+        self.set_engine(False)
+        self.assertEqual(self.run_once(), 0)
+        texts = [str(e.get("text", "")) for e in bugq.load().values()]
+        self.assertTrue(any("console log silent" in t for t in texts), texts)
+
+    def test_resumed_run_keeps_kills_per_minute(self):
+        import json
+        self.set_engine(False)
+        with open(self.log, "wb") as f:
+            f.write(ts(T0 - 3600) + b"Map Change: pay_fild08.gat (100, 100)\n")
+            for i in range(30):   # a kill every 2 minutes over the last hour
+                f.write(ts(T0 - 3500 + i * 120) + b"You have gained 120/3400 base exp\n")
+        self.assertEqual(self.run_once(), 0)          # first run: backlog, state saved
+        st = A.load_state()
+        self.assertTrue(st.get("exp_times"))
+        self.assertEqual(self.run_once(), 0)          # second run: resumes from the saved state
+        tr = A.Tracker()
+        tr.restore(A.load_state())
+        self.assertGreater(tr.kpm(tr.last_t, 3600), 0.3)
+        # the bug: a resume without the saved kills reads 0 for an hour
+        old = A.Tracker()
+        old.restore(dict(st, exp_times=[]))
+        self.assertEqual(old.kpm(old.last_t, 3600), 0)
+
+    def test_below_par_is_not_filed_on_a_fresh_restart(self):
+        # restored state of a healthy hunter: the meter check must see her real kills per minute
+        tr = A.Tracker()
+        tr.restore({"last_t": T0, "exp_times": [T0 - i * 120 for i in range(30)]})
+        neo = {"ayla": {"online": True, "map": "pay_fild08", "cohort": "thief|81-99|party",
+                        "windows": {"1h": {"min": 60, "par_kpm": 0.5, "zph_purse": 0, "par_zph": 0,
+                                           "shares": {"hunting": 0.9}}}}}
+        self.assertEqual([e.kind for e in A.meter_events(neo, tr, T0)], [])
+
 
 
 if __name__ == "__main__":
