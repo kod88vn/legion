@@ -1,3 +1,5 @@
+> **Reference only: OpenKore and 15-mind era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 9-162 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 0. Session startup: bring everything back up (2026-11-14)

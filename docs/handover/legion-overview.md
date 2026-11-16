@@ -1,3 +1,5 @@
+> **Reference only: OpenKore and 15-mind era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 435-775 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 5. Legion: what exists (G:\RO\legion\legion)

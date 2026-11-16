@@ -1,3 +1,5 @@
+> **Reference only: OpenKore and 15-mind era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 163-208 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 1. What the owner wants

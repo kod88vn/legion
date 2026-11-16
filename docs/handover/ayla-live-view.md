@@ -1,3 +1,5 @@
+> **Reference only: OpenKore era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 323-434 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 4. Ayla and the live view (the fiddly part)

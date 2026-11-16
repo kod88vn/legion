@@ -1,3 +1,5 @@
+> **Reference only: OpenKore era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 1409-1485 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 6h. Ayla's party of 7 and Ayla's guild Starveil (2026-11-14, `legion/humanguild.go`, `humanguildlead.go`, `guildrecruit.pl`)

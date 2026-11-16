@@ -1,3 +1,5 @@
+> **Reference only: 15-mind era; current state is in HANDOVER.md and STATUS.md.**
+
 <!-- Moved unchanged from HANDOVER.md lines 1607-1659 (as of commit 63ca923). Index: HANDOVER.md. -->
 
 ## 7. Open issues / next steps

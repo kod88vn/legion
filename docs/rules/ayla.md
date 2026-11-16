@@ -13,7 +13,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
 - SA05 / G05. To inspect Ayla use only `where`, `ai_v`/`aiv` via the logs, or `ai on`. Never send a bare `ai`, `ai off` or `ai manual`
   (a bare `ai` toggles her AI off); `cmdfile.pl` blocks them and the guard is never weakened or tested by sending them. (2026-11-13)
 - AY04. Ayla is a true party leader: protects, guides, waits for the party and talks. (2026-11-13)
-- AY05. Ayla is controlled by her dedicated Haiku LLM again (owner, 2026-11-14 night): it steers her (map, rally, party commands) through her guarded commands whenever her code gets stuck, crashes or decides badly, keeps her OpenKore running, and files every code gap it covers; her own code still runs underneath (AY19). (replaces the earlier "unstick only" version) A map or rally the helper sets holds like a PT16 plan (about 2 h, changes only for a PT16 reason).
+- AY05. Ayla is controlled by her dedicated Haiku LLM again (owner, 2026-11-14 night): it steers her (map, rally, party commands) through her guarded commands whenever her code gets stuck, crashes or decides badly, keeps her OpenKore running (OpenKore parts: AY24), and files every code gap it covers; her own code still runs underneath (AY19). (replaces the earlier "unstick only" version) A map or rally the helper sets holds like a PT16 plan (about 2 h, changes only for a PT16 reason).
 - PT01. Ayla's party follows the normal need-based party rules, except that it never dissolves; its roster is fixed (AY11); her farm map comes from the members' needs in turn. (2026-11-14)
 - PT11. Ayla leads the party through each member's next gear piece in turns (farm the drop, or farm zeny and buy), announcing each
   turn; a member's turn lasts about 2 h (PT16). (2026-11-14)
@@ -33,7 +33,7 @@ One line per rule: ID, statement, date. Owner words in `archive.md`. Hard gates 
   every member progressing. (2026-11-14)
 - AY15. No member rotation in Ayla's party: the rotation experiment is stopped; her party keeps its current members (ayla_rotation_off). (2026-11-15, replaces the rotation rule)
 - AY16. Any dialog Ayla's OpenKore opens (NPC talk, storage, deal, mail) is closed as soon as the action is done. (2026-11-14)
-- AY17. Ayla runs like a normal bot with no watching client (no Wine client, no VNC window); the owner watches the world with his GM account, and Ayla's OpenKore log is shown in a plain terminal window. (2026-11-14, replaces "the owner watches Ayla live in the TigerVNC window")
+- AY17. Ayla runs like a normal bot with no watching client (no Wine client, no VNC window); the owner watches the world with his GM account, and Ayla's OpenKore log is shown in a plain terminal window (OpenKore parts: AY24). (2026-11-14, replaces "the owner watches Ayla live in the TigerVNC window")
 - AY18. Ayla has zero downtime: she is never idle or stuck for any length of time; any idle stretch is a bug whose root cause is fixed. (2026-11-14)
 - AY19. Ayla has the basic behaviour of a normal bot on her own (pick a fitting map, farm, loot, sell, restock, keep the party moving) with no AI system around; her mind only adds to it, and nothing about her stops when the mind, dispatcher or any agent is down. (2026-11-14)
 - AY20. The owner can give Ayla instructions at any time in plain words (for example "do a town run with the party"); her Haiku helper carries them out at once through her guarded commands, ahead of everything else. (2026-11-14)
