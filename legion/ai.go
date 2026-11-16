@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"strings"
@@ -158,6 +159,12 @@ func (b *Bot) think() {
 	}
 	if now.After(b.MoveUntil) {
 		b.X, b.Y = b.DestX, b.DestY
+	}
+	// a pin (or a leader role) means the session has no end: bot.go zeroes sessionEnd at login for these. A pin that
+	// arrives after login used to keep the login-time sessionEnd, so "calling it a day" fired again and again: out of
+	// town, the trip home, the idle, out (a re-trip loop). Cleared here, before the trip check below.
+	if b.pin != nil {
+		b.sessionEnd = time.Time{}
 	}
 	b.teleCheck(now) // teleport.go: a skill Teleport that left us on the same cell marks the map no-teleport
 	moving := now.Before(b.MoveUntil)
@@ -534,10 +541,11 @@ func (b *Bot) think() {
 	// pick a goal if the mastermind hasn't set one - staggered after login (0-40 s per bot): after a mass login every
 	// bot judged the same crowd counts at once and herded onto the same few maps (QA 12:33: gef_fild02 139 bots)
 	if (b.Goal.Mode == "" || (b.Goal.Mode == "hunt" && b.Goal.Map == "") ||
-		huntRetryDue(b.Goal, b.buffAt["huntRetry"], now)) &&
+		huntRetryDue(b.Goal, b.buffAt["huntRetry"], now) || b.idleAutoNeedsGoal()) &&
 		now.Sub(b.ConnectedAt) >= time.Duration(b.P.Index%41)*time.Second {
 		b.chooseHuntingGround()
 	}
+	b.probeIdleAuto(now)
 
 	// progress watchdog: re-plan if we haven't moved in a while, give up on the goal if it keeps failing
 	if pos := [3]interface{}{b.MapName, b.X, b.Y}; pos != b.lastPos {
@@ -716,6 +724,40 @@ func (b *Bot) nearHome(m string) int {
 // retry time (buffAt huntRetry, one minute after the failed pick) has come.
 func huntRetryDue(g Goal, retryAt, now time.Time) bool {
 	return (g.Mode == "idle" || g.Mode == "hunt") && g.Set == "auto (nowhere reachable)" && now.After(retryAt)
+}
+
+// idleAutoProbes counts the IDLEAUTO records written (log lines; the diary is not used for diagnostics).
+var idleAutoProbes int64
+
+// idleAutoNeedsGoal (b.mu held): the bot sits on the idle goal that ends a session ("calling it a day" in town.go:
+// idle, set_by exactly auto) and is held online open-ended by a pin (one acquired after login) or a leader's
+// always-online. huntRetryDue only re-picks "auto (nowhere reachable)", so without this such a bot idled in town for
+// good. The guild brewer is not included: brewing runs in alchemyThink, not on a goal. A deal held open (dealOpen) is
+// not included either: it ends within 15 min and the bot logs off then.
+func (b *Bot) idleAutoNeedsGoal() bool {
+	if b.Goal.Mode != "idle" || b.Goal.Set != "auto" {
+		return false
+	}
+	return b.pin != nil || b.alwaysOnline()
+}
+
+// probeIdleAuto (b.mu held): at most one IDLEAUTO record per bot per hour, once the bot has sat on the session-end
+// idle for 20 minutes. Takes no lock (dealOpen and pinned lock b.mu, so the probe reads the lock-free parts only).
+// Read: grep IDLEAUTO in the engine log (b1794735066954-196).
+func (b *Bot) probeIdleAuto(now time.Time) {
+	if b.Goal.Mode != "idle" || b.Goal.Set != "auto" {
+		return
+	}
+	since := b.buffAt["idleAuto"]
+	if since.IsZero() || now.Sub(since) < 20*time.Minute || now.Sub(b.buffAt["idleAutoProbe"]) < time.Hour {
+		return
+	}
+	b.buffAt["idleAutoProbe"] = now
+	atomic.AddInt64(&idleAutoProbes, 1)
+	log.Printf("IDLEAUTO %s map=%s state=%q goal=%s/%s set_by=%q idle_min=%d pinned=%v alwaysOnline=%v brewer=%v mkt=%v mail=%v sessionEnd=%s shouldBeOnline=%v",
+		b.charName(), b.MapName, b.State, b.Goal.Mode, b.Goal.Map, b.Goal.Set, int(now.Sub(since).Minutes()),
+		b.pin != nil, b.alwaysOnline(), b.guildBrewerChar() != "", b.mkt != nil, b.mailBusy(),
+		b.sessionEnd.Format(time.RFC3339), scheduler.ShouldBeOnline(b))
 }
 
 func (b *Bot) chooseHuntingGround() {
