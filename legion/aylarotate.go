@@ -458,10 +458,10 @@ func rotApplySwap(p *Party, out, in *Bot, inChar string, now time.Time) {
 	markPartiesDirty()
 	human := p.Human
 	out.mu.Lock()
-	out.pin = nil
+	out.setPin(nil)
 	out.mu.Unlock()
 	in.mu.Lock()
-	in.pin = &Pin{Char: inChar, Human: human}
+	in.setPin(&Pin{Char: inChar, Human: human})
 	in.mu.Unlock()
 	select {
 	case in.wake <- struct{}{}:

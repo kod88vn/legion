@@ -202,7 +202,8 @@ type Bot struct {
 	aoeCastUntil    time.Time            // aoe.go: an area spell is being cast until then (published: the tank holds the pack)
 	roster          map[string]string    // party member name -> map
 	partyLeader     string               // in-game party leader (only they can invite)
-	pin             *Pin                 // pinned online on one character (human-led party)
+	pin             *Pin                 // pinned online on one character (human-led party); written only by setPin
+	pinSnap         atomic.Pointer[Pin]  // lock-free copy of pin (setPin): partycons.go reads it without b.mu
 	equipped        map[uint32]*InvItem  // slot -> worn item
 	gateMemo        gateMemo             // buildmilestones.go: the memoized EC39 gear gate
 	gearFailed      map[int]bool         // items the server refused to equip

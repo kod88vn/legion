@@ -358,6 +358,10 @@ type Tuning struct {
 	// pt32.go (PT32/PR16, 2026-11-14): a party member fights in place - a new target within 8 cells of it or a party
 	// mate, no other aggressive monster on the way, none while 2+ monsters are on it. ON (owner rule).
 	PartyFightInPlaceOn bool `json:"party_fight_in_place_on"`
+	// partycons.go (PR40/PR16, 2026-11-15, owner: "party not strong enough"): the conservative party map rule for every
+	// bot party (start ~10 levels under the gear-rated level, a death -5 at once, a step up only after 20 min of success).
+	// OFF until confirmed on Ayla's party; an engine_parties party always has the rule (partycons.go).
+	PartyConservativeOn bool `json:"party_conservative_on"`
 	// chatjobs_wait.go: a listed job's grace, and the kinds the code says by itself (comma list)
 	ChatJobListedGraceSec int    `json:"chat_job_listed_grace_sec"`
 	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
@@ -425,7 +429,7 @@ var defaultTuning = Tuning{
 	LfgGlobalPerMin: 6,
 	KinDiscountPct:  25, ExchangeGiftsPerHour: 3, ExchangeAskStageSec: 180, ExchangeFirstRefusalSec: 40, ChatJobWaitMinSec: 45, ChatJobWaitMaxSec: 90,
 	ShopAnnounceOn: true, ShopAnnounceGapSec: 45,
-	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true,
+	PartyStickOn: true, PartyStickEscapeOn: true, PartyFightInPlaceOn: true, PartyConservativeOn: false,
 	ChatJobListedGraceSec: 45, ChatJobCodeKinds: "thanks,accept", ChatJobDedupeOn: true,
 	AmbientTalkOn: true, AmbientTalkDiv: 150, AmbientTalkMaxPerMin: 3,
 	IdleErrandWaitSec: 45, IdleErrandWeightPct: 35, IdleErrandSlots: 85, IdleErrandCooldownMin: 10,

@@ -2029,3 +2029,10 @@ Kind: process rule. First date: 2026-11-15.
 ```text
 Owner decision (2026-11-15): "an agent that only runs an algorithm is a script with tests, the deploy agent included."
 ```
+
+## PT36
+Kind: party rule. First date: 2026-11-15.
+
+```text
+Ayla has made virtually no progress for the past hours because you stupid fuck kept screwing up. This party is not strong enough, choose the right map
+```
