@@ -1103,6 +1103,12 @@ func (b *Bot) partyThink(gm *GameMap, moving bool, now time.Time) bool {
 	if partyRole(b) == roleMelee && !support && !carry && (b.protectSupport(gm, members, moving, now) || b.meleePeel(members, moving, now)) {
 		return true
 	}
+	// AY26 (protectsupport.go): after the tank's and melee's own jobs, a member that is not the support keeps the support
+	// protected: walks back to it when leashed, steps between it and a real threat (frontline) or behind it when chased
+	// (ranged). Flag off: nothing happens here.
+	if !support && b.protectOwnSupport(p, members, gm, moving, now) {
+		return true
+	}
 	// ranged / melee members join the tank's fight (it opens the fights; tanklead.go)
 	if !support && partyRole(b) != roleTank && lead.Target == 0 {
 		for _, m := range p.Members {

@@ -362,6 +362,11 @@ type Tuning struct {
 	// bot party (start ~10 levels under the gear-rated level, a death -5 at once, a step up only after 20 min of success).
 	// OFF until confirmed on Ayla's party; an engine_parties party always has the rule (partycons.go).
 	PartyConservativeOn bool `json:"party_conservative_on"`
+	// protectsupport.go (AY26, 2026-11-15): the party always protects its support - frontlines stay between it and the
+	// monsters, ranged keep behind it, nobody is left behind (leash). OFF by default; an engine party always has it (ovEngineParty).
+	PartyProtectSupportOn bool `json:"party_protect_support_on"`
+	// protectsupport.go: a live revert for the AY26 rule, engine parties included (wins over the on flag and the engine default).
+	PartyProtectSupportOff bool `json:"party_protect_support_off"`
 	// chatjobs_wait.go: a listed job's grace, and the kinds the code says by itself (comma list)
 	ChatJobListedGraceSec int    `json:"chat_job_listed_grace_sec"`
 	ChatJobCodeKinds      string `json:"chat_job_code_kinds"`
