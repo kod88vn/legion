@@ -7,6 +7,9 @@ law; then `RULES.md`. Details by topic: `docs/rules/`. Read next: `PLAN.md` (wha
 GitHub Copilot or any AI can cold-start from `.github/copilot-instructions.md` (pointers to this file, the
 constitution, rules, HANDOVER and AGENTS).
 
+New machine or a new owner: `docs/SETUP-NEW-MACHINE.md` (setup guide; `docs/NEW-MACHINE-MANIFEST.json` lists the
+owner-supplied files; `tools/system/portcheck.py` checks them offline).
+
 ## What runs
 - **Only the game server:** `ro-db` and `ro-rathena` (rathena restarted at 15:18 with chat logging, ST07, and at
   16:24 with no rebirth, ST01/G10). The dashboard (`tools/dashboard/dashserve.py` under `keep.cmd`, port 8099) is always
@@ -57,6 +60,8 @@ The bug queue (`legion/data/bugqueue.jsonl`, `tools/system/bugq.py`): every item
 - Stack: `python tools/system/stackctl.py up`, then
   `wsl -d Ubuntu-24.04 -- bash -c "cd /mnt/g/RO/legion && docker compose up -d"`; wait about 2 minutes. Recreating
   rathena also recreates Ayla's OpenKore and both Legion containers (G15).
+  Warning: this plain `up -d` starts every service without a profile (`openkore-ayla`, `legion`, `legion-core`,
+  `agency`). On a new machine use the staged order in `docs/SETUP-NEW-MACHINE.md` section 7 instead.
 - Stopping: `python tools/system/stackctl.py down` first (writes `stack.hold`), then loops, then `docker compose stop`.
 - Tests: `python tools/system/runsuites.py` (all suites, tripwire on), `tools/dev/gocheck.sh /g/RO/legion/legion`
   (WSL; use the `/g/...` path form).

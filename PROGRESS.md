@@ -9,6 +9,7 @@ from `docs/reports/reviews/<second-parent-sha>.md`. Nothing here is verified liv
   guild direction, exchange), the Ayla engine packages A to G (cut-over NOT done), party, town, rally and build fixes,
   the market engine (flags OFF), the dashboard tabs (Players, Builds, Market), the test runner and the deploy gate.
 - Not deployed. Not started. No live data touched by this session's tests (G23 tripwire on).
+- Portability (docs only, main): `docs/SETUP-NEW-MACHINE.md`, `docs/NEW-MACHINE-MANIFEST.json` and `tools/system/portcheck.py` (with `tests/system/test_portcheck.py`), merged as `aa60afb` from `docs/new-machine` (review a7ecb8b, verdict merge). Checks: runsuites OK (5 suites, 0 failed), gatecheck --coverage --no-suites OK, constcheck --strict OK. Go unchanged.
 - Stopped on purpose: `legion`, `legion-core`, Ayla's OpenKore, the agency, every agent and loop. `stack.hold` is set.
 
 ## 2. Test totals (read from `runsuites.py`, run once on this branch's base, 2026-11-15)
@@ -253,3 +254,4 @@ Each row: short merge sha, date, subject, the second parent (the branch tip merg
 | 151 | `91b54a2` | 2026-11-15 20:57 | branch 'fix/ayla-party-four' (1acf08c) | `1acf08c` | docs/reports/reviews/1acf08c*.md | merge |
 | 152 | `d4b6d1f` | 2026-11-15 21:05 | branch 'fix/puppet-orders-test' (review verdict: merge) | `dc32281` | docs/reports/reviews/dc32281*.md | merge |
 | 153 | `256a99c` | 2026-11-15 21:09 | branch 'fix/bugq-id-guard' (review verdict: merge) | `dd1ea2f` | docs/reports/reviews/dd1ea2f*.md | merge |
+| 154 | `aa60afb` | 2026-11-15 | branch 'docs/new-machine' (review a7ecb8b, verdict merge): new-machine setup, manifest and portcheck, docs only | `a7ecb8b` | docs/reports/reviews/a7ecb8b*.md | merge |

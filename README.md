@@ -4,6 +4,9 @@ Packet version **20210107, RagexeRE** (Renewal). It matches `RagexeRE.exe` (kRO 
 which ships in Gravity's official full-client zip `http://rofull.gnjoy.com/Ragnarok_210607.zip`.
 rAthena and OpenKore are pinned to fixed commits.
 
+New machine: start with `docs/SETUP-NEW-MACHINE.md` (prerequisites, what to bring over, the first-run checklist, and
+`tools/system/portcheck.py`, the offline machine check).
+
 ![demo](demo-2021-client-with-bot.png)
 ![english](demo-2021-client-english.png)
 
@@ -130,6 +133,13 @@ Facts read from the repo on 2026-11-15. Where the repo has no fact, the line say
 tokens and keys are never written here: the names of the keys are listed, the values stay in the files named.
 Current state and what may start: `STATUS.md`. Plan and progress: `PLAN.md`, `PROGRESS.md`. Engineering wiring:
 `HANDOVER.md`. Settings and owner decisions: `docs/rules/settings.md`.
+
+**No game client is needed to run the Legion simulation.** The engine (`legion/`) speaks the RO login, char and map
+protocol itself (`legion/bot.go`, the login handshake from line 417), so the bots, the economy and the dashboard run
+without a client. Ayla's OpenKore runs headless in its container (`docker-compose.yml`, service `openkore-ayla`), so she
+needs none either. A client is only for a human to watch or play: the human client below (optional) and the agents'
+Wine watch copy (view only). Exception: `tools/dashboard/buildexport.py` reads an item table from the English client
+folder only when it rebuilds `tools/dashboard/builds.json`. New machine: `docs/SETUP-NEW-MACHINE.md`.
 
 ### Server: rAthena in Docker (WSL Ubuntu-24.04)
 - Built for packet version **20210107** (RagexeRE): `PACKETVER` build arg in `docker-compose.yml`, image

@@ -1,0 +1,184 @@
+{
+  "_about": "Owner-supplied and outside-git files for a new machine (paths only, never values). base: repo = legion/, ro = the folder that holds it (G:\\RO), home = the user's profile. severity: blocking fails tools/system/portcheck.py; warn and optional are reported only. Read with tools/system/portcheck.py; the steps are in docs/SETUP-NEW-MACHINE.md.",
+  "known_path_files": [
+    ".claude/agents/fixer.md",
+    ".claude/agents/reviewer.md",
+    ".claude/settings.json",
+    ".claude/skills/legion-ops/SKILL.md",
+    ".claude/skills/legion-session-old/SKILL.md",
+    ".claude/skills/legion-session/SKILL.md",
+    ".github/copilot-instructions.md",
+    "CLAUDE.md",
+    "HANDOVER.md",
+    "PROGRESS.md",
+    "README.md",
+    "STATUS.md",
+    "legion/README.md",
+    "legion/gearsuspect_offline_test.go",
+    "openkore-qa/kafratest.sh",
+    "openkore-qa/qa.sh",
+    "tests/system/test_constitution.py",
+    "tests/system/test_mainguard.py",
+    "tools/dashboard/buildexport.py",
+    "tools/deploy/deploy.py",
+    "tools/deploy/guard.sh",
+    "tools/deploy/rathena_recreate.sh",
+    "tools/lifecycle.sh",
+    "tools/mem.py",
+    "tools/mindgate.py",
+    "tools/puppet/dispatch.py",
+    "tools/puppet/tests/test_puppet.py",
+    "tools/qa/qa2_loop.sh",
+    "tools/qa/qa6_db2.sh",
+    "tools/qa/qa6_db3.sh",
+    "tools/qa/qa6_db4.sh",
+    "tools/qa/qa7_hb.sh",
+    "tools/rogui/PLAYER.md",
+    "tools/rogui/ai-client.sh",
+    "tools/rogui/ayla-give.sh",
+    "tools/rogui/ayla-ip.sh",
+    "tools/rogui/ayla.sh",
+    "tools/rogui/ayla_safe_reload.sh",
+    "tools/rogui/health.sh",
+    "tools/rogui/keeper-lock.sh",
+    "tools/rogui/keeper.sh",
+    "tools/rogui/ro.ps1.disabled-uses-real-mouse",
+    "tools/rogui/ro.sh",
+    "tools/rogui/tell-ayla.cmd",
+    "tools/sentinel.py",
+    "tools/system/constcheck.py",
+    "tools/system/mainguard.allow.json",
+    "tools/system/mainguard.py",
+    "tools/watch/mon.sh",
+    "tools/watch/waithelp.sh",
+    "tools/watch/waitmap.sh"
+  ],
+  "items": [
+    {
+      "path": "example.env",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "template for .env (key names)"
+    },
+    {
+      "path": "docker-compose.yml",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "the stack; ro_dbdata volume is named by its project name ro"
+    },
+    {
+      "path": "rathena/sql/seed.sql",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "first DB init: 2 test accounts (loaded by rathena/start.sh)"
+    },
+    {
+      "path": "legion/data/seed.sql",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "bot accounts and characters: loaded by hand (SETUP guide, step DB)"
+    },
+    {
+      "path": "legion/data/personas.json",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "4,000 personas, 7,817 characters; tracked; contains password fields (bug filed)"
+    },
+    {
+      "path": "legion/data/tuning.json",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "tracked engine settings (flags start OFF)"
+    },
+    {
+      "path": "rathena/Dockerfile",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "rAthena built from a pinned commit fetched from GitHub at build time"
+    },
+    {
+      "path": "legion/Dockerfile",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "engine image; copies map data from the ro-rathena image"
+    },
+    {
+      "path": "openkore/Dockerfile",
+      "base": "repo",
+      "severity": "blocking",
+      "note": "OpenKore built from a pinned commit fetched from GitHub at build time"
+    },
+    {
+      "path": "CLAUDE.md",
+      "base": "ro",
+      "severity": "warn",
+      "note": "project instruction file in G:\\RO, outside git: the agent sessions read it"
+    },
+    {
+      "path": "backups/pre-rebuild-20261114-0038.sql",
+      "base": "repo",
+      "severity": "warn",
+      "note": "a DB dump of an older live state: restores characters, not the current world (see the guide)"
+    },
+    {
+      "path": "legion/data/human-parties.json",
+      "base": "repo",
+      "severity": "warn",
+      "note": "Ayla's core party roster (runtime state, not in git)"
+    },
+    {
+      "path": "legion/data/owner.token",
+      "base": "repo",
+      "severity": "optional",
+      "note": "created on first start when missing (legion/aylaoverride.go)"
+    },
+    {
+      "path": "tools/.state/dashboard.json",
+      "base": "repo",
+      "severity": "warn",
+      "note": "dashboard read login (key names only: db_user, db_pass); without it the dashboard uses the game user"
+    },
+    {
+      "path": "openkore-ayla/logs/items_lut.tsv",
+      "base": "repo",
+      "severity": "warn",
+      "note": "item names for the dashboard; written by OpenKore (writer not found in repo)"
+    },
+    {
+      "path": "legion/data/memory",
+      "base": "repo",
+      "severity": "optional",
+      "note": "per-character memory; empty is accepted (characters start without memory)"
+    },
+    {
+      "path": "kRO-210607/client/RagexeRE.exe",
+      "base": "ro",
+      "severity": "optional",
+      "note": "owner's kRO client (2021-01-07 RE): only for a human to watch or play; the engine needs no client"
+    },
+    {
+      "path": "kRO-210607/client/RO-AILab.exe",
+      "base": "ro",
+      "severity": "optional",
+      "note": "patched watch copy used by tools/rogui/ai-client.sh (Wine); optional"
+    },
+    {
+      "path": "kRO-210607/client/DATA.INI",
+      "base": "ro",
+      "severity": "optional",
+      "note": "client data list for the watch copy; optional"
+    },
+    {
+      "path": "kRO-210607/Ragnarok_210607.zip",
+      "base": "ro",
+      "severity": "optional",
+      "note": "the owner's own download of the full client; never fetched by the repo (G07)"
+    },
+    {
+      "path": "ClientEN/SystemEN/LuaFiles514/itemInfo.lua",
+      "base": "ro",
+      "severity": "optional",
+      "note": "item table read by tools/dashboard/buildexport.py only when rebuilding builds.json"
+    }
+  ]
+}
