@@ -256,6 +256,18 @@ func expSample(name string, lv int, exp int64, now time.Time) (int64, float64) {
 	return int64(float64(t.gain-t.pts[0].gain) / min * 60), float64(int(min*10)) / 10
 }
 
+// expMeterPrune drops the exp tracks of members that are in no party any more (live: lower-case names of every member
+// of every party the last /api/parties/detail answer listed). A member who rejoins starts a fresh track.
+func expMeterPrune(live map[string]bool) {
+	expMeter.Lock()
+	defer expMeter.Unlock()
+	for k := range expMeter.by {
+		if !live[k] {
+			delete(expMeter.by, k)
+		}
+	}
+}
+
 // meterKPM: a bot's own kills per minute over 10 min from the published meter view (no bot lock).
 func meterKPM(name string) float64 {
 	v := meterCur.Load()
@@ -270,15 +282,40 @@ func meterKPM(name string) float64 {
 
 // ---------------------------------------------------------------- the Haiku helper's last run (puppet dispatcher)
 
-// helperRun: the last ayla row of <data>/puppet_calls.jsonl (tools/puppet/dispatch.py append_log).
+// helperRun: the last ayla row of <data>/puppet_calls.jsonl (tools/puppet/dispatch.py append_log). Exit is kept as
+// written: the CLI's return code (int) or null, or the string "timeout", "refused" or "error" (dispatch.py run_call).
+// Status says what that means: ok, failed, timeout, refused or error (helperStatus).
 type helperRun struct {
-	T       float64 `json:"t"`
-	Trigger string  `json:"trigger"`
-	Model   string  `json:"model"`
-	Exit    int     `json:"exit"`
-	IsError bool    `json:"is_error"`
-	Result  string  `json:"result"`
-	Seconds float64 `json:"duration_s"`
+	T       float64         `json:"t"`
+	Trigger string          `json:"trigger"`
+	Model   string          `json:"model"`
+	Role    string          `json:"role"`
+	Exit    json.RawMessage `json:"exit"`
+	Status  string          `json:"status"`
+	IsError bool            `json:"is_error"`
+	Result  string          `json:"result"`
+	Seconds float64         `json:"duration_s"`
+}
+
+// helperStatus: only integer 0 with no is_error is ok. The strings dispatch.py writes (timeout, refused, error) are
+// passed on as they are. Anything else (a code other than 0, null, a missing exit) is failed.
+func helperStatus(exit json.RawMessage, isError bool) string {
+	var v interface{}
+	if len(exit) == 0 || json.Unmarshal(exit, &v) != nil {
+		return "failed"
+	}
+	switch x := v.(type) {
+	case float64:
+		if x == 0 && !isError {
+			return "ok"
+		}
+	case string:
+		switch x {
+		case "timeout", "refused", "error":
+			return x
+		}
+	}
+	return "failed"
 }
 
 var helperCache struct {
@@ -318,7 +355,8 @@ func helperLastRun(role string) *helperRun {
 			continue
 		}
 		var r helperRun
-		if json.Unmarshal([]byte(lines[i]), &r) == nil {
+		if json.Unmarshal([]byte(lines[i]), &r) == nil && r.Role == role {
+			r.Status = helperStatus(r.Exit, r.IsError)
 			helperCache.run = &r
 			break
 		}

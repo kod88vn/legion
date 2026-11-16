@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -79,6 +80,7 @@ func registerPartyDash(mux *http.ServeMux) {
 		parties.Unlock()
 		now := time.Now()
 		res := []partyView{}
+		live := map[string]bool{} // lower-case names of every member listed now: expMeter keeps only these (partyintent.go)
 		for _, p := range ps {
 			parties.Lock()
 			need, purpose := p.Need, p.Purpose
@@ -147,6 +149,7 @@ func registerPartyDash(mux *http.ServeMux) {
 				// so it runs exactly once per member here.
 				mv.BaseExp = m.BaseExp
 				expH, expMin := expSample(mv.Name, m.BaseLv, m.BaseExp, now) // partyintent.go
+				live[strings.ToLower(mv.Name)] = true
 				mv.ExpPerH = expH
 				var mx *PartyMemberExtras
 				if p.Human != "" {
@@ -189,6 +192,7 @@ func registerPartyDash(mux *http.ServeMux) {
 			v.GearTurn, v.GearLog = gearPoolView(p.Name)
 			res = append(res, v)
 		}
+		expMeterPrune(live)
 		// the main instance (-exclude) adds the human-led parties the core instance runs (Ayla's), unless it has them
 		if r.URL.Query().Get("local") == "" {
 			res = mergeCoreParties(res)

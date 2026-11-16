@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -140,5 +143,87 @@ func TestPartyDetailExpForEngineParty(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), `"base_exp":123456`) || !strings.Contains(rec.Body.String(), `"exp_per_h":`) {
 		t.Errorf("the additive JSON fields are missing: %s", rec.Body.String())
+	}
+}
+
+// helperReset points the helper reader at a temp data dir with a fresh cache (G23: never the live legion/data).
+func helperReset(t *testing.T, rows string) {
+	old := *dataDir
+	*dataDir = t.TempDir()
+	t.Cleanup(func() { *dataDir = old })
+	if err := os.WriteFile(filepath.Join(*dataDir, "puppet_calls.jsonl"), []byte(rows), 0644); err != nil {
+		t.Fatal(err)
+	}
+	helperCache.Lock()
+	helperCache.at, helperCache.run = time.Time{}, nil
+	helperCache.Unlock()
+}
+
+// the rows dispatch.py append_log writes (json.dumps: ", " and ": " separators)
+const helperAylaRow = `{"t": 100.0, "role": "ayla", "trigger": "wake", "model": "haiku", "exit": %s, "is_error": false, "result": "ok text", "duration_s": 2.5}` + "\n"
+
+func TestHelperLastRunStatus(t *testing.T) {
+	cases := []struct{ name, exit, status string }{
+		{"exit 0", "0", "ok"},
+		{"exit 1", "1", "failed"},
+		{"timeout", `"timeout"`, "timeout"},
+		{"refused", `"refused"`, "refused"},
+		{"error", `"error"`, "error"},
+		{"null", "null", "failed"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// a newer row of another role must not be taken, and a malformed line must be skipped
+			rows := fmt.Sprintf(helperAylaRow, c.exit) +
+				`{"t": 200.0, "role": "guild01", "trigger": "x", "exit": "timeout"}` + "\n" +
+				`{"t": 300.0, "role": "ayla", "exit": "timeo` + "\n"
+			helperReset(t, rows)
+			r := helperLastRun("ayla")
+			if r == nil {
+				t.Fatal("no ayla run found")
+			}
+			if r.Status != c.status {
+				t.Errorf("status %q, want %q", r.Status, c.status)
+			}
+			if string(r.Exit) != c.exit {
+				t.Errorf("exit %s, want %s (passed on as written)", r.Exit, c.exit)
+			}
+			if r.Role != "ayla" || r.Trigger != "wake" || r.Result != "ok text" {
+				t.Errorf("fields lost: %+v", r)
+			}
+		})
+	}
+	t.Run("exit 0 with is_error is failed", func(t *testing.T) {
+		helperReset(t, strings.Replace(fmt.Sprintf(helperAylaRow, "0"), `"is_error": false`, `"is_error": true`, 1))
+		if r := helperLastRun("ayla"); r == nil || r.Status != "failed" {
+			t.Errorf("got %+v, want failed", r)
+		}
+	})
+	t.Run("newest ayla row wins, malformed last line skipped", func(t *testing.T) {
+		rows := fmt.Sprintf(helperAylaRow, "0") + fmt.Sprintf(helperAylaRow, `"timeout"`) + `{"t": 9`
+		helperReset(t, rows)
+		if r := helperLastRun("ayla"); r == nil || r.Status != "timeout" {
+			t.Errorf("got %+v, want the newer timeout row", r)
+		}
+	})
+	t.Run("no ayla row, only other roles and junk", func(t *testing.T) {
+		helperReset(t, `{"t": 1.0, "role": "guild02", "exit": 0}`+"\n"+"garbage\n")
+		if r := helperLastRun("ayla"); r != nil {
+			t.Errorf("got %+v, want nil", r)
+		}
+	})
+}
+
+func TestExpMeterPrune(t *testing.T) {
+	t0 := time.Unix(7000, 0)
+	expSample("PruneKeep", 5, 10, t0)
+	expSample("PruneGone", 5, 10, t0)
+	expMeterPrune(map[string]bool{"prunekeep": true})
+	expMeter.Lock()
+	_, kept := expMeter.by["prunekeep"]
+	_, gone := expMeter.by["prunegone"]
+	expMeter.Unlock()
+	if !kept || gone {
+		t.Fatalf("kept=%v gone=%v, want kept=true gone=false", kept, gone)
 	}
 }
