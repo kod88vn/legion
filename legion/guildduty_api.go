@@ -81,12 +81,15 @@ func allGuildIDs() []string {
 }
 
 type dirView struct {
-	Guild     string            `json:"guild"`
-	Name      string            `json:"name"`
-	Active    []*GuildDirection `json:"active"`
-	Leader    []*GuildDirection `json:"leader_set"`
-	Market    []*GuildDirection `json:"market_set,omitempty"` // EC43: set_by market, shown beside the leader's
-	Autopilot []*GuildDirection `json:"autopilot"`
+	Guild  string            `json:"guild"`
+	Name   string            `json:"name"`
+	Active []*GuildDirection `json:"active"`
+	Leader []*GuildDirection `json:"leader_set"`
+	Market []*GuildDirection `json:"market_set,omitempty"` // EC43: set_by market, shown beside the leader's (retired: always empty)
+	// market_state: "retired" (design market-engine.md 4.3, WP6): the market sets no direction; the feed is information
+	MarketState string            `json:"market_state"`
+	FeedPick    *gmfPick          `json:"feed_pick,omitempty"` // WP5: the market feed item the wealth direction farms (information)
+	Autopilot   []*GuildDirection `json:"autopilot"`
 }
 
 func dirViewOf(id string, now time.Time) dirView {
@@ -104,6 +107,11 @@ func dirViewOf(id string, now time.Time) dirView {
 	v.Active = cp(activeDirsLocked(id, now))
 	v.Leader = cp(gduty.dirs[id])
 	v.Market = cp(gduty.market[id])
+	v.MarketState = "retired"
+	if p, ok := gduty.gmf[id]; ok {
+		pc := p
+		v.FeedPick = &pc
+	}
 	v.Autopilot = cp(gduty.auto[id])
 	return v
 }
@@ -121,7 +129,7 @@ type dirPost struct {
 	Exclusive bool     `json:"exclusive"`
 	Clear     bool     `json:"clear"`
 	Remove    string   `json:"remove"`
-	By        string   `json:"by"` // "" or "leader" (default), or "market" (EC43: tuning market_directions_on)
+	By        string   `json:"by"` // "" or "leader" (default); "market" is RETIRED (410)
 }
 
 // dropDir: the list without the direction id (in place); found when it was there
@@ -258,11 +266,13 @@ func guildDirAPI(w http.ResponseWriter, r *http.Request) {
 		apiErr(w, 400, `by must be "leader" or "market"`)
 		return
 	}
-	market := by == "market"
-	if market && !marketDirOn() {
-		apiErr(w, 409, "market directions are off (tuning market_directions_on)")
+	if by == "market" {
+		// RETIRED (design market-engine.md 4.3, WP6): the market gives information only (EC43), never a direction.
+		// The branch below is unreachable; it is deleted in the later step, not now.
+		apiErr(w, 410, "market directions are retired: the market feed is information only (GET /api/market/feed?guild=...)")
 		return
 	}
+	market := false
 	if market && p.Exclusive {
 		apiErr(w, 400, "market directions are never exclusive")
 		return

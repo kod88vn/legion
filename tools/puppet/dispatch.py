@@ -99,6 +99,9 @@ ROLES = {}
 for _i, _g in enumerate(GUILDS):
     ROLES[_g] = dict(brief="guild", model="haiku", interval=25 * 60, offset=_i * 150, call_cap=0.06, hourly_cap=0.15,
                      min_gap=180, bus=_g)
+# SUPERSEDED (EC46, design market-engine 4.3, WP6): the market engine (an algorithm, legion/marketengine.go) now computes
+# the market feed and the farmers' advice; this role only adds words (briefs/market.md says so). Kept here, not switched
+# off, until the algorithm is proven by the metrics (Constitution 2.9): the owner decides when it leaves the dispatcher.
 ROLES["market"] = dict(brief="market", model="haiku", interval=30 * 60, offset=60, call_cap=0.08, hourly_cap=0.15,
                        min_gap=300, bus="market")
 ROLES["chat"] = dict(brief="chat", model="haiku", interval=0, offset=0, call_cap=0.06, hourly_cap=0.45,

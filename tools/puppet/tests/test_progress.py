@@ -217,29 +217,89 @@ class TestRobustness(unittest.TestCase):
         self.assertIn("progress block failed (TypeError)", text)
 
 
-class TestMarketDirectionArg(unittest.TestCase):
-    def test_by_market_reaches_the_body(self):
+def _opt(args, name, default=None, flag=False):
+    if name not in args:
+        return default
+    i = args.index(name)
+    if flag:
+        args.pop(i)
+        return True
+    return args.pop(i + 1) if i + 1 < len(args) else default
+
+
+class TestMarketDirectionRetired(unittest.TestCase):
+    """WP6 (EC43, design market-engine 4.3): --by market is refused before any call; the leader's own call still goes"""
+
+    def test_by_market_is_refused_without_a_call(self):
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(progress.__file__), "..")))
+        import legionctl_guild
+        sent = []
+
+        def call(path, body=None):
+            sent.append((path, body))
+            return {"guild": "guild04", "name": "", "active": []}
+
+        args = ["guild04", "supply", "--by", "market", "--hours", "4"]
+        with self.assertRaises(SystemExit) as cm:
+            legionctl_guild.guild_cmd("guild-direction-set", args, call, lambda *a: None, _opt, lambda x: x)
+        self.assertIn("retired", str(cm.exception))
+        self.assertEqual(sent, [])
+
+    def test_leader_call_still_sends_by_leader(self):
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(progress.__file__), "..")))
         import legionctl_guild
         sent = {}
 
         def call(path, body=None):
-            sent["path"], sent["body"] = path, body
+            sent["body"] = body
             return {"guild": "guild04", "name": "", "active": []}
 
-        def opt(args, name, default=None, flag=False):
-            if name not in args:
-                return default
-            i = args.index(name)
-            if flag:
-                args.pop(i)
-                return True
-            return args.pop(i + 1) if i + 1 < len(args) else default
-
-        args = ["guild04", "supply", "--by", "market", "--hours", "4"]
-        legionctl_guild.guild_cmd("guild-direction-set", args, call, lambda *a: None, opt, lambda x: x)
-        self.assertEqual(sent["body"].get("by"), "market")
+        args = ["guild04", "supply", "--by", "leader", "--hours", "4"]
+        legionctl_guild.guild_cmd("guild-direction-set", args, call, lambda *a: None, _opt, lambda x: x)
+        self.assertEqual(sent["body"].get("by"), "leader")
         self.assertEqual(sent["body"].get("kind"), "supply")
-        self.assertNotIn("exclusive", sent["body"])
+
+
+FEED = {"t": "2026-11-15T12:00:00", "status": "partial", "missing": ["zeny_per_hour: meter feed not wired (WP8)"],
+        "short": [{"item_id": 501, "item": "Poo Poo Hat", "kind": "short", "band": "18-32", "demand": 14, "listed": 2,
+                   "price": 900, "drop_maps": ["prt_fild02"], "farmers_on": 1},
+                  {"item_id": 502, "item": "Red Potion", "kind": "none", "band": "1-32", "demand": 30, "listed": 0,
+                   "price": 50, "drop_maps": ["pay_fild01"], "farmers_on": 0}],
+        "glut": [{"item": "Jellopy", "listed": 60}],
+        "guild": {"id": "guild04", "needs": [{"item": "Poo Poo Hat", "n": 5}],
+                  "gear_gap_members": [{"band": "18-32", "bots": 22}], "farmers_note": "info only"}}
+
+
+class TestGuildFeedBlock(unittest.TestCase):
+    """WP5 (EC43): the leader's briefing carries the market feed as information, never as a direction"""
+
+    def test_block_is_information_and_sorted_by_gap(self):
+        text = progress.compact_guild_feed(FEED)
+        out = json.loads(text)
+        self.assertEqual(out["short"][0]["item"], "Red Potion")  # the bigger gap (30 - 0 against 14 - 2) first
+        self.assertEqual(out["guild_needs"], [{"item": "Poo Poo Hat", "n": 5}])
+        self.assertIn("information only", out["note"])
+        for word in ("set_by", "should", "direction\":"):
+            self.assertNotIn(word, text)
+
+    def test_no_answer_and_off_are_said_plainly(self):
+        self.assertIn("no feed", progress.compact_guild_feed(None))
+        self.assertIn("off", progress.compact_guild_feed({"status": "off"}))
+
+    def test_briefing_has_the_feed_section(self):
+        with tempfile.TemporaryDirectory() as nd:
+            api = briefing.Api(fetch=MockApi({"/api/market/feed": FEED}))
+            text, _ = briefing.assemble("guild04", api, nd)
+        self.assertIn("Market feed (information only", text)
+        self.assertIn("Poo Poo Hat", text)
+
+    def test_broken_feed_keeps_the_guild_briefing(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as nd, \
+                mock.patch("progress.guild_feed", side_effect=TypeError("bad shape")):
+            text, _ = briefing.assemble("guild04", briefing.Api(fetch=MockApi({})), nd)
+        self.assertIn("Guild: guild04", text)
+        self.assertIn("feed block failed (TypeError)", text)
 
 
 class TestHelpers(unittest.TestCase):

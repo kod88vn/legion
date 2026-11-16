@@ -372,6 +372,39 @@ def compact_json(prog, limit=MAX_JSON):
     return s
 
 
+def compact_guild_feed(feed, limit=1500):
+    """EC43 / design market-engine 4.2: one guild's view of the market feed, as INFORMATION for its leader's briefing.
+    `feed` is the body of GET /api/market/feed?guild=guildNN (or None). Pure: no lock, no write. The feed never carries
+    a direction (no set_by, no "should"); this only shortens it: the largest gaps, the guild's needs, the gluts."""
+    if not isinstance(feed, dict):
+        return "no feed: the engine did not answer (the leader decides from the other blocks)"
+    if feed.get("status") == "off":
+        return "off: the market engine is switched off, so there is no feed (information only, EC43)"
+    short = sorted((s for s in (feed.get("short") or []) if isinstance(s, dict)),
+                   key=lambda s: -(_int(s.get("demand")) - _int(s.get("listed"))))[:6]
+    g = feed.get("guild") if isinstance(feed.get("guild"), dict) else {}
+    out = {
+        "status": feed.get("status"),
+        "missing": feed.get("missing") or [],
+        "short": [{k: s.get(k) for k in ("item", "kind", "band", "demand", "listed", "price", "drop_maps", "farmers_on")}
+                  for s in short],
+        "glut": [{k: x.get(k) for k in ("item", "listed")} for x in (feed.get("glut") or [])[:3] if isinstance(x, dict)],
+        "guild_needs": [{k: n.get(k) for k in ("item", "n")} for n in (g.get("needs") or [])[:5] if isinstance(n, dict)],
+        "guild_gear_gap_members": (g.get("gear_gap_members") or [])[:6],
+        "note": "information only: the market never sets your direction (EC43); you decide what your guild farms",
+    }
+    s = json.dumps(out, ensure_ascii=False, separators=(",", ":"), default=str)
+    if len(s) > limit:
+        s = json.dumps({"status": out["status"], "note": out["note"], "notes": ["feed cut to fit the briefing"]},
+                       ensure_ascii=False, separators=(",", ":"))
+    return s
+
+
+def guild_feed(api, gid):
+    """the market feed block of one guild's briefing (read-only GET; a failed GET reads as no feed)"""
+    return compact_guild_feed(api.get(f"/api/market/feed?guild={gid}"))
+
+
 def collect(api, data_dir=None, now=None):
     """read the engine API (an object with .get(path), like briefing.Api) and the static tables, then compute()"""
     milestones = load_static("buildmilestones.json", data_dir)

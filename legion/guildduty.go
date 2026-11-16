@@ -157,7 +157,8 @@ var dutySaveMu sync.Mutex // dutySave: serialises the file write
 var gduty = struct {
 	sync.Mutex
 	dirs      map[string][]*GuildDirection // guild -> leader-set directions (persisted)
-	market    map[string][]*GuildDirection // guild -> market directions, set_by market (persisted, own cap)
+	market    map[string][]*GuildDirection // guild -> market directions: RETIRED, never filled (WP6); old files are dropped on load
+	gmf       map[string]gmfPick           // guild -> the market feed pick its wealth direction farms (WP5, guildmarketfeed.go)
 	auto      map[string][]*GuildDirection // guild -> autopilot directions
 	members   map[string]*dutyMember       // guild|char
 	byChar    map[string]*dutyMember       // char -> its current record
@@ -172,7 +173,7 @@ var gduty = struct {
 	counters  map[string]int
 	dirty     bool
 	loaded    bool
-}{dirs: map[string][]*GuildDirection{}, market: map[string][]*GuildDirection{}, auto: map[string][]*GuildDirection{}, members: map[string]*dutyMember{},
+}{dirs: map[string][]*GuildDirection{}, market: map[string][]*GuildDirection{}, gmf: map[string]gmfPick{}, auto: map[string][]*GuildDirection{}, members: map[string]*dutyMember{},
 	byChar: map[string]*dutyMember{}, kicked: map[string]*dutyKicked{}, guildKick: map[string]time.Time{}, dismissed: map[string]time.Time{},
 	guildWarn: map[string]time.Time{}, guildSay: map[string]time.Time{}, charGuild: map[string]string{}, left: map[string]dutyLeft{}, counters: map[string]int{}}
 
@@ -183,8 +184,9 @@ type dutyLeft struct {
 
 func dutyOn() bool { return tune().GuildDutyOn && !coreInstance() }
 
-// marketDirOn: tuning market_directions_on (EC43). Default off: the engine refuses set_by market and shows none.
-func marketDirOn() bool { return tune().MarketDirectionsOn }
+// marketDirOn: RETIRED (design market-engine.md 4.3, step 1). The market sets no guild direction any more; the flag
+// market_directions_on is still parsed but ignored. Always false: market directions are never in force.
+func marketDirOn() bool { return false }
 
 func dutyCount(k string) { // gduty held
 	gduty.counters[k]++
@@ -462,7 +464,13 @@ func dutyAutopilotRound(snaps []*dutySnap, now time.Time) {
 		ids[g.ID] = true
 	}
 	res := map[string][]*GuildDirection{}
+	feed := gmfFeed() // WP5: nil unless guild_market_feed_on; the feed is information, the pick is the leader's own
+	order := make([]string, 0, len(ids))
 	for id := range ids {
+		order = append(order, id)
+	}
+	sort.Strings(order) // the herd penalty (guildmarketfeed.go) reads the guilds in the same order every round
+	for _, id := range order {
 		gstock.Lock()
 		gaps := append([]int(nil), gstock.gapIDs[id]...)
 		heal := false
@@ -470,7 +478,7 @@ func dutyAutopilotRound(snaps []*dutySnap, now time.Time) {
 			heal = true
 		}
 		gstock.Unlock()
-		res[id] = autopilotDirs(id, gaps, heal, byGuild[id], now)
+		res[id] = gmfApply(id, autopilotDirs(id, gaps, heal, byGuild[id], now), feed, now)
 	}
 	gduty.Lock()
 	for id, ds := range res {
@@ -529,9 +537,14 @@ func (b *Bot) dutyMaps(d *GuildDirection, now time.Time) (maps []string, mob str
 	case dirWealth:
 		if d.ItemID > 0 {
 			farm([]int{d.ItemID}, false)
-		} else if g := b.MoneyFarmGoal(now); g != nil && len(g.Maps) > 0 {
-			// opportunity.go: the member's market opportunity (registered as a chaser, so bots spread over items)
-			maps, mob, items, item = g.Maps, g.Mob, []int{g.ItemID}, g.Item
+		}
+		// WP5: a feed pick this member cannot farm safely falls back to its own market opportunity (flag on only)
+		feedFallback := d.ItemID > 0 && d.SetBy == "autopilot" && tune().GuildMarketFeedOn
+		if len(maps) == 0 && (d.ItemID == 0 || feedFallback) {
+			if g := b.MoneyFarmGoal(now); g != nil && len(g.Maps) > 0 {
+				// opportunity.go: the member's market opportunity (registered as a chaser, so bots spread over items)
+				maps, mob, items, item = g.Maps, g.Mob, []int{g.ItemID}, g.Item
+			}
 		}
 	case dirCarry:
 		if d.Map != "" && b.soloMapOKFor(d.Map, true) {
@@ -1409,13 +1422,15 @@ func dutyDeliver(snaps []*dutySnap, now time.Time) {
 // ---------------------------------------------------------------- persistence
 
 type dutyFile struct {
-	Saved     time.Time                    `json:"saved"`
-	Dirs      map[string][]*GuildDirection `json:"directions"`
+	Saved time.Time                    `json:"saved"`
+	Dirs  map[string][]*GuildDirection `json:"directions"`
+	// market_directions (EC43) is retired (WP6): an old file's entries are read and dropped; nothing is written here.
 	Market    map[string][]*GuildDirection `json:"market_directions,omitempty"`
 	Members   []*dutyMember                `json:"members"`
 	Kicked    []*dutyKicked                `json:"kicked"`
 	Counters  map[string]int               `json:"counters"`
-	Dismissed map[string]time.Time         `json:"dismissed,omitempty"` // autopilot direction id -> off until
+	Dismissed map[string]time.Time         `json:"dismissed,omitempty"`  // autopilot direction id -> off until
+	FeedPicks map[string]gmfPick           `json:"feed_picks,omitempty"` // WP5: guild -> the market feed pick (hold 24 h)
 }
 
 func dutyFilePath() string { return filepath.Join(*dataDir, "guild_duty.json") }
@@ -1439,9 +1454,10 @@ func dutyLoad() {
 	for g, ds := range f.Dirs {
 		gduty.dirs[g] = ds
 	}
-	for g, ds := range f.Market {
-		gduty.market[g] = ds
+	for g, p := range f.FeedPicks {
+		gduty.gmf[g] = p
 	}
+	// f.Market (retired market directions) is not loaded: they are never in force again
 	for _, m := range f.Members {
 		if m.Block.active() {
 			m.Block.Ended, m.Block.EndWhy = time.Now(), "restart" // the goal (fgoal) did not survive the restart
@@ -1471,7 +1487,13 @@ func dutySave() {
 		gduty.Unlock()
 		return
 	}
-	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Market: gduty.market, Counters: gduty.counters, Dismissed: map[string]time.Time{}}
+	f := dutyFile{Saved: time.Now(), Dirs: gduty.dirs, Counters: gduty.counters, Dismissed: map[string]time.Time{}}
+	if len(gduty.gmf) > 0 {
+		f.FeedPicks = make(map[string]gmfPick, len(gduty.gmf))
+		for g, p := range gduty.gmf {
+			f.FeedPicks[g] = p
+		}
+	}
 	for id, until := range gduty.dismissed {
 		if time.Now().Before(until) {
 			f.Dismissed[id] = until
