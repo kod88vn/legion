@@ -723,6 +723,7 @@ func (b *Bot) handle(pk []byte) {
 				reportDeathLv(b.MapName, b.BaseLvOr()) // beginner.go: deaths per level band
 				noteDeathAt(b.MapName)                 // danger.go: real deaths in a 10-minute window
 				b.noteBossDeath(time.Now())            // bossnote.go: a boss killed us here: the spot is shared for 10 min
+				b.noteKiteDeath(now)                   // kite.go (market WP1): a death within a minute of a kiting step
 				b.deathLog = append(b.deathLog, mapVisit{m: b.MapName, at: time.Now()})
 				leaderNoteDeath(partyLeaderName(b), b.MapName) // party.go: 2 party deaths on a map keep the leader's parties off it 1 h
 				b.diedAt = time.Now()

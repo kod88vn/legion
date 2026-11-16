@@ -14,6 +14,10 @@ package main
 // hits from adjacent cells, which a plant can't deal).
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -81,6 +85,8 @@ func (b *Bot) kiteStep(e *Entity, moving bool, now time.Time) bool {
 	}
 	b.setState("kiting " + mobName(e.Class))
 	b.attackSentFor = 0 // re-send the attack / Double Strafe once we stand again
+	b.buffAt["kite:seen"] = now
+	noteKiteStep(b.charName())
 	go b.walkTo(x, y)
 	return true
 }
@@ -124,4 +130,127 @@ func (b *Bot) tankHolding(ms []*Entity, now time.Time) bool {
 		}
 	}
 	return false
+}
+
+// Kite counters (market engine WP1, design section 3.5): kite_steps and kite_deaths per bot, cumulative across deploys
+// like econ_counters.json (kite_counters[_core].json). A death counts as a kite death when the bot stepped back within
+// kiteDeathWindow before it died (bot.go vanish handler). Read by /api/economy as "kite".
+
+const kiteDeathWindow = 60 * time.Second
+
+type kiteSaved struct {
+	Since  time.Time        `json:"since"`
+	Saved  time.Time        `json:"saved"`
+	Steps  map[string]int64 `json:"steps"`
+	Deaths map[string]int64 `json:"deaths"`
+}
+
+var (
+	kiteMu     sync.Mutex
+	kiteSteps  = map[string]int64{}
+	kiteDeaths = map[string]int64{}
+	kiteSince  time.Time
+)
+
+func kiteCountersFile() string {
+	if coreInstance() {
+		return filepath.Join(*dataDir, "kite_counters_core.json")
+	}
+	return filepath.Join(*dataDir, "kite_counters.json")
+}
+
+// noteKiteStep counts one kiting step by this bot.
+func noteKiteStep(name string) {
+	kiteMu.Lock()
+	kiteSteps[name]++
+	kiteMu.Unlock()
+}
+
+// kiteDeathCounts: a death at now counts as a kite death when the last kite step was seen less than
+// kiteDeathWindow earlier (a zero seen time never counts).
+func kiteDeathCounts(seen, now time.Time) bool {
+	return !seen.IsZero() && now.Sub(seen) < kiteDeathWindow
+}
+
+// noteKiteDeath counts a kite death by this bot when kiteDeathCounts says so.
+func (b *Bot) noteKiteDeath(now time.Time) {
+	if !kiteDeathCounts(b.buffAt["kite:seen"], now) {
+		return
+	}
+	kiteMu.Lock()
+	kiteDeaths[b.charName()]++
+	kiteMu.Unlock()
+}
+
+// kiteCounters: totals and the per-bot counts for /api/economy.
+func kiteCounters() map[string]interface{} {
+	kiteMu.Lock()
+	defer kiteMu.Unlock()
+	var steps, deaths int64
+	by := map[string][2]int64{}
+	for k, v := range kiteSteps {
+		steps += v
+		e := by[k]
+		e[0] = v
+		by[k] = e
+	}
+	for k, v := range kiteDeaths {
+		deaths += v
+		e := by[k]
+		e[1] = v
+		by[k] = e
+	}
+	return map[string]interface{}{
+		"kite_steps":     steps,
+		"kite_deaths":    deaths,
+		"by_bot":         by, // name: [kite_steps, kite_deaths]
+		"counters_since": kiteSince,
+	}
+}
+
+// loadKiteCounters (start-up): add the last run's kite counters to this run's.
+func loadKiteCounters() {
+	kiteMu.Lock()
+	kiteSince = time.Now()
+	kiteMu.Unlock()
+	raw, err := os.ReadFile(kiteCountersFile())
+	if err != nil {
+		return
+	}
+	var s kiteSaved
+	if json.Unmarshal(raw, &s) != nil {
+		return
+	}
+	kiteMu.Lock()
+	defer kiteMu.Unlock()
+	if !s.Since.IsZero() {
+		kiteSince = s.Since
+	}
+	for k, v := range s.Steps {
+		kiteSteps[k] += v
+	}
+	for k, v := range s.Deaths {
+		kiteDeaths[k] += v
+	}
+}
+
+// saveKiteCounters writes the cumulative kite counters (atomic write, like saveEconCounters).
+func saveKiteCounters(now time.Time) {
+	kiteMu.Lock()
+	s := kiteSaved{Saved: now, Since: kiteSince, Steps: map[string]int64{}, Deaths: map[string]int64{}}
+	for k, v := range kiteSteps {
+		s.Steps[k] = v
+	}
+	for k, v := range kiteDeaths {
+		s.Deaths[k] = v
+	}
+	kiteMu.Unlock()
+	raw, err := json.Marshal(s)
+	if err != nil {
+		return
+	}
+	tmp := kiteCountersFile() + ".tmp"
+	if os.WriteFile(tmp, raw, 0o644) == nil {
+		os.Rename(tmp, kiteCountersFile())
+	}
 }
