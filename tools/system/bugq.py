@@ -7,6 +7,10 @@ assigned_to, note, woke, last_t, wake (urgent: wakes the main session; set by se
 party and stuck bots).
 The file is append-only so several writers never clash (package P's legionctl appends the same way): a later line
 with the same id is an UPDATE and merges over the earlier ones; the newest value of each field wins.
+A new item needs its OWN unique key (or none): add() dedupes on the key, so a key shared by several batches bumps
+one old item instead of filing the new one (2026-11-15: 'followups-batch-2' did that and overwrote an item's fields).
+add() returns a TUPLE (id, is_new): unpack it (i, new = bugq.add(...)) and pass only the string id to update(),
+close() and assign(); update(), close() and assign() refuse any other type with a TypeError.
 
 Rank: outage first, then Neo requests (Ayla's direct line), then the owner's, then estimated impact on the two metrics
 (kills per minute, zeny per hour) x bots affected x a small repeat bonus.
@@ -133,8 +137,25 @@ def new_id():
     return "b%d%s" % (int(C.now()), "".join(random.choice("0123456789abcdefghijklmnopqrstuvwxyz") for _ in range(3)))
 
 
+def check_id(i):
+    """the id must be one plain non-empty string. add() returns (id, is_new), so a caller that passes that tuple (or a
+    list) would write a malformed line that crashes load() for everyone."""
+    if isinstance(i, (tuple, list, dict, set)):
+        raise TypeError("bugq id must be a string, got %s: add() returns (id, is_new), unpack it and pass the id"
+                        % type(i).__name__)
+    if not isinstance(i, str):
+        raise TypeError("bugq id must be a string, got %s" % type(i).__name__)
+    if not i.strip():
+        raise ValueError("bugq id must not be empty")
+    return i
+
+
 def update(i, **fields):
-    C.append_jsonl(qpath(), dict(id=i, **fields))
+    C.append_jsonl(qpath(), dict(id=check_id(i), **fields))
+
+
+def assign(i, to):
+    update(i, status="assigned", assigned_to=to)
 
 
 WAKE_FILE = "bugq.wake"
@@ -426,7 +447,7 @@ def main(argv=None):
         close(a.id, a.note)
         print("closed", a.id)
     elif a.cmd == "assign":
-        update(a.id, status="assigned", assigned_to=a.to)
+        assign(a.id, a.to)
         print("assigned", a.id, "->", a.to)
     elif a.cmd == "dedupe":
         print("merged %d duplicates" % dedupe_all())
