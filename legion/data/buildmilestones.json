@@ -10022,7 +10022,7 @@
       {
        "id": 19,
        "name": "Fire Bolt",
-       "lv": 5
+       "lv": 10
       },
       {
        "id": 17,
@@ -10047,11 +10047,6 @@
       {
        "id": 18,
        "name": "Fire Wall",
-       "lv": 5
-      },
-      {
-       "id": 11,
-       "name": "Napalm Beat",
        "lv": 1
       }
      ],
@@ -11407,7 +11402,7 @@
       {
        "id": 20,
        "name": "Lightning Bolt",
-       "lv": 10
+       "lv": 4
       },
       {
        "id": 21,
@@ -11430,6 +11425,11 @@
        "lv": 1
       },
       {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 6
+      },
+      {
        "id": 15,
        "name": "Frost Diver",
        "lv": 1
@@ -11440,11 +11440,6 @@
        "lv": 1
       },
       {
-       "id": 14,
-       "name": "Cold Bolt",
-       "lv": 10
-      },
-      {
        "id": 84,
        "name": "Jupitel Thunder",
        "lv": 5
@@ -11452,6 +11447,11 @@
       {
        "id": 89,
        "name": "Storm Gust",
+       "lv": 10
+      },
+      {
+       "id": 85,
+       "name": "Lord of Vermilion",
        "lv": 10
       }
      ],
@@ -12875,14 +12875,14 @@
      "stats": {
       "STR": 1,
       "AGI": 1,
-      "VIT": 60,
+      "VIT": 65,
       "INT": 99,
       "DEX": 70,
       "LUK": 1
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1233,
-     "stat_points_spare": 40,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
      "skills": [
       {
        "id": 19,
@@ -12897,7 +12897,7 @@
       {
        "id": 20,
        "name": "Lightning Bolt",
-       "lv": 10
+       "lv": 4
       },
       {
        "id": 21,
@@ -12920,6 +12920,11 @@
        "lv": 1
       },
       {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 6
+      },
+      {
        "id": 15,
        "name": "Frost Diver",
        "lv": 1
@@ -12930,18 +12935,18 @@
        "lv": 1
       },
       {
-       "id": 14,
-       "name": "Cold Bolt",
-       "lv": 10
-      },
-      {
        "id": 84,
        "name": "Jupitel Thunder",
-       "lv": 5
+       "lv": 9
       },
       {
        "id": 89,
        "name": "Storm Gust",
+       "lv": 10
+      },
+      {
+       "id": 85,
+       "name": "Lord of Vermilion",
        "lv": 10
       },
       {
@@ -12955,11 +12960,6 @@
        "lv": 5
       },
       {
-       "id": 85,
-       "name": "Lord of Vermilion",
-       "lv": 10
-      },
-      {
        "id": 81,
        "name": "Sightrasher",
        "lv": 2
@@ -12967,7 +12967,7 @@
       {
        "id": 83,
        "name": "Meteor Storm",
-       "lv": 4
+       "lv": 10
       }
      ],
      "skill_points_unspent": 0,
@@ -14468,17 +14468,17 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1233,
+    "stat_points_goals_cost": 1272,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 1,
      "AGI": 1,
-     "VIT": 60,
+     "VIT": 65,
      "INT": 99,
      "DEX": 70,
      "LUK": 1
     },
-    "stat_points_spare_at_99": 40,
+    "stat_points_spare_at_99": 1,
     "stat_goals_unreached": [],
     "skill_points_listed": 88,
     "skill_points_reachable": 88,
@@ -122247,13 +122247,18 @@
        "lv": 10
       },
       {
-       "id": 18,
-       "name": "Fire Wall",
-       "lv": 5
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 4
       },
       {
        "id": 10,
        "name": "Sight",
+       "lv": 1
+      },
+      {
+       "id": 18,
+       "name": "Fire Wall",
        "lv": 1
       }
      ],
@@ -123607,9 +123612,9 @@
        "lv": 10
       },
       {
-       "id": 18,
-       "name": "Fire Wall",
-       "lv": 10
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 4
       },
       {
        "id": 10,
@@ -123617,14 +123622,19 @@
        "lv": 1
       },
       {
-       "id": 21,
-       "name": "Thunderstorm",
-       "lv": 2
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
       },
       {
-       "id": 20,
-       "name": "Lightning Bolt",
-       "lv": 4
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 1
+      },
+      {
+       "id": 11,
+       "name": "Napalm Beat",
+       "lv": 1
       },
       {
        "id": 16,
@@ -123632,8 +123642,13 @@
        "lv": 1
       },
       {
-       "id": 11,
-       "name": "Napalm Beat",
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 5
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
        "lv": 1
       },
       {
@@ -123649,12 +123664,12 @@
       {
        "id": 84,
        "name": "Jupitel Thunder",
-       "lv": 5
+       "lv": 3
       },
       {
-       "id": 85,
-       "name": "Lord of Vermilion",
-       "lv": 8
+       "id": 89,
+       "name": "Storm Gust",
+       "lv": 10
       }
      ],
      "skill_points_unspent": 0,
@@ -125077,14 +125092,14 @@
      "stats": {
       "STR": 1,
       "AGI": 1,
-      "VIT": 60,
+      "VIT": 65,
       "INT": 99,
       "DEX": 70,
       "LUK": 1
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1233,
-     "stat_points_spare": 40,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
      "skills": [
       {
        "id": 19,
@@ -125097,9 +125112,9 @@
        "lv": 10
       },
       {
-       "id": 18,
-       "name": "Fire Wall",
-       "lv": 10
+       "id": 20,
+       "name": "Lightning Bolt",
+       "lv": 4
       },
       {
        "id": 10,
@@ -125107,18 +125122,13 @@
        "lv": 1
       },
       {
+       "id": 18,
+       "name": "Fire Wall",
+       "lv": 5
+      },
+      {
        "id": 21,
        "name": "Thunderstorm",
-       "lv": 2
-      },
-      {
-       "id": 20,
-       "name": "Lightning Bolt",
-       "lv": 4
-      },
-      {
-       "id": 16,
-       "name": "Stone Curse",
        "lv": 1
       },
       {
@@ -125127,9 +125137,24 @@
        "lv": 1
       },
       {
+       "id": 16,
+       "name": "Stone Curse",
+       "lv": 1
+      },
+      {
+       "id": 14,
+       "name": "Cold Bolt",
+       "lv": 5
+      },
+      {
+       "id": 15,
+       "name": "Frost Diver",
+       "lv": 1
+      },
+      {
        "id": 81,
        "name": "Sightrasher",
-       "lv": 10
+       "lv": 2
       },
       {
        "id": 83,
@@ -125139,6 +125164,11 @@
       {
        "id": 84,
        "name": "Jupitel Thunder",
+       "lv": 9
+      },
+      {
+       "id": 89,
+       "name": "Storm Gust",
        "lv": 10
       },
       {
@@ -125149,7 +125179,7 @@
       {
        "id": 90,
        "name": "Earth Spike",
-       "lv": 4
+       "lv": 3
       },
       {
        "id": 91,
@@ -126655,17 +126685,17 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1233,
+    "stat_points_goals_cost": 1272,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 1,
      "AGI": 1,
-     "VIT": 60,
+     "VIT": 65,
      "INT": 99,
      "DEX": 70,
      "LUK": 1
     },
-    "stat_points_spare_at_99": 40,
+    "stat_points_spare_at_99": 1,
     "stat_goals_unreached": [],
     "skill_points_listed": 88,
     "skill_points_reachable": 88,
@@ -126714,27 +126744,22 @@
       {
        "id": 14,
        "name": "Cold Bolt",
-       "lv": 10
+       "lv": 5
       },
       {
        "id": 15,
        "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 19,
+       "name": "Fire Bolt",
        "lv": 10
       },
       {
        "id": 20,
        "name": "Lightning Bolt",
-       "lv": 4
-      },
-      {
-       "id": 11,
-       "name": "Napalm Beat",
-       "lv": 1
-      },
-      {
-       "id": 16,
-       "name": "Stone Curse",
-       "lv": 1
+       "lv": 10
       }
      ],
      "skill_points_unspent": 0,
@@ -128079,11 +128104,16 @@
       {
        "id": 14,
        "name": "Cold Bolt",
-       "lv": 10
+       "lv": 5
       },
       {
        "id": 15,
        "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 19,
+       "name": "Fire Bolt",
        "lv": 10
       },
       {
@@ -128092,9 +128122,14 @@
        "lv": 10
       },
       {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 10
+      },
+      {
        "id": 11,
        "name": "Napalm Beat",
-       "lv": 2
+       "lv": 1
       },
       {
        "id": 16,
@@ -128102,13 +128137,8 @@
        "lv": 1
       },
       {
-       "id": 21,
-       "name": "Thunderstorm",
-       "lv": 5
-      },
-      {
-       "id": 19,
-       "name": "Fire Bolt",
+       "id": 17,
+       "name": "Fire Ball",
        "lv": 1
       },
       {
@@ -129547,23 +129577,28 @@
      "stats": {
       "STR": 1,
       "AGI": 1,
-      "VIT": 60,
+      "VIT": 65,
       "INT": 99,
       "DEX": 70,
       "LUK": 1
      },
      "stat_points_available": 1273,
-     "stat_points_used": 1233,
-     "stat_points_spare": 40,
+     "stat_points_used": 1272,
+     "stat_points_spare": 1,
      "skills": [
       {
        "id": 14,
        "name": "Cold Bolt",
-       "lv": 10
+       "lv": 5
       },
       {
        "id": 15,
        "name": "Frost Diver",
+       "lv": 1
+      },
+      {
+       "id": 19,
+       "name": "Fire Bolt",
        "lv": 10
       },
       {
@@ -129572,9 +129607,14 @@
        "lv": 10
       },
       {
+       "id": 21,
+       "name": "Thunderstorm",
+       "lv": 10
+      },
+      {
        "id": 11,
        "name": "Napalm Beat",
-       "lv": 2
+       "lv": 1
       },
       {
        "id": 16,
@@ -129582,14 +129622,9 @@
        "lv": 1
       },
       {
-       "id": 21,
-       "name": "Thunderstorm",
-       "lv": 5
-      },
-      {
-       "id": 19,
-       "name": "Fire Bolt",
-       "lv": 1
+       "id": 17,
+       "name": "Fire Ball",
+       "lv": 10
       },
       {
        "id": 84,
@@ -129607,19 +129642,14 @@
        "lv": 10
       },
       {
-       "id": 91,
-       "name": "Heaven's Drive",
+       "id": 90,
+       "name": "Earth Spike",
        "lv": 5
       },
       {
-       "id": 90,
-       "name": "Earth Spike",
-       "lv": 4
-      },
-      {
-       "id": 87,
-       "name": "Ice Wall",
-       "lv": 10
+       "id": 91,
+       "name": "Heaven's Drive",
+       "lv": 5
       }
      ],
      "skill_points_unspent": 0,
@@ -131120,17 +131150,17 @@
     }
    ],
    "plan_check": {
-    "stat_points_goals_cost": 1233,
+    "stat_points_goals_cost": 1272,
     "stat_points_at_99": 1273,
     "stats_at_99": {
      "STR": 1,
      "AGI": 1,
-     "VIT": 60,
+     "VIT": 65,
      "INT": 99,
      "DEX": 70,
      "LUK": 1
     },
-    "stat_points_spare_at_99": 40,
+    "stat_points_spare_at_99": 1,
     "stat_goals_unreached": [],
     "skill_points_listed": 88,
     "skill_points_reachable": 88,

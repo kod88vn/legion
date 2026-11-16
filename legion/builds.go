@@ -105,17 +105,17 @@ var builds = map[string]*Build{
 		Weapons: []int{1201, 1104, 1107, 1110, 1113, 1126, 1119, 1129}, Armors: armorHeavy, Extras: append(append([]int{}, extrasMelee...), shields...),
 		Summary: "VIT/STR shield crusader: Holy Cross and Auto Guard, end goal Crusader"},
 	"wizard": {ID: "wizard", Name: "INT/DEX Wizard", Class: 9, First: 2, Branch: 0,
-		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 60),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 65),
 		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
 		// run 6: Storm Gust 10 right after Jupitel 3 (trace 13:15: lv56-62 Wizards had Earth Spike / Heaven's Drive and
 		// no Storm Gust, the Renewal Wizard's farming spell); Earth Spike / Heaven's Drive follow.
-		// AoE build (owner 2026-11-14: "mage/wiz build should focus on AOE spells"). Mage: Fire Bolt 10 / Cold Bolt 10 /
-		// Lightning Bolt 10 (Lightning Bolt 4 for Thunder Storm), Fire Ball 5, Fire Wall 5 (kiting), Thunder Storm 5, Sight 1,
-		// Napalm Beat / Frost Diver / Stone Curse 1 (Wizard prerequisites). Wizard: Jupitel 5, Storm Gust 10, Lord of
-		// Vermilion 10, Earth Spike 3, Heaven's Drive 5, Sightrasher 2, Meteor Storm 4. Rebalance 2026-11-15: 88 skill points
-		// hold these only with Meteor Storm at 4; the bolts stay at 10 because Legacy Mages (bolts 10/10/10) keep their caps
-		// and are not wrong builds (tools/wrongbuilds.py accepts Legacy caps).
-		Skills:  sk(19, 5, 17, 5, 20, 4, 21, 5, 10, 1, 18, 5, 11, 1, 15, 1, 16, 1, 19, 10, 14, 10, 20, 10, 84, 5, 89, 10, 90, 3, 91, 5, 85, 10, 81, 2, 83, 4),
+		// AoE build (owner 2026-11-14: "mage/wiz build should focus on AOE spells"). Mage 39: Fire Bolt 10, Fire Ball 5,
+		// Lightning Bolt 4 (Thunder Storm's prerequisite), Thunder Storm 5, Sight 1, Fire Wall 5 (kiting), Napalm Beat 1,
+		// Cold Bolt 6, Frost Diver 1, Stone Curse 1. Wizard 49: Jupitel 9, Storm Gust 10, Lord of Vermilion 10, Earth Spike 3,
+		// Heaven's Drive 5, Sightrasher 2, Meteor Storm 10 (server skill_db: 7 meteors at lv10, cooldown 2+0.5*lv s).
+		// Quagmire is not cast by aoe.go, so its 3 points went to Jupitel (docs/reports/wizard-research-20261115.md).
+		// Legacy Mages keep their caps and are not wrong builds (tools/wrongbuilds.py takes the max of Skills and Legacy).
+		Skills:  sk(19, 10, 17, 5, 20, 4, 21, 5, 10, 1, 18, 5, 11, 1, 14, 6, 15, 1, 16, 1, 84, 3, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 81, 2, 83, 10, 84, 9),
 		Legacy:  sk(19, 5, 20, 5, 17, 5, 21, 5, 10, 1, 18, 5, 14, 5, 15, 1, 11, 1, 16, 1, 84, 3, 89, 10, 90, 3, 91, 5, 84, 5, 85, 10, 81, 2, 83, 10, 92, 3, 21, 10, 19, 10, 20, 10, 17, 10, 14, 10, 84, 10, 18, 10, 19, 10, 14, 10, 20, 10, 11, 1, 15, 1, 16, 1, 10, 1, 17, 5, 84, 10, 89, 10, 90, 3, 91, 3, 21, 1, 85, 10, 18, 5, 81, 2, 83, 5),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX AoE wizard: Fire Ball, Thunder Storm and Fire Wall as a Mage, then Storm Gust, Lord of Vermilion, Meteor Storm and Heaven's Drive on grouped monsters; end goal Wizard"},
@@ -340,20 +340,22 @@ var builds = map[string]*Build{
 		Weapons: []int{1201, 1401, 1404, 1407, 1451, 1454}, Armors: armorHeavy, Extras: extrasMelee,
 		Summary: "STR/VIT spear crusader on a Grand Peco: Spear Quicken and Holy Cross with a two-handed spear; end goal Crusader"},
 	"wizard_fire": {ID: "wizard_fire", Base: "wizard", Name: "INT/DEX Fire Wizard", Class: 9, First: 2, Branch: 0,
-		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 60),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 65),
 		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 45, stINT, 99, stDEX, 85, stVIT, 55),
-		// fire AoE: Fire Bolt / Fire Ball / Fire Wall as a Mage (Thunderstorm 1 for Meteor Storm), then Sightrasher 2 ->
-		// Meteor Storm 10, Heaven's Drive for fire-resistant crowds, Lord of Vermilion later (aoe.go picks the element)
-		Skills:  sk(19, 10, 17, 10, 18, 5, 10, 1, 21, 1, 20, 4, 16, 1, 11, 1, 81, 2, 83, 10, 84, 5, 85, 10, 90, 3, 91, 5, 18, 6, 18, 7, 18, 8, 18, 9, 18, 10, 21, 2, 81, 3, 81, 4, 81, 5, 81, 6, 81, 7, 81, 8, 81, 9, 81, 10, 84, 6, 84, 7, 84, 8, 84, 9, 84, 10, 90, 4),
+		// fire AoE: Fire Bolt / Fire Ball / Fire Wall as a Mage (Thunder Storm 1 for Lord of Vermilion and Meteor Storm, Frost
+		// Diver 1 for Storm Gust), then Sightrasher 2 -> Meteor Storm 10 first, Storm Gust 10, Lord of Vermilion 10
+		// (aoe.go picks the element). Rebalance 2026-11-15: the 88 points are all named; Quagmire is left out (not cast).
+		Skills:  sk(19, 10, 17, 10, 20, 4, 10, 1, 18, 5, 21, 1, 11, 1, 16, 1, 14, 5, 15, 1, 81, 2, 83, 10, 84, 3, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 84, 9),
 		Legacy:  sk(19, 10, 17, 5, 10, 1, 18, 5, 20, 4, 21, 1, 17, 10, 11, 1, 16, 1, 18, 10, 14, 1, 81, 2, 83, 5, 90, 3, 91, 5, 83, 10, 92, 3, 84, 5, 85, 10, 21, 10, 20, 10, 14, 6),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX fire wizard: Fire Ball, Fire Wall and Meteor Storm on groups, Heaven's Drive vs fire monsters; end goal Wizard"},
 	"wizard_frost": {ID: "wizard_frost", Base: "wizard", Name: "INT/DEX Frost Wizard", Class: 9, First: 2, Branch: 0,
-		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 60),
+		Stats:       st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 70, stVIT, 65),
 		LegacyStats: st(stINT, 20, stDEX, 15, stVIT, 10, stINT, 40, stDEX, 30, stVIT, 20, stINT, 60, stDEX, 50, stVIT, 35, stINT, 80, stDEX, 65, stVIT, 50, stINT, 99, stDEX, 80, stVIT, 60),
-		// water AoE: Cold Bolt / Frost Diver / Thunderstorm as a Mage, then Jupitel 3 -> Storm Gust 10 (freezes the crowd),
-		// Lord of Vermilion, Heaven's Drive / Quagmire
-		Skills:  sk(14, 10, 15, 10, 20, 4, 11, 1, 16, 1, 21, 5, 19, 1, 84, 5, 89, 10, 85, 10, 91, 5, 84, 10, 90, 3, 87, 10, 20, 5, 20, 6, 20, 7, 20, 8, 20, 9, 20, 10, 11, 2, 90, 4),
+		// water AoE: Cold Bolt 5 and Frost Diver 1 (the Storm Gust prerequisite; no Ice Wall, nothing casts it), Lightning
+		// Bolt / Fire Bolt 10 and Thunder Storm 10 as a Mage; then Jupitel 3 -> Storm Gust 10 (freezes the crowd), Jupitel 10,
+		// Lord of Vermilion 10, Earth Spike 5, Heaven's Drive 5; the last 9 points go to Fire Ball (aoe.go casts it). 88 points.
+		Skills:  sk(14, 5, 15, 1, 19, 10, 20, 10, 21, 10, 11, 1, 16, 1, 17, 1, 84, 3, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 84, 10, 90, 5, 17, 10),
 		Legacy:  sk(14, 10, 15, 5, 16, 1, 11, 1, 20, 4, 21, 5, 10, 1, 19, 1, 15, 10, 21, 10, 20, 5, 84, 3, 89, 5, 87, 1, 89, 10, 84, 5, 85, 10, 90, 3, 91, 5, 92, 5, 84, 10, 19, 8),
 		Weapons: []int{1601, 1604, 1607, 1610}, Armors: armorRobe, Extras: extrasCast,
 		Summary: "INT/DEX frost wizard: Storm Gust freezes the crowd, Lord of Vermilion and Cold Bolt; end goal Wizard"},
