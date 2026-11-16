@@ -17,6 +17,8 @@ time budget, stuck share, deaths per bot-hour, API latency), Ayla online, Ayla's
 rate (the watch-client checks are retired: AY17, no watch client); farming time: farming share of bot states (>= 85%), town trips per bot (<= 1 per
 45 min) and unnecessary town trips (bag < 70% weight and slots with potions in stock) - main legion + legion-core.
 Usage: python3 /mnt/g/RO/legion/tools/sentinel.py [--once] [--mute KEY[,KEY...]] [--mute-until HH:MM]
+  --algo: run the rule-based sentinel instead (tools/system/sentinel_algo.py: no LLM, bounded restarts, report in
+  legion/data/sentinel_report.jsonl). [--once] works with it too.
   --mute: problem keys (e.g. bad_trips,deaths,party) already handed to a fixer. They are still measured and logged
   (health.log lists them under "muted") but do not cause an exit until the mute expires.
   --mute-until: local time the mute ends (default: 60 min after start).
@@ -489,6 +491,10 @@ def main():
             return
         time.sleep(60)
 
+
+if __name__ == '__main__' and '--algo' in sys.argv:
+    import sentinel_algo
+    sys.exit(sentinel_algo.main())
 
 if __name__ == '__main__':
     main()
