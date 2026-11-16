@@ -128,14 +128,14 @@ func TestWizardPlanAoE(t *testing.T) {
 			t.Fatalf("skill %d not in the tree", g.ID)
 		}
 	}
-	// a new Mage at job 50 (49 points): Fire Ball, Thunder Storm, Fire Wall learned; every point spent
-	m := simPlan(p.Skills, mageOnly, 49)
+	// a new Mage at job 40 (39 points, all of them Mage skills): Fire Ball, Thunder Storm, Fire Wall learned
+	m := simPlan(p.Skills, mageOnly, 39)
 	sum := 0
 	for _, v := range m {
 		sum += v
 	}
-	if sum != 49 || m[mgFireBall] < 5 || m[mgThunder] < 5 || m[mgFireWall] < 5 {
-		t.Fatalf("mage at job 50: %v (%d pts)", m, sum)
+	if sum != 39 || m[mgFireBall] < 5 || m[mgThunder] < 5 || m[mgFireWall] < 5 {
+		t.Fatalf("mage at job 40: %v (%d pts)", m, sum)
 	}
 	// a Mage gets its first area spell early (by 20 points)
 	if m20 := simPlan(p.Skills, mageOnly, 20); m20[mgFireBall] == 0 && m20[mgThunder] == 0 {
@@ -273,5 +273,26 @@ func TestAoEPartyFriendWithoutHP(t *testing.T) {
 	f := a.partyFriend()
 	if !f(10) || !f(20) || f(30) || f(0) {
 		t.Fatalf("partyFriend: self/member must be friends, strangers not")
+	}
+}
+
+// TestMeteorCooldownIsTheServersPerLevel: skill_db (live server, db/re/skill_db.yml, WZ_METEOR Cooldown) is 2000+500*lv ms
+// (2500 at lv1, 7000 at lv10). The bot's own timer must not expire before the server's, or the server refuses the cast.
+func TestMeteorCooldownIsTheServersPerLevel(t *testing.T) {
+	server := []int{2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000}
+	var meteor *aoeSpell
+	for i := range aoeSpells {
+		if aoeSpells[i].id == wzMeteor {
+			meteor = &aoeSpells[i]
+		}
+	}
+	if meteor == nil {
+		t.Fatal("Meteor Storm is not an area spell")
+	}
+	for lv := 1; lv <= 10; lv++ {
+		got := meteor.cooldown(lv)
+		if got < server[lv-1] || got > server[lv-1]+1000 {
+			t.Fatalf("Meteor Storm lv%d cooldown %d ms, server %d ms", lv, got, server[lv-1])
+		}
 	}
 }

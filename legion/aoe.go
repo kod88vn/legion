@@ -23,8 +23,9 @@ type aoeSpell struct {
 	ground bool // UseSkillToPos; false = cast on the monster at the centre (Fire Ball's splash)
 	radius int  // cells around the centre that are hit (Chebyshev)
 	castMs func(lv int) int
-	cdMs   int    // own cooldown (skill_db Cooldown / Duration), so the server never refuses it (bot.go 0x0110 -> 60 s off)
-	elem   string // the spell's element (a crowd that resists it gets the next spell)
+	cdMs   int              // own cooldown (skill_db Cooldown / Duration), so the server never refuses it (bot.go 0x0110 -> 60 s off)
+	cdLv   func(lv int) int // per-level cooldown when it differs by level (Meteor Storm); nil = cdMs
+	elem   string           // the spell's element (a crowd that resists it gets the next spell)
 }
 
 const (
@@ -44,10 +45,18 @@ const (
 var aoeSpells = []aoeSpell{ // best first
 	{id: wzStormGust, ground: true, radius: 4, castMs: func(lv int) int { return (4300+200*lv)*7/10 + 1500 + 1000 }, cdMs: 6500, elem: "Water"},
 	{id: wzVermilion, ground: true, radius: 5, castMs: func(lv int) int { return (6500-200*lv)*7/10 + 1500 + 1000 }, cdMs: 5500, elem: "Wind"},
-	{id: wzMeteor, ground: true, radius: 3, castMs: func(lv int) int { return 6300*7/10 + 1500 + 1000 }, cdMs: 2000, elem: "Fire"},
+	{id: wzMeteor, ground: true, radius: 3, castMs: func(lv int) int { return 6300*7/10 + 1500 + 1000 }, cdLv: func(lv int) int { return 2500 + 500*lv }, elem: "Fire"}, // skill_db Cooldown 2000+500*lv ms, +500 margin as Storm Gust / Vermilion
 	{id: mgThunder, ground: true, radius: 2, castMs: func(lv int) int { return (2500+200*lv)*7/10 + 1500 + 2000 }, elem: "Wind"},
 	{id: wzHeavenDrv, ground: true, radius: 2, castMs: func(lv int) int { return (900+200*lv)*7/10 + 800 + 500 }, cdMs: 1000, elem: "Earth"},
 	{id: mgFireBall, radius: 2, castMs: func(lv int) int { return 800*7/10 + 200 + 700 }, elem: "Fire"},
+}
+
+// cooldown: the own cooldown of spell s at level lv (ms).
+func (s aoeSpell) cooldown(lv int) int {
+	if s.cdLv != nil {
+		return s.cdLv(lv)
+	}
+	return s.cdMs
 }
 
 // elemOrder: the elements of rAthena's db/re/attr_fix.yml (rows: attacker's weapon element, columns: defender's)
@@ -326,7 +335,7 @@ func (b *Bot) aoeCast(e *Entity, now time.Time) bool {
 		l, _ := lv(s.id)
 		ms := s.castMs(l)
 		b.skillReady = now.Add(time.Duration(ms+b.P.ReactionMs/2) * time.Millisecond)
-		b.buffAt[cdKey(s.id)] = now.Add(time.Duration(max(ms, s.cdMs)) * time.Millisecond)
+		b.buffAt[cdKey(s.id)] = now.Add(time.Duration(max(ms, s.cooldown(l))) * time.Millisecond)
 		b.targetAt, b.attackSentFor = now, 0
 		b.setState("casting " + skillName(s.id) + " on a group")
 		b.aoeCastUntil = now.Add(time.Duration(ms) * time.Millisecond)

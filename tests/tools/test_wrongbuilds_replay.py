@@ -19,6 +19,9 @@ OLD_PLANS, OLD_VENDOR_FIRST = wb.parse_plans(open(FIXTURE, encoding="utf8").read
 # builds.go on main before the 2026-11-15 realism branch (commit b35448b): the plans live characters follow today
 MAIN_FIXTURE = os.path.join(HERE, "fixtures", "builds_main_b35448b.go")
 MAIN_PLANS, _ = wb.parse_plans(open(MAIN_FIXTURE, encoding="utf8").read())
+# builds.go on main at 24e5838 (before the 2026-11-15 wizard plans: Meteor Storm 10, Storm Gust / Vermilion in wizard_fire)
+MAIN_24E_FIXTURE = os.path.join(HERE, "fixtures", "builds_main_24e5838.go")
+MAIN_24E_PLANS, _ = wb.parse_plans(open(MAIN_24E_FIXTURE, encoding="utf8").read())
 
 
 def replay(test, old_plans):
@@ -58,6 +61,11 @@ class WrongBuildsReplayTest(unittest.TestCase):
         # the plans live characters follow on main today (wizard_fire / wizard_frost need their Legacy caps)
         self.assertEqual(len(MAIN_PLANS), 37)
         self.assertGreater(replay(self, MAIN_PLANS), 0)
+
+    def test_every_plan_on_main_at_24e5838_is_still_valid(self):
+        # the wizard plans before the 2026-11-15 wizard rebalance: every character that followed them stays valid
+        self.assertEqual(len(MAIN_24E_PLANS), 37)
+        self.assertGreater(replay(self, MAIN_24E_PLANS), 0)
 
 
 if __name__ == "__main__":
