@@ -1,0 +1,182 @@
+diff --git a/legion/marketfixtures_test.go b/legion/marketfixtures_test.go
+new file mode 100644
+index 0000000..1aaaa70
+--- /dev/null
++++ b/legion/marketfixtures_test.go
+@@ -0,0 +1,176 @@
++package main
++
++// DB11 fixture shape test (proposed by the review of ea6b722). The Market tab's test fixtures in
++// tests/dashboard/fixtures are the REAL output of the encoders below (/api/market/engine, the metrics block,
++// /api/market/feed, kite_counters*.json, farmer_orders.json), so the page tests cannot drift from Go.
++//   UPDATE_DASH_FIXTURES=1 go test -run TestDashFixtures   rewrites those fixtures from the real handlers
++//   go test -run TestDashFixtures                          fails when a committed fixture's key paths or value types
++//                                                          differ from what the code encodes now
++// Fixture economies only (G23): a t.TempDir data dir. The orders fixture needs farmers.go (fix/farmer-orders).
++// DASH_FIXTURES overrides the folder (default ../tests/dashboard/fixtures); the test skips when it is not there
++// (gocheck.sh copies only legion/*.go, so run it from a checkout or extend gocheck to copy the fixtures).
++
++import (
++	"encoding/json"
++	"fmt"
++	"net/http"
++	"net/http/httptest"
++	"os"
++	"path/filepath"
++	"sort"
++	"strings"
++	"testing"
++)
++
++// dashShape: "path" -> type for every key; lists by their first row; null is a wildcard (nothing recorded); count maps
++// (reason -> n) collapse to one entry because their keys are data, not shape.
++func dashShape(v interface{}, p string, out map[string]string) {
++	switch x := v.(type) {
++	case map[string]interface{}:
++		switch p[strings.LastIndex(p, ".")+1:] {
++		case "by_item", "by_map", "declines", "declined", "supplied", "looted", "deaths", "steps", "by_bot":
++			out[p] = "map"
++			return
++		}
++		out[p] = "object"
++		for k, e := range x {
++			dashShape(e, p+"."+k, out)
++		}
++	case []interface{}:
++		out[p] = "list"
++		if len(x) > 0 {
++			dashShape(x[0], p+"[]", out)
++		} else {
++			out[p+"[]"] = "empty" // the sample has no row: the fixture may show one
++		}
++	case nil:
++		out[p] = "null" // nothing recorded in the sample: the fixture may show a value
++	case float64:
++		out[p] = "number"
++	case string:
++		out[p] = "string"
++	case bool:
++		out[p] = "bool"
++	}
++}
++
++// dashBlind: the sample had an empty list or a null above k, so it cannot say what is under it.
++func dashBlind(ra map[string]string, k string) bool {
++	for p := range ra {
++		if (ra[p] == "empty" || ra[p] == "null") && strings.HasPrefix(k, strings.TrimSuffix(p, "[]")) {
++			return true
++		}
++	}
++	return false
++}
++
++func dashDiff(name string, real, committed []byte) []string {
++	var a, b interface{}
++	json.Unmarshal(real, &a)
++	if err := json.Unmarshal(committed, &b); err != nil {
++		return []string{name + ": committed fixture unreadable: " + err.Error()}
++	}
++	ra, rb := map[string]string{}, map[string]string{}
++	dashShape(a, name, ra)
++	dashShape(b, name, rb)
++	var bad []string
++	for k, ty := range ra {
++		if ty == "empty" || ty == "null" {
++			continue
++		}
++		if o, ok := rb[k]; !ok {
++			bad = append(bad, "missing from the fixture: "+k)
++		} else if o != ty && o != "null" && o != "empty" {
++			bad = append(bad, fmt.Sprintf("type of %s: code %s, fixture %s", k, ty, o))
++		}
++	}
++	for k := range rb {
++		if _, ok := ra[k]; !ok && !strings.HasSuffix(k, ".band") && !dashBlind(ra, k) { // band is omitempty: a sample may or may not carry it
++			bad = append(bad, "fixture-only (the code no longer encodes it): "+k)
++		}
++	}
++	sort.Strings(bad)
++	return bad
++}
++
++func dashGet(mux *http.ServeMux, path string) []byte {
++	rec := httptest.NewRecorder()
++	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
++	return rec.Body.Bytes()
++}
++
++func TestDashFixtures(t *testing.T) {
++	dir := os.Getenv("DASH_FIXTURES")
++	if dir == "" {
++		dir = filepath.Join("..", "tests", "dashboard", "fixtures")
++	}
++	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
++		t.Skip("fixture folder not found: " + dir)
++	}
++	data := withMMData(t)
++	prev := tune()
++	on := defaultTuning
++	on.MarketEngineOn = true
++	curTuning.Store(&on)
++	defer curTuning.Store(prev)
++	in := MESnapshot{Now: meNow, Items: []MEItem{
++		{ID: 4040, Name: "Creamy Card", Price: 90000, Demand: 4, Maps: meMaps("a", 2, 0.4, 10)},
++		{ID: 7, Name: "Red Potion", Price: 40, Demand: 30, Heal: true, Band: "18-32", Maps: meMaps("p", 2, 1, 10)}},
++		Farmers: meFarmers(4, 30)}
++	res := meEvaluate(in)
++	feed := meBuildFeed(res, in, MEFeedServer{Bots: 10, Online: 5, Bands: []MEBand{{Band: "18-32", Bots: 3}}}, nil, meFeedMissingWP2)
++	feed.ZenyPerHour = []MEFeedZeny{{Band: "18-32", N: 3, ZPHMean: 1200.5}}
++	meState.Lock()
++	meState.result, meState.feed, meState.runs, meState.last = &res, &feed, 3, meNow
++	meState.Unlock()
++	defer func() {
++		meState.Lock()
++		meState.result, meState.feed, meState.runs = nil, nil, 0
++		meState.Unlock()
++	}()
++	mmApplyRound(meNow, map[mmKey]int{{Band: "novice", Item: 501}: 3}, nil)
++	noteMMSupplied("novice", 501, 2)
++	noteMMFarmerOffer()
++	noteMMFarmerAccept()
++	noteMMFarmerDecline("unsafe map")
++	noteMMFarmerDeath()
++	noteKiteStep("bot1")
++	mux := http.NewServeMux()
++	registerMarketEngine(mux)
++	got := map[string][]byte{
++		"market_engine.json": dashGet(mux, "/api/market/engine"),
++		"market_feed.json":   dashGet(mux, "/api/market/feed"),
++	}
++	oldData, oldOnly := *dataDir, *onlyNames
++	*dataDir = data
++	defer func() { *dataDir, *onlyNames = oldData, oldOnly }()
++	saveKiteCounters(meNow)
++	got["kite_counters.json"], _ = os.ReadFile(kiteCountersFile())
++	*onlyNames = "core"
++	saveKiteCounters(meNow)
++	got["kite_counters_core.json"], _ = os.ReadFile(kiteCountersFile())
++	*onlyNames = oldOnly
++	// farmer_orders.json: add the writer once fix/farmer-orders is on main:
++	//   farmerMu.Lock(); farmerLoaded = true; farmerLive["lg0123"] = &farmerOrder{...}; saveFarmerLocked(meNow); farmerMu.Unlock()
++	//   got["farmer_orders.json"], _ = os.ReadFile(farmerFilePath())
++	for name, raw := range got {
++		path := filepath.Join(dir, name)
++		if os.Getenv("UPDATE_DASH_FIXTURES") == "1" {
++			var v interface{}
++			json.Unmarshal(raw, &v)
++			pretty, _ := json.MarshalIndent(v, "", "  ")
++			if err := os.WriteFile(path, append(pretty, '\n'), 0o644); err != nil {
++				t.Fatal(err)
++			}
++			continue
++		}
++		old, err := os.ReadFile(path)
++		if err != nil {
++			t.Errorf("%s: no committed fixture", name)
++			continue
++		}
++		if bad := dashDiff(name, raw, old); len(bad) > 0 {
++			t.Errorf("%s drifted (UPDATE_DASH_FIXTURES=1 regenerates it):\n  %s", name, strings.Join(bad, "\n  "))
++		}
++	}
++}
