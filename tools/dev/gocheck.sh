@@ -4,7 +4,8 @@
 #   --fast   gofmt + vet + build only (no tests)
 #   -run RE  passed to go test
 # Failures listed in baseline-failures.txt (next to this script; one test name per line, # comments)
-# are reported but do not fail the run. Exit 1 on vet/build failure or any non-baseline test failure.
+# are reported but do not fail the run. Exit 1 on vet/build failure, any non-baseline test failure, or when no test
+# ran at all (a -run pattern that matches nothing is a failure: nothing was checked).
 # Exit 2 when no route to WSL works or the Go toolchain is missing: that is never a pass (nothing was checked).
 #
 # Routes to WSL, first that exists: GOCHECK_WSL_EXE (only that one, for tests); `wsl` on PATH;
@@ -50,6 +51,8 @@ ARGS=""; [ -n "$WSL_RUN" ] && ARGS="-run $WSL_RUN"
 go test -count=1 -v $ARGS ./... >test.log 2>&1
 P=$(grep -c "^--- PASS" test.log); F=$(grep -c "^--- FAIL" test.log); S=$(grep -c "^--- SKIP" test.log)
 echo "tests: pass=$P fail=$F skip=$S"
+TOT=$(grep -cE "^--- (PASS|FAIL|SKIP)" test.log)
+if [ "$TOT" -eq 0 ]; then echo "tests: NO TESTS RAN (-run '$WSL_RUN' matched nothing, or the engine has no tests): nothing was checked"; rc=1; fi
 grep -E "^(FAIL|ok|panic:)|build failed|\[setup failed\]" test.log | head -10
 NEW=""; BL=""
 for t in $(grep "^--- FAIL" test.log | awk "{print \$3}"); do

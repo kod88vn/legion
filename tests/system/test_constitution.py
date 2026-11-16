@@ -225,6 +225,26 @@ class ConstcheckTests(unittest.TestCase):
         rep = self.claude_md("# Project\nRead `@legion/CONSTITUTION.md` first.\n\n@legion/RULES.md\n")
         self.assertTrue(any("no CLAUDE.md imports" in b for b in rep.bad), rep.bad)
 
+    def test_claude_md_checks_the_file_named_by_legion_constitution(self):
+        # the file the tools read (LEGION_CONSTITUTION) is the one CLAUDE.md must import first, not the repo's copy
+        root, repo, _const = self.tree("@alt/CONSTITUTION.md\n\n@legion/RULES.md\n")
+        alt = write(os.path.join(root, "alt", "CONSTITUTION.md"), CONST + "\n")
+        rep = constcheck.Report()
+        with mock.patch.dict(os.environ, {"LEGION_CONSTITUTION": alt}), \
+                mock.patch.object(os.path, "expanduser", side_effect=lambda p: p.replace("~", os.path.join(root, "home"))):
+            constcheck.check_claude_md(rep, root, repo)
+        self.assertEqual(rep.bad, [])
+        self.assertTrue(any("loaded once" in how for _t, _s, how in rep.rows), rep.rows)
+
+    def test_claude_md_fails_when_it_imports_another_constitution_than_the_one_read(self):
+        root, repo, _const = self.tree("@legion/CONSTITUTION.md\n\n@legion/RULES.md\n")
+        alt = write(os.path.join(root, "alt", "CONSTITUTION.md"), CONST + "\n")
+        rep = constcheck.Report()
+        with mock.patch.dict(os.environ, {"LEGION_CONSTITUTION": alt}), \
+                mock.patch.object(os.path, "expanduser", side_effect=lambda p: p.replace("~", os.path.join(root, "home"))):
+            constcheck.check_claude_md(rep, root, repo)
+        self.assertTrue(any("no CLAUDE.md imports" in b for b in rep.bad), rep.bad)
+
     def test_not_first_fails(self):
         rep = self.claude_md("# Project\n\n@legion/RULES.md\n\n@legion/CONSTITUTION.md\n")
         self.assertTrue(any("does not start with" in b for b in rep.bad), rep.bad)
@@ -294,6 +314,15 @@ class ConstcheckTests(unittest.TestCase):
     def test_missing_hooks_fail(self):
         self.assertEqual(len(self.hooks({"hooks": {"PreToolUse": [self.hook("mainguard.py")]}}).bad), 2)
         self.assertEqual(len(self.hooks({"hooks": {"SubagentStart": [self.hook("constitution.py", "subagent-start")]}}).bad), 2)
+
+    def test_registered_hook_whose_script_is_missing_fails(self):
+        # the hook is wired, but the script it names is not in the tree: the session would run nothing
+        gone = {"type": "command", "command": "python /nonexistent-dir/tools/system/mainguard.py"}
+        missing = {"hooks": {"SubagentStart": [self.hook("constitution.py", "subagent-start")],
+                             "PreToolUse": [{"hooks": [gone]}]}}
+        rep = self.hooks(missing)
+        self.assertEqual(len(rep.bad), 2, rep.bad)                       # once for each settings folder
+        self.assertTrue(all("hook script not found" in b and "mainguard.py" in b for b in rep.bad), rep.bad)
 
     def test_the_live_tree_passes(self):
         rep, _head = constcheck.run()

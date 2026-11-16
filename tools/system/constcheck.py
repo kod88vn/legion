@@ -185,8 +185,9 @@ def instruction_files(root_dir, repo):
 def check_claude_md(rep, root_dir=None, repo=None, const_path=None):
     repo = repo or REPO
     root_dir = root_dir or session_root(repo)
-    # the live session loads the constitution of the main checkout through CLAUDE.md, so that is the file to match
-    const_path = const_path or os.path.join(main_checkout(repo), "CONSTITUTION.md")
+    # the file to match is the one the tools read: LEGION_CONSTITUTION when set (as constitution.path() does), else the
+    # main checkout's CONSTITUTION.md, which is what the live session loads through CLAUDE.md
+    const_path = const_path or os.environ.get("LEGION_CONSTITUTION") or os.path.join(main_checkout(repo), "CONSTITUTION.md")
     ckey = os.path.normcase(os.path.normpath(const_path))
     root_md = os.path.join(root_dir, "CLAUDE.md")
     src = "main session (and every subagent that loads CLAUDE.md)"
