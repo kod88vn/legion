@@ -25,8 +25,9 @@ TOWNS = {  # town -> spawn cell (same as the seed's townSpawn for the beginner t
     'prontera': (156, 191), 'izlude': (128, 114), 'payon': (162, 233), 'geffen': (119, 59), 'alberta': (116, 57),
 }
 MERCH = ('blacksmith', 'alchemist')
-HUNTER_PLAN = ('hunter', 3, 0, 11)      # plan, legion_first, legion_branch, target class
-VENDOR_PLAN = ('blacksmith', 5, 0, 10)
+import charrows as CR  # the one seed-row builder (shared with addchars.py; same rows as persona.go seedSQL)
+HUNTER_PLAN = ('hunter',) + CR.plan_first_branch('hunter')      # plan, legion_first, legion_branch, target class
+VENDOR_PLAN = ('blacksmith',) + CR.plan_first_branch('blacksmith')
 
 
 def db(sql):
@@ -112,22 +113,8 @@ def main():
         town = p.get('home_town') or rng.choice(list(TOWNS))
         if town not in TOWNS:
             town = 'prontera'
-        tx, ty = TOWNS[town]
-        sex = p.get('sex', 'M')
-        esc = c['name'].replace("'", "''")
-        sql.append("INSERT INTO `char` (char_id,account_id,char_num,name,class,base_level,job_level,str,agi,vit,`int`,dex,luk,"
-                   "max_hp,hp,max_sp,sp,status_point,skill_point,hair,hair_color,clothes_color,zeny,weapon,last_map,last_x,"
-                   "last_y,save_map,save_x,save_y,sex,`option`) VALUES (%d,%d,%d,'%s',0,1,1,1,1,1,1,1,1,40,40,11,11,48,0,"
-                   "%d,%d,%d,%d,1201,'%s',%d,%d,'%s',%d,%d,'%s',0);" % (
-                       c['char_id'], p['account_id'], c['slot'], esc, 1 + rng.randrange(22), rng.randrange(9),
-                       rng.randrange(4), 1500 + rng.randrange(1500), town, tx, ty, town, tx, ty, sex))
-        i = c['char_id']
-        sql.append("INSERT INTO inventory (char_id,nameid,amount,equip,identify) VALUES (%d,1201,1,2,1),(%d,2301,1,16,1),"
-                   "(%d,569,%d,0,1),(%d,11500,%d,0,1),(%d,501,%d,0,1),(%d,601,%d,0,1),(%d,602,%d,0,1);" % (
-                       i, i, i, 120 + rng.randrange(60), i, 10 + rng.randrange(10), i, 10 + rng.randrange(10), i,
-                       5 + rng.randrange(5), i, 2 + rng.randrange(2)))
-        sql.append("INSERT INTO char_reg_num (char_id,`key`,`index`,value) VALUES (%d,'legion_first',0,%d),"
-                   "(%d,'legion_branch',0,%d);" % (i, first, i, branch))
+        sql += CR.seed_rows(c['char_id'], p['account_id'], c['slot'], c['name'], town, p.get('sex', 'M'), rng,
+                            first, branch)
         p.setdefault('characters', []).append(c)
     for k in range(0, len(sql), 300):
         db('\n'.join(sql[k:k + 300]) + '\n')

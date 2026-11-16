@@ -64,6 +64,20 @@ def load_dump(path):
     return rows
 
 
+def load_pinned(path):
+    """Human party members as a set of lower-case names. Accepts a JSON list of names, or the human-parties.json
+    shape (a list of {"members": [...]})."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    names = set()
+    for item in data:
+        if isinstance(item, str):
+            names.add(item.lower())
+        elif isinstance(item, dict):
+            names.update(m.lower() for m in item.get("members", []))
+    return names
+
+
 def in_bot_range(aid):
     return BOT_MIN <= aid <= BOT_MAX
 
@@ -221,7 +235,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Select phase-1 farmers (design section 2.1). Dry run unless --write.")
     ap.add_argument("--personas", default=None, help="personas.json (default: the data folder)")
     ap.add_argument("--dump", required=True, help="TSV dump of the char table (read-only copy)")
-    ap.add_argument("--pinned", default=None, help="JSON list of human party member names to exclude")
+    ap.add_argument("--pinned", required=True, help="JSON of human party members to exclude (required)")
     ap.add_argument("--target", type=int, default=PHASE1_TARGET)
     ap.add_argument("--out", default=None, help="farmers.json path (default: the data folder)")
     ap.add_argument("--write", action="store_true", help="write farmers.json (runtime file)")
@@ -229,11 +243,7 @@ def main(argv=None):
     personas_path = a.personas or _C.dpath("personas.json")
     personas = load_personas(personas_path)
     dump = load_dump(a.dump)
-    pinned = []
-    if a.pinned:
-        with open(a.pinned, encoding="utf-8") as f:
-            pinned = json.load(f)
-    sel = select(personas, dump, pinned, a.target)
+    sel = select(personas, dump, load_pinned(a.pinned), a.target)
     doc = build_doc(sel)
     errs = validate_farmers(doc)
     if errs:

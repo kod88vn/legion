@@ -134,12 +134,35 @@ class SchemaTests(unittest.TestCase):
         bad["vendor_adds"][0]["slot"] = 9
         self.assertTrue(any("slot" in e for e in F.validate_farmers(bad)))
         self.assertTrue(F.validate_farmers([]))
+        bad = self._doc()
+        bad["vendor_adds"][0]["account_id"] = 2099999
+        self.assertTrue(any("bot range" in e for e in F.validate_farmers(bad)))
 
     def test_committed_example_validates(self):
         path = os.path.join(REPO, "legion", "data", "farmers.example.json")
         with open(path, encoding="utf-8") as f:
             doc = json.load(f)
         self.assertEqual(F.validate_farmers(doc), [])
+
+
+class PinnedTests(unittest.TestCase):
+    def test_pinned_loader_accepts_names_or_party_shape(self):
+        d = tempfile.mkdtemp(prefix="pinned-")
+        try:
+            a = os.path.join(d, "a.json")
+            with open(a, "w", encoding="utf-8") as f:
+                json.dump(["Alpha", "Beta"], f)
+            b = os.path.join(d, "b.json")
+            with open(b, "w", encoding="utf-8") as f:
+                json.dump([{"members": ["Gamma"]}], f)
+            self.assertEqual(F.load_pinned(a), {"alpha", "beta"})
+            self.assertEqual(F.load_pinned(b), {"gamma"})
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_pinned_is_required(self):
+        with self.assertRaises(SystemExit):
+            F.main(["--dump", "x.tsv"])
 
 
 class CliTests(unittest.TestCase):
@@ -153,9 +176,12 @@ class CliTests(unittest.TestCase):
             with open(dump, "w", encoding="utf-8") as f:
                 f.write(HDR)
             out = os.path.join(d, "farmers.json")
-            self.assertEqual(F.main(["--personas", pp, "--dump", dump, "--out", out]), 0)
+            pin = os.path.join(d, "pinned.json")
+            with open(pin, "w", encoding="utf-8") as f:
+                json.dump([{"members": ["Pinned Hunter"]}], f)
+            self.assertEqual(F.main(["--personas", pp, "--dump", dump, "--out", out, "--pinned", pin]), 0)
             self.assertFalse(os.path.exists(out))
-            F.main(["--personas", pp, "--dump", dump, "--out", out, "--write"])
+            F.main(["--personas", pp, "--dump", dump, "--out", out, "--pinned", pin, "--write"])
             self.assertTrue(os.path.exists(out))
             with open(out, encoding="utf-8") as f:
                 self.assertEqual(F.validate_farmers(json.load(f)), [])
