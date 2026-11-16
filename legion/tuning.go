@@ -60,7 +60,8 @@ package main
 //
 //   Guild duty (guildduty.go)
 //   guild_duty_on             false guild blocks, duty warnings, kicks, kicked bots' guild search (ledger always on)
-//   market_directions_on      false the market puppet master may set guild directions (set_by market), never evicting a leader's
+//   market_directions_on      RETIRED (EC43 first version; design market-engine.md 4.3): parsed and ignored, always no effect. The
+//                                  market sets no guild direction; by=market answers 410. Keep it false. Deleted in a later step
 //   guild_duty_min_per_day    120  minutes a member owes its guild per played day (at most half its time online)
 //   guild_duty_warn_days      3    short days before the leader's warning (/ the guild's strictness)
 //   guild_duty_kick_days      2    short days after the warning before the kick (/ strictness)
@@ -69,7 +70,9 @@ package main
 //   market_engine_on          false marketengine.go (WP2, EC43-EC47): computes needs, ranked gaps and farmer offers on each stock
 //                                  round and serves GET /api/market/engine and /api/market/feed, data/market_feed.json.
 //                                  Information only: no bot or guild is changed. Off: nothing is computed, endpoints say "off"
-//   guild_market_feed_on      false guild leaders' autopilot and dutyMaps read the market feed (WP5; declared in WP2, no effect yet)
+//   guild_market_feed_on      false guild leaders' autopilot and dutyMaps read the market feed as information (WP5, guildmarketfeed.go):
+//                                  the wealth direction's item is the feed's best scored short item (24 h hold). Needs market_engine_on.
+//                                  Off: the autopilot is byte-identical to before
 //   starveil_auto_lead        true Starveil is led with no AI (starveillead.go, AY19): duty warnings/kicks through Ayla's
 //                                  plugin, guild-pool funding, keep gifts, member parties (main instance)
 //
@@ -237,11 +240,10 @@ type Tuning struct {
 	// guildduty.go (redesign G): guild_duty_on switches on guild blocks, warnings, kicks and the kicked bots' search
 	// (default off; the ledger, rank, wealth and relations run regardless)
 	GuildDutyOn        bool `json:"guild_duty_on"`
-	// guildduty.go (EC43): market_directions_on lets the market puppet master set guild directions (set_by "market"):
-	// they fill a free slot only, never evict a leader's direction (default off: the engine refuses them)
+	// guildduty.go (EC43): market_directions_on is RETIRED (WP6, design 4.3). Parsed so old tuning files still load; no effect.
 	MarketDirectionsOn bool `json:"market_directions_on"`
 	// marketengine.go (EC43-EC47, WP2): market_engine_on computes the market needs and feed (off = computes nothing);
-	// guild_market_feed_on lets guild leaders read the feed (WP5, no effect yet)
+	// guild_market_feed_on lets guild leaders read the feed as information (WP5, guildmarketfeed.go)
 	MarketEngineOn   bool `json:"market_engine_on"`
 	GuildMarketFeedOn bool `json:"guild_market_feed_on"`
 	// engineparty.go (AY24, ayla-switch): comma-separated human names whose party runs bot-led on the engine, the human's

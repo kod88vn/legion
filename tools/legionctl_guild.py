@@ -2,8 +2,9 @@
 
   guild-direction [guildNN]                  directions in force (leader-set + autopilot) for every guild or one
   guild-direction-set <guildNN> <kind> [--item NAME] [--map MAP] [--min-lv N] [--max-lv N] [--classes a,b]
-                     [--note TEXT] [--hours H] [--exclusive] [--by market]   kind: stock|gear|carry|level|supply|wealth
-                     (--by market: the market puppet master's direction, EC43; never exclusive; refused when off)
+                     [--note TEXT] [--hours H] [--exclusive] [--by leader]   kind: stock|gear|carry|level|supply|wealth
+                     (--by market is RETIRED (EC43, design market-engine 4.3): refused here and by the engine (410);
+                     the market gives information only: guild-direction-set guildNN ... is the leader's own call)
   guild-direction-clear <guildNN> [--id ID]  drop the leader directions (or one by id); autopilot takes over
   guild-duty [guildNN] [--all]               members' standing, today's minutes, block; --all lists good ones too
   guild-pardon <guildNN> <char>              standing back to good
@@ -64,6 +65,10 @@ def guild_cmd(cmd, args, call, out, opt, q):
             v = opt(args, flag)
             if v:
                 body[key] = conv(v)
+        if body.get("by") == "market":
+            # RETIRED (EC43, design market-engine 4.3 step 1): the market sets no direction; refuse before any call
+            raise SystemExit("--by market is retired: the market gives information only (EC43); "
+                             "a leader sets its own direction (omit --by or use --by leader)")
         cl = opt(args, "--classes")
         if cl:
             body["classes"] = [c.strip() for c in cl.split(",") if c.strip()]

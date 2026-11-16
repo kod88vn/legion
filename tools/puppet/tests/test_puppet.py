@@ -462,6 +462,22 @@ class QueueTests(unittest.TestCase):
             self.assertIsInstance(rows[1]["evidence"], dict)  # API down: evidence empty but present
 
 
+class MarketRetiredTests(unittest.TestCase):
+    """WP6 (EC46, design market-engine 4.3): the market master adds words only; its direction channel is gone"""
+
+    def test_market_brief_sets_no_direction(self):
+        text = open(os.path.join(HERE, "..", "briefs", "market.md"), encoding="utf-8").read()
+        self.assertIn("ADD WORDS ONLY", text)
+        self.assertNotIn("--by market", text)
+        self.assertNotIn("guild-direction-set", text)
+        self.assertNotIn("market_directions_on", text)
+
+    def test_market_role_stays_in_dispatcher_superseded(self):
+        self.assertIn("market", dispatch.ROLES)  # not switched off (Constitution 2.9)
+        src = open(os.path.join(PUP, "dispatch.py"), encoding="utf-8").read()
+        self.assertIn("SUPERSEDED (EC46", src)
+
+
 if __name__ == "__main__":
     unittest.main()
 

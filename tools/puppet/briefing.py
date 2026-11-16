@@ -322,6 +322,14 @@ def guild_briefing(api, gid, notes_dir, prev=None, prev_ts=None):
             if isinstance(d, dict):
                 snap["directions"].append(f"{d.get('id')}:{d.get('kind')}:{d.get('item') or d.get('map') or ''}:{d.get('set_by', '')}")
 
+    # WP5 (EC43, design market-engine 4.2): the market feed for this guild, as information only; the leader decides
+    try:
+        import progress
+        fb = progress.guild_feed(api, gid)
+    except Exception as e:  # a broken feed never breaks the briefing (the other blocks still go in)
+        fb = "feed block failed (" + type(e).__name__ + "): no numbers given"
+    parts.append(section("Market feed (information only: the market never sets your direction, EC43)", fb))
+
     duty = api.get(f"/api/guild-duty?guild={gid}")
     if duty is not None:
         members = dig(duty, "members", default=None)
