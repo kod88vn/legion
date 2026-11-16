@@ -1,13 +1,23 @@
 """Tests for the engine's milestone gear rows in buildexport.py.
 Run: python -m unittest discover -s tests/dashboard -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import os
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "..", "tools", "dashboard"))
 
 import buildexport  # noqa: E402
+buildexport.ITEMS_TSV = os.path.join(tempfile.mkdtemp(), "no-items-file.tsv")  # G23: the live Ayla logs
+buildexport.ENGINE_GEAR_JSON = os.path.join(tempfile.mkdtemp(), "no-engine-file.json")  # G23: the live
+# engine file (legion/data/buildmilestones_gear.json) is never read by a test; tests that want it pass a path
 
 ITEMS = {2314: "Chain Mail", 2325: "Mantle", 4006: "Poring Card", 4020: "Hydra Card"}
 

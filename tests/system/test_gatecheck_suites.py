@@ -1,5 +1,11 @@
 """gatecheck.py finds every Python suite, so none can be skipped (the Builds tests were once in a folder nobody ran).
 Offline: a temp tree stands in for the repo. Run: python -m unittest discover -s tests/system -p "test_gatecheck_suites.py" -v"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import os
 import sys
 import tempfile

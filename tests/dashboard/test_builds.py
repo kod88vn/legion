@@ -1,6 +1,12 @@
 """Tests for the Builds tab (DB09): the export of legion/builds.go, the live counts, the route and the tab itself.
 No docker, no engine, no live data: the Go source and gear table in the repo, a temp snapshot and personas file.
 Run: python -m unittest discover -s tests/dashboard -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import gzip
 import json
 import os
@@ -19,6 +25,9 @@ os.environ.setdefault("DASH_AYLA_LOGS", tempfile.mkdtemp())
 os.environ.setdefault("DASH_SNAP", tempfile.mkdtemp())
 
 import buildexport  # noqa: E402
+buildexport.ITEMS_TSV = os.path.join(tempfile.mkdtemp(), "no-items-file.tsv")  # G23: the live Ayla logs
+buildexport.ENGINE_GEAR_JSON = os.path.join(tempfile.mkdtemp(), "no-engine-file.json")  # G23: the live
+# engine file (legion/data/buildmilestones_gear.json) is never read by a test; tests that want it pass a path
 
 BUILDS_GO = os.path.join(REPO, "legion", "builds.go")
 EXPORT = os.path.join(REPO, "tools", "dashboard", "builds.json")

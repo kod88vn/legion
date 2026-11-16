@@ -1,6 +1,12 @@
 """Tests for tools/system/fieldcheck.py (map truth: OpenKore field files and portal lines against the server's map cache
 and loaded warps) and its watchdog hook. Offline: synthetic caches, fields and npc warps in a temp dir; no docker.
 Run: python -m unittest discover -s tests/system -v   (from the repo root)"""
+import os as _os  # G23: tests never touch the live legion/data folder
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import testenv  # noqa: E402
+testenv.isolate()  # LEGION_DATA -> a temp folder before any tool module is imported
+
 import gzip
 import os
 import shutil

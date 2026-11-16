@@ -640,8 +640,11 @@ def _show(path):
         return path
 
 
-def lookup_names(items_path=ITEMS_TSV, skills_path=SKILLS_TSV, client_items=CLIENT_ITEMS_LUA, skill_db=SKILL_DB):
-    """(items, skills, sources): the dashboard's tables first, the fallbacks for any id they lack"""
+def lookup_names(items_path=None, skills_path=None, client_items=CLIENT_ITEMS_LUA, skill_db=SKILL_DB):
+    """(items, skills, sources): the dashboard's tables first, the fallbacks for any id they lack. The paths default to
+    the module values read at call time (so a test can point them at a temp file)."""
+    items_path = items_path or ITEMS_TSV
+    skills_path = skills_path or SKILLS_TSV
     items, skills = load_items(items_path), load_skills(skills_path)
     src = {"items": _show(items_path) if items else None,
            "skills": _show(skills_path) if skills else None}
@@ -656,7 +659,7 @@ def lookup_names(items_path=ITEMS_TSV, skills_path=SKILLS_TSV, client_items=CLIE
     return items, skills, src
 
 
-def export(out=OUT, items_path=ITEMS_TSV, skills_path=SKILLS_TSV, paths=None):
+def export(out=OUT, items_path=None, skills_path=None, paths=None):
     items, skills, src = lookup_names(items_path, skills_path)
     doc = build_export(items, skills, paths)
     doc["name_sources"] = src
