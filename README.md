@@ -124,3 +124,102 @@ from 127.0.0.1 (`conf/import/packet_conf.txt`) because every bot connects from t
 - ports (all 127.0.0.1 only): 6900 login, 6121 char, 5121 map, 6953 agency, 3306 MariaDB
 
 Reset everything: `docker compose down -v` (wipes the DB volume).
+
+## Server and client (session save, 2026-11-15)
+Facts read from the repo on 2026-11-15. Where the repo has no fact, the line says `not found in repo`. Passwords,
+tokens and keys are never written here: the names of the keys are listed, the values stay in the files named.
+Current state and what may start: `STATUS.md`. Plan and progress: `PLAN.md`, `PROGRESS.md`. Engineering wiring:
+`HANDOVER.md`. Settings and owner decisions: `docs/rules/settings.md`.
+
+### Server: rAthena in Docker (WSL Ubuntu-24.04)
+- Built for packet version **20210107** (RagexeRE): `PACKETVER` build arg in `docker-compose.yml`, image
+  `ro-rathena:20210107re`, Dockerfile in `rathena/`. rAthena and OpenKore are pinned to fixed commits (see the
+  Dockerfiles). Run from WSL: `wsl -d Ubuntu-24.04`, project at `/mnt/g/RO/legion`.
+- Containers (`docker-compose.yml`; every published port is on 127.0.0.1 only):
+
+| container | service | what | ports (host) |
+|---|---|---|---|
+| `ro-db` | db | MariaDB 11.4, database `ragnarok` | 3306 |
+| `ro-rathena` | rathena | login, char and map servers; shares its network with the OpenKore and Legion containers | 6900 login, 6121 char, 5121 map, 8090 Legion API, 6901 X-Kore 2 (Ayla's watch port) |
+| `ro-agency` | agency | login-agency stand-in for the 2021 client (`agency/agency.py`) | 6953 |
+| `ro-openkore-ayla` | openkore-ayla | Ayla's OpenKore; shares rathena's network, no port of its own | via rathena 6901 |
+| `ro-legion` | legion | the Legion engine and the bot population (`LEGION_BOTS`, default 4000; `LEGION_MAX_ONLINE`, default 1000) | 8090 (shared with rathena) |
+| `ro-legion-core` | legion-core | the instance that runs Ayla's party members (`LEGION_CORE`); its API is 8091 inside rathena's namespace | 8091 (internal) |
+| `ro-openkore` | openkore | old seed test bot AIBot; profile `legacy`, off since 2026-11-14 (AY14) | none |
+| `ro-openkore-qa` | openkore-qa | QA bot; profile `qa`, not started by default | none |
+| `ro-mastermind` | mastermind | optional fallback only; profile `fallback` | none |
+
+  The Accounts and Layout sections above are older text: they still name `ro-openkore` as the bot. The table
+  above is the current list.
+- Rates and caps (`rathena/conf/import/*`; IDs in `docs/rules/settings.md`):
+  - Base and job EXP 500 percent (5x): `base_exp_rate`, `job_exp_rate` in `battle_conf.txt` (ST04).
+  - Item drop rates 500 percent for every class of item (common, heal, use, equip, card, boss, MVP, treasure) in
+    `battle_conf.txt` (ST05). `mob_count_rate: 400` (4x monsters) is set there too; `settings.md` does not list it.
+  - Walk path `max_walk_path: 32` in `battle_conf.txt`: the fix for the rubber-banding described above.
+  - Job cap: 2nd classes only. No rebirth, no 3rd or 4th jobs (ST01 / G10), enforced by the NPC unloads in
+    `rathena/npc-custom/scripts_custom.conf`.
+  - Level limits: `not found in repo` (no base or job level cap in `battle_conf.txt` or `settings.md`).
+  - Capacity: about 1,024 connections; 960 normal bot slots with headroom for guild leaders, Ayla's party and humans (ST06).
+  - Chat (party, guild, whisper, global) is logged so the dashboard can show it (ST07).
+  - Connections from 127.0.0.1 are not limited (`conf/import/packet_conf.txt`), because every bot connects from there.
+- Server addresses: `char_ip`, `login_ip` and `map_ip` are 127.0.0.1 (`char_conf.txt`, `map_conf.txt`).
+- Accounts: seeded on the first database start from `rathena/sql/seed.sql`. The test accounts are in the Accounts
+  table above (passwords are not repeated here). The GM account `wander` is owner-only (G03). The repo does not seed
+  it (`not found in repo` as an account; the rule names it).
+- Environment keys (`example.env`; copy it to `.env` and never commit values): `LEGION_BOTS`, `LEGION_MAX_ONLINE`,
+  `LEGION_CORE` (the names Ayla's party members run under; the current names are in `docs/rules/ayla.md`), and the
+  optional `ANTHROPIC_API_KEY` (fallback mastermind only). The game database user and password are set in the `db`
+  and `rathena` services of `docker-compose.yml`; they are not repeated here.
+
+### Database
+- `ro-db` (MariaDB 11.4). Seed: `rathena/sql/seed.sql`. The market crier's table is `rathena/sql/legion_notice.sql`
+  (not loaded yet; the crier is off).
+- Reset everything: `docker compose down -v` (wipes the volume; never on live data, G23).
+- Dashboard read access: the user `dash_ro` is SELECT-only. Its name and password are in the git-ignored
+  `tools/.state/dashboard.json` (keys `db_user`, `db_pass`). Without that file the dashboard falls back to the game
+  user, and every query still goes through a read-only guard (`tools/dashboard/dbsnap.py`).
+
+### Dashboard
+- `tools/dashboard/dashserve.py` on **127.0.0.1:8099** (flags `--port`, `--bind`, `--engine`). Kept on by
+  `tools/dashboard/keep.cmd`, which restarts it when it exits.
+- Tabs: server status on top, then Players, Builds and Market. It reads `ro-db` through the read-only user above and
+  the Legion API on 8090 when the engine is up. Environment overrides: `LEGION_WSL_DISTRO` (default Ubuntu-24.04),
+  `DASH_CONFIG`, `DASH_CACHE`, `DASH_SNAP`, `DASH_AYLA_LOGS`, `DASH_CLIENT_ITEMS`, `LEGION_API`.
+
+### Client (the human player's client, Windows)
+- Official kRO RagexeRE client, 2021 build: `RagexeRE.exe` from Gravity's full client zip (`Ragnarok_210607.zip`;
+  the URL is in the packet note above). Patched to `RO-AILab.exe` with WARP. The WARP session file is
+  `client-tools/ailab-2021-en.yml` (a copy; the working one is `G:\RO\WARP\Inputs\ailab-2021-en.yml`). Host patch:
+  `client-tools/patch_hosts_2021.py` points the login hosts at 127.0.0.1. String patch: `client-tools/patch_strings_2021.py`.
+- The client folder is `G:\RO\kRO-210607\client\` (outside this repo). Its `data\clientinfo.xml` and
+  `sclientinfo.xml` point at 127.0.0.1:6900 (login). The agency host is rewritten to 127.0.0.1 by the hosts patch and
+  answered on 6953 (`agency/agency.py`).
+- Start: double-click `Play-AILab.cmd` (desktop shortcut "RO-English"). It checks ports 6900, 6121, 5121 and 6953 and,
+  when the server is down, starts the stack in WSL (`docker compose up -d`). Agents do not start this client; the
+  stack is started only on the owner's word (`STATUS.md`, "How to start"; rule G01 in `docs/rules/gates.md`).
+- Server list entry: "AI-Lab (local rAthena)". Login: see the Accounts table above.
+- The client uses D3D7; its device GUID is set in the registry (see the table above). Text size 15 px. Sprite
+  upscales are in `sprites_hd.grf` (first in `DATA.INI`). The English UI is generated from ROenglishRE for a 2020-09-02 client.
+
+### The agents' Wine client (Ayla's view; not a human client)
+- A Wine copy of the same client (`~/roclient/RO-AILab.exe` in WSL, private prefix `~/.wine-ro`; not in this repo)
+  runs on the virtual display **:98** at 1280x720. A view-only VNC copy is served on :5998 (`docs/handover/ayla-live-view.md`).
+- Scripts for it are in `tools/rogui/` (`ai-display.sh`, `ai-client.sh`, `keeper.sh`, `ayla.sh`). The `ro.ps1` and
+  `input.ps1` files that used the real mouse are disabled (G01): agents never drive a client with the real mouse or keyboard.
+- Not found in repo: the Wine build in use on the machine today. The handover describes a newer new-WoW64 build as a fix in progress.
+
+### Start and stop
+Not copied here. The order, the owner's words and the commands are in `STATUS.md` ("How to start", "Stopping"); the
+stack is `python tools/system/stackctl.py up|down`. A rathena recreate also recreates Ayla's OpenKore and the Legion
+containers (G15). A rathena restart is allowed at most once an hour (G16).
+
+### Logs and data
+- Container logs: `docker logs ro-rathena` (login, char and map lines carry `[login]`, `[char]`, `[map]` prefixes),
+  `docker logs ro-legion`, `docker logs ro-openkore-ayla`. From Windows: `wsl -d Ubuntu-24.04 -- docker logs -f ro-rathena`.
+- Server log and packet settings: `rathena/conf/import/log_conf.txt` and `packet_conf.txt`.
+- Engine running state (git-ignored): `legion/data/` inside the Go package folder (repo path `legion/legion/data/`):
+  the bug queue `bugqueue.jsonl`, the meter `meter.jsonl`, `lessons.md`, and `watchdog.log`.
+- Ayla's OpenKore logs and status: `openkore-ayla/logs/` (mounted read-only into `ro-legion` as `/ayla`; `status.json`).
+- Dashboard state and snapshots: `tools/.state/` (git-ignored; `dashboard.json`, `dbsnap/`).
+- Reports and reviews: `docs/reports/` and `docs/reports/reviews/`. Lessons index: `docs/rules/lessons-index.md`.
+- Backups: `backups/` and `legion/data/backup-*` (git-ignored; nothing is deleted without the owner, G22).
