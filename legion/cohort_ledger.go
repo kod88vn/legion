@@ -282,7 +282,7 @@ func (cl *CohortLedger) MayAdmit(accountID string) (bool, error) {
 	// If quota window is empty (no grants yet), this grant starts a new window.
 	// Update window start to NOW so the next 1 hour is measured from this grant time.
 	if len(cl.state.QuotaGranted) == 0 {
-		cl.state.QuotaWindowStartUTC = now.Format(time.RFC3339)
+		cl.state.QuotaWindowStartUTC = now.Format(time.RFC3339Nano)
 	}
 
 	// If >=1h since first grant in current window, roll: clear quota, start new window.
