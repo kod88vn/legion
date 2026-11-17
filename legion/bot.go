@@ -1571,9 +1571,9 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		loginGate <- struct{}{} // limit concurrent logins
 		// Check durable cohort admission gate (if enabled).
 		admittedToCohort, cohortErr := CheckCohortAdmission(b.aid)
-		<-loginGate
 		if cohortErr != nil || !admittedToCohort {
-			release()
+			<-loginGate // release login slot before backing off
+			release()   // release onlineSlots
 			b.mu.Lock()
 			if cohortErr != nil {
 				b.LastErr = "cohort gate error: " + cohortErr.Error()
@@ -1590,7 +1590,9 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			}
 			continue
 		}
+		// Hold loginGate slot through connect() to maintain login pacing.
 		err := b.connect(loginAddr)
+		<-loginGate // release login slot after connect attempt (success or failure)
 		if err != nil {
 			release()
 			b.mu.Lock()

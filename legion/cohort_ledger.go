@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 )
+
+var ErrCompetingWriter = errors.New("competing writer detected: disk state differs from memory")
 
 // CohortLedger tracks which account IDs have been admitted in the current hourly window.
 // It is persisted to disk atomically and survives process restarts.
@@ -44,7 +47,7 @@ func NewCohortLedger(dataDir string, enabled bool, quotaPerHour int) *CohortLedg
 }
 
 // Load reads the ledger from disk and handles window rollover.
-// If the current window has expired (>= 1h old), resets to a new empty window.
+// If the current window has expired (>= 1h old), resets to a new empty window and persists it.
 // Returns error only if file exists but is corrupt; missing file starts a fresh window.
 func (cl *CohortLedger) Load() error {
 	if !cl.Enabled {
@@ -84,16 +87,21 @@ func (cl *CohortLedger) Load() error {
 		cl.CurrentWindowStart = now
 		cl.AdmittedAccountIDs = []string{}
 		cl.RotationStart = now
+		// CRITICAL: Persist the rolled window immediately so subsequent calls see the new state.
+		if err := cl.writeLocked(); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 // MayAdmit checks if an account ID is eligible to log in this window.
+// - Rolls window if >= 1 hour has passed since CurrentWindowStart
 // - If already admitted in this window, returns (true, false, nil) [no quota consumed]
 // - If new and quota available, adds it, persists, returns (true, true, nil) [quota consumed]
 // - If new and quota exhausted, returns (false, false, nil) [blocked]
-// - If write fails, returns (false, false, error) [fail closed]
+// - If write fails or competing writer detected, returns (false, false, error) [fail closed]
 func (cl *CohortLedger) MayAdmit(accountID string) (admitted, newGrant bool, err error) {
 	if !cl.Enabled {
 		return true, false, nil // gate disabled: allow all
@@ -101,6 +109,20 @@ func (cl *CohortLedger) MayAdmit(accountID string) (admitted, newGrant bool, err
 
 	cl.mu.Lock()
 	defer cl.mu.Unlock()
+
+	now := time.Now().UTC()
+
+	// CRITICAL: Roll window if >= 1 hour has passed.
+	// This must happen EVERY time MayAdmit is called, not just on Load().
+	if now.Sub(cl.CurrentWindowStart) >= time.Hour {
+		cl.CurrentWindowStart = now
+		cl.AdmittedAccountIDs = []string{}
+		cl.RotationStart = now
+		// Persist the rolled window before proceeding.
+		if err := cl.writeLocked(); err != nil {
+			return false, false, err
+		}
+	}
 
 	// Check if already admitted.
 	for _, id := range cl.AdmittedAccountIDs {
@@ -112,6 +134,12 @@ func (cl *CohortLedger) MayAdmit(accountID string) (admitted, newGrant bool, err
 	// Check if quota available.
 	if len(cl.AdmittedAccountIDs) >= cl.QuotaPerHour {
 		return false, false, nil // blocked, no error
+	}
+
+	// Before adding, detect competing writer: re-read file and validate it matches memory.
+	// If file differs, another instance wrote while we held the lock (not safe).
+	if err := cl.detectCompetingWriter(); err != nil {
+		return false, false, err
 	}
 
 	// Add to ledger and persist.
@@ -146,6 +174,44 @@ func (cl *CohortLedger) writeLocked() error {
 	if err := os.Rename(tmp, cl.filePath); err != nil {
 		os.Remove(tmp)
 		return err
+	}
+
+	return nil
+}
+
+// detectCompetingWriter checks if another instance wrote to disk since we loaded.
+// Caller must hold mu. Returns error if file doesn't match our in-memory state.
+func (cl *CohortLedger) detectCompetingWriter() error {
+	// If file doesn't exist, no competing write (we haven't persisted yet).
+	if _, err := os.Stat(cl.filePath); os.IsNotExist(err) {
+		return nil
+	}
+
+	data, err := os.ReadFile(cl.filePath)
+	if err != nil {
+		return err // read error is fatal
+	}
+
+	var stored CohortLedger
+	if err := json.Unmarshal(data, &stored); err != nil {
+		return err // corrupt file is fatal
+	}
+
+	// Check if window start matches. If not, another instance rolled it.
+	if !stored.CurrentWindowStart.Equal(cl.CurrentWindowStart) {
+		return ErrCompetingWriter
+	}
+
+	// Check if admitted count matches. If not, another instance granted an account.
+	if len(stored.AdmittedAccountIDs) != len(cl.AdmittedAccountIDs) {
+		return ErrCompetingWriter
+	}
+
+	// Check if the granted IDs match in order. If not, another instance changed them.
+	for i, id := range cl.AdmittedAccountIDs {
+		if stored.AdmittedAccountIDs[i] != id {
+			return ErrCompetingWriter
+		}
 	}
 
 	return nil
