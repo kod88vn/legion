@@ -128,31 +128,132 @@ func TestResolveCohortDirSameDirectoryAllowed(t *testing.T) {
 	}
 }
 
-// TestResolveCohortDirMetadataErrorRefusal verifies that unexpected errors reading
-// metadata (permission denied, etc.) are reported and startup fails. For this test,
-// we also verify that trying to redirect with a directory-at-ledger-path is treated
-// as a legacy artifact present and refused with appropriate error message.
+// TestResolveCohortDirMetadataErrorRefusal verifies that unexpected metadata errors
+// (such as ELOOP from symlink loops) are reported and startup fails. This test proves
+// that actual metadata-error handling code path is exercised; a compiled bypass mutant
+// that skips metadata error checks would fail this test.
 func TestResolveCohortDirMetadataErrorRefusal(t *testing.T) {
 	tempDataDir := t.TempDir()
 	tempCohortDir := t.TempDir()
 	
-	// Create a directory where the ledger file would be, so Stat finds a directory
-	// This simulates a directory-based legacy artifact or file-system corruption
+	// Create a self-referential symlink at the ledger path to trigger ELOOP.
+	// This produces an actual metadata error, not just a directory-exists condition.
 	ledgerPath := filepath.Join(tempDataDir, "cohort_ledger.json")
-	if err := os.Mkdir(ledgerPath, 0755); err != nil {
-		t.Fatalf("failed to create directory: %v", err)
+	if err := os.Symlink(ledgerPath, ledgerPath); err != nil {
+		t.Fatalf("failed to create self-referential symlink: %v", err)
 	}
 	
-	// Attempt redirect: should detect the directory and refuse with appropriate error
+	// Verify that os.Stat on the symlink produces an error (ELOOP or similar)
+	if _, err := os.Stat(ledgerPath); err == nil {
+		t.Fatal("symlink fixture did not produce metadata error")
+	}
+	
+	// Attempt redirect: metadata error should be reported with explicit error context
 	_, err := resolveCohortDir(tempDataDir, tempCohortDir, true)
 	if err == nil {
-		t.Fatal("expected error on redirect with directory-at-ledger-path, got nil")
+		t.Fatal("expected error on metadata error, got nil")
 	}
 	
-	// Error message must mention either "metadata error" or "legacy cohort ledger exists"
+	// Error message must explicitly mention "metadata error" context
 	errMsg := err.Error()
-	if errMsg == "" || (!stringContains(errMsg, "metadata error") && !stringContains(errMsg, "legacy cohort ledger")) {
-		t.Fatalf("error message does not mention metadata error or legacy artifact: %v", err)
+	if errMsg == "" || !stringContains(errMsg, "metadata error") {
+		t.Fatalf("error message does not contain 'metadata error': %v", err)
+	}
+}
+
+// TestCohortDirectoryIntegrationWithRealGate verifies that the resolver works with
+// actual InitCohortGate, persists eligibility/quota across restart, and keeps all
+// artifacts under the selected directory (not dataDir).
+func TestCohortDirectoryIntegrationWithRealGate(t *testing.T) {
+	tempDataDir := t.TempDir()
+	selectedCohortDir := t.TempDir()
+	
+	// Save and restore global cohortGate to avoid test isolation issues
+	oldGate := cohortGate
+	defer func() { cohortGate = oldGate }()
+	
+	// Resolve directory (selected is clean, no redirection)
+	resolvedDir, err := resolveCohortDir(tempDataDir, selectedCohortDir, true)
+	if err != nil {
+		t.Fatalf("resolveCohortDir failed: %v", err)
+	}
+	if resolvedDir != selectedCohortDir {
+		t.Fatalf("expected %q, got %q", selectedCohortDir, resolvedDir)
+	}
+	
+	// Initialize cohort gate with resolved directory (enabled, 100 per hour)
+	if err := InitCohortGate(resolvedDir, true); err != nil {
+		t.Fatalf("InitCohortGate failed: %v", err)
+	}
+	
+	// Verify cohortGate is set
+	if cohortGate == nil {
+		t.Fatal("cohortGate not initialized")
+	}
+	
+	// Verify ledger artifacts are in selectedCohortDir, not tempDataDir
+	ledgerPath := filepath.Join(resolvedDir, "cohort_ledger.json")
+	lockPath := filepath.Join(resolvedDir, "cohort_ledger.lock")
+	
+	// After Load() in InitCohortGate, lock file should exist in resolvedDir
+	if _, err := os.Stat(lockPath); err != nil {
+		t.Fatalf("lock file not found at expected path %q: %v", lockPath, err)
+	}
+	
+	// Verify no artifacts were created in tempDataDir
+	oldLedgerPath := filepath.Join(tempDataDir, "cohort_ledger.json")
+	oldLockPath := filepath.Join(tempDataDir, "cohort_ledger.lock")
+	if _, err := os.Stat(oldLedgerPath); err == nil {
+		t.Fatalf("unexpected ledger in original dataDir: %q", oldLedgerPath)
+	}
+	if _, err := os.Stat(oldLockPath); err == nil {
+		t.Fatalf("unexpected lock in original dataDir: %q", oldLockPath)
+	}
+	
+	// Grant an account via CheckCohortAdmission (uses cohortGate.MayAdmit)
+	accountID1 := uint32(10001)
+	admitted, err := CheckCohortAdmission(accountID1)
+	if err != nil {
+		t.Fatalf("CheckCohortAdmission failed: %v", err)
+	}
+	if !admitted {
+		t.Fatalf("first account should be admitted, got false")
+	}
+	
+	// Close the gate to persist state
+	if err := cohortGate.Close(); err != nil {
+		t.Fatalf("cohortGate.Close failed: %v", err)
+	}
+	
+	// Verify ledger file exists and contains the grant
+	ledgerData, err := os.ReadFile(ledgerPath)
+	if err != nil {
+		t.Fatalf("failed to read ledger file: %v", err)
+	}
+	ledgerStr := string(ledgerData)
+	acctStr := formatAccountID(accountID1)
+	if !stringContains(ledgerStr, acctStr) {
+		t.Fatalf("ledger does not contain granted account %q: %s", acctStr, ledgerStr)
+	}
+	
+	// Reopen gate with same selected directory (simulates restart)
+	cohortGate = nil
+	if err := InitCohortGate(resolvedDir, true); err != nil {
+		t.Fatalf("second InitCohortGate failed: %v", err)
+	}
+	
+	// Verify persisted eligibility: same account should not consume quota
+	admitted2, err := CheckCohortAdmission(accountID1)
+	if err != nil {
+		t.Fatalf("second CheckCohortAdmission failed: %v", err)
+	}
+	if !admitted2 {
+		t.Fatalf("persisted account should still be admitted, got false")
+	}
+	
+	// Clean up: Close the second instance
+	if err := cohortGate.Close(); err != nil {
+		t.Fatalf("second cohortGate.Close failed: %v", err)
 	}
 }
 
