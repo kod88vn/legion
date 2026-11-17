@@ -1060,6 +1060,13 @@ func TestPostLoadCorruptionFailsClosedPersists(t *testing.T) {
 	}
 	t.Logf("phase3: ledger2 loaded successfully (healthy state)")
 
+	// CRITICAL: At this point, Load succeeded and failClosed must be FALSE
+	// (Load returns nil but does NOT set failClosed for healthy loads)
+	if ledger2.failClosed {
+		t.Fatalf("phase3 failClosed: %v (expected false after successful healthy Load)", ledger2.failClosed)
+	}
+	t.Logf("phase3: failClosed correctly false after healthy Load")
+
 	// Overwrite ledger with malformed JSON (simulating post-Load corruption)
 	if err := os.WriteFile(ledgerPath, []byte("{invalid json}"), 0644); err != nil {
 		t.Fatalf("phase3 write corrupt JSON: %v", err)
@@ -1075,16 +1082,17 @@ func TestPostLoadCorruptionFailsClosedPersists(t *testing.T) {
 	if err == nil {
 		t.Fatalf("phase4 A MayAdmit after corruption: err=nil (expected error identifying JSON corruption)")
 	}
-	// Verify the error is specifically about JSON/reload corruption, not lock/quota/setup
+	// Verify error contains BOTH reload context AND corrupt-JSON cause from production:
+	// Production line 254: "cohort: reload validation failed: %w"
+	// Production line 164: "corrupt JSON: %w"
 	errMsg := fmt.Sprintf("%v", err)
-	if !strings.Contains(errMsg, "fail-closed") && !strings.Contains(errMsg, "JSON") && !strings.Contains(errMsg, "reload") {
-		t.Logf("phase4 A error message: %s", errMsg)
-		// Accept the error as long as it indicates corruption, not lock/setup
-		if strings.Contains(errMsg, "another process") || strings.Contains(errMsg, "lock") {
-			t.Fatalf("phase4 A error should indicate corruption, not lock: %v", err)
-		}
+	if !strings.Contains(errMsg, "reload validation failed") {
+		t.Fatalf("phase4 A error missing reload context (expected 'reload validation failed'): %v", err)
 	}
-	t.Logf("phase4: A MayAdmit returned (false, error) with corruption message: %v", err)
+	if !strings.Contains(errMsg, "corrupt JSON") {
+		t.Fatalf("phase4 A error missing corrupt-JSON cause (expected 'corrupt JSON'): %v", err)
+	}
+	t.Logf("phase4: A MayAdmit returned (false, error) with both reload context and corrupt-JSON cause: %v", err)
 
 	// Verify failClosed is now set
 	if !ledger2.failClosed {
