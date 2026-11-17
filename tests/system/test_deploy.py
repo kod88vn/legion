@@ -1093,6 +1093,97 @@ docker unknown-subcommand 2>&1
         except Exception as e:
             self.fail(f"test_fake_docker_unknown_command_returns_nonzero failed: {e}")
     
+    def test_selected_compose_file_rathena_up_bare_flags(self):
+        """STAGE B PREP: Actual-script regression for rathena up with selected docker-compose.server.yml.
+        
+        Regression test: when COMPOSE_FILE=docker-compose.server.yml is set,
+        rathena up call must include -f and -p flags (not bare docker compose).
+        
+        This test is WRITTEN but NOT RUN; fixture containment and path safety
+        verification required before execution.
+        
+        Uses RecordingFakeDocker to record actual docker compose argv.
+        """
+        # Copy rathena_recreate.sh and guard.sh to fixture root; remap absolute paths
+        recreate_src = os.path.join(REPO, "tools", "deploy", "rathena_recreate.sh")
+        guard_src = os.path.join(REPO, "tools", "deploy", "guard.sh")
+        
+        # Create fixture copies with path remapping
+        with open(recreate_src) as f:
+            recreate_code = f.read()
+        with open(guard_src) as f:
+            guard_code = f.read()
+        
+        # Remap /mnt/g/RO/legion -> self.root
+        recreate_code = recreate_code.replace('/mnt/g/RO/legion', self.root)
+        guard_code = guard_code.replace('/mnt/g/RO/legion', self.root)
+        
+        # Remap /tmp paths for PIN
+        pin_path = os.path.join(self.root, "pin.yml")
+        recreate_code = recreate_code.replace('/tmp/rathena_recreate_pin.yml', pin_path)
+        guard_code = guard_code.replace('/tmp/rathena_recreate_pin.yml', pin_path)
+        
+        # Create minimal PIN file (image override)
+        with open(pin_path, 'w') as f:
+            f.write('# Fake PIN for testing\n')
+        
+        # Stub deploylog.py and helper invocations
+        recreate_code = recreate_code.replace(
+            '"$PYTHON" "$SYSDIR/deploylog.py"',
+            '# STUBBED: deploylog.py (testing only)'
+        )
+        
+        # Write fixture scripts
+        recreate_fixture = os.path.join(self.root, "tools", "deploy", "rathena_recreate.sh")
+        guard_fixture = os.path.join(self.root, "tools", "deploy", "guard.sh")
+        os.makedirs(os.path.dirname(recreate_fixture), exist_ok=True)
+        
+        with open(recreate_fixture, 'w') as f:
+            f.write(recreate_code)
+        os.chmod(recreate_fixture, 0o755)
+        
+        with open(guard_fixture, 'w') as f:
+            f.write(guard_code)
+        os.chmod(guard_fixture, 0o755)
+        
+        # Create docker-compose.server.yml in fixture root
+        compose_server = os.path.join(self.root, "docker-compose.server.yml")
+        with open(compose_server, 'w') as f:
+            f.write(self.compose_server)
+        
+        # Stub fake docker to handle rathena-up: record call, return sentinel 97
+        # Record format: docker compose up [flags] --no-deps --force-recreate rathena
+        # Expected: should have -f docker-compose.server.yml -p ro-server
+        script = """
+set -e
+export PATH="{fake_path}"
+export COMPOSE_FILE="{compose_file}"
+export RECORDING_FAKE_DOCKER_LOG="{log}"
+export DRY_RUN=0
+export RATHENA_HOUR_OVERRIDE=test-override
+
+cd "{root}"
+bash "{recreate_script}" --yes 2>&1 | head -20
+""".format(
+            fake_path=self.fake_path,
+            compose_file=os.path.basename(compose_server),  # docker-compose.server.yml
+            log=self.harness.recorded_log,
+            root=self.root,
+            recreate_script=recreate_fixture
+        )
+        
+        script_path = os.path.join(self.root, "test_selected_compose.sh")
+        with open(script_path, 'w') as f:
+            f.write(script)
+        
+        # Test body is in comments below; actual execution requires Sonnet preflight
+        self.skipTest(
+            "STAGE B PREP: Actual-script regression test WRITTEN but NOT RUN. "
+            "Requires fixture safety verification and sentinel response in fake docker. "
+            f"Test script: {script_path}, log: {self.harness.recorded_log}"
+        )
+    
+    
     def test_bare_compose_calls_missing_flags_stage_a(self):
         """STAGE A: rathena_recreate.sh has bare docker compose calls without -f/-p (BROKEN).
         
