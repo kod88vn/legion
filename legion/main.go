@@ -83,10 +83,16 @@ func loadGameData() {
 }
 
 // resolveCohortDir resolves the cohort directory, applying safety checks for legacy history redirection.
-// If cohortDir is empty, it defaults to dataDir (no redirection, legacy behavior preserved).
-// If cohortDir is non-empty and differs from dataDir, it refuses startup if legacy cohort artifacts
+// enabled controls whether the feature is active; if false, returns dataDir without I/O (no-op for disabled gate).
+// If enabled and cohortDir is empty, it defaults to dataDir (no redirection, legacy behavior preserved).
+// If enabled and cohortDir is non-empty and differs from dataDir, it refuses startup if legacy cohort artifacts
 // (ledger or initialization marker) exist in dataDir to prevent silent data loss.
-func resolveCohortDir(dataDir, cohortDir string) (string, error) {
+func resolveCohortDir(dataDir, cohortDir string, enabled bool) (string, error) {
+	// If feature is disabled, return dataDir without inspection; no I/O, no legacy history check
+	if !enabled {
+		return dataDir, nil
+	}
+	
 	selected := cohortDir
 	if selected == "" {
 		// Empty default: resolve to dataDir, preserving legacy behavior
@@ -230,17 +236,10 @@ func main() {
 		loginGate = make(chan struct{}, *logins)
 		onlineSlots = make(chan struct{}, slotCapacity(*maxOnline, *reserve)) // leaderroom.go
 		
-		// Resolve cohort directory only when feature is enabled
-		var resolvedCohortDir string
-		if *durationCohort {
-			var err error
-			resolvedCohortDir, err = resolveCohortDir(*dataDir, *cohortDir)
-			if err != nil {
-				log.Fatalf("cohort directory: %v", err)
-			}
-		} else {
-			// Feature disabled: use dataDir as fallback (no-op for disabled gate)
-			resolvedCohortDir = *dataDir
+		// Resolve cohort directory, passing enabled flag
+		resolvedCohortDir, err := resolveCohortDir(*dataDir, *cohortDir, *durationCohort)
+		if err != nil {
+			log.Fatalf("cohort directory: %v", err)
 		}
 		
 		if err := InitCohortGate(resolvedCohortDir, *durationCohort); err != nil {
