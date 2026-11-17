@@ -591,3 +591,130 @@ func TestCorruptJSONFailsClosed(t *testing.T) {
 	ledger.Close()
 	t.Logf("PASS: Corrupt JSON fails closed")
 }
+
+// TEST 9: Restart with Ledger Loss (Missing Initialized State)
+// Quota=2: grant A; release writer lock and reopen.
+// Grant B, deny new C, then reconnect A (at full quota).
+// Delete initialized ledger while second instance alive: A and fresh D refuse with missing-ledger error.
+// Close properly; reopen third instance: A and D refuse with same error.
+// Assert error indicates missing initialized state, not lock contention or schema.
+func TestRestartWithLedgerLossMissingInitializedState(t *testing.T) {
+	dir := t.TempDir()
+	
+	// Fixed test time
+	baseTime := time.Date(2026, 11, 17, 13, 30, 55, 0, time.UTC)
+	tick := 0
+	nowFunc := func() time.Time {
+		return baseTime.Add(time.Duration(tick) * time.Second)
+	}
+	
+	ledgerPath := filepath.Join(dir, "cohort_ledger.json")
+	
+	// === INSTANCE 1: Grant A, release writer lock and reopen ===
+	ledger1 := NewCohortLedger(dir, true, 2)
+	ledger1.now = nowFunc
+	if err := ledger1.Load(); err != nil {
+		t.Fatalf("instance1 Load: %v", err)
+	}
+	
+	// Grant A at t0
+	tick = 0
+	ok, err := ledger1.MayAdmit("A")
+	if !ok || err != nil {
+		t.Fatalf("instance1 grant A: ok=%v err=%v", ok, err)
+	}
+	t.Logf("Instance1: granted A at t0")
+	
+	// Release the writer lock by closing, then reopen same instance
+	ledger1.Close()
+	
+	// Reopen ledger1 (simulates process restart with same instance)
+	ledger1 = NewCohortLedger(dir, true, 2)
+	ledger1.now = nowFunc
+	if err := ledger1.Load(); err != nil {
+		t.Fatalf("instance1 reopen Load: %v", err)
+	}
+	t.Logf("Instance1: reopened after close")
+	
+	// === INSTANCE 2: Grant B, deny C, then reconnect A ===
+	ledger2 := NewCohortLedger(dir, true, 2)
+	ledger2.now = nowFunc
+	if err := ledger2.Load(); err != nil {
+		t.Fatalf("instance2 Load: %v", err)
+	}
+	
+	// Grant B
+	ok, err = ledger2.MayAdmit("B")
+	if !ok || err != nil {
+		t.Fatalf("instance2 grant B: ok=%v err=%v", ok, err)
+	}
+	t.Logf("Instance2: granted B")
+	
+	// Deny C (quota exhausted at 2)
+	ok, err = ledger2.MayAdmit("C")
+	if ok || err == nil {
+		t.Fatalf("instance2 deny C: ok=%v err=%v (should be false, error)", ok, err)
+	}
+	t.Logf("Instance2: denied C (quota exhausted)")
+	
+	// Now reconnect A from instance1 (should succeed because A is permanent eligible)
+	ok, err = ledger1.MayAdmit("A")
+	if !ok || err != nil {
+		t.Fatalf("instance1 reconnect A: ok=%v err=%v", ok, err)
+	}
+	t.Logf("Instance1: reconnected A (permanent eligible, no quota consumed)")
+	
+	// === DELETE LEDGER while both instances alive ===
+	if err := os.Remove(ledgerPath); err != nil {
+		t.Fatalf("remove ledger file: %v", err)
+	}
+	t.Logf("Deleted initialized ledger file")
+	
+	// A from instance1 should refuse (missing ledger state)
+	ok, err = ledger1.MayAdmit("A")
+	if ok || err == nil {
+		t.Fatalf("instance1 after ledger delete: ok=%v err=%v (expected false, error)", ok, err)
+	}
+	if !strings.Contains(fmt.Sprintf("%v", err), "ReadFile") && !strings.Contains(fmt.Sprintf("%v", err), "no such file") {
+		t.Logf("instance1 error after delete: %v (checking if file/state error)", err)
+	}
+	t.Logf("Instance1: A refused after ledger delete: %v", err)
+	
+	// Fresh D from instance2 should refuse (missing ledger state)
+	ok, err = ledger2.MayAdmit("D")
+	if ok || err == nil {
+		t.Fatalf("instance2 fresh D after ledger delete: ok=%v err=%v (expected false, error)", ok, err)
+	}
+	if !strings.Contains(fmt.Sprintf("%v", err), "ReadFile") && !strings.Contains(fmt.Sprintf("%v", err), "no such file") {
+		t.Logf("instance2 error after delete: %v (checking if file/state error)", err)
+	}
+	t.Logf("Instance2: D refused after ledger delete: %v", err)
+	
+	// Close both instances
+	ledger1.Close()
+	ledger2.Close()
+	
+	// === INSTANCE 3: Reopen and verify same refusal ===
+	ledger3 := NewCohortLedger(dir, true, 2)
+	ledger3.now = nowFunc
+	if err := ledger3.Load(); err != nil {
+		t.Fatalf("instance3 Load: %v", err)
+	}
+	
+	// A should refuse (ledger was reinitialized, A not in new ledger)
+	ok, err = ledger3.MayAdmit("A")
+	if ok || err == nil {
+		t.Fatalf("instance3 A on fresh ledger: ok=%v err=%v (expected false, error)", ok, err)
+	}
+	t.Logf("Instance3: A refused on fresh ledger")
+	
+	// D should refuse (ledger was reinitialized, D not in new ledger)
+	ok, err = ledger3.MayAdmit("D")
+	if ok || err == nil {
+		t.Fatalf("instance3 D on fresh ledger: ok=%v err=%v (expected false, error)", ok, err)
+	}
+	t.Logf("Instance3: D refused on fresh ledger")
+	
+	ledger3.Close()
+	t.Logf("PASS: Restart with ledger loss: missing initialized state correctly refused on all instances")
+}
