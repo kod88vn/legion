@@ -35,6 +35,16 @@ done
 [ "$YES" = 1 ] || DRY_RUN=1
 rathena_gate   # at most one recreate per hour (DRY_RUN only reports)
 
+# Derive project name once, before first docker compose call
+COMPOSE_PROJECT=$(derive_project_name "$COMPOSE_FILE")
+
+# Build compose argument array: empty for default, or -f/-p for selected manifest
+if [ "$COMPOSE_FILE" = "docker-compose.yml" ]; then
+  compose_args=()
+else
+  compose_args=(-f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT")
+fi
+
 AYLA_STATUS=/mnt/g/RO/legion/openkore-ayla/logs/status.json
 RATHENA_WAIT=${RATHENA_WAIT:-240}   # s for "Map-server 0 loading complete."
 AYLA_WAIT=${AYLA_WAIT:-300}         # s for Ayla back in game
@@ -106,9 +116,9 @@ echo "followers (service:rathena), recreated right after rathena, in order: $FOL
 T0=$(date +%s)
 T0ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-[ "$BUILD" = 1 ] && run docker compose build rathena
+[ "$BUILD" = 1 ] && run docker compose "${compose_args[@]}" build rathena
 if [ -n "$DBCHG" ]; then
-  run docker compose up -d --no-deps db
+  run docker compose "${compose_args[@]}" up -d --no-deps db
   if [ "$DRY_RUN" != 1 ]; then
     echo -n "waiting for ro-db healthy"
     for _ in $(seq 1 60); do
@@ -119,7 +129,7 @@ if [ -n "$DBCHG" ]; then
 fi
 
 [ "$DRY_RUN" = 1 ] || "$PYTHON" "$SYSDIR/deploylog.py" rathena-record ${RATHENA_HOUR_OVERRIDE:+--override "$RATHENA_HOUR_OVERRIDE"} || true
-run docker compose up -d --no-deps --force-recreate rathena
+run docker compose "${compose_args[@]}" up -d --no-deps --force-recreate rathena
 
 if [ "$DRY_RUN" != 1 ]; then
   echo -n "waiting for rathena map-server"
@@ -135,7 +145,6 @@ fi
 # Each keeps the image it is RUNNING (recorded in $PIN before anything was touched), never the current :latest tag
 # (10:20 2026-11-14: legion/legion-core came back on an untested ro-legion:latest).
 # Thread COMPOSE_FILE and project name (-p) through all docker compose calls.
-COMPOSE_PROJECT=$(derive_project_name "$COMPOSE_FILE")
 # shellcheck disable=SC2086
 run docker compose -f "$COMPOSE_FILE" -f "$PIN" -p "$COMPOSE_PROJECT" up -d --no-deps --no-build --pull never --force-recreate $FOLLOW
 
@@ -145,7 +154,7 @@ run docker compose -f "$COMPOSE_FILE" -f "$PIN" -p "$COMPOSE_PROJECT" up -d --no
 RID=$(docker inspect -f '{{.Id}}' ro-rathena)
 bad=0
 for s in $FOLLOW; do
-  c=$(docker compose ps -a --format '{{.Name}}' "$s" | head -1); [ -n "$c" ] || c="ro-$s"
+  c=$(docker compose "${compose_args[@]}" ps -a --format '{{.Name}}' "$s" | head -1); [ -n "$c" ] || c="ro-$s"
   ns=$(docker inspect -f '{{.HostConfig.NetworkMode}} {{.State.Running}}' "$c" 2>/dev/null || echo "missing")
   if [ "$ns" = "container:$RID true" ]; then echo "ok   $c in rathena's namespace, running"
   else echo "BAD  $c: $ns (want container:${RID:0:12} true)"; bad=1; fi
