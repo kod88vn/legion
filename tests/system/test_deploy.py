@@ -1873,39 +1873,36 @@ class TestStaticRules(unittest.TestCase):
 
     def test_gocheck_macOS_docker_payload_sets_nonzero_rc_on_test_failures(self):
         """RED then GREEN: gocheck.sh macOS Docker payload exits nonzero on test failures.
-        Executes the ACTUAL payload with fake Go test output, proves fail-closed behavior."""
+        Executes the ACTUAL test-result-analysis payload (after go test) with fake Go test output."""
         
         import subprocess
         import tempfile
-        import shutil
         
         # Read the actual gocheck.sh script
         gocheck_path = os.path.join(REPO, "tools", "dev", "gocheck.sh")
         with open(gocheck_path) as f:
             script = f.read()
         
-        # Extract the macOS non-FAST payload (the actual shell code that runs tests)
-        # This is the code after "else:" that runs "go test -count=1 -v $ARGS"
+        # Extract the macOS non-FAST payload section: lines after "go test" that analyze test.log
         payload_start = script.find('go test -count=1 -v $ARGS ./... >test.log 2>&1')
         self.assertGreater(payload_start, 0, "Could not find test payload in gocheck.sh")
         
-        # Find the section from go test through exit $rc
+        # Find the section from the ANALYSIS after go test through exit $rc
         payload_section = script[payload_start:]
         lines = payload_section.split('\n')
         
-        # Collect lines until we hit "exit $rc"
+        # Skip the "go test" line (line 0), collect from analysis onward through exit $rc
         payload_lines = []
-        for line in lines:
+        for i, line in enumerate(lines):
+            if i == 0:  # Skip the "go test" line
+                continue
             payload_lines.append(line)
             if line.strip().startswith('exit $rc'):
                 break
         
         payload = '\n'.join(payload_lines)
-        self.assertIn('[ "$F" -gt 0 ]', payload, 
-                     "Payload must check if F > 0 for test failures")
         
-        # Test case 1: FAILING tests (expects nonzero exit - GREEN proof)
-        # Create a fake test.log with failures
+        # Test case 1: FAILING tests (pre-fix: exit 0 RED, post-fix: exit 1 GREEN)
         with tempfile.TemporaryDirectory() as tmpdir:
             test_log = os.path.join(tmpdir, 'test.log')
             with open(test_log, 'w') as f:
@@ -1917,42 +1914,27 @@ FAIL	github.com/kod88vn/legion	0.015s
 FAIL
 ''')
             
-            # Create wrapper script that sets up the environment and runs the payload
+            # Create wrapper that injects the extracted payload (analysis only)
             wrapper = os.path.join(tmpdir, 'wrapper.sh')
             with open(wrapper, 'w') as f:
                 f.write(f'''#!/bin/bash
-set -e
+set +e
 cd {tmpdir}
+# Set up environment for payload
 export ARGS=""
 export RUN=""
-# Count test results from test.log (which we pre-populated with failures)
-P=$(grep -c "^--- PASS" test.log) || P=0
-F=$(grep -c "^--- FAIL" test.log) || F=0
-S=$(grep -c "^--- SKIP" test.log) || S=0
-echo "tests: pass=$P fail=$F skip=$S"
-TOT=$(grep -cE "^--- (PASS|FAIL|SKIP)" test.log) || TOT=0
 rc=0
-if [ "$TOT" -eq 0 ]; then 
-  echo "tests: NO TESTS RAN"; 
-  rc=1
-fi
-if [ "$F" -gt 0 ]; then 
-  echo "FAILING: test failures detected"; 
-  rc=1
-fi
-grep -E "^(FAIL|ok|panic:)|build failed|\\[setup failed\\]" test.log | head -10 || true
-exit $rc
+# Execute the actual extracted payload (test-result analysis, go test already run)
+{payload}
 ''')
             os.chmod(wrapper, 0o755)
             
-            # Execute the payload with failures
+            # Execute with actual payload
             result = subprocess.run(['bash', wrapper], cwd=tmpdir, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0, 
-                               f"Payload must exit nonzero on test failures\nStdout: {result.stdout}\nStderr: {result.stderr}")
-            self.assertIn('FAILING: test failures detected', result.stdout,
-                         "Payload must report test failures")
+                               f"Payload must exit nonzero on test failures (oracle: pre-fix exit 0 RED, post-fix exit 1 GREEN)\nStdout: {result.stdout}\nStderr: {result.stderr}")
         
-        # Test case 2: CLEAN pass (expects zero exit - GREEN proof)
+        # Test case 2: CLEAN pass (expects 0 - GREEN)
         with tempfile.TemporaryDirectory() as tmpdir:
             test_log = os.path.join(tmpdir, 'test.log')
             with open(test_log, 'w') as f:
@@ -1962,40 +1944,26 @@ exit $rc
 ok	github.com/kod88vn/legion	0.015s
 ''')
             
-            # Create wrapper script for clean pass
+            # Create wrapper with actual payload
             wrapper = os.path.join(tmpdir, 'wrapper.sh')
             with open(wrapper, 'w') as f:
                 f.write(f'''#!/bin/bash
-set -e
+set +e
 cd {tmpdir}
+# Set up environment for payload
 export ARGS=""
 export RUN=""
-# Count test results from clean test.log
-P=$(grep -c "^--- PASS" test.log) || P=0
-F=$(grep -c "^--- FAIL" test.log) || F=0
-S=$(grep -c "^--- SKIP" test.log) || S=0
-echo "tests: pass=$P fail=$F skip=$S"
-TOT=$(grep -cE "^--- (PASS|FAIL|SKIP)" test.log) || TOT=0
 rc=0
-if [ "$TOT" -eq 0 ]; then 
-  echo "tests: NO TESTS RAN"; 
-  rc=1
-fi
-if [ "$F" -gt 0 ]; then 
-  echo "FAILING: test failures detected"; 
-  rc=1
-fi
-grep -E "^(FAIL|ok|panic:)|build failed|\\[setup failed\\]" test.log | head -10 || true
-exit $rc
+# Execute the actual extracted payload (test-result analysis)
+{payload}
 ''')
             os.chmod(wrapper, 0o755)
             
-            # Execute the payload with clean results
+            # Execute with actual payload
             result = subprocess.run(['bash', wrapper], cwd=tmpdir, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, 
-                            f"Payload must exit 0 on clean pass\nStdout: {result.stdout}\nStderr: {result.stderr}")
-            self.assertIn('pass=3 fail=0', result.stdout,
-                         "Clean case must show all passes, zero failures")
+                            f"Payload must exit 0 on clean pass (oracle: clean pass exit 0 GREEN)\nStdout: {result.stdout}\nStderr: {result.stderr}")
+
 
     def test_cohortdata_manifest_in_both_composes(self):
         """GREEN: Both docker-compose.yml and docker-compose.server.yml have correct cohort/volume structure."""
@@ -2033,8 +2001,19 @@ exit $rc
                          f"{compose_file} legion must mount cohortdata:/cohort-state")
             self.assertIn('-cohort-dir=/cohort-state', raw_compose,
                          f"{compose_file} legion must have -cohort-dir=/cohort-state flag")
-            self.assertIn('/data', raw_compose,
-                         f"{compose_file} legion must retain /data bind mount")
+            
+            # Extract legion section and verify persona mount source/target
+            legion_start = raw_compose.find('legion:')
+            legion_end = raw_compose.find('\n  legion-core:', legion_start)
+            if legion_end == -1:
+                legion_end = raw_compose.find('\nvolumes:', legion_start)
+                if legion_end == -1:
+                    legion_end = len(raw_compose)
+            legion_section = raw_compose[legion_start:legion_end]
+            
+            # Verify actual persona bind: ./legion/data:/data
+            self.assertIn('./legion/data:/data', legion_section,
+                         f"{compose_file} legion must have bind mount ./legion/data:/data for persona storage")
             
             # Verify core service (if present) does NOT have cohort
             if 'legion-core:' in raw_compose:
@@ -2057,6 +2036,7 @@ exit $rc
                 # Core must have durable=false
                 self.assertIn('durable-cohort=false', core_section,
                             f"{compose_file} legion-core must have durable-cohort=false hardcoded")
+
 
 
 
