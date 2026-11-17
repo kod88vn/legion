@@ -7,6 +7,150 @@ import (
 	"time"
 )
 
+func TestCollectBoundaryMatchesPT06(t *testing.T) {
+	member := func(x int) pubState {
+		return pubState{Name: "m", Map: "pay_fild04", X: x, Y: 100, Online: true, HPFrac: 1}
+	}
+
+	got, ok := chooseCollectTarget("pay_fild04", 100, 100, []pubState{member(120), member(121)})
+	if !ok || got.X != 121 {
+		t.Fatalf("PT06 boundary selection = (%d, %v), want 21-cell member", got.X, ok)
+	}
+	if got, ok = chooseCollectTarget("pay_fild04", 100, 100, []pubState{member(120)}); ok {
+		t.Fatalf("PT06 must not collect at exactly 20 cells, got %+v", got)
+	}
+}
+
+func TestCollectRecoveryResetsUnavailableMemberState(t *testing.T) {
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 0.8}
+	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
+		now, 0, false, time.Minute, false)
+	member.HPFrac = 0.6
+	state, _ = classifyCollectRecovery(state, member.Map, 100, 100, member,
+		now.Add(3*time.Second), 0, false, time.Minute, false)
+	if state.hpCount != 2 {
+		t.Fatalf("fixture health trend has %d points, want 2", state.hpCount)
+	}
+
+	cases := []struct {
+		name   string
+		member pubState
+	}{
+		{"offline", func() pubState { s := member; s.Online = false; return s }()},
+		{"dead", func() pubState { s := member; s.HPFrac = 0; return s }()},
+		{"changed map", func() pubState { s := member; s.Map = "pay_fild03"; return s }()},
+		{"unknown position", func() pubState { s := member; s.X, s.Y, s.LX, s.LY = 0, 0, 0, 0; return s }()},
+		{"missing identity", func() pubState { s := member; s.Name = ""; return s }()},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, decision := classifyCollectRecovery(state, member.Map, 100, 100, tc.member,
+				now.Add(4*time.Second), 0, false, time.Minute, false)
+			if !decision.reset || got != (collectRecoveryState{}) {
+				t.Fatalf("invalid member retained recovery state: reset=%t state=%+v", decision.reset, got)
+			}
+		})
+	}
+}
+
+func TestCollectRecoveryStaleHealthTrendKeepsRetryBound(t *testing.T) {
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 0.8}
+	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
+		now, 0, false, time.Minute, false)
+	member.HPFrac = 0.6
+	state, _ = classifyCollectRecovery(state, member.Map, 100, 100, member,
+		now.Add(3*time.Second), 0, false, time.Minute, false)
+	retryAt := now.Add(30 * time.Second)
+	state.retryAt = retryAt
+
+	state, _ = classifyCollectRecovery(state, member.Map, 100, 100, member,
+		now.Add(10*time.Second), 0, false, time.Minute, false)
+	if state.hpCount != 1 || state.lastHP != member.HPFrac || !state.retryAt.Equal(retryAt) {
+		t.Fatalf("stale trend reset lost the bounded retry or retained old HP: state=%+v", state)
+	}
+
+	b := &Bot{collectRecovery: map[string]collectRecoveryState{"Wizard": state}}
+	b.pruneCollectionRecovery(nil)
+	if len(b.collectRecovery) != 0 {
+		t.Fatalf("roster removal retained recovery state: %+v", b.collectRecovery)
+	}
+}
+
+func TestCollectRecoveryDoesNotApplyTimerRetryWithoutReachableETA(t *testing.T) {
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 1}
+	window := 90 * time.Second
+	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
+		now, 0, false, window, false)
+	state = beginCollectRecovery(state, member, now, false, 0, false)
+
+	expiry := now.Add(window + time.Second)
+	state, expired := classifyCollectRecovery(state, member.Map, 100, 100, member,
+		expiry, 0, false, window, true)
+	if expired.keep || expired.stalled || !state.retryAt.IsZero() {
+		t.Fatalf("unreachable member received timer-only stall suppression: decision=%+v retryAt=%s", expired, state.retryAt)
+	}
+
+	_, candidate := classifyCollectRecovery(state, member.Map, 100, 100, member,
+		expiry, 0, false, window, false)
+	if !candidate.eligible {
+		t.Fatalf("unreachable member did not retain existing retry behavior: decision=%+v", candidate)
+	}
+}
+
+func TestCollectRecoveryUsesRouteETAForDetourProgress(t *testing.T) {
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 1}
+	window := 90 * time.Second
+	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
+		now, time.Minute, true, window, false)
+	state = beginCollectRecovery(state, member, now, false, time.Minute, true)
+
+	state, progress := classifyCollectRecovery(state, member.Map, 99, 100, member,
+		now.Add(30*time.Second), 50*time.Second, true, window, true)
+	if !progress.progress || !progress.keep || state.bestETA != 50*time.Second {
+		t.Fatalf("shorter route ETA did not preserve collection progress: decision=%+v state=%+v", progress, state)
+	}
+}
+
+func TestCollectRecoveryContactWaitEndsOnMovementOrRetryDeadline(t *testing.T) {
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 1}
+	window := 90 * time.Second
+	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
+		now, 0, false, window, false)
+	state = beginCollectRecovery(state, member, now, false, 0, false)
+
+	state, contact := classifyCollectRecovery(state, member.Map, 114, 100, member,
+		now.Add(time.Second), 0, true, window, true)
+	retryAt := now.Add(time.Second + window)
+	if !contact.contact || contact.keep || !state.retryAt.Equal(retryAt) {
+		t.Fatalf("contact did not start a bounded wait: decision=%+v retryAt=%s", contact, state.retryAt)
+	}
+	contactState := state
+
+	state, waiting := classifyCollectRecovery(state, member.Map, 115, 100, member,
+		now.Add(2*time.Second), 0, true, window, false)
+	if waiting.eligible {
+		t.Fatalf("stationary contact wait ended before movement or deadline: decision=%+v", waiting)
+	}
+
+	moved := member
+	moved.X, moved.LX = member.X+1, member.LX+1
+	state, movement := classifyCollectRecovery(state, member.Map, 115, 100, moved,
+		now.Add(3*time.Second), 0, true, window, false)
+	if !movement.eligible || !state.retryAt.IsZero() {
+		t.Fatalf("member movement did not release the contact wait: decision=%+v retryAt=%s", movement, state.retryAt)
+	}
+
+	if _, deadline := classifyCollectRecovery(contactState, member.Map, 114, 100, member,
+		retryAt, 0, true, window, false); !deadline.eligible {
+		t.Fatal("legitimate retry remained blocked after the bounded wait")
+	}
+}
+
 // QA 2026-11-14 07:31: 11 of 14 collecting bot leaders were collecting a member within 20 cells or busy fighting,
 // and members 10-20 cells away waited "coming to get me". together.go is the one rule both sides use.
 func TestTogetherRule(t *testing.T) {

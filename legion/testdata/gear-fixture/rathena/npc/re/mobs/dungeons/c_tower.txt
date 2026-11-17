@@ -1,0 +1,25 @@
+//===== rAthena Script =======================================
+//= Clock Tower Monster Spawn Script
+//===== By: ==================================================
+//= Athena (1.0)
+//===== Current Version: =====================================
+//= 1.2
+//===== Compatible With: =====================================
+//= rAthena Project
+//===== Additional Comments: =================================
+//= 1.0 Split from combined Alde and CT spawn file. [L0ne_W0lf]
+//= 1.1 Added nightmare clock tower. [Ridley8819]
+//= 1.2 Correct Spawn by Navigation's mob data. [attackjom]
+//============================================================
+
+//==================================================
+// c_tower1 - Clock Tower 1f
+//==================================================
+c_tower1,0,0	monster	Rideword	1195,107,5000
+c_tower2,0,0	monster	Rideword	1195,16,5000
+c_tower2,0,0	monster	Elder	1377,2,5000
+c_tower3,0,0	monster	Rideword	1195,8,5000
+c_tower4,0,0	monster	Rideword	1195,15,5000
+c_tower4,0,0	monster	Elder	1377,2,5000
+c_tower2_,0,0	monster	Arc Elder	2920,2,3600000
+c_tower3_,0,0	monster	Owl Marquis	2923,3,5000,5000

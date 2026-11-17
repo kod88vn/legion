@@ -1,0 +1,15 @@
+# Local rAthena item_db overrides (bind-mounted over /rathena/db/import/item_db.yml, docker-compose.yml).
+# Only the fields listed here change; everything else comes from db/re/item_db_*.yml.
+# Owner 2026-11-14: "lower price to help bots" - Butterfly Wing back to the official Renewal NPC price
+# (rAthena RE db has 1,000z). Drop rates stay official (owner): never touch them here.
+
+Header:
+  Type: ITEM_DB
+  Version: 3
+
+Body:
+  - Id: 602
+    AegisName: Wing_Of_Butterfly
+    Name: Butterfly Wing
+    Buy: 300
+    Sell: 150

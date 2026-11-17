@@ -2036,3 +2036,27 @@ Kind: party rule. First date: 2026-11-15.
 ```text
 Ayla has made virtually no progress for the past hours because you stupid fuck kept screwing up. This party is not strong enough, choose the right map
 ```
+
+## ST09 - Staged bot admission
+
+Kind: server setting. First date: 2026-11-17.
+
+```text
+Owner directive (2026-11-17): "in parallel, I want you to run the legion with the real server and test the 
+improvements over time. Seed 100 bots every hour, not all at once. Have the server rate at 5x. run dashboard for me 
+to see. Remember the rule, Ayla's party is your main test subjects when you monitor closeless, other bots in the 
+legion you monitor them at large. So you have 2 data point, the best in the legion, the average and Ayla as your 
+test subject. If Ayla is not perfomring the best, you're doing something wrong. Other aspects as market and 
+class/build variety are also important to monitor. Now do it"
+```
+
+## AY27 - Ayla and best-performer as primary test subjects
+
+Kind: Ayla rule. First date: 2026-11-17.
+
+```text
+Owner directive (2026-11-17): "If Ayla is not perfomring the best, you're doing something wrong" (from the same message)
+"Ayla's party is your main test subjects when you monitor closeless, other bots in the legion you monitor them at large"
+"So you have 2 data point, the best in the legion, the average and Ayla as your test subject"
+```
+

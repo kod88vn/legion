@@ -1,0 +1,32 @@
+//===== rAthena Script =======================================
+//= Geffen Fields Monster Spawn Script
+//===== By: ==================================================
+//= Athena (1.0)
+//===== Current Version: =====================================
+//= 1.7
+//===== Compatible With: =====================================
+//= rAthena Project
+//===== Additional Comments: =================================
+//= 1.2 Map names typos fix [Lupus]
+//= 1.3 Official kRO 10.1 spawns + future changes [Playtester]
+//= 1.4 More accurate spawns [Playtester]
+//= 1.5 Corrected MVP spawn variance. [L0ne_W0lf]
+//= 1.6 Updated to renewal spawns. [L0ne_W0lf]
+//= 1.7 Correct Spawn by Navigation's mob data. [attackjom]
+//============================================================
+
+//==================================================
+// gef_fild00 - Geffen Field
+//==================================================
+gef_fild00,0,0	monster	Fabre	1007,34,5000
+gef_fild02,0,0	monster	Poporing	1031,24,5000
+gef_fild03,0,0	monster	Orc Warrior	1023,73,5000
+gef_fild04,0,0	monster	Lunatic	1063,25,5000
+gef_fild04,0,0	monster	Fabre	1007,25,5000
+gef_fild05,0,0	monster	Creamy	1018,143,5000
+gef_fild06,0,0	monster	Side Winder	1037,36,5000
+gef_fild07,0,0	monster	Fabre	1007,20,5000
+gef_fild10,0,0	monster	Orc Warrior	1023,179,5000
+gef_fild11,0,0	monster	Goblin	1122,58,5000
+gef_fild11,0,0	monster	Goblin	1123,58,5000
+gef_fild11,0,0	monster	Goblin	1125,58,5000

@@ -233,6 +233,7 @@ type Bot struct {
 	tgtID           uint32          // ghost-target watchdog: the target being watched
 	waitSince       time.Time       // party leader: waiting for a straggler since
 	collectName     string          // party leader: the straggler being collected
+	collectRecovery map[string]collectRecoveryState
 	// escort.go: escorted crossings of a dangerous approach map
 	escKey, escSafe, escDanger string    // cached crossingDanger for "map|dest"
 	escWaitAt                  string    // member: waiting at this safe point for an escort (published)
@@ -395,7 +396,8 @@ func NewBot(p *Persona) *Bot {
 		ents: map[uint32]*Entity{}, items: map[uint32]*GroundItem{}, inv: map[int]*InvItem{},
 		skills: map[int]*SkillInfo{}, buffAt: map[string]time.Time{}, cart: map[int]*InvItem{},
 		partyHP: map[uint32][2]int{}, roster: map[string]string{}, wake: make(chan struct{}, 1),
-		equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}, bump: make(chan struct{}, 1)}
+		collectRecovery: map[string]collectRecoveryState{},
+		equipped:        map[uint32]*InvItem{}, gearFailed: map[int]bool{}, bump: make(chan struct{}, 1)}
 }
 
 func (b *Bot) send(p []byte) error {
@@ -725,7 +727,7 @@ func (b *Bot) handle(pk []byte) {
 				noteDeathAt(b.MapName)                 // danger.go: real deaths in a 10-minute window
 				b.noteBossDeath(time.Now())            // bossnote.go: a boss killed us here: the spot is shared for 10 min
 				b.noteKiteDeath(now)                   // kite.go (market WP1): a death within a minute of a kiting step
-				noteFarmerDeath(b, now) // farmers.go (WP3): a farmer's death counts toward its metrics
+				noteFarmerDeath(b, now)                // farmers.go (WP3): a farmer's death counts toward its metrics
 				b.deathLog = append(b.deathLog, mapVisit{m: b.MapName, at: time.Now()})
 				leaderNoteDeath(partyLeaderName(b), b.MapName) // party.go: 2 party deaths on a map keep the leader's parties off it 1 h
 				b.diedAt = time.Now()
@@ -912,7 +914,7 @@ func (b *Bot) handle(pk []byte) {
 			}
 			it.Count += int(le.Uint16(pk[4:]))
 			b.Loots++
-			b.meterLoot(it.ItemID, int(le.Uint16(pk[4:]))) // meter.go: market value of the loot
+			b.meterLoot(it.ItemID, int(le.Uint16(pk[4:])))       // meter.go: market value of the loot
 			noteFarmerLoot(b, it.ItemID, int(le.Uint16(pk[4:]))) // farmers.go (WP3): a farmer's loot
 			atomic.AddInt64(&stats.loots, 1)
 		}
@@ -1567,15 +1569,42 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		b.saleRoom, b.saleTried = "", false
 		b.mu.Unlock()
 		loginGate <- struct{}{} // limit concurrent logins
-		err := b.connect(loginAddr)
-		<-loginGate
-		if err != nil {
-			release()
+		// Attempt cohort admission and connect via production seam.
+		attempted, cohortErr := attemptCohortConnect(b.aid, func() error {
+			return b.connect(loginAddr)
+		})
+		<-loginGate // release login slot after admit+connect attempt (success or failure)
+		
+		// Handle admission denial vs. connect errors distinctly
+		if !attempted {
+			// Quota denial: not admitted (attempted=false means callback wasn't invoked)
+			release() // release onlineSlots
 			b.mu.Lock()
-			b.LastErr, b.State = err.Error(), "login failed"
+			if cohortErr != nil {
+				b.LastErr = "cohort gate error: " + cohortErr.Error()
+			} else {
+				b.LastErr = "cohort gate: quota exhausted (100/hour exceeded)"
+			}
+			b.State = "login blocked (cohort gate)"
 			b.mu.Unlock()
 			atomic.AddInt64(&stats.loginFail, 1)
-			if lead && mapServerFull(err) && makeRoomFor(b) { // leaderroom.go: a slot holder steps aside
+			select {
+			case <-stop:
+				return
+			case <-time.After(1 * time.Minute): // back off before retrying next window
+			}
+			continue
+		}
+		
+		// Callback was invoked (attempted=true); check if it returned an error
+		if cohortErr != nil {
+			// Connect error: callback was invoked but returned error
+			release() // release onlineSlots
+			b.mu.Lock()
+			b.LastErr, b.State = cohortErr.Error(), "login failed"
+			b.mu.Unlock()
+			atomic.AddInt64(&stats.loginFail, 1)
+			if lead && mapServerFull(cohortErr) && makeRoomFor(b) { // leaderroom.go: a slot holder steps aside
 				backoff = 10 * time.Second
 			}
 			select {
@@ -1583,11 +1612,12 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 				return
 			case <-time.After(backoff + time.Duration(b.rng.Intn(5000))*time.Millisecond):
 			}
-			if backoff < 2*time.Minute && !(serverStarting(err) && backoff >= 20*time.Second) { // loginready.go
+			if backoff < 2*time.Minute && !(serverStarting(cohortErr) && backoff >= 20*time.Second) { // loginready.go
 				backoff *= 2
 			}
 			continue
 		}
+		
 		backoff = 5 * time.Second
 		atomic.AddInt64(&stats.online, 1)
 		// session routine: sociable players hang around town after logging in; everyone heads back to town
