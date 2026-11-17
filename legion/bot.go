@@ -1569,11 +1569,13 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		b.saleRoom, b.saleTried = "", false
 		b.mu.Unlock()
 		loginGate <- struct{}{} // limit concurrent logins
-		// Check durable cohort admission gate (if enabled).
-		admittedToCohort, cohortErr := CheckCohortAdmission(b.aid)
-		if cohortErr != nil || !admittedToCohort {
-			<-loginGate // release login slot before backing off
-			release()   // release onlineSlots
+		// Attempt cohort admission and connect via production seam.
+		attempted, cohortErr := attemptCohortConnect(b.aid, func() error {
+			return b.connect(loginAddr)
+		})
+		<-loginGate // release login slot after admit+connect attempt (success or failure)
+		if cohortErr != nil || !attempted {
+			release() // release onlineSlots
 			b.mu.Lock()
 			if cohortErr != nil {
 				b.LastErr = "cohort gate error: " + cohortErr.Error()
@@ -1587,28 +1589,6 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			case <-stop:
 				return
 			case <-time.After(1 * time.Minute): // back off before retrying next window
-			}
-			continue
-		}
-		// Hold loginGate slot through connect() to maintain login pacing.
-		err := b.connect(loginAddr)
-		<-loginGate // release login slot after connect attempt (success or failure)
-		if err != nil {
-			release()
-			b.mu.Lock()
-			b.LastErr, b.State = err.Error(), "login failed"
-			b.mu.Unlock()
-			atomic.AddInt64(&stats.loginFail, 1)
-			if lead && mapServerFull(err) && makeRoomFor(b) { // leaderroom.go: a slot holder steps aside
-				backoff = 10 * time.Second
-			}
-			select {
-			case <-stop:
-				return
-			case <-time.After(backoff + time.Duration(b.rng.Intn(5000))*time.Millisecond):
-			}
-			if backoff < 2*time.Minute && !(serverStarting(err) && backoff >= 20*time.Second) { // loginready.go
-				backoff *= 2
 			}
 			continue
 		}

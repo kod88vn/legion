@@ -165,26 +165,25 @@ func TestProductionGuardEnforcesAdmission(t *testing.T) {
 	
 	// First admission should succeed and invoke connect
 	connectCallCount = 0
-	admitted, err := CheckCohortAdmission(1001)
-	if !admitted || err != nil {
-		t.Fatalf("first admission: admitted=%v err=%v", admitted, err)
+	attempted, err := attemptCohortConnect(1001, connectFunc)
+	if !attempted || err != nil {
+		t.Fatalf("first admission: attempted=%v err=%v", attempted, err)
 	}
-	// In production, this would be: err = attemptCohortConnect(1001, connectFunc)
-	// For now, we simulate by calling connectFunc manually in a test-specific way
-	// This is the limitation of the current API; production would have:
-	// attemptCohortConnect(accountID, connect func() error) which calls guard then connect.
-	connectFunc() // simulate connect for first user
+	// Verify connect was called exactly once
+	if connectCallCount != 1 {
+		t.Fatalf("connect should have been called once: count=%d", connectCallCount)
+	}
 	
 	// Second admission with same quota=1 should fail
 	connectCallCount = 0
-	admitted, err = CheckCohortAdmission(1002)
-	if admitted || err == nil {
-		t.Fatalf("second admission with quota=1: admitted=%v err=%v (expected false, error)", admitted, err)
+	attempted, err = attemptCohortConnect(1002, connectFunc)
+	if attempted || err == nil {
+		t.Fatalf("second admission with quota=1: attempted=%v err=%v (expected false, error)", attempted, err)
 	}
 	
 	// Verify spy wasn't called (guard blocked before connect attempt)
 	if connectCallCount != 0 {
-		t.Fatalf("connect was called even though admission should have been denied")
+		t.Fatalf("connect was called even though admission should have been denied: count=%d", connectCallCount)
 	}
 	
 	t.Logf("PASS: Production guard enforces admission quota")
