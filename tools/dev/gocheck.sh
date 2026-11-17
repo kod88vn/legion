@@ -33,8 +33,9 @@ SRCARG="$DIR"                       # the path as given (Git Bash form), for thi
 
 # ---- macOS native fallback: use cached Go Docker image (network_mode: none, read-only source, disposable outputs)
 if [ "$(uname -s)" = "Darwin" ]; then
-  # Check if docker is available and go image exists (cached)
-  if command -v docker >/dev/null 2>&1 && docker image inspect golang:latest >/dev/null 2>&1; then
+  # Check if docker is available and golang:1.22 image exists (cached)
+  # golang:1.22 is from legion/Dockerfile (repository-grounded version matching go.mod)
+  if command -v docker >/dev/null 2>&1 && docker image inspect golang:1.22 >/dev/null 2>&1; then
     # Run Go checks inside cached golang Docker image, read-only source, no network
     cd "$DIR" || exit 2
     SRC_DIR="$(pwd)"
@@ -46,6 +47,7 @@ if [ "$(uname -s)" = "Darwin" ]; then
     cp *.html recvpackets.txt "$T"/ 2>/dev/null || true
     
     # Build the gocheck command to run inside container
+    # golang:1.22 is pinned in legion/Dockerfile, matches go.mod
     DOCKER_CMD='
 set -e
 export GOCACHE=/tmp/.cache/go-build GOFLAGS=-mod=mod GOTOOLCHAIN=local GOPROXY=off
@@ -81,8 +83,9 @@ exit $rc
     echo "gocheck: source $DIR  git HEAD $HEAD0"
     
     # Run docker with read-only source, temp work dir, no network
+    # Using golang:1.22 cached image (matches legion/Dockerfile)
     rc=0
-    docker run --rm --network none -v "$SRC_DIR:/src:ro" -v "$T:/work" golang:latest bash -c "$DOCKER_CMD" || rc=$?
+    docker run --rm --network none -v "$SRC_DIR:/src:ro" -v "$T:/work" golang:1.22 bash -c "$DOCKER_CMD" || rc=$?
     
     HEAD1="$(git -C "$SRC_DIR" rev-parse HEAD 2>/dev/null || echo "none")"
     if [ "$HEAD1" = "$HEAD0" ]; then
@@ -94,8 +97,8 @@ exit $rc
     fi
   fi
   # Fallback: no cached golang image available on native macOS
-  echo "gocheck: native macOS detected, but no cached golang:latest Docker image available"
-  echo "gocheck: install Go or use WSL (exit 2: nothing was checked)"
+  echo "gocheck: native macOS detected, but no cached golang:1.22 Docker image available"
+  echo "gocheck: install Go 1.22 or pull golang:1.22 Docker image, or use WSL (exit 2: nothing was checked)"
   exit 2
 fi
 

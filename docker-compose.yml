@@ -162,7 +162,8 @@ services:
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
     # profiles log in/out on their own daily schedules; at most LEGION_MAX_ONLINE are online at once
     # the owner's core test party runs in legion-core (below), so deploying this service never logs it out
-    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}"]
+    # -durable-cohort: when true, enable durable admission ledger across container restarts (default: false)
+    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}", "-durable-cohort", "${LEGION_DURABLE_COHORT:-false}"]
     restart: unless-stopped
 
   legion-core:
@@ -190,7 +191,8 @@ services:
     # run tools/system/ayla_engine_migrate.py, then set tuning engine_parties to "Ayla". Until then Ayla is not in -only.
     # Stop openkore-ayla (ro-openkore-ayla) BEFORE legion-core logs her in: two sessions on one account kick each other (G19).
     # Engine start order: ro-openkore-ayla stopped, migration applied, tuning engine_parties set, then legion-core recreated.
-    command: ["run", "-only", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}", "-api", "127.0.0.1:8091", "-pprof", "127.0.0.1:6061", "-stagger", "2s"]
+    # -durable-cohort: when true, enable durable admission ledger across container restarts (default: false)
+    command: ["run", "-only", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}", "-api", "127.0.0.1:8091", "-pprof", "127.0.0.1:6061", "-stagger", "2s", "-durable-cohort", "${LEGION_DURABLE_COHORT:-false}"]
     restart: unless-stopped
 
   mastermind:
