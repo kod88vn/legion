@@ -27,6 +27,7 @@ type CohortLedger struct {
 	loadAttempted       bool
 	failClosed          bool // if true, all admissions denied (corrupt state or write failure)
 	ledgerExistedOnLoad bool // true if ledger file existed when we loaded (used to detect deletion/corruption)
+	now                 func() time.Time // optional: for testing. if nil, uses time.Now().UTC()
 }
 
 // cohortState is the persistent JSON structure on disk.
@@ -54,6 +55,7 @@ func NewCohortLedger(dataDir string, enabled bool, maxPerHour int) *CohortLedger
 		},
 		failClosed:          false,
 		ledgerExistedOnLoad: false,
+		now:                 nil, // will use time.Now().UTC() by default
 	}
 	return cl
 }
@@ -269,7 +271,13 @@ func (cl *CohortLedger) MayAdmit(accountID string) (bool, error) {
 
 	// Not admitted yet. Check if we can grant a new quota slot.
 
-	now := time.Now().UTC()
+	// Use injected clock for testing, or time.Now().UTC() for production
+	var now time.Time
+	if cl.now != nil {
+		now = cl.now()
+	} else {
+		now = time.Now().UTC()
+	}
 
 	// If quota window is empty (no grants yet), this grant starts a new window.
 	// Update window start to NOW so the next 1 hour is measured from this grant time.
