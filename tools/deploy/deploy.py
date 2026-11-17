@@ -112,9 +112,9 @@ def execute(argv, cwd=ROOT):
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
-def up_argv(svc, override):
+def up_argv(svc, override, compose_file="docker-compose.yml"):
     """The one compose `up` this script runs: a single service, --no-deps, pinned by the override file."""
-    return ["docker", "compose", "-f", "docker-compose.yml", "-f", override, "up", "-d", "--no-deps", "--no-build",
+    return ["docker", "compose", "-f", compose_file, "-f", override, "up", "-d", "--no-deps", "--no-build",
             "--pull", "never", svc]
 
 
@@ -224,7 +224,7 @@ class Deploy:
     apply, printed otherwise). Tests inject `execute_fn`, `sleep`, `reviews_dir` and `resolve`."""
 
     def __init__(self, root=ROOT, apply=False, execute_fn=None, sleep=time.sleep, reviews_dir=None, resolve=None,
-                 out=print):
+                 out=print, compose_file="docker-compose.yml"):
         self.root = root
         self.apply = apply
         self.execute = execute_fn or execute
@@ -232,6 +232,7 @@ class Deploy:
         self.reviews_dir = reviews_dir or reviewcheck.REVIEWS
         self.resolve = resolve or reviewcheck.resolve
         self.out = out
+        self.compose_file = compose_file
         self.logpath = None
         self.head = None  # full sha of HEAD, read once by batch(): the merges are checked and the deploy recorded for it
 
@@ -259,6 +260,10 @@ class Deploy:
 
     def tail(self, text, n=30):
         return "\n".join(text.splitlines()[-n:])
+
+    def compose_argv(self, *args):
+        """Build a docker compose command with the configured compose file."""
+        return ["docker", "compose", "-f", self.compose_file] + list(args)
 
     # ---------------------------------------------------------------- gates
     def gate_review(self, fixes, reviewed):
@@ -326,7 +331,7 @@ class Deploy:
 
     def hash_drift(self, svc):
         """Reason string when the container's compose config differs from the compose file, else None."""
-        rc, out = self.run(compose_argv("config", "--hash", svc))
+        rc, out = self.run(self.compose_argv("config", "--hash", svc))
         parts = out.split()
         want = parts[1] if rc == 0 and len(parts) > 1 else ""
         if not want:
@@ -346,13 +351,13 @@ class Deploy:
             r = self.hash_drift(svc)
             if r:
                 why.append(r)
-        rc, out = self.run(compose_argv("up", "-d", "--no-build", "--dry-run", *services))
+        rc, out = self.run(self.compose_argv("up", "-d", "--no-build", "--dry-run", *services))
         if rc != 0:
             why.append("compose dry-run (with deps) failed: %s" % self.tail(out, 3))
         for line in out.splitlines():
             if re.search(r"Container (ro-rathena|ro-db)\b.*(Recreat|Creat)", line):
                 why.append("compose dry-run (with deps) would change: " + line.strip())
-        rc, out = self.run(compose_argv("up", "-d", "--no-deps", "--no-build", "--dry-run", *services))
+        rc, out = self.run(self.compose_argv("up", "-d", "--no-deps", "--no-build", "--dry-run", *services))
         if rc != 0:
             why.append("compose dry-run (--no-deps) failed: %s" % self.tail(out, 3))
         named = set()
@@ -521,13 +526,18 @@ class Deploy:
         self.say("  3. save a pre-deploy league snapshot (league.py --stdout)")
         n = 4
         for svc in services:
-            self.say("  %d. up %s: %s" % (n, svc, " ".join(up_argv(svc, os.path.join(run_dir, "override.yml")))))
+            self.say("  %d. up %s: %s" % (n, svc, " ".join(up_argv(svc, os.path.join(run_dir, "override.yml"), self.compose_file))))
             self.say("     verify the running image; record the deploy for %s in legion/data/deploys.jsonl" % svc)
             n += 1
         self.say("  %d. Ayla must be back in game within %d s (G19)" % (n, AYLA_WINDOW_S))
         self.say("Rerun with --apply to do it.")
 
     def batch(self, fix_texts, reviewed, critical, services_raw, lifted, image=None):
+        # Validate compose file exists
+        compose_path = os.path.join(self.root, self.compose_file)
+        if not os.path.exists(compose_path):
+            raise Refused(GATE, "REFUSED: compose file not found: %s" % self.compose_file)
+        
         services = [s.strip() for s in services_raw.split(",") if s.strip()]
         bad = [s for s in services if s not in ALLOWED]
         if bad or not services:
@@ -598,7 +608,7 @@ class Deploy:
             start_epoch = int(C.now())
             start_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(C.now()))
             for i, svc in enumerate(services):
-                rc, out = self.act(up_argv(svc, override))
+                rc, out = self.act(up_argv(svc, override, self.compose_file))
                 if rc:
                     raise Refused(FAILED, "UP FAILED for %s - nothing more deployed:\n%s" % (svc, self.tail(out)))
                 self.say("up %s: %s" % (svc, self.tail(out, 2)))
@@ -663,11 +673,12 @@ def main(argv=None, deploy=None):
     ap.add_argument("--reviewed", action="append", default=[], help="the fix's commit (one per --fix, same order)")
     ap.add_argument("--critical", default=None, help="reason: skips the 3-hour gap (G17)")
     ap.add_argument("--services", default="legion,legion-core")
+    ap.add_argument("--compose", default="docker-compose.yml", help="compose file path relative to repo root (default: docker-compose.yml)")
     ap.add_argument("--image", default=None, help="deploy this existing image instead of building (no rebuild)")
     ap.add_argument("--apply", action="store_true", help="do it (default: dry run)")
     ap.add_argument("--owner-lifts-hold", action="store_true", help="only when the owner has said so (G21)")
     a = ap.parse_args(argv)
-    d = deploy or Deploy(apply=a.apply)
+    d = deploy or Deploy(apply=a.apply, compose_file=a.compose)
     try:
         if a.command == "compare":
             return d.compare()
