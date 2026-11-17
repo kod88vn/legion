@@ -1066,6 +1066,38 @@ echo "$result"
                 except Exception as e:
                     self.fail(f"derive_project_name {input_file} execution failed: {e}")
     
+    def test_fake_docker_unknown_command_returns_nonzero(self):
+        """TEST INFRA: Fake docker with unknown subcommand returns nonzero + diagnostic.
+        
+        RecordingFakeDocker should refuse unknown commands, never silently succeed.
+        This prevents test harness from masking real docker errors.
+        """
+        # Invoke fake docker with unknown subcommand; should fail, not return 0
+        script = """
+set -e
+export PATH="{fake_path}"
+
+# Try unknown docker subcommand (not compose)
+docker unknown-subcommand 2>&1 || true  # Capture exit code
+echo "EXIT:$?"
+""".format(fake_path=self.fake_path)
+        
+        script_path = os.path.join(self.root, "test_unknown_cmd.sh")
+        with open(script_path, 'w') as f:
+            f.write(script)
+        
+        try:
+            rc, output = self._run_script(script_path)
+            # Extract exit code from last line
+            lines = output.strip().split('\n')
+            exit_line = [l for l in lines if l.startswith('EXIT:')]
+            self.assertTrue(exit_line, f"Could not find exit code in output: {output}")
+            exit_code = int(exit_line[0].split(':')[1])
+            self.assertNotEqual(exit_code, 0, 
+                             "Fake docker unknown-subcommand must return nonzero, not silently succeed (exit 0)")
+        except Exception as e:
+            self.fail(f"test_fake_docker_unknown_command_returns_nonzero failed: {e}")
+    
     def test_bare_compose_calls_missing_flags_stage_a(self):
         """STAGE A: rathena_recreate.sh has bare docker compose calls without -f/-p (BROKEN).
         
