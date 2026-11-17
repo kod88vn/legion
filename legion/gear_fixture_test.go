@@ -29,7 +29,9 @@ type gearFixtureManifest struct {
 	BuildCoverage struct {
 		RegisteredBuildVariants    int               `json:"registered_build_variants"`
 		RegisteredSecondJobClasses int               `json:"registered_second_job_classes"`
+		SecondJobClassIDs          []int             `json:"second_job_class_ids"`
 		GuideBuildRecords          int               `json:"guide_build_records"`
+		RegisteredBuildIDs         []string          `json:"registered_build_ids"`
 		DirectGuideBuildIDs        []string          `json:"direct_guide_build_ids"`
 		BaseGuideAliases           map[string]string `json:"base_guide_aliases"`
 		UncoveredBuildIDs          []string          `json:"uncovered_build_ids"`
@@ -210,7 +212,31 @@ func replayPinnedGearFixture(t *testing.T, root string) {
 	}
 
 	gearTables := buildGearTable()
-	if got := sortedFixtureIDs(currentBuildGearDemand(t)); !reflect.DeepEqual(got, manifest.Demand.ItemIDs) {
+	currentCoverage := currentRegisteredBuildCoverage(t)
+	if len(currentCoverage.BuildIDs) != manifest.BuildCoverage.RegisteredBuildVariants ||
+		!reflect.DeepEqual(currentCoverage.BuildIDs, manifest.BuildCoverage.RegisteredBuildIDs) {
+		t.Fatalf("current registered build IDs differ from provenance: got %v, want %v",
+			currentCoverage.BuildIDs, manifest.BuildCoverage.RegisteredBuildIDs)
+	}
+	if len(currentCoverage.ClassIDs) != manifest.BuildCoverage.RegisteredSecondJobClasses ||
+		!reflect.DeepEqual(currentCoverage.ClassIDs, manifest.BuildCoverage.SecondJobClassIDs) {
+		t.Fatalf("current second-job class IDs differ from provenance: got %v, want %v",
+			currentCoverage.ClassIDs, manifest.BuildCoverage.SecondJobClassIDs)
+	}
+	if len(currentCoverage.GuideFile.Builds) != manifest.BuildCoverage.GuideBuildRecords ||
+		!reflect.DeepEqual(currentCoverage.DirectGuideBuildIDs, manifest.BuildCoverage.DirectGuideBuildIDs) {
+		t.Fatalf("current direct guide IDs differ from provenance: got %v, want %v",
+			currentCoverage.DirectGuideBuildIDs, manifest.BuildCoverage.DirectGuideBuildIDs)
+	}
+	if !reflect.DeepEqual(currentCoverage.BaseGuideAliases, manifest.BuildCoverage.BaseGuideAliases) {
+		t.Fatalf("current Base-guide aliases differ from provenance: got %v, want %v",
+			currentCoverage.BaseGuideAliases, manifest.BuildCoverage.BaseGuideAliases)
+	}
+	if !reflect.DeepEqual(currentCoverage.UncoveredBuildIDs, manifest.BuildCoverage.UncoveredBuildIDs) {
+		t.Fatalf("current uncovered build IDs differ from provenance: got %v, want %v",
+			currentCoverage.UncoveredBuildIDs, manifest.BuildCoverage.UncoveredBuildIDs)
+	}
+	if got := sortedFixtureIDs(currentCoverage.DemandedItemIDs); !reflect.DeepEqual(got, manifest.Demand.ItemIDs) {
 		t.Fatalf("current registered routes and loaded guides differ from fixture demand: got %v, want %v",
 			got, manifest.Demand.ItemIDs)
 	}
@@ -332,33 +358,78 @@ func sortedFixtureIDs(ids map[int]bool) []int {
 	return out
 }
 
-func currentBuildGearDemand(t *testing.T) map[int]bool {
-	t.Helper()
-	demand := map[int]bool{}
-	for _, build := range builds {
-		for _, id := range build.Weapons {
-			demand[id] = true
-		}
-		for _, id := range build.Armors {
-			demand[id] = true
-		}
-	}
+type currentBuildCoverage struct {
+	BuildIDs            []string
+	ClassIDs            []int
+	DirectGuideBuildIDs []string
+	BaseGuideAliases    map[string]string
+	UncoveredBuildIDs   []string
+	GuideFile           *bgFile
+	DemandedItemIDs     map[int]bool
+}
 
+func currentRegisteredBuildCoverage(t *testing.T) currentBuildCoverage {
+	t.Helper()
 	buildGear.Lock()
 	guideFile := buildGear.file
 	buildGear.Unlock()
-	if guideFile == nil {
+	coverage := currentBuildCoverage{
+		BaseGuideAliases:    make(map[string]string),
+		BuildIDs:            []string{},
+		ClassIDs:            []int{},
+		DirectGuideBuildIDs: []string{},
+		UncoveredBuildIDs:   []string{},
+		GuideFile:           guideFile,
+		DemandedItemIDs:     make(map[int]bool),
+	}
+	if coverage.GuideFile == nil {
 		t.Fatal("production build gear guide file was not loaded")
 	}
-	for _, guide := range guideFile.Builds {
+	classIDs := map[int]bool{}
+	for key, build := range builds {
+		if build == nil {
+			t.Fatalf("registered build %q is nil", key)
+		}
+		if build.ID != key {
+			t.Fatalf("registered build key %q differs from Build.ID %q", key, build.ID)
+		}
+		coverage.BuildIDs = append(coverage.BuildIDs, build.ID)
+		classIDs[build.Class] = true
+		for _, id := range build.Weapons {
+			coverage.DemandedItemIDs[id] = true
+		}
+		for _, id := range build.Armors {
+			coverage.DemandedItemIDs[id] = true
+		}
+		switch {
+		case coverage.GuideFile.Builds[build.ID] != nil:
+			coverage.DirectGuideBuildIDs = append(coverage.DirectGuideBuildIDs, build.ID)
+		case coverage.GuideFile.Builds[build.base()] != nil:
+			coverage.BaseGuideAliases[build.ID] = build.base()
+		default:
+			coverage.UncoveredBuildIDs = append(coverage.UncoveredBuildIDs, build.ID)
+		}
+	}
+
+	for classID := range classIDs {
+		coverage.ClassIDs = append(coverage.ClassIDs, classID)
+	}
+	for _, guide := range coverage.GuideFile.Builds {
+		if guide == nil {
+			t.Fatal("production build gear guide contains a nil record")
+		}
 		for _, band := range guide.Bands {
 			for _, id := range band.Weapon {
-				demand[id] = true
+				coverage.DemandedItemIDs[id] = true
 			}
 			for _, id := range band.Armor {
-				demand[id] = true
+				coverage.DemandedItemIDs[id] = true
 			}
 		}
 	}
-	return demand
+	sort.Strings(coverage.BuildIDs)
+	sort.Ints(coverage.ClassIDs)
+	sort.Strings(coverage.DirectGuideBuildIDs)
+	sort.Strings(coverage.UncoveredBuildIDs)
+	return coverage
 }
