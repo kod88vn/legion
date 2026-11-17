@@ -6,6 +6,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -1291,16 +1292,25 @@ bash "{recreate_script}" --yes 2>&1
         
         # Assert DESIRED behavior: rathena-up should have -f and -p flags
         # (This fails on current broken source until Stage B fix is applied)
-        rathena_up_str = ' '.join(str(arg) for arg in rathena_up_call)
+        # Use raw argv list with exact token matching (not substring)
+        self.assertIn('-f', rathena_up_call,
+                     f"rathena up call missing '-f' token: {rathena_up_call}")
         
-        self.assertIn('-f', rathena_up_str,
-                     f"rathena up call missing -f flag: {rathena_up_str}")
-        self.assertIn('docker-compose.server.yml', rathena_up_str,
-                     f"rathena up call missing docker-compose.server.yml: {rathena_up_str}")
-        self.assertIn('-p', rathena_up_str,
-                     f"rathena up call missing -p flag: {rathena_up_str}")
-        self.assertIn('ro-server', rathena_up_str,
-                     f"rathena up call missing ro-server project: {rathena_up_str}")
+        # Find -f and verify next token is docker-compose.server.yml
+        f_idx = rathena_up_call.index('-f')
+        self.assertLess(f_idx + 1, len(rathena_up_call),
+                       f"'-f' at end of call, no manifest following: {rathena_up_call}")
+        self.assertEqual(rathena_up_call[f_idx + 1], 'docker-compose.server.yml',
+                        f"'-f' not followed by 'docker-compose.server.yml': {rathena_up_call}")
+        
+        # Assert -p token and verify next is ro-server
+        self.assertIn('-p', rathena_up_call,
+                     f"rathena up call missing '-p' token: {rathena_up_call}")
+        p_idx = rathena_up_call.index('-p')
+        self.assertLess(p_idx + 1, len(rathena_up_call),
+                       f"'-p' at end of call, no project following: {rathena_up_call}")
+        self.assertEqual(rathena_up_call[p_idx + 1], 'ro-server',
+                        f"'-p' not followed by 'ro-server': {rathena_up_call}")
     
     
     def test_bare_compose_calls_missing_flags_stage_a(self):
