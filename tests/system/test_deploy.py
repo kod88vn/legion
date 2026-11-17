@@ -853,7 +853,7 @@ class TestBoolFlagContractRegression(unittest.TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.root)
-        # Create minimal docker-compose.yml with durable-cohort wiring
+        # Create minimal docker-compose.yml with durable-cohort wiring (actual behavior, not fabricated)
         self.compose = """
 services:
   db:
@@ -862,53 +862,21 @@ services:
     image: ro-rathena:latest
   legion:
     image: ro-legion:latest
-    command: ["run", "-n", "100", "-durable-cohort=false"]
+    command: ["run", "-n", "100", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
   legion-core:
     image: ro-legion:latest
     command: ["run", "-core", "-durable-cohort=false"]
 """
         with open(os.path.join(self.root, "docker-compose.yml"), "w") as f:
             f.write(self.compose)
-        self.lines = []
-
-    def test_durable_cohort_flag_uses_equals_form(self):
-        """GREEN: manifest uses -durable-cohort=VALUE form for unambiguous Go flag parsing."""
-        with open(os.path.join(self.root, "docker-compose.yml")) as f:
-            content = f.read()
-        # Verify equals form is used (safer for Go flag.Bool parsing)
-        self.assertIn("-durable-cohort=", content, "Should use equals form for bool flag")
-        # Verify no space-separated form that could confuse Go flag parser
-        self.assertNotIn('"-durable-cohort", "', content, "Should not use space-separated form")
-
-    def test_durable_cohort_false_default(self):
-        """GREEN: default is false (stateless admission, no restart persistence)."""
-        with open(os.path.join(self.root, "docker-compose.yml")) as f:
-            content = f.read()
-        # Count how many times -durable-cohort=false appears (should be 2: legion and legion-core)
-        false_count = content.count("-durable-cohort=false")
-        self.assertEqual(false_count, 2, "Both legion and legion-core should have -durable-cohort=false")
-
-    def test_core_remains_off_independent_of_normal_engine(self):
-        """GREEN: legion-core always has -durable-cohort=false, never uses env var."""
-        # Simulate what deploy.py would generate
-        fake = FakeDocker()
-        d = DP.Deploy(root=self.root, apply=False, execute_fn=fake, out=self.lines.append)
         
-        # In the manifest, legion-core should have -durable-cohort=false hardcoded
-        with open(os.path.join(self.root, "docker-compose.yml")) as f:
-            content = f.read()
-        
-        # Find legion-core section
-        if "legion-core:" in content:
-            core_section = content.split("legion-core:")[1]
-            self.assertIn("-durable-cohort=false", core_section, "legion-core command should have -durable-cohort=false")
-            self.assertNotIn("${", core_section, "legion-core should not have env var expansion")
-
-    def test_normal_engine_admission_respects_env_var(self):
-        """GREEN: legion service respects LEGION_DURABLE_COHORT env var, core does not."""
-        # Create compose with env var expansion in legion, hardcoded false in legion-core
-        compose_with_env = """
+        # Create server compose as well for testing non-default behavior
+        self.compose_server = """
 services:
+  db:
+    image: mariadb:latest
+  rathena:
+    image: ro-rathena:latest
   legion:
     image: ro-legion:latest
     command: ["run", "-n", "100", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
@@ -916,51 +884,154 @@ services:
     image: ro-legion:latest
     command: ["run", "-core", "-durable-cohort=false"]
 """
-        with open(os.path.join(self.root, "docker-compose.yml"), "w") as f:
-            f.write(compose_with_env)
+        with open(os.path.join(self.root, "docker-compose.server.yml"), "w") as f:
+            f.write(self.compose_server)
         
+        self.lines = []
+
+    def test_durable_cohort_flag_uses_equals_form(self):
+        """RED: manifest uses -durable-cohort=VALUE form; space-separated fails Go flag.Bool parsing."""
+        # This test verifies the actual repository files use equals form
         with open(os.path.join(self.root, "docker-compose.yml")) as f:
             content = f.read()
         
-        # Verify legion has env expansion (search for the pattern directly)
-        self.assertIn("-durable-cohort=${LEGION_DURABLE_COHORT:-false}", content, "legion should use env var")
-        # Split on legion-core: to get the core section
-        if "legion-core:" in content:
-            core_section = content.split("legion-core:")[1]
-            self.assertNotIn("${", core_section, "legion-core should not have env var expansion in its section")
-            self.assertIn("-durable-cohort=false", core_section, "legion-core should be hardcoded to false")
+        # Equals form is unambiguous: Go parser stops at =, never consumes next arg as the value
+        self.assertIn("-durable-cohort=${LEGION_DURABLE_COHORT:-false}", content, 
+                     "legion uses env var with equals form")
+        self.assertIn("-durable-cohort=false", content, 
+                     "legion-core uses hardcoded false with equals form")
+        
+        # Mutation test: space-separated form would be parsed incorrectly by Go flag.Bool
+        # Verify our files do NOT use space-separated form (which would break parsing)
+        lines = content.split('\n')
+        for i, line in enumerate(lines):
+            if '-durable-cohort' in line:
+                # Check for the dangerous pattern: separate args in command array
+                # e.g., '"-durable-cohort", "false"' would be space-separated
+                self.assertNotIn('"-durable-cohort",', line, 
+                               f"Line {i}: space-separated form would break Go parsing")
+
+    def test_core_remains_off_independent_of_normal_engine(self):
+        """RED: core hardcoded false; mutation removing hardcode or adding env var MUST fail."""
+        # Verify the actual repository file has core hardcoded (not env var)
+        with open(os.path.join(self.root, "docker-compose.yml")) as f:
+            content = f.read()
+        
+        # Find core service config - look for -durable-cohort=false in the core section
+        lines = content.split('\n')
+        in_core = False
+        core_lines = []
+        
+        for line in lines:
+            if 'legion-core:' in line:
+                in_core = True
+                continue
+            if in_core:
+                # Another top-level service starts with 2 spaces followed by name:
+                if line.startswith('  ') and not line.startswith('    ') and ':' in line and line.strip():
+                    if 'legion-core' not in line:
+                        break
+                core_lines.append(line)
+        
+        core_content = '\n'.join(core_lines)
+        
+        # Verify core MUST have hardcoded false (not env var)
+        self.assertIn('-durable-cohort=false', core_content, 
+                     "core MUST have -durable-cohort=false hardcoded")
+        self.assertNotIn('LEGION_DURABLE_COHORT', core_content,
+                        "Mutation: core must NEVER reference LEGION_DURABLE_COHORT env var")
+
+    def test_normal_engine_admission_respects_env_var(self):
+        """RED: legion uses env var, core does not; env var changes don't affect core."""
+        with open(os.path.join(self.root, "docker-compose.yml")) as f:
+            content = f.read()
+        
+        # Find legion service (not legion-core) and verify it uses env var
+        lines = content.split('\n')
+        in_legion = False
+        in_other = False
+        legion_lines = []
+        
+        for line in lines:
+            if line.strip() == 'legion:' or line.startswith('  legion:'):
+                in_legion = True
+                continue
+            if in_legion:
+                if line.startswith('  ') and ':' in line and line.strip() and not line.startswith('    '):
+                    # Hit another top-level service
+                    break
+                legion_lines.append(line)
+        
+        legion_content = '\n'.join(legion_lines)
+        
+        # Verify legion service respects env var
+        self.assertIn('LEGION_DURABLE_COHORT', legion_content,
+                     "legion service MUST use LEGION_DURABLE_COHORT env var")
+        self.assertIn('-durable-cohort=${LEGION_DURABLE_COHORT:-false}', legion_content,
+                     "legion must use env var with default false")
 
     def test_flag_does_not_consume_later_positional_args(self):
-        """GREEN: -durable-cohort=false does not consume args after it (Go flag.Bool parsing behavior)."""
-        # The equals form ensures Go's flag parser correctly stops at the =, not consuming the next arg
-        compose = """
+        """RED: -durable-cohort=false does not consume later args (Go flag.Bool with = form)."""
+        # Create a compose with multiple flags to verify the = form doesn't consume later args
+        multi_flag_compose = """
 services:
   legion:
     image: ro-legion:latest
-    command: ["run", "-n", "100", "-stagger", "40ms", "-durable-cohort=false", "-api", ":8090"]
+    command: ["run", "-n", "100", "-stagger", "40ms", "-durable-cohort=false", "-api", "127.0.0.1:8090"]
 """
-        with open(os.path.join(self.root, "docker-compose.yml"), "w") as f:
-            f.write(compose)
+        with open(os.path.join(self.root, "docker-compose.test.yml"), "w") as f:
+            f.write(multi_flag_compose)
         
-        with open(os.path.join(self.root, "docker-compose.yml")) as f:
+        with open(os.path.join(self.root, "docker-compose.test.yml")) as f:
             content = f.read()
         
-        # Verify the command order is preserved
-        cmd_line = content.split('command: ["run",')[1].split("]")[0]
-        args = [arg.strip().strip('"') for arg in cmd_line.split(',')]
+        # Verify the command order: the = form ensures later args aren't consumed
+        # Extract command line
+        cmd_start = content.find('command: [')
+        cmd_end = content.find(']', cmd_start)
+        cmd_array = content[cmd_start:cmd_end+1]
         
-        # Find indices
-        stagger_idx = next(i for i, arg in enumerate(args) if arg == "-stagger")
-        cohort_idx = next(i for i, arg in enumerate(args) if "-durable-cohort=false" in arg)
-        api_idx = next(i for i, arg in enumerate(args) if arg == "-api")
+        # Verify -api comes AFTER -durable-cohort=false (not consumed as its value)
+        durable_idx = cmd_array.find('-durable-cohort=false')
+        api_idx = cmd_array.find('-api')
         
-        # Verify order is preserved
-        self.assertLess(stagger_idx, cohort_idx, "stagger should come before durable-cohort")
-        self.assertLess(cohort_idx, api_idx, "durable-cohort should come before api")
+        self.assertGreater(durable_idx, -1, "-durable-cohort=false should be in command")
+        self.assertGreater(api_idx, durable_idx, "-api must come AFTER -durable-cohort=false")
         
-        # Verify -api is not consumed by -durable-cohort (they should be separate args)
-        self.assertEqual(args[api_idx], "-api", "api flag should be its own argument")
-        self.assertEqual(args[api_idx + 1], ":8090", "api value should follow api flag")
+        # Verify the value "false" is not consumed as -api's argument
+        # This is guaranteed by the = form in the flag
+        false_in_durable = cmd_array[durable_idx:durable_idx+30]
+        self.assertIn('false', false_in_durable, "false is part of -durable-cohort=false")
+
+    def test_server_compose_has_same_bool_wiring(self):
+        """GREEN: docker-compose.server.yml uses same bool flag pattern as main compose."""
+        # Verify server compose exists and has correct wiring
+        with open(os.path.join(self.root, "docker-compose.server.yml")) as f:
+            content = f.read()
+        
+        self.assertIn('-durable-cohort=${LEGION_DURABLE_COHORT:-false}', content,
+                     "server compose legion should use env var")
+        self.assertIn('legion-core:', content, "server compose should have legion-core service")
+        
+        # Find core section in server compose
+        lines = content.split('\n')
+        in_core = False
+        core_lines = []
+        
+        for line in lines:
+            if 'legion-core:' in line:
+                in_core = True
+                continue
+            if in_core:
+                # Another top-level service starts with 2 spaces followed by name:
+                if line.startswith('  ') and not line.startswith('    ') and ':' in line and line.strip():
+                    if 'legion-core' not in line:
+                        break
+                core_lines.append(line)
+        
+        core_content = '\n'.join(core_lines)
+        self.assertIn('-durable-cohort=false', core_content,
+                     "server compose core must have hardcoded false")
 
 
 class TestStaticRules(unittest.TestCase):

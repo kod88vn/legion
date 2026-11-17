@@ -134,8 +134,10 @@ fi
 # Followers: must be recreated even if the map-server is slow, else they stay on the dead namespace.
 # Each keeps the image it is RUNNING (recorded in $PIN before anything was touched), never the current :latest tag
 # (10:20 2026-11-14: legion/legion-core came back on an untested ro-legion:latest).
+# Thread COMPOSE_FILE and project name (-p) through all docker compose calls.
+COMPOSE_PROJECT=$(derive_project_name "$COMPOSE_FILE")
 # shellcheck disable=SC2086
-run docker compose -f docker-compose.yml -f "$PIN" up -d --no-deps --no-build --pull never --force-recreate $FOLLOW
+run docker compose -f "$COMPOSE_FILE" -f "$PIN" -p "$COMPOSE_PROJECT" up -d --no-deps --no-build --pull never --force-recreate $FOLLOW
 
 [ "$DRY_RUN" = 1 ] && { echo "DRY_RUN: nothing changed"; exit 0; }
 

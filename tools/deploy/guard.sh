@@ -61,3 +61,13 @@ svc_field() {  # svc_field SERVICE KEY -> value of a top-level key of the servic
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"].get(sys.argv[1],{}).get(sys.argv[2],""))' "$1" "$2" 2>/dev/null || true
 }
 
+derive_project_name() {  # derive_project_name COMPOSE_FILE -> project name for -p flag
+  local cf="${1:-docker-compose.yml}"
+  # Default compose (docker-compose.yml) gets no -p flag for backward compat
+  if [ "$cf" = "docker-compose.yml" ]; then echo "ro"; return 0; fi
+  # Other files: strip docker-compose- prefix and .yml suffix, prepend ro-
+  local base=$(basename "$cf" .yml)
+  base=${base#docker-compose-}  # remove prefix if present
+  echo "ro-$base"
+}
+
