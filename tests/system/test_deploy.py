@@ -1179,21 +1179,45 @@ sys.exit(1)
         with open(compose_server, 'w') as f:
             f.write(self.compose_server)
         
-        # Modify the fake docker script: add 97 sentinel for rathena-up BEFORE generic compose handler
+        # Modify the fake docker script: add handlers before generic compose
+        # 1. DB health inspection (docker inspect -f '{{.State.Health.Status}}' ro-db)
+        # 2. Rathena-up sentinel (return 97)
+        # 3. Unknown command marker (record status, then exit 1)
         fake_docker_script = os.path.join(self.harness.fake_bin, "docker")
         
         with open(fake_docker_script) as f:
             docker_script = f.read()
         
-        # Insert sentinel handler for rathena-up BEFORE the generic compose handler
-        rathena_up_handler = '''# Handle rathena-up: return sentinel 97 (stops before post-recreate/Ayla)
+        # Insert handlers BEFORE generic compose handler
+        handlers_code = '''# Handle DB health inspection (pre-target call)
+if len(sys.argv) > 2 and sys.argv[1] == 'inspect':
+    if '-f' in sys.argv and 'State.Health.Status' in ' '.join(sys.argv):
+        print("healthy")
+        sys.exit(0)
+    sys.exit(0)
+
+# Handle rathena-up: return sentinel 97 (stops before post-recreate/Ayla)
 if len(sys.argv) > 2 and sys.argv[1] == 'compose' and 'up' in sys.argv and 'rathena' in sys.argv:
     sys.exit(97)
 
 '''
         docker_script = docker_script.replace(
             "# Handle all other docker compose commands (build, up, down, rm, etc.)\n",
-            rathena_up_handler + "# Handle all other docker compose commands (build, up, down, rm, etc.)\n"
+            handlers_code + "# Handle all other docker compose commands (build, up, down, rm, etc.)\n"
+        )
+        
+        # Update unknown command handler to record marker before failing
+        docker_script = docker_script.replace(
+            '''# Unknown command: fail-closed (not fail-open)
+print("Error: unrecognized command: {}".format(sys.argv[1] if len(sys.argv) > 1 else "?"), file=sys.stderr)
+sys.exit(1)''',
+            '''# Unknown command: record marker, then fail-closed
+log_file = os.environ.get('RECORDING_FAKE_DOCKER_LOG', '/dev/null')
+if log_file != '/dev/null':
+    with open(log_file, 'a') as f:
+        f.write(json.dumps({'tool': 'docker', 'argv': sys.argv[1:], 'status': 'UNHANDLED'}) + "\\n")
+print("Error: unrecognized command: {}".format(sys.argv[1] if len(sys.argv) > 1 else "?"), file=sys.stderr)
+sys.exit(1)'''
         )
         
         with open(fake_docker_script, 'w') as f:
@@ -1247,31 +1271,36 @@ bash "{recreate_script}" --yes 2>&1
         self.assertGreater(len(recorded), 0,
                           "No docker calls recorded; fixture may have failed")
         
-        # Find rathena up call
+        # Find rathena up call and check for UNHANDLED marker (status field)
         rathena_up_call = None
         unhandled_calls = []
         for call in recorded:
             argv = call.get('argv', [])
+            status = call.get('status', '')
             if 'up' in argv and 'rathena' in argv:
                 rathena_up_call = argv
-            if 'UNHANDLED' in ' '.join(str(a) for a in argv):
+            if status == 'UNHANDLED':
                 unhandled_calls.append(argv)
         
         self.assertIsNotNone(rathena_up_call,
                            f"rathena up call not found in record: {recorded}")
         
-        # Assert no UNHANDLED calls
+        # Assert no UNHANDLED calls (checks status marker field, not substring)
         self.assertEqual(len(unhandled_calls), 0,
-                        f"Unexpected UNHANDLED calls: {unhandled_calls}")
+                        f"Unexpected UNHANDLED calls (status marker): {unhandled_calls}")
         
-        # Assert current BROKEN: missing -f and -p flags on bare call
-        # (After Stage B fix, these assertions will change to assertIn)
+        # Assert DESIRED behavior: rathena-up should have -f and -p flags
+        # (This fails on current broken source until Stage B fix is applied)
         rathena_up_str = ' '.join(str(arg) for arg in rathena_up_call)
         
-        self.assertNotIn('-f', rathena_up_str,
-                        f"STAGE A regression: rathena up should NOT have -f flag yet: {rathena_up_str}")
-        self.assertNotIn('-p', rathena_up_str,
-                        f"STAGE A regression: rathena up should NOT have -p flag yet: {rathena_up_str}")
+        self.assertIn('-f', rathena_up_str,
+                     f"rathena up call missing -f flag: {rathena_up_str}")
+        self.assertIn('docker-compose.server.yml', rathena_up_str,
+                     f"rathena up call missing docker-compose.server.yml: {rathena_up_str}")
+        self.assertIn('-p', rathena_up_str,
+                     f"rathena up call missing -p flag: {rathena_up_str}")
+        self.assertIn('ro-server', rathena_up_str,
+                     f"rathena up call missing ro-server project: {rathena_up_str}")
     
     
     def test_bare_compose_calls_missing_flags_stage_a(self):
