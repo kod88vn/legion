@@ -235,6 +235,7 @@ type simWorld struct {
 	// leader collect state, as on Bot (collectName / collectAt)
 	collectName string
 	collectAt   time.Time
+	recovery    map[string]collectRecoveryState
 	// metrics
 	kills, apart, online, collecting, ticks int
 	mobile, mobileApart, deaths             int
@@ -435,32 +436,6 @@ func (a *simAgent) observedHPDrop(now time.Time, window time.Duration) float64 {
 	return top - a.hp
 }
 
-func (a *simAgent) projectedHPAt(now time.Time, horizon time.Duration) (float64, bool) {
-	cutoff := now.Add(-simHPTrendWindow)
-	var highest simHPSample
-	found := false
-	for _, sample := range a.hpHistory {
-		if sample.at.Before(cutoff) || !sample.at.Before(now) || sample.hp <= a.hp {
-			continue
-		}
-		if !found || sample.hp > highest.hp || sample.hp == highest.hp && sample.at.Before(highest.at) {
-			highest, found = sample, true
-		}
-	}
-	if !found {
-		return a.hp, false
-	}
-	elapsed := now.Sub(highest.at)
-	if elapsed <= 0 {
-		return a.hp, false
-	}
-	rate := (highest.hp - a.hp) / elapsed.Seconds()
-	if rate <= 0 {
-		return a.hp, false
-	}
-	return a.hp - rate*float64(horizon+simRescueForecastMargin)/float64(time.Second), true
-}
-
 // pub: what the leader reads about a member (party.go pubState), as published after the member's think.
 func (w *simWorld) pub(a *simAgent) pubState {
 	s := pubState{Name: a.name, Map: simMap, X: a.x, Y: a.y, LX: a.x, LY: a.y, HPFrac: a.hp, Online: !w.now.Before(a.deadTo)}
@@ -471,19 +446,44 @@ func (w *simWorld) pub(a *simAgent) pubState {
 }
 
 func simRescueETA(gm *GameMap, lx, ly, mx, my int) (time.Duration, bool) {
-	if dist(lx, ly, mx, my) <= togetherCells() {
-		return 0, true
+	return collectionRescueETA(gm, lx, ly, mx, my, int(simTick/time.Millisecond))
+}
+
+func (w *simWorld) observeCollectionRecovery(m *simAgent, committed bool) (collectRecoveryState, collectRecoveryDecision) {
+	if w.recovery == nil {
+		w.recovery = map[string]collectRecoveryState{}
 	}
-	path := gm.FindPath(lx, ly, mx, my, 80000)
-	if len(path) == 0 {
-		return 0, false
-	}
-	for i, cell := range path {
-		if dist(cell[0], cell[1], mx, my) <= togetherCells() {
-			return time.Duration(i+1) * simTick, true
+	member := w.pub(m)
+	state, decision := classifyCollectRecovery(w.recovery[m.name], simMap, w.lead.x, w.lead.y, member,
+		w.now, 0, false, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
+	if state.hpCount >= 2 && state.hpPoints[state.hpCount-1].hp < state.hpPoints[0].hp {
+		eta, ok := simRescueETA(w.gm, w.lead.x, w.lead.y, m.x, m.y)
+		if ok {
+			state, decision = classifyCollectRecovery(state, simMap, w.lead.x, w.lead.y, member,
+				w.now, eta, true, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
 		}
 	}
-	return time.Duration(len(path)) * simTick, true
+	if decision.reset {
+		delete(w.recovery, m.name)
+	} else {
+		w.recovery[m.name] = state
+	}
+	return state, decision
+}
+
+func seedSimCollectionRecovery(w *simWorld, m *simAgent) {
+	var state collectRecoveryState
+	for _, sample := range m.hpHistory {
+		member := w.pub(m)
+		member.HPFrac = sample.hp
+		eta, ok := simRescueETA(w.gm, w.lead.x, w.lead.y, m.x, m.y)
+		state, _ = classifyCollectRecovery(state, simMap, w.lead.x, w.lead.y, member,
+			sample.at, eta, ok, time.Duration(tune().LeaderCollectSec)*time.Second, false)
+	}
+	if w.recovery == nil {
+		w.recovery = map[string]collectRecoveryState{}
+	}
+	w.recovery[m.name] = state
 }
 
 func (w *simWorld) eventOutcomeAt(subject, tick int) (simEventOutcome, bool) {
@@ -626,46 +626,79 @@ func (w *simWorld) leaderThink() {
 	lx, ly := l.x, l.y
 	var tgt *simAgent
 	forecastRescue := false
-	if w.collectName != "" && w.now.Sub(w.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second {
+	committedCollect := false
+	if w.collectName != "" {
 		for _, m := range w.members {
-			if m.name == w.collectName && needsCollect(simMap, lx, ly, w.pub(m), true) && w.sameWalkRegion(lx, ly, m.x, m.y) {
+			if m.name != w.collectName {
+				continue
+			}
+			if w.policy == policyForecast {
+				_, recovery := w.observeCollectionRecovery(m, true)
+				if recovery.keep && needsCollectWithRisk(simMap, lx, ly, w.pub(m), true, recovery.risk) &&
+					w.sameWalkRegion(lx, ly, m.x, m.y) {
+					tgt, forecastRescue = m, recovery.risk
+					committedCollect = true
+					if recovery.progress {
+						w.collectAt = w.now
+					}
+				}
+			} else if w.now.Sub(w.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second &&
+				needsCollect(simMap, lx, ly, w.pub(m), true) && w.sameWalkRegion(lx, ly, m.x, m.y) {
 				tgt = m
+				committedCollect = true
 			}
 		}
 	}
 	if tgt == nil {
 		w.collectName = ""
-		if w.policy == policyForecast {
-			tgt = w.observedRescueTarget()
-			forecastRescue = tgt != nil
-		}
-		if tgt == nil {
-			candidates := make([]pubState, 0, len(w.members))
-			for _, m := range w.members {
-				if (w.policy == policyLadder || w.policy == policyForecast) &&
-					w.now.Before(m.leftTo) && !memberInDanger(w.pub(m)) {
+		candidates := make([]pubState, 0, len(w.members))
+		rescueRisk := map[string]bool{}
+		for _, m := range w.members {
+			member := w.pub(m)
+			risk := false
+			if w.policy == policyForecast {
+				_, recovery := w.observeCollectionRecovery(m, false)
+				if !recovery.eligible {
 					continue
 				}
-				if w.sameWalkRegion(lx, ly, m.x, m.y) {
-					candidates = append(candidates, w.pub(m))
-				}
+				risk = recovery.risk
 			}
-			if selected, ok := chooseCollectTarget(simMap, lx, ly, candidates); ok {
-				for _, m := range w.members {
-					if m.name == selected.Name {
-						tgt = m
-						break
-					}
+			if (w.policy == policyLadder || w.policy == policyForecast) &&
+				w.now.Before(m.leftTo) && !memberInDanger(member) && !risk {
+				continue
+			}
+			if w.sameWalkRegion(lx, ly, m.x, m.y) &&
+				needsCollectWithRisk(simMap, lx, ly, member, false, risk) {
+				candidates = append(candidates, member)
+				rescueRisk[m.name] = risk
+			}
+		}
+		var selected pubState
+		var ok bool
+		if w.policy == policyForecast {
+			selected, ok = chooseCollectTargetWithRisk(simMap, lx, ly, candidates, rescueRisk)
+		} else {
+			selected, ok = chooseCollectTarget(simMap, lx, ly, candidates)
+		}
+		if ok {
+			for _, m := range w.members {
+				if m.name == selected.Name {
+					tgt = m
+					forecastRescue = rescueRisk[m.name]
+					break
 				}
 			}
 		}
 		if tgt != nil {
 			w.collectName, w.collectAt = tgt.name, w.now
+			if w.policy == policyForecast {
+				w.recovery[tgt.name] = beginCollectRecovery(w.recovery[tgt.name], lx, ly, w.pub(tgt), w.now, forecastRescue)
+			}
 		}
 	}
 	if tgt != nil {
 		w.collecting++
-		if w.policy == policyLadder || w.policy == policyForecast && !forecastRescue {
+		if w.policy == policyLadder || w.policy == policyForecast && !forecastRescue && !committedCollect {
 			w.ladder(tgt)
 		}
 		w.walkToward(l, tgt.x, tgt.y)
@@ -675,29 +708,6 @@ func (w *simWorld) leaderThink() {
 		x, y := w.mainCell()
 		w.walkToward(l, x, y)
 	}
-}
-
-func (w *simWorld) observedRescueTarget() *simAgent {
-	var best *simAgent
-	bestETA := time.Duration(1<<63 - 1)
-	for _, m := range w.members {
-		if dist(w.lead.x, w.lead.y, m.x, m.y) <= togetherCells() ||
-			!w.sameWalkRegion(w.lead.x, w.lead.y, m.x, m.y) {
-			continue
-		}
-		eta, ok := simRescueETA(w.gm, w.lead.x, w.lead.y, m.x, m.y)
-		if !ok {
-			continue
-		}
-		projectedHP, hasTrend := m.projectedHPAt(w.now, eta)
-		if !hasTrend || projectedHP > collectDangerHP {
-			continue
-		}
-		if best == nil || eta < bestETA {
-			best, bestETA = m, eta
-		}
-	}
-	return best
 }
 
 // ladder (candidate exception rule): a straggler the leader has already reached, and that still has not moved for a
@@ -1052,6 +1062,7 @@ func simObservedRescueFixture(t *testing.T, policy simPolicy) (*simWorld, *simAg
 		{at: w.now.Add(-4 * time.Second), hp: 1},
 		{at: w.now, hp: m.hp},
 	}
+	seedSimCollectionRecovery(w, m)
 	if got := w.pub(m).Target; got != 0 {
 		t.Fatalf("idle synthetic ambush should expose no target, got %d", got)
 	}
@@ -1081,9 +1092,95 @@ func TestObservedRescueForecastRequiresDecliningHP(t *testing.T) {
 		{at: w.now.Add(-4 * time.Second), hp: member.hp},
 		{at: w.now, hp: member.hp},
 	}
+	seedSimCollectionRecovery(w, member)
 	w.leaderThink()
 	if w.collectName == member.name {
 		t.Fatal("flat HP history triggered an observed rescue forecast")
+	}
+}
+
+func TestObservedRescueForecastResetsOnHealing(t *testing.T) {
+	w, member := simObservedRescueFixture(t, policyForecast)
+	member.hp = 0.605
+	member.hpHistory = []simHPSample{
+		{at: w.now.Add(-4 * time.Second), hp: 0.65},
+		{at: w.now.Add(-2 * time.Second), hp: 0.6},
+		{at: w.now, hp: member.hp},
+	}
+	seedSimCollectionRecovery(w, member)
+	if got := w.pub(member).Target; got != 0 {
+		t.Fatalf("recovered synthetic ambush should expose no target, got %d", got)
+	}
+	w.leaderThink()
+	if w.collectName == member.name {
+		t.Fatal("healing after a health decline left the member in rescue risk")
+	}
+}
+
+func TestObservedRescueForecastKeepsProgressingLongCollection(t *testing.T) {
+	w, member := simObservedRescueFixture(t, policyForecast)
+	w.leaderThink()
+	if w.collectName != member.name {
+		t.Fatalf("fixture did not start a collection, got %q", w.collectName)
+	}
+	member.leftTo = w.now.Add(5 * time.Minute)
+	startedAt := w.collectAt
+	window := time.Duration(tune().LeaderCollectSec) * time.Second
+
+	for attempt := 1; attempt <= 2; attempt++ {
+		path := w.gm.FindPath(w.lead.x, w.lead.y, member.x, member.y, 80000)
+		if len(path) == 0 {
+			t.Fatal("fixture lost the route to the member")
+		}
+		w.lead.x, w.lead.y = path[0][0], path[0][1]
+		w.now = startedAt.Add(time.Duration(attempt) * (window + time.Second))
+		w.leaderThink()
+		if w.collectName != member.name {
+			t.Fatalf("progressing collection was abandoned after window %d: collecting %q, state %+v, leader=(%d,%d), member=(%d,%d)",
+				attempt, w.collectName, w.recovery[member.name], w.lead.x, w.lead.y, member.x, member.y)
+		}
+	}
+}
+
+func TestObservedRescueForecastWaitsAfterReachingAnImmobileMember(t *testing.T) {
+	w, member := simObservedRescueFixture(t, policyForecast)
+	member.hp = 1
+	member.hpHistory = []simHPSample{{at: w.now, hp: member.hp}}
+	member.leftTo, member.ambushTo = time.Time{}, time.Time{}
+	member.lastMoveAt, member.reachedAt = w.now, time.Time{}
+	for _, other := range w.members {
+		if other != member {
+			other.leftTo = w.now.Add(10 * time.Minute)
+		}
+	}
+	seedSimCollectionRecovery(w, member)
+	w.leaderThink()
+	if w.collectName != member.name {
+		t.Fatalf("fixture did not start a collection, got %q", w.collectName)
+	}
+
+	var contactAt time.Time
+	for tick := 0; tick < 1000; tick++ {
+		w.now = w.now.Add(simTick)
+		w.leaderThink()
+		if w.collectName == "" && dist(w.lead.x, w.lead.y, member.x, member.y) <= collectStopCells() {
+			contactAt = w.now
+			break
+		}
+	}
+	if contactAt.IsZero() {
+		t.Fatalf("leader did not complete the progressing collection: distance=%d leader=(%d,%d) member=(%d,%d) collect=%q recovery=%+v path=%d",
+			dist(w.lead.x, w.lead.y, member.x, member.y), w.lead.x, w.lead.y, member.x, member.y,
+			w.collectName, w.recovery[member.name], len(w.lead.path))
+	}
+
+	window := time.Duration(tune().LeaderCollectSec) * time.Second
+	for elapsed := simTick; elapsed < window; elapsed += simTick {
+		w.now = w.now.Add(simTick)
+		w.leaderThink()
+		if w.collectName == member.name {
+			t.Fatalf("leader restarted collection before the bounded post-contact wait at %s", w.now.Sub(contactAt))
+		}
 	}
 }
 

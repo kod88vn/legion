@@ -58,7 +58,7 @@ func simRecoveryTarget(action []byte) (uint32, bool) {
 	}
 }
 
-func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *testing.T) {
+func TestSimPartyRecoveryStuckMemberFarmsBeforeBoundedRetry(t *testing.T) {
 	leader := simRoleBot("RecoveryHunter", "hunter_blitz", simRoleHunterAID, 100, 100)
 	tank := simRoleBot("RecoveryKnight", "knight", simRoleTankAID, 102, 100)
 	stuck := simRoleBot("RecoveryWizard", "wizard_frost", simRoleMageAID, 130, 100)
@@ -86,32 +86,26 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 	if window <= 0 {
 		t.Fatal("leader_collect_sec must provide a positive collection window")
 	}
-	for expiredWindows := 1; expiredWindows <= 3; expiredWindows++ {
-		at := now.Add(time.Duration(expiredWindows) * (window + time.Second))
-		leader.mu.Lock()
-		leader.hunt(gm, true, at)
-		state, target, collect := leader.State, leader.target, leader.collectName
-		leader.mu.Unlock()
-		if collect == stuck.charName() {
-			t.Fatalf("after collection window %d, the leader restarted collection of %q (target %d, state %q)",
-				expiredWindows, collect, target, state)
-		}
-	}
-
-	mobAt := now.Add(3*(window+time.Second) + time.Second)
+	firstExpiry := now.Add(window + time.Second)
+	mobAt := firstExpiry
 	mob := simRoleMob(simRoleMobID, 101, 100, 0, mobAt)
 	leader.ents[mob.ID] = mob
 
 	leader.mu.Lock()
-	leader.hunt(gm, true, mobAt)
+	leader.hunt(gm, true, firstExpiry)
 	state, target, collect, deferAt := leader.State, leader.target, leader.collectName, leader.deferAt
 	leader.mu.Unlock()
-	if collect == stuck.charName() || target != 0 || !deferAt.Equal(mobAt) {
+	if collect == stuck.charName() {
+		t.Fatalf("at the first expired window, the leader restarted collection of %q (target %d, state %q)",
+			collect, target, state)
+	}
+	if target != 0 || !deferAt.Equal(firstExpiry) {
 		t.Fatalf("the leader did not enter its tank-first hold after recovery (collect %q, target %d, defer %s, state %q)",
 			collect, target, deferAt, state)
 	}
 
-	fightAt := mobAt.Add(tankDeferWait)
+	fightAt := firstExpiry.Add(tankDeferWait)
+	farmed := false
 	leader.mu.Lock()
 	leader.hunt(gm, true, fightAt)
 	state, target, collect = leader.State, leader.target, leader.collectName
@@ -125,7 +119,8 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 		action := simRecoveryReadAction(t, peer)
 		actionTarget, ok := simRecoveryTarget(action)
 		if ok && actionTarget == mob.ID {
-			return
+			farmed = true
+			break
 		}
 		// A due self-buff may precede the first attack after the tank-first hold.
 		if !ok || actionTarget != leader.aid {
@@ -142,7 +137,62 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 				target, collect, state, mob.ID)
 		}
 	}
-	t.Fatalf("the leader did not send an attack against mob %d after the tank-first window", mob.ID)
+	if !farmed {
+		t.Fatalf("the leader did not send an attack against mob %d after the tank-first window", mob.ID)
+	}
+
+	retryAt := firstExpiry.Add(window)
+	leader.mu.Lock()
+	delete(leader.ents, mob.ID)
+	leader.target = 0
+	leader.hunt(gm, true, retryAt.Add(-time.Second))
+	state, collect = leader.State, leader.collectName
+	leader.mu.Unlock()
+	if collect == stuck.charName() {
+		t.Fatalf("the leader restarted collection before the bounded retry (state %q)", state)
+	}
+
+	leader.mu.Lock()
+	leader.hunt(gm, true, retryAt)
+	state, collect, collectAt := leader.State, leader.collectName, leader.collectAt
+	leader.mu.Unlock()
+	if collect != stuck.charName() || !collectAt.Equal(retryAt) {
+		t.Fatalf("after the bounded wait the leader did not retry the still-eligible member: collect %q at %s, state %q",
+			collect, collectAt, state)
+	}
+}
+
+func TestSimPartyRecoveryStallSelectsAnotherEligibleMember(t *testing.T) {
+	leader := simRoleBot("RecoveryHunter", "hunter_blitz", simRoleHunterAID, 100, 100)
+	tank := simRoleBot("RecoveryKnight", "knight", simRoleTankAID, 102, 100)
+	stuck := simRoleBot("RecoveryWizard", "wizard_frost", simRoleMageAID, 130, 100)
+	priest := simRoleBot("RecoveryPriest", "priest_me", simRolePriestAID, 101, 100)
+	alternate := simRoleBot("RecoveryRogue", "rogue", simRoleHunterAID, 140, 100)
+	stuck.BaseLv, stuck.P.BaseLevel = 40, 40
+	stickParty(t, leader, tank, stuck, priest, alternate)
+	for _, member := range []*Bot{leader, tank, stuck, priest, alternate} {
+		simRolePublish(member, 1)
+	}
+	gm := simRecoveryMap(t)
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+
+	leader.mu.Lock()
+	leader.hunt(gm, true, now)
+	firstCollect := leader.collectName
+	leader.mu.Unlock()
+	if firstCollect != stuck.charName() {
+		t.Fatalf("initial collect = %q, want stalled member %q", firstCollect, stuck.charName())
+	}
+
+	firstExpiry := now.Add(time.Duration(tune().LeaderCollectSec)*time.Second + time.Second)
+	leader.mu.Lock()
+	leader.hunt(gm, true, firstExpiry)
+	state, collect := leader.State, leader.collectName
+	leader.mu.Unlock()
+	if collect != alternate.charName() {
+		t.Fatalf("a stalled member blocked an alternate candidate: collecting %q, want %q (state %q)",
+			collect, alternate.charName(), state)
+	}
 }
 
 func TestSimPartyRecoveryTankPeelsThreatenedPriestWhileMemberIsOnOtherMap(t *testing.T) {
