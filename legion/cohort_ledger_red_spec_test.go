@@ -94,20 +94,10 @@ func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 		t.Fatalf("at grant+1h (exactly): should allow new grant, got ok=%v err=%v", ok, err)
 	}
 	
-	// Record second window start (after first rollover)
+	// Capture second window start BEFORE anchor assertion (for reference)
 	ledger.mu.Lock()
 	secondWindowStart := ledger.state.QuotaWindowStartUTC
 	ledger.mu.Unlock()
-	
-	secondGrantTime, err := time.Parse(time.RFC3339Nano, secondWindowStart)
-	if err != nil {
-		t.Fatalf("invalid second window start: %v", err)
-	}
-	
-	expectedSecondWindowStart := baseTime.Add(time.Duration(59*60 + 60*60) * time.Second)
-	if secondGrantTime != expectedSecondWindowStart {
-		t.Fatalf("second window start not anchored to second grant time: got %s, expected %s", secondGrantTime, expectedSecondWindowStart)
-	}
 	
 	// secondGrant+59m59s: Still in second window, should be blocked
 	nowFunc = func() time.Time {
@@ -127,6 +117,17 @@ func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 	ok, err = ledger.MayAdmit("user7")
 	if ok || err == nil {
 		t.Fatalf("at secondGrant+1h−1ns: should be blocked (not yet 1h), got ok=%v err=%v", ok, err)
+	}
+	
+	// VERIFY second window anchor precision AFTER denial
+	secondGrantTime, err := time.Parse(time.RFC3339Nano, secondWindowStart)
+	if err != nil {
+		t.Fatalf("invalid second window start: %v", err)
+	}
+	
+	expectedSecondWindowStart := baseTime.Add(time.Duration(59*60 + 60*60) * time.Second)
+	if secondGrantTime != expectedSecondWindowStart {
+		t.Fatalf("second window start not anchored to second grant time: got %s, expected %s", secondGrantTime, expectedSecondWindowStart)
 	}
 	
 	// secondGrant+1h (exactly): Third window rolls, new cohort opens
