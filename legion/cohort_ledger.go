@@ -295,7 +295,7 @@ func (cl *CohortLedger) MayAdmit(accountID string) (bool, error) {
 
 		if now.Sub(windowStart) >= 1*time.Hour {
 			// Time to roll: clear quota_granted, preserve permanent_eligible, reset window start to NOW
-			cl.state.QuotaWindowStartUTC = now.Format(time.RFC3339)
+			cl.state.QuotaWindowStartUTC = now.Format(time.RFC3339Nano)
 			cl.state.QuotaGranted = []string{}
 		}
 	}
