@@ -108,9 +108,15 @@ type Bot struct {
 	aid, cid, lid1, lid2 uint32
 	sex                  byte
 
-	Online    bool
-	State     string // ai state for display
-	MapName   string
+	Online  bool
+	State   string // ai state for display
+	MapName string
+
+	// Raw 0x099b map-property observation; it is not PvP authorization.
+	mapPropertyKnown bool
+	mapPropertyType  uint16
+	mapPropertyFlags uint32
+
 	X, Y      int
 	DestX     int
 	DestY     int
@@ -419,6 +425,10 @@ func tick() uint32 { return uint32(time.Now().UnixMilli()) }
 // ---------------------------------------------------------------- login / char / map handshake
 
 func (b *Bot) connect(loginAddr string) error {
+	b.mu.Lock()
+	b.clearMapPropertyLocked()
+	b.mu.Unlock()
+
 	// 1. login server
 	c, err := dial(loginAddr)
 	if err != nil {
@@ -1291,6 +1301,7 @@ func (b *Bot) handle(pk []byte) {
 	case 0x0091: // map change: mapname, x, y
 		b.noteKafraHop(trimGat(cstr(pk[2:18])), now) // kafra.go: a teleport taken, before kafraThink drops the trip
 		b.MapName = trimGat(cstr(pk[2:18]))
+		b.clearMapPropertyLocked()
 		b.X, b.Y = int(le.Uint16(pk[18:])), int(le.Uint16(pk[20:]))
 		b.DestX, b.DestY, b.MoveUntil = b.X, b.Y, now
 		b.ents = map[uint32]*Entity{}
@@ -1310,6 +1321,12 @@ func (b *Bot) handle(pk []byte) {
 			time.Sleep(time.Duration(300+b.rng.Intn(700)) * time.Millisecond)
 			b.send(newPkt(0x007d).b)
 		}()
+	case 0x099b: // ZC_MAPPROPERTY_R2: raw property type and flags for this map
+		if len(pk) == 8 {
+			b.mapPropertyType = le.Uint16(pk[2:])
+			b.mapPropertyFlags = le.Uint32(pk[4:])
+			b.mapPropertyKnown = true
+		}
 	case 0x008d: // someone talks nearby: len, id, "name : text"
 		if len(pk) > 8 {
 			// NPCs (npctalk: "Resting Adventurer" tips on prt_fild08) and mobs use the same packet; their ids are
@@ -1466,14 +1483,24 @@ func (b *Bot) whisper(to, text string) {
 
 // endSession closes this session's conn and clears b.conn - only if b.conn is still that conn.
 func (b *Bot) endSession(conn *Conn) {
+	b.mu.Lock()
 	b.wmu.Lock()
-	if b.conn == conn {
+	current := b.conn == conn
+	if current {
 		b.conn = nil
+		b.clearMapPropertyLocked()
 	}
 	b.wmu.Unlock()
+	b.mu.Unlock()
 	if conn != nil {
 		conn.Close() // unblocks readLoop's Read at once
 	}
+}
+
+func (b *Bot) clearMapPropertyLocked() {
+	b.mapPropertyKnown = false
+	b.mapPropertyType = 0
+	b.mapPropertyFlags = 0
 }
 
 // waitSessionLoops waits (bounded) for the session's readLoop and aiLoop to exit after quit was closed.
