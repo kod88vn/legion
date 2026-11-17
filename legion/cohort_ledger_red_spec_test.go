@@ -1222,10 +1222,10 @@ func TestLegacyWholeSecondPersistedWindowRestartBoundary(t *testing.T) {
 	// === PHASE 4: At t0+1h-1ns, quota is still full (window hasn't rolled yet) ===
 	// Deny fresh B (quota full - A already has the 1 slot)
 	ok, err = ledger2.MayAdmit("accountB")
-	if ok || err == nil {
-		t.Fatalf("phase4 fresh B at t0+1h-1ns: ok=%v err=%v (expected false, quota exhausted)", ok, err)
+	if ok != false || err != nil {
+		t.Fatalf("phase4 fresh B at t0+1h-1ns: ok=%v err=%v (expected false with nil error, quota exhausted)", ok, err)
 	}
-	t.Logf("phase4: fresh B correctly denied at t0+1h-1ns (quota full)")
+	t.Logf("phase4: fresh B correctly denied at t0+1h-1ns (quota full, nil error)")
 
 	// Allow A reconnect without consuming quota
 	ok, err = ledger2.MayAdmit("accountA")
@@ -1236,7 +1236,7 @@ func TestLegacyWholeSecondPersistedWindowRestartBoundary(t *testing.T) {
 
 	// === PHASE 5: Advance clock to exactly t0+1h (window boundary) ===
 	// At this point, window should roll and B should be grantable
-	tick2 = 1000000000 // 1 second = 1e9 nanoseconds to reach t0+1h exactly
+	tick2 = 1 // 1 nanosecond to reach t0+1h exactly
 	
 	ok, err = ledger2.MayAdmit("accountB")
 	if !ok || err != nil {
