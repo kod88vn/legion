@@ -1569,15 +1569,42 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		b.saleRoom, b.saleTried = "", false
 		b.mu.Unlock()
 		loginGate <- struct{}{} // limit concurrent logins
-		err := b.connect(loginAddr)
-		<-loginGate
-		if err != nil {
-			release()
+		// Attempt cohort admission and connect via production seam.
+		attempted, cohortErr := attemptCohortConnect(b.aid, func() error {
+			return b.connect(loginAddr)
+		})
+		<-loginGate // release login slot after admit+connect attempt (success or failure)
+		
+		// Handle admission denial vs. connect errors distinctly
+		if !attempted {
+			// Quota denial: not admitted (attempted=false means callback wasn't invoked)
+			release() // release onlineSlots
 			b.mu.Lock()
-			b.LastErr, b.State = err.Error(), "login failed"
+			if cohortErr != nil {
+				b.LastErr = "cohort gate error: " + cohortErr.Error()
+			} else {
+				b.LastErr = "cohort gate: quota exhausted (100/hour exceeded)"
+			}
+			b.State = "login blocked (cohort gate)"
 			b.mu.Unlock()
 			atomic.AddInt64(&stats.loginFail, 1)
-			if lead && mapServerFull(err) && makeRoomFor(b) { // leaderroom.go: a slot holder steps aside
+			select {
+			case <-stop:
+				return
+			case <-time.After(1 * time.Minute): // back off before retrying next window
+			}
+			continue
+		}
+		
+		// Callback was invoked (attempted=true); check if it returned an error
+		if cohortErr != nil {
+			// Connect error: callback was invoked but returned error
+			release() // release onlineSlots
+			b.mu.Lock()
+			b.LastErr, b.State = cohortErr.Error(), "login failed"
+			b.mu.Unlock()
+			atomic.AddInt64(&stats.loginFail, 1)
+			if lead && mapServerFull(cohortErr) && makeRoomFor(b) { // leaderroom.go: a slot holder steps aside
 				backoff = 10 * time.Second
 			}
 			select {
@@ -1585,11 +1612,12 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 				return
 			case <-time.After(backoff + time.Duration(b.rng.Intn(5000))*time.Millisecond):
 			}
-			if backoff < 2*time.Minute && !(serverStarting(err) && backoff >= 20*time.Second) { // loginready.go
+			if backoff < 2*time.Minute && !(serverStarting(cohortErr) && backoff >= 20*time.Second) { // loginready.go
 				backoff *= 2
 			}
 			continue
 		}
+		
 		backoff = 5 * time.Second
 		atomic.AddInt64(&stats.online, 1)
 		// session routine: sociable players hang around town after logging in; everyone heads back to town

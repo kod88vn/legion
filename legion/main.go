@@ -23,6 +23,7 @@ import (
 
 var (
 	dataDir   = flag.String("data", "/data", "directory with personas.json")
+	cohortDir = flag.String("cohort-dir", "", "directory for durable cohort ledger (default: same as -data); if redirected away from -data and legacy cohort history exists there, startup fails")
 	keepNames = flag.String("keep", "", "seed: comma-separated character names whose accounts are left untouched")
 	rathena   = flag.String("rathena", "/rathena", "rAthena tree (db/, npc/)")
 	loginAddr = flag.String("login", "127.0.0.1:6900", "login server")
@@ -39,6 +40,7 @@ var (
 	verbose   = flag.Bool("v", false, "verbose logging")
 	maxOnline = flag.Int("max-online", 1000, "max concurrent sessions (profiles beyond this wait for a slot)")
 	reserve   = flag.Int("reserve", 40, "online slots kept free under -max-online for guild leaders, pinned players, legion-core, Ayla and humans (the map server holds ~1013 clients: rAthena select() build, FD_SETSIZE 1024)")
+	durationCohort = flag.Bool("durable-cohort", false, "enable durable hourly cohort admission gate (100 new bots per hour)")
 )
 
 func loadGameData() {
@@ -78,6 +80,56 @@ func loadGameData() {
 	}
 	log.Printf("game data: %d maps, %d monsters, %d spawn maps, %d warps, %d hunting grounds (%v)",
 		len(maps), len(mobs), len(spawnsByMap), nw, len(huntSpots), time.Since(t).Round(time.Millisecond))
+}
+
+// resolveCohortDir resolves the cohort directory, applying safety checks for legacy history redirection.
+// enabled controls whether the feature is active; if false, returns dataDir without I/O (no-op for disabled gate).
+// If enabled and cohortDir is empty, it defaults to dataDir (no redirection, legacy behavior preserved).
+// If enabled and cohortDir is non-empty and differs from dataDir, it refuses startup if legacy cohort artifacts
+// (ledger or initialization marker) exist in dataDir to prevent silent data loss.
+func resolveCohortDir(dataDir, cohortDir string, enabled bool) (string, error) {
+	// If feature is disabled, return dataDir without inspection; no I/O, no legacy history check
+	if !enabled {
+		return dataDir, nil
+	}
+	
+	selected := cohortDir
+	if selected == "" {
+		// Empty default: resolve to dataDir, preserving legacy behavior
+		selected = dataDir
+		return selected, nil
+	}
+	// Non-empty override: check for legacy artifacts in dataDir before allowing redirection
+	if selected != dataDir {
+		// Different directories: check if legacy cohort history exists in dataDir
+		ledgerPath := filepath.Join(dataDir, "cohort_ledger.json")
+		markerPath := filepath.Join(dataDir, ".cohort_initialized")
+		
+		// Check ledger file
+		_, ledgerErr := os.Stat(ledgerPath)
+		if ledgerErr == nil {
+			// Ledger exists in dataDir
+			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: legacy cohort ledger exists at %q", dataDir, ledgerPath)
+		} else if ledgerErr != nil && !os.IsNotExist(ledgerErr) {
+			// Unexpected error reading ledger metadata
+			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: metadata error on %q: %v", dataDir, ledgerPath, ledgerErr)
+		}
+		
+		// Check initialization marker
+		_, markerErr := os.Stat(markerPath)
+		if markerErr == nil {
+			// Marker exists in dataDir
+			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: legacy cohort initialization marker exists at %q", dataDir, markerPath)
+		} else if markerErr != nil && !os.IsNotExist(markerErr) {
+			// Unexpected error reading marker metadata
+			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: metadata error on %q: %v", dataDir, markerPath, markerErr)
+		}
+		
+		// No legacy artifacts in dataDir; redirection is safe
+		return selected, nil
+	}
+	// Same directory (no actual redirection)
+	return selected, nil
 }
 
 func main() {
@@ -183,6 +235,16 @@ func main() {
 		meterRestoreLoad() // meterpersist.go: kills/min, zeny/h and time budgets from before the restart
 		loginGate = make(chan struct{}, *logins)
 		onlineSlots = make(chan struct{}, slotCapacity(*maxOnline, *reserve)) // leaderroom.go
+		
+		// Resolve cohort directory, passing enabled flag
+		resolvedCohortDir, err := resolveCohortDir(*dataDir, *cohortDir, *durationCohort)
+		if err != nil {
+			log.Fatalf("cohort directory: %v", err)
+		}
+		
+		if err := InitCohortGate(resolvedCohortDir, *durationCohort); err != nil {
+			log.Fatalf("cohort gate init: %v", err)
+		}
 		memDir = filepath.Join(*dataDir, "memory")
 		for _, p := range all { // every Legion character, also those another instance runs (bot vs human)
 			for _, c := range p.Chars {

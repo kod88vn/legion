@@ -1,6 +1,6 @@
 # rAthena server only (db + rathena), on the repo's own PACKETVER 20210107 build: the one the Legion engine speaks.
 # No Docker Hub rAthena image is built in the 20210107 packet window (rAthena thresholds 20201118 < v < 20210203);
-# the official rathena/rathena-renewal images are 20211103, where the map server rejects Legion's 19-byte 0x0436.
+# the official rathena/rathena images are 20211103, where the map server rejects Legion's 19-byte 0x0436.
 #
 # Build the image once (the corporate Zscaler proxy needs its CA inside the build; -j2 avoids running out of memory):
 #   docker build -t ubuntu-zscaler:24.04 <dir with Dockerfile: FROM ubuntu:24.04 + zscaler.crt + update-ca-certificates>
@@ -65,13 +65,33 @@ services:
     network_mode: "service:rathena"
     volumes:
       - ./legion/data:/data
+      - cohortdata:/cohort-state
       - ./rathena/npc-custom:/rathena/npc/custom-local:ro
       - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro
       - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro
-    command: ["run", "-n", "${LEGION_BOTS:-100}", "-max-online", "${LEGION_MAX_ONLINE:-100}", "-schedule"]
+    command: ["run", "-n", "${LEGION_BOTS:-100}", "-max-online", "${LEGION_MAX_ONLINE:-100}", "-schedule", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}", "-cohort-dir=/cohort-state"]
+    restart: unless-stopped
+
+  legion-core:
+    profiles: ["legion"]
+    image: ro-legion:latest
+    container_name: ro-legion-core
+    depends_on:
+      - rathena
+    network_mode: "service:rathena"
+    volumes:
+      - ./legion/data:/data
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
+      - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro
+      - ./openkore-ayla/logs:/ayla:ro
+    command: ["run", "-core", "-schedule", "-durable-cohort=false"]
     restart: unless-stopped
 
 volumes:
   dbdata:
+  cohortdata:
