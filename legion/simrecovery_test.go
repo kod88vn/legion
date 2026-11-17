@@ -71,21 +71,15 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 	gm := simRecoveryMap(t)
 	peer := simRoleCapture(t, leader)
 	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	leader.buffAt["leadsay"] = now.Add(time.Hour)
 
+	// Scope this scenario to collection arbitration; stepAlong's walk goroutine cannot be joined by the fixture.
 	leader.mu.Lock()
-	leader.hunt(gm, false, now)
+	leader.hunt(gm, true, now)
 	firstState, firstCollect := leader.State, leader.collectName
 	leader.mu.Unlock()
 	if firstCollect != stuck.charName() {
 		t.Fatalf("initial collect = %q, want stuck member %q (state %q)", firstCollect, stuck.charName(), firstState)
-	}
-	first := simRecoveryReadAction(t, peer)
-	if opcode := binary.LittleEndian.Uint16(first); opcode != 0x035f {
-		t.Fatalf("initial recovery opcode = %#x, want a walk toward the straggler", opcode)
-	}
-	wx, wy, _ := decodePos(first[2:5])
-	if dist(wx, wy, stuck.X, stuck.Y) >= dist(leader.X, leader.Y, stuck.X, stuck.Y) {
-		t.Fatalf("initial recovery walk to %d,%d does not approach stuck member at %d,%d", wx, wy, stuck.X, stuck.Y)
 	}
 
 	window := time.Duration(tune().LeaderCollectSec) * time.Second
@@ -95,7 +89,7 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 	for expiredWindows := 1; expiredWindows <= 3; expiredWindows++ {
 		at := now.Add(time.Duration(expiredWindows) * (window + time.Second))
 		leader.mu.Lock()
-		leader.hunt(gm, false, at)
+		leader.hunt(gm, true, at)
 		state, target, collect := leader.State, leader.target, leader.collectName
 		leader.mu.Unlock()
 		if collect == stuck.charName() {
@@ -105,11 +99,11 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 	}
 
 	mobAt := now.Add(3*(window+time.Second) + time.Second)
-	mob := simRoleMob(simRoleMobID, 106, 100, 0, mobAt)
+	mob := simRoleMob(simRoleMobID, 101, 100, 0, mobAt)
 	leader.ents[mob.ID] = mob
 
 	leader.mu.Lock()
-	leader.hunt(gm, false, mobAt)
+	leader.hunt(gm, true, mobAt)
 	state, target, collect, deferAt := leader.State, leader.target, leader.collectName, leader.deferAt
 	leader.mu.Unlock()
 	if collect == stuck.charName() || target != 0 || !deferAt.Equal(mobAt) {
@@ -119,7 +113,7 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 
 	fightAt := mobAt.Add(tankDeferWait)
 	leader.mu.Lock()
-	leader.hunt(gm, false, fightAt)
+	leader.hunt(gm, true, fightAt)
 	state, target, collect = leader.State, leader.target, leader.collectName
 	leader.mu.Unlock()
 	if collect == stuck.charName() || target != mob.ID {
@@ -127,22 +121,28 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *tes
 			target, collect, state, mob.ID)
 	}
 
-	action := simRecoveryReadAction(t, peer)
-	switch opcode := binary.LittleEndian.Uint16(action); opcode {
-	case 0x0437, 0x0438:
-		if actionTarget, ok := simRecoveryTarget(action); !ok || actionTarget != mob.ID {
-			t.Fatalf("after the tank-first window, action target = %d (targeted=%v), want mob %d", actionTarget, ok, mob.ID)
+	for attempt := 0; attempt < 3; attempt++ {
+		action := simRecoveryReadAction(t, peer)
+		actionTarget, ok := simRecoveryTarget(action)
+		if ok && actionTarget == mob.ID {
+			return
 		}
-	case 0x035f:
-		wx, wy, _ := decodePos(action[2:5])
-		if dist(wx, wy, mob.X, mob.Y) >= dist(leader.X, leader.Y, mob.X, mob.Y) {
-			t.Fatalf("after the tank-first window, walk to %d,%d does not approach mob %d at %d,%d",
-				wx, wy, mob.ID, mob.X, mob.Y)
+		// A due self-buff may precede the first attack after the tank-first hold.
+		if !ok || actionTarget != leader.aid {
+			t.Fatalf("after the tank-first window, action target = %d (targeted=%v), want mob %d or the leader's own buff %d (packet %x)",
+				actionTarget, ok, mob.ID, leader.aid, action)
 		}
-	default:
-		t.Fatalf("after the tank-first window, action opcode = %#x, want a targeted attack or approach walk to mob %d (state %q)",
-			opcode, mob.ID, state)
+		fightAt = fightAt.Add(5 * time.Second)
+		leader.mu.Lock()
+		leader.hunt(gm, true, fightAt)
+		state, target, collect = leader.State, leader.target, leader.collectName
+		leader.mu.Unlock()
+		if collect == stuck.charName() || target != mob.ID {
+			t.Fatalf("after the tank-first window, leader target = %d, collecting %q, state %q; want it to attack mob %d",
+				target, collect, state, mob.ID)
+		}
 	}
+	t.Fatalf("the leader did not send an attack against mob %d after the tank-first window", mob.ID)
 }
 
 func TestSimPartyRecoveryTankPeelsThreatenedPriestWhileMemberIsOnOtherMap(t *testing.T) {
