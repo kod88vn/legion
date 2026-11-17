@@ -205,8 +205,16 @@ func replayPinnedGearFixture(t *testing.T, root string) {
 	if got := items[2306]; got == nil || got.Type != "Armor" || got.Def != 20 || got.Loc != 0x10 {
 		t.Fatalf("production item parser decoded Adventurer's Suit 2306 as %+v", got)
 	}
+	if got := items[1102]; got == nil || got.Type != "Weapon" || got.Atk != 25 || got.Sub != "1hSword" {
+		t.Fatalf("production item parser decoded Sword 1102 as %+v", got)
+	}
 
-	bands := buildGearTable()["hunter"]
+	gearTables := buildGearTable()
+	if got := sortedFixtureIDs(currentBuildGearDemand(t)); !reflect.DeepEqual(got, manifest.Demand.ItemIDs) {
+		t.Fatalf("current registered routes and loaded guides differ from fixture demand: got %v, want %v",
+			got, manifest.Demand.ItemIDs)
+	}
+	bands := gearTables["hunter"]
 	if len(bands) != len(bandEdges) {
 		t.Fatalf("hunter gear table has %d bands, want %d", len(bands), len(bandEdges))
 	}
@@ -322,4 +330,35 @@ func sortedFixtureIDs(ids map[int]bool) []int {
 	}
 	sort.Ints(out)
 	return out
+}
+
+func currentBuildGearDemand(t *testing.T) map[int]bool {
+	t.Helper()
+	demand := map[int]bool{}
+	for _, build := range builds {
+		for _, id := range build.Weapons {
+			demand[id] = true
+		}
+		for _, id := range build.Armors {
+			demand[id] = true
+		}
+	}
+
+	buildGear.Lock()
+	guideFile := buildGear.file
+	buildGear.Unlock()
+	if guideFile == nil {
+		t.Fatal("production build gear guide file was not loaded")
+	}
+	for _, guide := range guideFile.Builds {
+		for _, band := range guide.Bands {
+			for _, id := range band.Weapon {
+				demand[id] = true
+			}
+			for _, id := range band.Armor {
+				demand[id] = true
+			}
+		}
+	}
+	return demand
 }
