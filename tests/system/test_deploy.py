@@ -1095,190 +1095,25 @@ docker unknown-subcommand 2>&1
             self.fail(f"test_fake_docker_unknown_command_returns_nonzero failed: {e}")
     
     def test_selected_compose_file_rathena_up_bare_flags(self):
-        """STAGE B PREP: Actual-script regression for rathena up with selected docker-compose.server.yml.
+        """STAGE B: Actual-script regression for rathena up with selected docker-compose.server.yml.
         
         Regression test: when COMPOSE_FILE=docker-compose.server.yml is set,
         rathena up call must include -f and -p flags (not bare docker compose).
         
-        This test is WRITTEN but NOT RUN.
-        
-        Uses RecordingFakeDocker with:
-        - 97 sentinel on rathena-up in generated fake docker script
-        - Local deploylog stub handling rathena-check and rathena-record
-        - Only /mnt/g/RO/legion and /tmp PIN path remaps in scripts
-        - Actual get_recorded_calls() with recorded_log
+        Uses shared _create_propagation_fixture helper (reuses exact accepted infrastructure).
         """
-        # Create fixture directories
-        fixture_tools = os.path.join(self.root, "tools")
-        fixture_deploy = os.path.join(fixture_tools, "deploy")
-        fixture_system = os.path.join(fixture_tools, "system")
-        os.makedirs(fixture_deploy, exist_ok=True)
-        os.makedirs(fixture_system, exist_ok=True)
-        
-        # Copy and remap scripts (ONLY /mnt/g/RO/legion and /tmp paths)
-        recreate_src = os.path.join(REPO, "tools", "deploy", "rathena_recreate.sh")
-        guard_src = os.path.join(REPO, "tools", "deploy", "guard.sh")
-        
-        with open(recreate_src) as f:
-            recreate_code = f.read()
-        with open(guard_src) as f:
-            guard_code = f.read()
-        
-        # Fixed path remaps only
-        recreate_code = recreate_code.replace('/mnt/g/RO/legion', self.root)
-        guard_code = guard_code.replace('/mnt/g/RO/legion', self.root)
-        
-        pin_path = os.path.join(self.root, "pin.yml")
-        recreate_code = recreate_code.replace('/tmp/rathena_recreate_pin.yml', pin_path)
-        guard_code = guard_code.replace('/tmp/rathena_recreate_pin.yml', pin_path)
-        
-        # Create minimal PIN file
-        with open(pin_path, 'w') as f:
-            f.write('# Fake PIN for testing\n')
-        
-        # Write fixture scripts
-        recreate_fixture = os.path.join(fixture_deploy, "rathena_recreate.sh")
-        guard_fixture = os.path.join(fixture_deploy, "guard.sh")
-        
-        with open(recreate_fixture, 'w') as f:
-            f.write(recreate_code)
-        os.chmod(recreate_fixture, 0o755)
-        
-        with open(guard_fixture, 'w') as f:
-            f.write(guard_code)
-        os.chmod(guard_fixture, 0o755)
-        
-        # Create local deploylog stub: handle rathena-check (empty output ok) and rathena-record
-        deploylog_stub = os.path.join(fixture_system, "deploylog.py")
-        with open(deploylog_stub, 'w') as f:
-            f.write("""#!/usr/bin/env python3
-import sys
-import json
-import os
-
-# Stub deploylog.py: handles rathena-check (empty output) and rathena-record
-log = os.environ.get('DEPLOYLOG_LOG', '/dev/null')
-if log != '/dev/null':
-    with open(log, 'a') as lf:
-        lf.write(json.dumps({'tool': 'deploylog', 'argv': sys.argv[1:]}) + "\\n")
-
-if len(sys.argv) >= 2:
-    if sys.argv[1] == 'rathena-check':
-        # Empty stdout, exit 0 (guard.sh line 24 expects this)
-        sys.exit(0)
-    elif sys.argv[1] == 'rathena-record':
-        # Exact expected call: rathena-record [--override <value>]
-        sys.exit(0)
-
-sys.stderr.write(f'Error: unrecognized deploylog: {sys.argv[1] if len(sys.argv) > 1 else "none"}\\n')
-sys.exit(1)
-""")
-        os.chmod(deploylog_stub, 0o755)
-        
-        # Create docker-compose.server.yml in fixture root
-        compose_server = os.path.join(self.root, "docker-compose.server.yml")
-        with open(compose_server, 'w') as f:
-            f.write(self.compose_server)
-        
-        # Modify the fake docker script: add handlers before generic compose
-        # 1. DB health inspection (docker inspect -f '{{.State.Health.Status}}' ro-db)
-        # 2. Rathena-up sentinel (return 97)
-        # 3. Unknown command marker (record status, then exit 1)
-        fake_docker_script = os.path.join(self.harness.fake_bin, "docker")
-        
-        with open(fake_docker_script) as f:
-            docker_script = f.read()
-        
-        # Insert handlers BEFORE generic compose handler
-        handlers_code = '''# Handle compose config --format json (followers extraction)
-if len(sys.argv) > 2 and sys.argv[1] == 'compose' and 'config' in sys.argv and '--format' in sys.argv and 'json' in sys.argv:
-    # Return minimal valid compose config (no followers for this fixture)
-    print(json.dumps({"version": "3.8", "services": {"db": {}, "rathena": {}, "legion": {}, "legion-core": {}}}))
-    sys.exit(0)
-
-# Handle DB health inspection (pre-target call)
-if len(sys.argv) > 2 and sys.argv[1] == 'inspect':
-    if '-f' in sys.argv and 'State.Health.Status' in ' '.join(sys.argv):
-        print("healthy")
-        sys.exit(0)
-    sys.exit(0)
-
-# Handle rathena-up: return sentinel 97 (stops before post-recreate/Ayla)
-if len(sys.argv) > 2 and sys.argv[1] == 'compose' and 'up' in sys.argv and 'rathena' in sys.argv:
-    sys.exit(97)
-
-'''
-        docker_script = docker_script.replace(
-            "# Handle all other docker compose commands (build, up, down, rm, etc.)\n",
-            handlers_code + "# Handle all other docker compose commands (build, up, down, rm, etc.)\n"
-        )
-        
-        # Update unknown command handler to record marker before failing
-        docker_script = docker_script.replace(
-            '''# Unknown command: fail-closed (not fail-open)
-print("Error: unrecognized command: {}".format(sys.argv[1] if len(sys.argv) > 1 else "?"), file=sys.stderr)
-sys.exit(1)''',
-            '''# Unknown command: record marker, then fail-closed
-log_file = os.environ.get('RECORDING_FAKE_DOCKER_LOG', '/dev/null')
-if log_file != '/dev/null':
-    with open(log_file, 'a') as f:
-        f.write(json.dumps({'tool': 'docker', 'argv': sys.argv[1:], 'status': 'UNHANDLED'}) + "\\n")
-print("Error: unrecognized command: {}".format(sys.argv[1] if len(sys.argv) > 1 else "?"), file=sys.stderr)
-sys.exit(1)'''
-        )
-        
-        with open(fake_docker_script, 'w') as f:
-            f.write(docker_script)
-        
-        # Build invocation script
-        invocation = """
-export PATH="{fake_path}:$PATH"
-export COMPOSE_FILE="docker-compose.server.yml"
-export RECORDING_FAKE_DOCKER_LOG="{log}"
-export PYTHON="python3"
-export SYSDIR="{sysdir}"
-export DRY_RUN=0
-export RATHENA_HOUR_OVERRIDE=test-override
-
-cd "{root}"
-bash "{recreate_script}" --yes 2>&1
-""".format(
-            fake_path=self.harness.fake_bin,
-            log=self.harness.recorded_log,
-            sysdir=fixture_system,
-            root=self.root,
-            recreate_script=recreate_fixture
-        )
-        
-        invocation_path = os.path.join(self.root, "run_recreate.sh")
-        with open(invocation_path, 'w') as f:
-            f.write(invocation)
-        os.chmod(invocation_path, 0o755)
-        
-        # Execute rathena_recreate.sh with fake docker (sentinel expected)
-        try:
-            proc = subprocess.run(
-                ['bash', invocation_path],
-                cwd=self.root,
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            rc = proc.returncode
-            output = proc.stdout + proc.stderr
-        except subprocess.TimeoutExpired:
-            self.fail("test_selected_compose_file_rathena_up_bare_flags: subprocess timeout")
+        # Use shared fixture helper
+        rc, recorded = self._create_propagation_fixture(compose_file='docker-compose.server.yml')
         
         # Assert rc == 97 (rathena-up sentinel)
         self.assertEqual(rc, 97, 
-                        f"Expected rc=97 (rathena-up sentinel), got rc={rc}\nOutput:\n{output}")
+                        f"Expected rc=97 (rathena-up sentinel), got rc={rc}")
         
-        # Parse recorded calls via actual get_recorded_calls()
-        recorded = self.harness.get_recorded_calls()
+        # Parse recorded calls and check for UNHANDLED marker (status field)
         self.assertGreater(len(recorded), 0,
                           "No docker calls recorded; fixture may have failed")
         
-        # Find rathena up call and check for UNHANDLED marker (status field)
+        # Find rathena up call and check for UNHANDLED marker
         rathena_up_call = None
         unhandled_calls = []
         for call in recorded:
@@ -1297,7 +1132,6 @@ bash "{recreate_script}" --yes 2>&1
                         f"Unexpected UNHANDLED calls (status marker): {unhandled_calls}")
         
         # Assert DESIRED behavior: rathena-up should have -f and -p flags
-        # (This fails on current broken source until Stage B fix is applied)
         # Use raw argv list with exact token matching (not substring)
         self.assertIn('-f', rathena_up_call,
                      f"rathena up call missing '-f' token: {rathena_up_call}")
@@ -1603,193 +1437,6 @@ bash "{recreate_script}" --yes 2>&1
             raise TimeoutError("Script execution timeout")
         except Exception as e:
             raise RuntimeError(f"Script execution failed: {e}")
-
-
-class TestBoolFlagContractRegression(unittest.TestCase):
-    """Regression tests for -durable-cohort bool flag parsing and core independence."""
-
-    def setUp(self):
-        self.root = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.root)
-        # Create minimal docker-compose.yml with durable-cohort wiring (actual behavior, not fabricated)
-        self.compose = """
-services:
-  db:
-    image: mariadb:latest
-  rathena:
-    image: ro-rathena:latest
-  legion:
-    image: ro-legion:latest
-    command: ["run", "-n", "100", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
-  legion-core:
-    image: ro-legion:latest
-    command: ["run", "-core", "-durable-cohort=false"]
-"""
-        with open(os.path.join(self.root, "docker-compose.yml"), "w") as f:
-            f.write(self.compose)
-        
-        # Create server compose as well for testing non-default behavior
-        self.compose_server = """
-services:
-  db:
-    image: mariadb:latest
-  rathena:
-    image: ro-rathena:latest
-  legion:
-    image: ro-legion:latest
-    command: ["run", "-n", "100", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
-  legion-core:
-    image: ro-legion:latest
-    command: ["run", "-core", "-durable-cohort=false"]
-"""
-        with open(os.path.join(self.root, "docker-compose.server.yml"), "w") as f:
-            f.write(self.compose_server)
-        
-        self.lines = []
-
-    def test_durable_cohort_flag_uses_equals_form(self):
-        """RED: manifest uses -durable-cohort=VALUE form; space-separated fails Go flag.Bool parsing."""
-        # This test verifies the actual repository files use equals form
-        with open(os.path.join(self.root, "docker-compose.yml")) as f:
-            content = f.read()
-        
-        # Equals form is unambiguous: Go parser stops at =, never consumes next arg as the value
-        self.assertIn("-durable-cohort=${LEGION_DURABLE_COHORT:-false}", content, 
-                     "legion uses env var with equals form")
-        self.assertIn("-durable-cohort=false", content, 
-                     "legion-core uses hardcoded false with equals form")
-        
-        # Mutation test: space-separated form would be parsed incorrectly by Go flag.Bool
-        # Verify our files do NOT use space-separated form (which would break parsing)
-        lines = content.split('\n')
-        for i, line in enumerate(lines):
-            if '-durable-cohort' in line:
-                # Check for the dangerous pattern: separate args in command array
-                # e.g., '"-durable-cohort", "false"' would be space-separated
-                self.assertNotIn('"-durable-cohort",', line, 
-                               f"Line {i}: space-separated form would break Go parsing")
-
-    def test_core_remains_off_independent_of_normal_engine(self):
-        """RED: core hardcoded false; mutation removing hardcode or adding env var MUST fail."""
-        # Verify the actual repository file has core hardcoded (not env var)
-        with open(os.path.join(self.root, "docker-compose.yml")) as f:
-            content = f.read()
-        
-        # Find core service config - look for -durable-cohort=false in the core section
-        lines = content.split('\n')
-        in_core = False
-        core_lines = []
-        
-        for line in lines:
-            if 'legion-core:' in line:
-                in_core = True
-                continue
-            if in_core:
-                # Another top-level service starts with 2 spaces followed by name:
-                if line.startswith('  ') and not line.startswith('    ') and ':' in line and line.strip():
-                    if 'legion-core' not in line:
-                        break
-                core_lines.append(line)
-        
-        core_content = '\n'.join(core_lines)
-        
-        # Verify core MUST have hardcoded false (not env var)
-        self.assertIn('-durable-cohort=false', core_content, 
-                     "core MUST have -durable-cohort=false hardcoded")
-        self.assertNotIn('LEGION_DURABLE_COHORT', core_content,
-                        "Mutation: core must NEVER reference LEGION_DURABLE_COHORT env var")
-
-    def test_normal_engine_admission_respects_env_var(self):
-        """RED: legion uses env var, core does not; env var changes don't affect core."""
-        with open(os.path.join(self.root, "docker-compose.yml")) as f:
-            content = f.read()
-        
-        # Find legion service (not legion-core) and verify it uses env var
-        lines = content.split('\n')
-        in_legion = False
-        in_other = False
-        legion_lines = []
-        
-        for line in lines:
-            if line.strip() == 'legion:' or line.startswith('  legion:'):
-                in_legion = True
-                continue
-            if in_legion:
-                if line.startswith('  ') and ':' in line and line.strip() and not line.startswith('    '):
-                    # Hit another top-level service
-                    break
-                legion_lines.append(line)
-        
-        legion_content = '\n'.join(legion_lines)
-        
-        # Verify legion service respects env var
-        self.assertIn('LEGION_DURABLE_COHORT', legion_content,
-                     "legion service MUST use LEGION_DURABLE_COHORT env var")
-        self.assertIn('-durable-cohort=${LEGION_DURABLE_COHORT:-false}', legion_content,
-                     "legion must use env var with default false")
-
-    def test_flag_does_not_consume_later_positional_args(self):
-        """RED: -durable-cohort=false does not consume later args (Go flag.Bool with = form)."""
-        # Create a compose with multiple flags to verify the = form doesn't consume later args
-        multi_flag_compose = """
-services:
-  legion:
-    image: ro-legion:latest
-    command: ["run", "-n", "100", "-stagger", "40ms", "-durable-cohort=false", "-api", "127.0.0.1:8090"]
-"""
-        with open(os.path.join(self.root, "docker-compose.test.yml"), "w") as f:
-            f.write(multi_flag_compose)
-        
-        with open(os.path.join(self.root, "docker-compose.test.yml")) as f:
-            content = f.read()
-        
-        # Verify the command order: the = form ensures later args aren't consumed
-        # Extract command line
-        cmd_start = content.find('command: [')
-        cmd_end = content.find(']', cmd_start)
-        cmd_array = content[cmd_start:cmd_end+1]
-        
-        # Verify -api comes AFTER -durable-cohort=false (not consumed as its value)
-        durable_idx = cmd_array.find('-durable-cohort=false')
-        api_idx = cmd_array.find('-api')
-        
-        self.assertGreater(durable_idx, -1, "-durable-cohort=false should be in command")
-        self.assertGreater(api_idx, durable_idx, "-api must come AFTER -durable-cohort=false")
-        
-        # Verify the value "false" is not consumed as -api's argument
-        # This is guaranteed by the = form in the flag
-        false_in_durable = cmd_array[durable_idx:durable_idx+30]
-        self.assertIn('false', false_in_durable, "false is part of -durable-cohort=false")
-
-    def test_server_compose_has_same_bool_wiring(self):
-        """GREEN: docker-compose.server.yml uses same bool flag pattern as main compose."""
-        # Verify server compose exists and has correct wiring
-        with open(os.path.join(self.root, "docker-compose.server.yml")) as f:
-            content = f.read()
-        
-        self.assertIn('-durable-cohort=${LEGION_DURABLE_COHORT:-false}', content,
-                     "server compose legion should use env var")
-        self.assertIn('legion-core:', content, "server compose should have legion-core service")
-        
-        # Find core section in server compose
-        lines = content.split('\n')
-        in_core = False
-        core_lines = []
-        
-        for line in lines:
-            if 'legion-core:' in line:
-                in_core = True
-                continue
-            if in_core:
-                # Another top-level service starts with 2 spaces followed by name:
-                if line.startswith('  ') and not line.startswith('    ') and line.strip():
-                    if 'legion-core' not in line:
-                        break
-                core_lines.append(line)
-        
-        core_content = '\n'.join(core_lines)
-        self.assertIn('-durable-cohort=false', core_content,
-                     "server compose core must have hardcoded false")
     
     def _create_propagation_fixture(self, compose_file=None, build_flag=False):
         """Shared fixture helper for COMPOSE_FILE propagation tests.
@@ -1979,6 +1626,193 @@ bash "{recreate_script}" --yes{args} 2>&1
         # Parse recorded calls via actual get_recorded_calls()
         recorded = self.harness.get_recorded_calls()
         return rc, recorded
+
+
+class TestBoolFlagContractRegression(unittest.TestCase):
+    """Regression tests for -durable-cohort bool flag parsing and core independence."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root)
+        # Create minimal docker-compose.yml with durable-cohort wiring (actual behavior, not fabricated)
+        self.compose = """
+services:
+  db:
+    image: mariadb:latest
+  rathena:
+    image: ro-rathena:latest
+  legion:
+    image: ro-legion:latest
+    command: ["run", "-n", "100", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
+  legion-core:
+    image: ro-legion:latest
+    command: ["run", "-core", "-durable-cohort=false"]
+"""
+        with open(os.path.join(self.root, "docker-compose.yml"), "w") as f:
+            f.write(self.compose)
+        
+        # Create server compose as well for testing non-default behavior
+        self.compose_server = """
+services:
+  db:
+    image: mariadb:latest
+  rathena:
+    image: ro-rathena:latest
+  legion:
+    image: ro-legion:latest
+    command: ["run", "-n", "100", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
+  legion-core:
+    image: ro-legion:latest
+    command: ["run", "-core", "-durable-cohort=false"]
+"""
+        with open(os.path.join(self.root, "docker-compose.server.yml"), "w") as f:
+            f.write(self.compose_server)
+        
+        self.lines = []
+
+    def test_durable_cohort_flag_uses_equals_form(self):
+        """RED: manifest uses -durable-cohort=VALUE form; space-separated fails Go flag.Bool parsing."""
+        # This test verifies the actual repository files use equals form
+        with open(os.path.join(self.root, "docker-compose.yml")) as f:
+            content = f.read()
+        
+        # Equals form is unambiguous: Go parser stops at =, never consumes next arg as the value
+        self.assertIn("-durable-cohort=${LEGION_DURABLE_COHORT:-false}", content, 
+                     "legion uses env var with equals form")
+        self.assertIn("-durable-cohort=false", content, 
+                     "legion-core uses hardcoded false with equals form")
+        
+        # Mutation test: space-separated form would be parsed incorrectly by Go flag.Bool
+        # Verify our files do NOT use space-separated form (which would break parsing)
+        lines = content.split('\n')
+        for i, line in enumerate(lines):
+            if '-durable-cohort' in line:
+                # Check for the dangerous pattern: separate args in command array
+                # e.g., '"-durable-cohort", "false"' would be space-separated
+                self.assertNotIn('"-durable-cohort",', line, 
+                               f"Line {i}: space-separated form would break Go parsing")
+
+    def test_core_remains_off_independent_of_normal_engine(self):
+        """RED: core hardcoded false; mutation removing hardcode or adding env var MUST fail."""
+        # Verify the actual repository file has core hardcoded (not env var)
+        with open(os.path.join(self.root, "docker-compose.yml")) as f:
+            content = f.read()
+        
+        # Find core service config - look for -durable-cohort=false in the core section
+        lines = content.split('\n')
+        in_core = False
+        core_lines = []
+        
+        for line in lines:
+            if 'legion-core:' in line:
+                in_core = True
+                continue
+            if in_core:
+                # Another top-level service starts with 2 spaces followed by name:
+                if line.startswith('  ') and not line.startswith('    ') and ':' in line and line.strip():
+                    if 'legion-core' not in line:
+                        break
+                core_lines.append(line)
+        
+        core_content = '\n'.join(core_lines)
+        
+        # Verify core MUST have hardcoded false (not env var)
+        self.assertIn('-durable-cohort=false', core_content, 
+                     "core MUST have -durable-cohort=false hardcoded")
+        self.assertNotIn('LEGION_DURABLE_COHORT', core_content,
+                        "Mutation: core must NEVER reference LEGION_DURABLE_COHORT env var")
+
+    def test_normal_engine_admission_respects_env_var(self):
+        """RED: legion uses env var, core does not; env var changes don't affect core."""
+        with open(os.path.join(self.root, "docker-compose.yml")) as f:
+            content = f.read()
+        
+        # Find legion service (not legion-core) and verify it uses env var
+        lines = content.split('\n')
+        in_legion = False
+        in_other = False
+        legion_lines = []
+        
+        for line in lines:
+            if line.strip() == 'legion:' or line.startswith('  legion:'):
+                in_legion = True
+                continue
+            if in_legion:
+                if line.startswith('  ') and ':' in line and line.strip() and not line.startswith('    '):
+                    # Hit another top-level service
+                    break
+                legion_lines.append(line)
+        
+        legion_content = '\n'.join(legion_lines)
+        
+        # Verify legion service respects env var
+        self.assertIn('LEGION_DURABLE_COHORT', legion_content,
+                     "legion service MUST use LEGION_DURABLE_COHORT env var")
+        self.assertIn('-durable-cohort=${LEGION_DURABLE_COHORT:-false}', legion_content,
+                     "legion must use env var with default false")
+
+    def test_flag_does_not_consume_later_positional_args(self):
+        """RED: -durable-cohort=false does not consume later args (Go flag.Bool with = form)."""
+        # Create a compose with multiple flags to verify the = form doesn't consume later args
+        multi_flag_compose = """
+services:
+  legion:
+    image: ro-legion:latest
+    command: ["run", "-n", "100", "-stagger", "40ms", "-durable-cohort=false", "-api", "127.0.0.1:8090"]
+"""
+        with open(os.path.join(self.root, "docker-compose.test.yml"), "w") as f:
+            f.write(multi_flag_compose)
+        
+        with open(os.path.join(self.root, "docker-compose.test.yml")) as f:
+            content = f.read()
+        
+        # Verify the command order: the = form ensures later args aren't consumed
+        # Extract command line
+        cmd_start = content.find('command: [')
+        cmd_end = content.find(']', cmd_start)
+        cmd_array = content[cmd_start:cmd_end+1]
+        
+        # Verify -api comes AFTER -durable-cohort=false (not consumed as its value)
+        durable_idx = cmd_array.find('-durable-cohort=false')
+        api_idx = cmd_array.find('-api')
+        
+        self.assertGreater(durable_idx, -1, "-durable-cohort=false should be in command")
+        self.assertGreater(api_idx, durable_idx, "-api must come AFTER -durable-cohort=false")
+        
+        # Verify the value "false" is not consumed as -api's argument
+        # This is guaranteed by the = form in the flag
+        false_in_durable = cmd_array[durable_idx:durable_idx+30]
+        self.assertIn('false', false_in_durable, "false is part of -durable-cohort=false")
+
+    def test_server_compose_has_same_bool_wiring(self):
+        """GREEN: docker-compose.server.yml uses same bool flag pattern as main compose."""
+        # Verify server compose exists and has correct wiring
+        with open(os.path.join(self.root, "docker-compose.server.yml")) as f:
+            content = f.read()
+        
+        self.assertIn('-durable-cohort=${LEGION_DURABLE_COHORT:-false}', content,
+                     "server compose legion should use env var")
+        self.assertIn('legion-core:', content, "server compose should have legion-core service")
+        
+        # Find core section in server compose
+        lines = content.split('\n')
+        in_core = False
+        core_lines = []
+        
+        for line in lines:
+            if 'legion-core:' in line:
+                in_core = True
+                continue
+            if in_core:
+                # Another top-level service starts with 2 spaces followed by name:
+                if line.startswith('  ') and not line.startswith('    ') and line.strip():
+                    if 'legion-core' not in line:
+                        break
+                core_lines.append(line)
+        
+        core_content = '\n'.join(core_lines)
+        self.assertIn('-durable-cohort=false', core_content,
+                     "server compose core must have hardcoded false")
 
 
 class TestStaticRules(unittest.TestCase):
