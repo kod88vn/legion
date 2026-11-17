@@ -58,7 +58,7 @@ func simRecoveryTarget(action []byte) (uint32, bool) {
 	}
 }
 
-func TestSimPartyRecoveryStuckMemberDoesNotRestartCollectionForever(t *testing.T) {
+func TestSimPartyRecoveryStuckMemberDoesNotRestartAcrossCollectionWindows(t *testing.T) {
 	leader := simRoleBot("RecoveryHunter", "hunter_blitz", simRoleHunterAID, 100, 100)
 	tank := simRoleBot("RecoveryKnight", "knight", simRoleTankAID, 102, 100)
 	stuck := simRoleBot("RecoveryWizard", "wizard_frost", simRoleMageAID, 130, 100)
@@ -92,23 +92,56 @@ func TestSimPartyRecoveryStuckMemberDoesNotRestartCollectionForever(t *testing.T
 	if window <= 0 {
 		t.Fatal("leader_collect_sec must provide a positive collection window")
 	}
-	mob := simRoleMob(simRoleMobID, 106, 100, 0, now.Add(window+time.Second))
+	for expiredWindows := 1; expiredWindows <= 3; expiredWindows++ {
+		at := now.Add(time.Duration(expiredWindows) * (window + time.Second))
+		leader.mu.Lock()
+		leader.hunt(gm, false, at)
+		state, target, collect := leader.State, leader.target, leader.collectName
+		leader.mu.Unlock()
+		if collect == stuck.charName() {
+			t.Fatalf("after collection window %d, the leader restarted collection of %q (target %d, state %q)",
+				expiredWindows, collect, target, state)
+		}
+	}
+
+	mobAt := now.Add(3*(window+time.Second) + time.Second)
+	mob := simRoleMob(simRoleMobID, 106, 100, 0, mobAt)
 	leader.ents[mob.ID] = mob
 
 	leader.mu.Lock()
-	leader.hunt(gm, false, now.Add(window+time.Second))
-	state, target, collect := leader.State, leader.target, leader.collectName
+	leader.hunt(gm, false, mobAt)
+	state, target, collect, deferAt := leader.State, leader.target, leader.collectName, leader.deferAt
 	leader.mu.Unlock()
-	if collect != "" || target != mob.ID {
-		t.Fatalf("after a full collection window, the leader still stalled on %q (target %d, state %q); want it to farm nearby mob %d",
-			collect, target, state, mob.ID)
+	if collect == stuck.charName() || target != 0 || !deferAt.Equal(mobAt) {
+		t.Fatalf("the leader did not enter its tank-first hold after recovery (collect %q, target %d, defer %s, state %q)",
+			collect, target, deferAt, state)
 	}
+
+	fightAt := mobAt.Add(tankDeferWait)
+	leader.mu.Lock()
+	leader.hunt(gm, false, fightAt)
+	state, target, collect = leader.State, leader.target, leader.collectName
+	leader.mu.Unlock()
+	if collect == stuck.charName() || target != mob.ID {
+		t.Fatalf("after the tank-first window, leader target = %d, collecting %q, state %q; want it to attack mob %d",
+			target, collect, state, mob.ID)
+	}
+
 	action := simRecoveryReadAction(t, peer)
-	if opcode := binary.LittleEndian.Uint16(action); opcode != 0x0437 && opcode != 0x0438 {
-		t.Fatalf("after the stuck-member window, action opcode = %#x, want an attack on mob %d (state %q)", opcode, mob.ID, state)
-	}
-	if actionTarget, ok := simRecoveryTarget(action); !ok || actionTarget != mob.ID {
-		t.Fatalf("after the stuck-member window, action target = %d (targeted=%v), want mob %d", actionTarget, ok, mob.ID)
+	switch opcode := binary.LittleEndian.Uint16(action); opcode {
+	case 0x0437, 0x0438:
+		if actionTarget, ok := simRecoveryTarget(action); !ok || actionTarget != mob.ID {
+			t.Fatalf("after the tank-first window, action target = %d (targeted=%v), want mob %d", actionTarget, ok, mob.ID)
+		}
+	case 0x035f:
+		wx, wy, _ := decodePos(action[2:5])
+		if dist(wx, wy, mob.X, mob.Y) >= dist(leader.X, leader.Y, mob.X, mob.Y) {
+			t.Fatalf("after the tank-first window, walk to %d,%d does not approach mob %d at %d,%d",
+				wx, wy, mob.ID, mob.X, mob.Y)
+		}
+	default:
+		t.Fatalf("after the tank-first window, action opcode = %#x, want a targeted attack or approach walk to mob %d (state %q)",
+			opcode, mob.ID, state)
 	}
 }
 
