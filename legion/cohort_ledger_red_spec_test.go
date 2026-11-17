@@ -256,6 +256,66 @@ func TestAtomicWriterFailureFailsClosedOnRetry(t *testing.T) {
 	t.Logf("PASS: Atomic writer error detected, fail-closed latched, no retry write invoked")
 }
 
+// TEST 2c: Retry After Failure Denial with Healthy Writer (Failclosed Latch Required)
+// Same ledger, same writer wrapper. Inject fault for first attempt, then remove fault.
+// Retry with healthy writer must still deny (proves failClosed latch prevents retry, not writer error).
+func TestRetryAfterFailureWithHealthyWriterDeniedByLatch(t *testing.T) {
+	dir := t.TempDir()
+	ledger := NewCohortLedger(dir, true, 100)
+	
+	if err := ledger.Load(); err != nil {
+		t.Fatal(err)
+	}
+	defer ledger.Close()
+	
+	// First grant succeeds
+	ok, err := ledger.MayAdmit("user1")
+	if !ok || err != nil {
+		t.Fatalf("first grant: ok=%v err=%v", ok, err)
+	}
+	
+	// Inject writer wrapper that fails (simulates I/O error)
+	faultActive := true
+	writerInvoked := 0
+	ledger.atomicWriter = func(tmpPath, targetPath string) error {
+		writerInvoked++
+		if faultActive {
+			os.Mkdir(targetPath, 0700)
+			return fmt.Errorf("simulated rename error: target is directory")
+		}
+		// If fault inactive, delegate to os.Rename (healthy)
+		return os.Rename(tmpPath, targetPath)
+	}
+	
+	// Try to admit user2 with fault active (will fail, latch failClosed)
+	ok, err = ledger.MayAdmit("user2")
+	if ok || err == nil {
+		t.Fatalf("write with fault: ok=%v err=%v", ok, err)
+	}
+	
+	firstInvocation := writerInvoked
+	if firstInvocation != 1 {
+		t.Fatalf("expected 1 writer invocation, got %d", firstInvocation)
+	}
+	
+	// Now remove the fault (restore healthy writer)
+	faultActive = false
+	
+	// Retry with user3 and healthy writer
+	// Should STILL deny because failClosed latch prevents any retry
+	ok, err = ledger.MayAdmit("user3")
+	if ok || err == nil {
+		t.Fatalf("retry with healthy writer: ok=%v err=%v (should deny due to latch)", ok, err)
+	}
+	
+	finalInvocation := writerInvoked
+	if finalInvocation != firstInvocation {
+		t.Fatalf("healthy writer should not be invoked on retry: before=%d after=%d", firstInvocation, finalInvocation)
+	}
+	
+	t.Logf("PASS: Retry with healthy writer denied by failClosed latch, no new invocation")
+}
+
 // TEST 3: Production Guard Enforcement with Mutation Testing
 // Byte-identical test: GREEN with guard present, RED with guard removed via mutation.
 // This test validates that CheckCohortAdmission actually blocks admissions.
