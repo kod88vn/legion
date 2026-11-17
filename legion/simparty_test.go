@@ -14,6 +14,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -65,6 +66,8 @@ type simChaosEvent struct {
 	kind     simEventKind
 	duration time.Duration
 	cellSeed int64
+	subject  int
+	tick     int
 }
 
 type simInputs struct {
@@ -101,16 +104,19 @@ type simMob struct {
 }
 
 type simResult struct {
-	Kills           int
-	ApartPct        float64       // share of online member time spent beyond together_cells of the leader
-	MobileApar      float64       // the same, counting only members able to walk (not frozen, not sealed in)
-	MaxStall        time.Duration // longest stretch without a party kill
-	CollectPct      float64       // share of leader time spent collecting
-	Deaths          int
-	ScheduledDeaths int
-	AmbushDeaths    int
-	InputHash       uint64
-	InputCount      int
+	Kills              int
+	ApartPct           float64       // share of online member time spent beyond together_cells of the leader
+	MobileApar         float64       // the same, counting only members able to walk (not frozen, not sealed in)
+	MaxStall           time.Duration // longest stretch without a party kill
+	CollectPct         float64       // share of leader time spent collecting
+	Deaths             int
+	ScheduledDeaths    int
+	AmbushDeaths       int
+	InputHash          uint64
+	InputCount         int
+	ConsumedHash       uint64
+	ConsumedCount      int
+	InputMisalignments int
 }
 
 type simWorld struct {
@@ -132,6 +138,8 @@ type simWorld struct {
 	kills, apart, online, collecting, ticks int
 	mobile, mobileApart, deaths             int
 	scheduledDeaths, ambushDeaths           int
+	consumedHash                            uint64
+	consumedCount, inputMisalignments       int
 	lastKill                                time.Time
 	maxStall                                time.Duration
 }
@@ -230,6 +238,7 @@ func simInputsFor(seed int64, chaos simChaos, d time.Duration) *simInputs {
 					cellSeed: int64(simKeyed(seed, subject, tick, 106)),
 				}
 			}
+			event.subject, event.tick = subject, tick
 			inputs.events[subject][tick] = event
 			if event.kind != simEventNone {
 				inputs.count++
@@ -246,16 +255,35 @@ func simInputsFor(seed int64, chaos simChaos, d time.Duration) *simInputs {
 
 func (in *simInputs) event(subject, tick int) simChaosEvent {
 	if subject < 0 || subject >= len(in.events) || tick < 0 || tick >= len(in.events[subject]) {
-		return simChaosEvent{}
+		return simChaosEvent{subject: subject, tick: tick}
 	}
 	return in.events[subject][tick]
+}
+
+func (w *simWorld) recordInput(subject, tick int, event simChaosEvent) {
+	if event.subject != subject || event.tick != tick {
+		w.inputMisalignments++
+	}
+	if event.kind == simEventNone {
+		return
+	}
+	w.consumedCount++
+	for _, v := range [...]uint64{
+		uint64(event.subject), uint64(event.tick), uint64(event.kind), uint64(event.duration), uint64(event.cellSeed),
+	} {
+		for i := 0; i < 8; i++ {
+			w.consumedHash ^= v & 0xff
+			w.consumedHash *= 1099511628211
+			v >>= 8
+		}
+	}
 }
 
 func newSimWorld(seed int64, policy simPolicy, inputs *simInputs) *simWorld {
 	rng := rand.New(rand.NewSource(seed))
 	gm, pocket := simGameMap(rng)
 	w := &simWorld{gm: gm, rng: rng, seed: seed, inputs: inputs, policy: policy, pocket: pocket,
-		now: time.Date(2026, 11, 16, 20, 0, 0, 0, time.UTC)}
+		now: time.Date(2026, 11, 16, 20, 0, 0, 0, time.UTC), consumedHash: 14695981039346656037}
 	w.lastKill = w.now
 	sx, sy := w.mainCell()
 	w.lead = &simAgent{name: "Leader", x: sx, y: sy, lastMoveAt: w.now}
@@ -455,6 +483,8 @@ func (w *simWorld) memberThink(m *simAgent) {
 
 // inject: chaos for one member this tick.
 func (w *simWorld) inject(m *simAgent) {
+	event := w.inputs.event(m.subject, w.tick)
+	w.recordInput(m.subject, w.tick, event)
 	if !w.can(m) {
 		if !w.now.Before(m.pocketTo) && m.x <= 7 && m.y <= 7 { // out of the pocket: stuckWatch's last resort (a wing)
 			m.x, m.y = w.eventCell(m.subject, w.tick, 107)
@@ -462,7 +492,6 @@ func (w *simWorld) inject(m *simAgent) {
 		}
 		return
 	}
-	event := w.inputs.event(m.subject, w.tick)
 	switch event.kind {
 	case simEventFreeze:
 		m.frozenTo = w.now.Add(event.duration)
@@ -574,7 +603,8 @@ func runSimWithInputs(seed int64, policy simPolicy, inputs *simInputs, d time.Du
 		MobileApar: 100 * float64(w.mobileApart) / float64(max(w.mobile, 1)),
 		CollectPct: 100 * float64(w.collecting) / float64(max(w.ticks, 1)), Deaths: w.deaths,
 		ScheduledDeaths: w.scheduledDeaths, AmbushDeaths: w.ambushDeaths,
-		InputHash: inputs.hash, InputCount: inputs.count}
+		InputHash: inputs.hash, InputCount: inputs.count,
+		ConsumedHash: w.consumedHash, ConsumedCount: w.consumedCount, InputMisalignments: w.inputMisalignments}
 }
 
 // simBatch: many seeds in parallel; results come back in seed order.
@@ -617,7 +647,7 @@ func simBatchPaired(seeds int, chaos simChaos, d time.Duration) ([]simResult, []
 
 type simSummary struct {
 	KillsPerHour, ApartPct, MobileApart, CollectPct, DeathsPerHour float64
-	ScheduledDeathsPerHour, AmbushDeathsPerHour                   float64
+	ScheduledDeathsPerHour, AmbushDeathsPerHour                    float64
 	P95Stall                                                       time.Duration
 }
 
@@ -646,6 +676,15 @@ func summarize(rs []simResult, d time.Duration) simSummary {
 func (s simSummary) String() string {
 	return fmt.Sprintf("kills/h %4.0f  deaths/h %4.2f (scheduled %.2f, ambush %.2f)  apart %4.1f%% (able to walk %4.1f%%)  collecting %4.1f%%  p95 stall %v",
 		s.KillsPerHour, s.DeathsPerHour, s.ScheduledDeathsPerHour, s.AmbushDeathsPerHour, s.ApartPct, s.MobileApart, s.CollectPct, s.P95Stall.Round(time.Second))
+}
+
+func simAmbushSafetyRejection(baseline, candidate simSummary) string {
+	const maxIncreasePerHour = 0.05
+	if candidate.AmbushDeathsPerHour > baseline.AmbushDeathsPerHour+maxIncreasePerHour {
+		return fmt.Sprintf("ambush deaths/h %.2f exceed baseline %.2f by more than %.2f/h",
+			candidate.AmbushDeathsPerHour, baseline.AmbushDeathsPerHour, maxIncreasePerHour)
+	}
+	return ""
 }
 
 var (
@@ -688,6 +727,18 @@ func TestSimPartyCalmInvariants(t *testing.T) {
 	}
 }
 
+func TestSimAmbushSafetyVerdict(t *testing.T) {
+	baseline := simSummary{AmbushDeathsPerHour: 0.27}
+	safe := simSummary{AmbushDeathsPerHour: 0.32}
+	unsafe := simSummary{AmbushDeathsPerHour: 1.32}
+	if got := simAmbushSafetyRejection(baseline, safe); got != "" {
+		t.Fatalf("safe control unexpectedly rejected: %s", got)
+	}
+	if got := simAmbushSafetyRejection(baseline, unsafe); !strings.Contains(got, "ambush deaths/h") {
+		t.Fatalf("unsafe control not explicitly rejected: %q", got)
+	}
+}
+
 // A/B on the same seeds: the candidate rule must not change calm play (no regression) and must win back the time a
 // frozen member costs the party.
 func TestSimPartyLadderAB(t *testing.T) {
@@ -698,6 +749,17 @@ func TestSimPartyLadderAB(t *testing.T) {
 			if engineRuns[i].InputHash != ladderRuns[i].InputHash || engineRuns[i].InputCount != ladderRuns[i].InputCount {
 				t.Fatalf("%s seed %d A/B chaos schedules diverged: %016x/%d vs %016x/%d", c.name, 1000+i,
 					engineRuns[i].InputHash, engineRuns[i].InputCount, ladderRuns[i].InputHash, ladderRuns[i].InputCount)
+			}
+			if engineRuns[i].ConsumedCount != engineRuns[i].InputCount ||
+				ladderRuns[i].ConsumedCount != ladderRuns[i].InputCount ||
+				engineRuns[i].InputMisalignments != 0 || ladderRuns[i].InputMisalignments != 0 {
+				t.Fatalf("%s seed %d chaos inputs not consumed at their scheduled subject/tick: engine %d/%d misaligned %d, ladder %d/%d misaligned %d",
+					c.name, 1000+i, engineRuns[i].ConsumedCount, engineRuns[i].InputCount, engineRuns[i].InputMisalignments,
+					ladderRuns[i].ConsumedCount, ladderRuns[i].InputCount, ladderRuns[i].InputMisalignments)
+			}
+			if engineRuns[i].ConsumedHash != ladderRuns[i].ConsumedHash {
+				t.Fatalf("%s seed %d A/B consumed different chaos events: %016x vs %016x", c.name, 1000+i,
+					engineRuns[i].ConsumedHash, ladderRuns[i].ConsumedHash)
 			}
 		}
 		e := summarize(engineRuns, d)
@@ -712,6 +774,16 @@ func TestSimPartyLadderAB(t *testing.T) {
 		}
 		if l.DeathsPerHour > e.DeathsPerHour*1.1+0.05 {
 			t.Errorf("%s: ladder deaths/h %.2f above engine %.2f", c.name, l.DeathsPerHour, e.DeathsPerHour)
+		}
+		ambushRejection := simAmbushSafetyRejection(e, l)
+		if c.name == "rough" {
+			if ambushRejection == "" {
+				t.Errorf("rough: ladder candidate was not rejected by the ambush safety gate")
+			} else {
+				t.Logf("rough ladder candidate REJECTED: %s", ambushRejection)
+			}
+		} else if ambushRejection != "" {
+			t.Errorf("%s: ladder candidate rejected by the ambush safety gate: %s", c.name, ambushRejection)
 		}
 		if l.MobileApart > e.MobileApart+2 {
 			t.Errorf("%s: ladder leaves members who can walk apart %.1f%% of the time (engine %.1f%%)", c.name, l.MobileApart, e.MobileApart)
