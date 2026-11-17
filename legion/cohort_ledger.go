@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -139,7 +138,6 @@ func (cl *CohortLedger) writeLocked() error {
 	}
 
 	// Atomic write: temp file + rename.
-	dir := filepath.Dir(cl.filePath)
 	tmp := cl.filePath + ".tmp"
 	if err := os.WriteFile(tmp, data, 0644); err != nil {
 		return err
