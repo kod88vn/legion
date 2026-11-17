@@ -1695,6 +1695,9 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	}
 
 	lx, ly := b.livePos(now) // together.go: mid-walk b.X/b.Y is still the walk's start
+	if p := partyOf(b); p != nil && p.Leader == b && p.Human == "" {
+		b.pruneCollectionRecovery(p.Members)
+	}
 	// rest together (together.go): a bot party's leader holds position while a member rests - no collect, roam or
 	// map change; it sits or guards the resting members (a member in danger out of reach still breaks the rest)
 	if p := partyOf(b); p != nil && p.Leader == b && p.Human == "" {
@@ -1705,11 +1708,19 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 	}
 	// a bot party leader that promised to collect a member finishes that first, fighting only what hits it (QA: the
 	// collect was pre-empted by every new target and the member waited "coming to get me" for nothing)
-	if p := partyOf(b); p != nil && p.Leader == b && p.Human == "" && b.collectName != "" && !attacked &&
-		now.Sub(b.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second {
+	if p := partyOf(b); p != nil && p.Leader == b && p.Human == "" && b.collectName != "" && !attacked {
 		for _, m := range p.Members {
-			if s, ok := peek(m.P.Name); ok && m != b && s.Name == b.collectName && (!partyStrong(p) || memberInDanger(s)) &&
-				needsCollect(b.MapName, lx, ly, s, true) && b.sameWalkRegion(gm, s.X, s.Y) && !leftAloneOnTrip(p, s) { // together.go; a strong party's members come to us
+			s, ok := peek(m.P.Name)
+			if !ok || m == b || s.Name != b.collectName {
+				continue
+			}
+			_, recovery := b.observeCollectionRecovery(gm, b.MapName, lx, ly, s, now, true)
+			if recovery.keep && (!partyStrong(p) || memberInDanger(s) || recovery.risk) &&
+				needsCollectWithRisk(b.MapName, lx, ly, s, true, recovery.risk) &&
+				b.sameWalkRegion(gm, s.X, s.Y) && !leftAloneOnTrip(p, s) { // together.go; a strong party's members come to us
+				if recovery.progress {
+					b.collectAt = now
+				}
 				b.target = 0
 				b.setState("collecting " + s.Name)
 				if !moving && gm != nil {
@@ -1719,7 +1730,7 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 			}
 		}
 		b.collectLagClear(b.collectName) // the collect is over: its lag grace is spent (together.go)
-		b.collectName = "" // together / busy fighting / gone: drop the promise so the member stops waiting for us
+		b.collectName = ""               // together / busy fighting / gone: drop the promise so the member stops waiting for us
 	}
 	// party tank leader (tanklead.go): take whatever targets a member off it - before going on with our own target
 	if p := partyOf(b); p != nil && p.Leader == b && p.Human == "" && partyRole(b) == roleTank {
@@ -1798,37 +1809,61 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		found := false
 		// one straggler, kept until done: picked beyond together_cells, finished within collect_stop_cells (hysteresis:
 		// ending at 20 too made leaders flip "collecting"/"roaming" and switch stragglers every few seconds)
-		if b.collectName != "" && now.Sub(b.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second {
+		if b.collectName != "" {
 			for _, m := range p.Members {
-				if s, ok := peek(m.P.Name); ok && s.Name == b.collectName && (!strong || memberInDanger(s)) && needsCollect(b.MapName, lx, ly, s, true) && b.sameWalkRegion(gm, s.X, s.Y) { // together.go
+				s, ok := peek(m.P.Name)
+				if !ok || m == b || s.Name != b.collectName {
+					continue
+				}
+				_, recovery := b.observeCollectionRecovery(gm, b.MapName, lx, ly, s, now, true)
+				if recovery.keep && (!strong || memberInDanger(s) || recovery.risk) &&
+					needsCollectWithRisk(b.MapName, lx, ly, s, true, recovery.risk) &&
+					b.sameWalkRegion(gm, s.X, s.Y) { // together.go
 					// the commitment ends as soon as the member is within together_cells (QA: leaders kept "collecting" members
 					// 5-9 cells away until 3 cells)
 					tgt, found = s, true
+					if recovery.progress {
+						b.collectAt = now
+					}
 				}
 			}
 		}
 		if !found {
 			b.collectLagClear(b.collectName) // the collect that was running has ended: its lag grace is spent
+			delete(b.collectRecovery, b.collectName)
 			b.collectName = ""
-			bd := 99
+			candidates := make([]pubState, 0, len(p.Members))
+			rescueRisk := map[string]bool{}
 			for _, m := range p.Members {
 				if m == b {
 					continue
 				}
-				if s, ok := peek(m.P.Name); ok && (!strong || memberInDanger(s)) && needsCollect(b.MapName, lx, ly, s, false) && b.sameWalkRegion(gm, s.X, s.Y) && !leftAloneOnTrip(p, s) && // together.go: beyond together_cells, not busy fighting; a strong party's members walk to us themselves
-					!bossSpotNear(b.MapName, s.X, s.Y, 12, b.powerLv()) { // nav.go: not across a river (the member goes round); bossnote.go: not into a boss spot
-					sx, sy := livePosOf(s)
-					if d := dist(lx, ly, sx, sy); d < bd {
-						tgt, bd, found = s, d, true
-					}
+				s, ok := peek(m.P.Name)
+				if !ok {
+					delete(b.collectRecovery, m.charName())
+					continue
 				}
+				_, recovery := b.observeCollectionRecovery(gm, b.MapName, lx, ly, s, now, false)
+				if !recovery.eligible || strong && !memberInDanger(s) && !recovery.risk ||
+					!needsCollectWithRisk(b.MapName, lx, ly, s, false, recovery.risk) ||
+					!b.sameWalkRegion(gm, s.X, s.Y) || leftAloneOnTrip(p, s) ||
+					bossSpotNear(b.MapName, s.X, s.Y, 12, b.powerLv()) {
+					continue
+				}
+				candidates = append(candidates, s)
+				rescueRisk[s.Name] = recovery.risk
 			}
+			tgt, found = chooseCollectTargetWithRisk(b.MapName, lx, ly, candidates, rescueRisk)
 			// AY23 (engine parties): a lagging member gets about 10 s to catch up on its own before the leader goes back
-			if found && ovEngineParty(p) && !memberInDanger(tgt) && !b.collectLagDue(tgt.Name, now) {
+			if found && ovEngineParty(p) && !memberInDanger(tgt) && !rescueRisk[tgt.Name] && !b.collectLagDue(tgt.Name, now) {
 				found = false
 			}
 			if found {
 				b.collectName, b.collectAt = tgt.Name, now
+				mx, my := livePosOf(tgt)
+				eta, etaAvailable := collectionRescueETA(gm, lx, ly, mx, my, b.Speed)
+				b.collectRecovery[tgt.Name] = beginCollectRecovery(b.collectRecovery[tgt.Name], tgt, now,
+					rescueRisk[tgt.Name], eta, etaAvailable)
 				if now.After(b.buffAt["leadsay"]) { // at most one call-out every 2 minutes
 					b.buffAt["leadsay"] = now.Add(2 * time.Minute)
 					typing := b.P.Typing
@@ -2113,7 +2148,7 @@ func partyFitLv(ms []*Bot) (minLv, fitLv, known, unknown int) {
 			fitLv += b
 		}
 		minLv, fitLv = partyPerfAdjust(ms, minLv, fitLv, false) // gearscore.go: easy farming steps the party up
-		if g := partyGearGate(ms); g > 0 && minLv > g { // buildmilestones.go (EC39): a step never lifts past the gear
+		if g := partyGearGate(ms); g > 0 && minLv > g {         // buildmilestones.go (EC39): a step never lifts past the gear
 			fitLv -= minLv - g
 			minLv = g
 		}

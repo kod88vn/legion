@@ -236,6 +236,8 @@ Counts by kind: behaviour spec 123, hard gate 21, process 35, replaced 5, server
 | PT34 | Off the roster means leave the in-game party right away (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
 | PT36 | Conservative party map choice: start -10, a death -5, step up after 20 min (2026-11-15) | parties | owner 2026-11-15 | docs/rules/parties.md | new rule |
 | ST07 | rathena chat logging on, for @partyspy (2026-11-15) | settings | owner 2026-11-15 | docs/rules/settings.md | new rule |
+| ST09 | Staged bot admission: seed 100 bots every hour, track by cohort (2026-11-17) | settings | owner 2026-11-17 | docs/rules/settings.md | new rule |
+| AY27 | Ayla and best-performer guild are primary test subjects; monitor legion average separately to detect cohort effects (2026-11-17) | ayla | owner 2026-11-17 | docs/rules/ayla.md | new rule |
 | PR43 | Every main-session reply ends with its pending tasks (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | PR42 | Nothing is written twice; the constitution is read first and once, never restated (2026-11-15) | process | owner 2026-11-15 | docs/rules/process.md | new rule |
 | Constitution | Highest law, three articles (main session, the Matrix world, the self-improving loop); every agent reads it in full; G13, PR23 and AY21 amended to fit (2026-11-15) | constitution | owner 2026-11-15 | CONSTITUTION.md | new, above all rules |

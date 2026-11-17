@@ -1,0 +1,102 @@
+//===== rAthena Script ======================================= 
+//= Shops
+//===== By: ================================================== 
+//= rAthena Dev Team
+//===== Current Version: ===================================== 
+//= 3.6
+//===== Compatible With: ===================================== 
+//= rAthena Project
+//===== Description: ========================================= 
+//= Town shop NPCs.
+//===== Additional Comments: ================================= 
+//= For earlier update notes see the bottom.
+//= 2.0 updated several shop npcs. [L0ne_W0lf]
+//=     Added proper Venom Knife dealer, and consiquently removed wenom Knives from weapon dealers.
+//=     Moved all Cooking related NPCs to their own section.
+//=     Re-alphabetized sections. Some of them were out of place.
+//=     Removed commented out shops.
+//= 2.0b Einbech tool dealer got lost somewhere along the way, re-added. [L0ne_W0lf]
+//= 2.1 Fixed missing item from "Fresh Fish" from cooking addition shops. [L0ne_W0lf]
+//= 2.1a Fixed the second "Line" selling in Comodo Weapon shop. (Should have been Whip) [L0ne_W0lf]
+//= 2.2 Added Veins shops. [L0ne_W0lf]
+//= 2.3 Corrected NPC names to fall within proper restrictions. [L0ne_W0lf]
+//= 2.4 Fixed Jawaii Ice cream salesman. [L0ne_W0lf]
+//= 2.5 Updated Morocc shops to episode 12.1. [L0ne_W0lf]
+//= 2.6 Added Brasilis shops. [L0ne_W0lf]
+//=     Updated Pet Groomers with four new pet feeds.
+//= 2.7 Added Trading merchants, (ninja& gunslinger) to Izlude and Alberta. [L0ne_W0lf]
+//=     Made Brasilis shop names unique, and uncommented.
+//=     Changed the whip sold in comodo weapon shop. (1956 ->1960)
+//=     Added Fire and Silver arrow to Einbroch tool dealer.
+//=     Re-added Bill of Birds to Morocc Item Collectors.
+//= 2.7a Actually applied the right update to the comodo weapon shop. [L0ne_W0lf]
+//= 2.7b Corrected Brasilis Fruit Merchant. (bugreport:4278) [L0ne_W0lf]
+//= 2.8 Updates to Brasilis Merchants. [L0ne_W0lf]
+//= 2.9 Added missing Cooking Items for Material Seller. [tr0n]
+//= 3.0 Added all new Shops which were available in the latest available official files. [Masao]
+//= 3.1 Moved some merchants to a separate renewal file. [Kenpachi]
+//= 3.2 Added Missing Items to the pet Groomers in prontera, payon, and yuno. BugReport:6680[Spre]
+//= 3.3 Moved more shops to Renewal file. [Euphy]
+//= 3.4 Moved Izlude shops to pre-re/re paths. [Streusel]
+//= 3.5 Moved Ninja shops to Pre-RE/RE paths. [Euphy]
+//= 3.6 Moved Morocc shops to Pre-RE/RE paths. [zackdreaver]
+//= 3.7 Moved Pet Groomers to Pre-RE path. [Haydrich]
+//============================================================ 
+
+//=======================================================
+// Alberta
+//=======================================================
+alberta_in,180,15,0	shop	Armor Dealer#alb	101,2301:-1,2305:-1,2321:-1,2328:-1,2332:-1,2307:-1,2309:-1,2312:-1,2314:-1
+alberta_in,188,21,0	shop	Weapon Dealer#alb	49,1104:-1,1107:-1,1201:-1,1207:-1,1601:-1,1701:-1,1301:-1,1351:-1,1354:-1,1357:-1,1360:-1
+aldeba_in,20,60,0	shop	Armor Dealer#alde	101,2307:-1,2309:-1,2312:-1,2314:-1,2316:-1
+aldeba_in,28,54,0	shop	Weapon Dealer#alde	49,1201:-1,1207:-1,1210:-1,1213:-1,1216:-1,1222:-1
+ama_in01,89,28,5	shop	Armor Dealer#ama	757,2305:-1,2321:-1,2332:-1,2328:-1
+ama_in01,102,28,3	shop	Weapon Dealer#ama	766,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1,1407:-1,1457:-1,1354:-1,1519:-1
+ayo_in01,90,192,3	shop	Weapon Dealer#ayo	843,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1,1407:-1,1457:-1,1354:-1,1519:-1
+ayo_in01,90,160,1	shop	Armor Dealer#ayo	842,2305:-1,2321:-1,2332:-1,2328:-1
+brasilis,244,243,3	shop	Weapon Dealer#bra	477,1407:-1,1457:-1,1354:-1,1519:-1
+cmd_in01,117,165,4	shop	Armor Dealer#cmd	101,2305:-1,2321:-1,2307:-1,2309:-1,2312:-1,2314:-1,2316:-1
+cmd_in01,128,165,2	shop	Weapon Dealer#cmd	49,1905:-1,1907:-1,1954:-1
+cmd_fild07,250,98,2	shop	Weapon Dealer#cmd2	49,1401:-1,1404:-1,1407:-1,1451:-1,1454:-1,1457:-1,1460:-1
+cmd_fild07,277,85,4	shop	Armor Dealer#cmd2	101,2305:-1,2321:-1,2307:-1,2309:-1,2312:-1,2314:-1,2316:-1
+ein_in01,106,27,4	shop	One Hand Weapon Dealer	850,1104:-1,1107:-1,1110:-1,1113:-1,1119:-1,1126:-1,1129:-1,1201:-1,1207:-1,1210:-1,1213:-1,1216:-1,1222:-1,1301:-1,1401:-1,1404:-1,1407:-1,1501:-1,1504:-1,1507:-1,1510:-1,1513:-1,1519:-1,1801:-1,1803:-1,1805:-1,1807:-1
+ein_in01,109,27,4	shop	Two Hand Weapon Dealer	850,1116:-1,1151:-1,1154:-1,1157:-1,1351:-1,1354:-1,1357:-1,1360:-1,1451:-1,1454:-1,1457:-1,1460:-1,1250:-1,1252:-1,1254:-1
+geffen_in,26,178,4	shop	Armor Dealer#gef	66,2301:-1,2305:-1,2321:-1,2332:-1
+geffen_in,30,178,4	shop	Weapon Dealer#gef2	47,1701:-1,1201:-1,1207:-1,1210:-1,1213:-1,1216:-1,1601:-1,1604:-1,1607:-1,1610:-1
+geffen_in,77,173,0	shop	Magical Item Seller#gef	64,1601:-1,1604:-1,1607:-1,1610:-1,2321:-1,2332:-1
+gonryun,174,101,3	shop	Weapon Dealer#gon	774,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1,1407:-1,1457:-1,1354:-1,1519:-1
+gonryun,173,84,3	shop	Armor Dealer#gon	770,2305:-1,2321:-1,2332:-1,2328:-1
+hu_in01,100,390,3	shop	Bow Dealer#hu	86,1701:-1,1707:-1,1718:-1,1714:-1
+hu_in01,94,390,3	shop	Weapon Dealer#hu	898,1116:-1,1154:-1,1354:-1,1201:-1
+hu_in01,94,313,3	shop	Armor Dealer#hu	86,2307:-1
+izlude_in,60,127,4	shop	Weapon Dealer#iz	72,1701:-1,1601:-1,1201:-1,1207:-1,1104:-1,1107:-1,1116:-1,1151:-1,1154:-1,1157:-1,1301:-1
+izlude_in,70,127,4	shop	Armor Dealer#iz	62,2305:-1,2328:-1,2307:-1,2309:-1,2312:-1,2314:-1,2316:-1
+yuno,163,187,5	shop	Magical Item Seller#yuno	90,1601:-1,1604:-1,1607:-1,1610:-1,2321:-1,2332:-1
+yuno_in01,103,35,2	shop	Weapon Dealer#yuno	49,1701:-1,1201:-1,1207:-1,1210:-1,1213:-1,1216:-1,1601:-1,1604:-1,1607:-1,1610:-1
+yuno_in01,112,26,4	shop	Armor Dealer#yuno	101,2301:-1,2305:-1,2321:-1,2332:-1
+lhz_in02,271,99,5	shop	Armor Dealer#lhz	851,2321:-1,2314:-1,2309:-1
+lhz_in02,276,99,4	shop	Weapon Dealer#lhz	851,1201:-1,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1,1407:-1,1457:-1,1354:-1,1519:-1
+lhz_in02,273,35,4	shop	Wand Dealer#lhz	854,1601:-1,1604:-1,1607:-1
+lou_in02,121,182,5	shop	Armor Dealer#lou	818,2305:-1,2321:-1,2332:-1,2328:-1
+lou_in02,130,182,5	shop	Weapon Dealer#lou	822,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1,1407:-1,1457:-1,1354:-1,1519:-1
+xmas_in,168,104,4	shop	Armor Dealer#xmas	101,2307:-1,2309:-1,2312:-1,2314:-1,2316:-1
+xmas_in,174,98,2	shop	Weapon Dealer#xmas	49,1201:-1,1207:-1,1210:-1,1213:-1,1216:-1,1222:-1
+morocc_in,141,67,0	shop	Weapon Dealer#moc1	58,1701:-1,1601:-1,1201:-1,1207:-1,1210:-1,1213:-1,1216:-1,1222:-1,1250:-1,1252:-1,1254:-1
+morocc_in,141,60,0	shop	Armor Dealer#moc	58,2301:-1,2305:-1,2321:-1,2328:-1,2332:-1,2307:-1,2309:-1
+mosk_in,31,180,3	shop	Weapon Dealer#mosk	968,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1,1407:-1,1457:-1,1354:-1,1519:-1
+mosk_in,79,178,1	shop	Armor Dealer#mosk	961,2305:-1,2321:-1,2332:-1,2328:-1
+nif_in,37,93,1	shop	Axe Dealer#nif	801,1301:-1,1351:-1,1354:-1,1357:-1,1360:-1
+payon_in01,15,119,0	shop	Weapon Dealer#pay	77,1104:-1,1107:-1,1201:-1,1207:-1,1601:-1,1701:-1,1704:-1,1707:-1,1710:-1,1713:-1,1714:-1,1718:-1
+payon_in01,7,119,2	shop	Armor Dealer#pay	76,2301:-1,2305:-1,2321:-1,2328:-1,2332:-1,2307:-1,2309:-1
+prt_church,108,124,4	shop	Nun#prt	79,2325:-1,1501:-1,1504:-1,1507:-1,1510:-1,1513:-1,1519:-1
+prt_in,172,130,0	shop	Weapon Dealer#prt	54,1701:-1,1201:-1,1207:-1,1601:-1,1104:-1,1107:-1,1110:-1,1113:-1,1119:-1,1126:-1,1129:-1,1116:-1,1301:-1
+prt_in,172,132,0	shop	Armor Dealer#prt	48,2301:-1,2305:-1,2328:-1,2307:-1,2309:-1,2312:-1,2314:-1
+prt_in,171,140,0	shop	Weapon Dealer#prt2	47,1401:-1,1404:-1,1407:-1,1451:-1,1454:-1,1457:-1,1460:-1
+prt_monk,135,263,5	shop	Weapon Dealer#prt4	726,1801:-1,1803:-1,1805:-1
+ra_in01,175,364,3	shop	Armor Dealer#ra	919,2321:-1,2314:-1,2309:-1
+ra_in01,176,389,3	shop	Weapon Dealer#ra	931,1201:-1,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1,1407:-1,1457:-1,1354:-1,1519:-1,1601:-1,1604:-1,1607:-1
+um_in,160,125,3	shop	Weapon Dealer#um	789,1501:-1,1504:-1,1507:-1,1510:-1,1513:-1,1519:-1,1807:-1
+ve_in,386,245,3	shop	Weapon Dealer#ve	931,1201:-1,1207:-1,1216:-1,1107:-1,1116:-1,1154:-1
+ve_in,336,243,3	shop	Weapon Dealer#ve2	931,1407:-1,1457:-1,1354:-1,1519:-1
+ve_in,374,230,3	shop	Armor Dealer#ve	919,2321:-1,2314:-1,2309:-1
+ve_in,252,313,0	shop	Magical Item Seller#ve	942,1601:-1,1604:-1,1607:-1,1610:-1,2321:-1,2332:-1
