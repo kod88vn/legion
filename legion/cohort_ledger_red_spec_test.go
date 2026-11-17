@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -100,11 +100,6 @@ func TestAtomicWriteCollisionFailsClosed(t *testing.T) {
 		t.Fatalf("first grant: ok=%v err=%v", ok, err)
 	}
 	
-	// Record state after first grant
-	ledger.mu.Lock()
-	firstGrantState := *ledger.state
-	ledger.mu.Unlock()
-	
 	// Now create a directory at the ledger path to cause rename collision
 	ledgerPath := ledger.ledgerPath
 	if err := os.Mkdir(ledgerPath, 0700); err != nil && !os.IsExist(err) {
@@ -187,6 +182,56 @@ func TestProductionGuardEnforcesAdmission(t *testing.T) {
 	}
 	
 	t.Logf("PASS: Production guard enforces admission quota")
+}
+
+// TEST 3b: Callback Error Case (Regression Test)
+// When an already-eligible account's callback returns an error,
+// attemptCohortConnect must return (attempted=true, err) to preserve
+// the original connect-error backoff behavior. This test proves b04f9bf
+// callback-error regression: attempted=false incorrectly treats connect
+// errors as quota denials, losing exponential backoff/mapServerFull logic.
+func TestCallbackErrorPreservesAttempted(t *testing.T) {
+	dir := t.TempDir()
+	
+	// Initialize global gate with quota > 1 (account is eligible)
+	oldGate := cohortGate
+	defer func() { cohortGate = oldGate }()
+	
+	cohortGate = NewCohortLedger(dir, true, 10)
+	if err := cohortGate.Load(); err != nil {
+		t.Fatal(err)
+	}
+	defer cohortGate.Close()
+	
+	// Spy callback: counts invocations and returns a sentinel error
+	var connectCallCount int
+	sentinelErr := fmt.Errorf("connection failed: server unreachable")
+	connectFunc := func() error {
+		connectCallCount++
+		return sentinelErr
+	}
+	
+	// Already-eligible account (account ID 2001) with callback that fails
+	connectCallCount = 0
+	attempted, err := attemptCohortConnect(2001, connectFunc)
+	
+	// Requirement: callback must be invoked (count=1)
+	if connectCallCount != 1 {
+		t.Fatalf("callback should have been invoked once: count=%d", connectCallCount)
+	}
+	
+	// Requirement: attempted=true (callback WAS invoked despite error)
+	// REGRESSION: b04f9bf returns attempted=false, breaking exponential backoff logic
+	if !attempted {
+		t.Fatalf("callback error should return attempted=true (not false): attempted=%v", attempted)
+	}
+	
+	// Requirement: error must be propagated as-is
+	if err != sentinelErr {
+		t.Fatalf("callback error not propagated: got %v, want %v", err, sentinelErr)
+	}
+	
+	t.Logf("PASS: Callback error preserves attempted=true (expected RED if b04f9bf's helper returns attempted=false)")
 }
 
 // TEST 4: Deleted Ledger Restart Scenarios

@@ -1500,7 +1500,6 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		return
 	}
 	defer b.running.Store(false)
-	backoff := 5 * time.Second
 	for {
 		select {
 		case <-stop:
@@ -1592,7 +1591,6 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			}
 			continue
 		}
-		backoff = 5 * time.Second
 		atomic.AddInt64(&stats.online, 1)
 		// session routine: sociable players hang around town after logging in; everyone heads back to town
 		// shortly before they log off
