@@ -1222,10 +1222,10 @@ func TestLegacyWholeSecondPersistedWindowRestartBoundary(t *testing.T) {
 	// === PHASE 4: At t0+1h-1ns, quota is still full (window hasn't rolled yet) ===
 	// Deny fresh B (quota full - A already has the 1 slot)
 	ok, err = ledger2.MayAdmit("accountB")
-	if ok != false || err != nil {
-		t.Fatalf("phase4 fresh B at t0+1h-1ns: ok=%v err=%v (expected false with nil error, quota exhausted)", ok, err)
+	if ok != false || err == nil || !strings.Contains(err.Error(), "quota exhausted") {
+		t.Fatalf("phase4 fresh B at t0+1h-1ns: ok=%v err=%v (expected false with 'quota exhausted' error)", ok, err)
 	}
-	t.Logf("phase4: fresh B correctly denied at t0+1h-1ns (quota full, nil error)")
+	t.Logf("phase4: fresh B correctly denied at t0+1h-1ns (quota full, quota exhausted error)")
 
 	// Allow A reconnect without consuming quota
 	ok, err = ledger2.MayAdmit("accountA")
