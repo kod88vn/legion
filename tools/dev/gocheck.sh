@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # gocheck.sh - compile and unit-test the Go engine without Docker (portable Go in WSL ~/go-toolchain).
+# On macOS: uses cached Go Docker image (network_mode: none) to avoid toolchain dependency.
 # usage: bash gocheck.sh [--fast] [-run <regex>] [engine-dir]     (Windows, /g/ or /mnt/g/ style path)
 #   --fast   gofmt + vet + build only (no tests)
 #   -run RE  passed to go test
@@ -29,6 +30,76 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$DIR" ] || DIR="$(cd "$HERE/../.." && pwd)/legion"
 SRCARG="$DIR"                       # the path as given (Git Bash form), for this shell's git
+
+# ---- macOS native fallback: use cached Go Docker image (network_mode: none, read-only source, disposable outputs)
+if [ "$(uname -s)" = "Darwin" ]; then
+  # Check if docker is available and go image exists (cached)
+  if command -v docker >/dev/null 2>&1 && docker image inspect golang:latest >/dev/null 2>&1; then
+    # Run Go checks inside cached golang Docker image, read-only source, no network
+    cd "$DIR" || exit 2
+    SRC_DIR="$(pwd)"
+    T="$(mktemp -d)"
+    trap "rm -rf \"$T\"" EXIT
+    
+    # Copy source and build artifacts to temp (read-only mount for source)
+    cp go.mod *.go "$T"/ 2>/dev/null || true
+    cp *.html recvpackets.txt "$T"/ 2>/dev/null || true
+    
+    # Build the gocheck command to run inside container
+    DOCKER_CMD='
+set -e
+export GOCACHE=/tmp/.cache/go-build GOFLAGS=-mod=mod GOTOOLCHAIN=local GOPROXY=off
+[ -f /src/go.mod ] || { echo "no go.mod in /src (nothing was checked)"; exit 2; }
+cd /work
+cp /src/* . 2>/dev/null || true
+echo "go: $(go version)  src: /src"
+FMT="$(gofmt -l . )"
+if [ -n "$FMT" ]; then echo "gofmt: UNFORMATTED (not fatal): $(echo $FMT | tr "\n" " ")"; else echo "gofmt: clean"; fi
+rc=0
+if go vet ./... >vet.log 2>&1; then echo "vet: ok"; else echo "vet: FAIL"; head -30 vet.log; rc=1; fi
+'
+    if [ "$FAST" = 1 ]; then
+      DOCKER_CMD="$DOCKER_CMD"'
+if go build -o /dev/null ./... >build.log 2>&1; then echo "build: ok"; else echo "build: FAIL"; head -30 build.log; rc=1; fi
+exit $rc
+'
+    else
+      DOCKER_CMD="$DOCKER_CMD"'
+ARGS=""
+[ -n '"$(printf '%q' "$RUN")"' ] && ARGS="-run '"$(printf '%q' "$RUN")"'"
+go test -count=1 -v $ARGS ./... >test.log 2>&1
+P=$(grep -c "^--- PASS" test.log) || P=0; F=$(grep -c "^--- FAIL" test.log) || F=0; S=$(grep -c "^--- SKIP" test.log) || S=0
+echo "tests: pass=$P fail=$F skip=$S"
+TOT=$(grep -cE "^--- (PASS|FAIL|SKIP)" test.log) || TOT=0
+if [ "$TOT" -eq 0 ]; then echo "tests: NO TESTS RAN (-run '"$(printf '%q' "$RUN")"' matched nothing, or the engine has no tests): nothing was checked"; rc=1; fi
+grep -E "^(FAIL|ok|panic:)|build failed|\[setup failed\]" test.log | head -10 || true
+exit $rc
+'
+    fi
+    
+    HEAD0="$(git -C "$SRC_DIR" rev-parse HEAD 2>/dev/null || echo "none")"
+    echo "gocheck: source $DIR  git HEAD $HEAD0"
+    
+    # Run docker with read-only source, temp work dir, no network
+    rc=0
+    docker run --rm --network none -v "$SRC_DIR:/src:ro" -v "$T:/work" golang:latest bash -c "$DOCKER_CMD" || rc=$?
+    
+    HEAD1="$(git -C "$SRC_DIR" rev-parse HEAD 2>/dev/null || echo "none")"
+    if [ "$HEAD1" = "$HEAD0" ]; then
+      echo "gocheck: done source $DIR  git HEAD $HEAD1 (unchanged during the run)"
+      exit "$rc"
+    else
+      echo "gocheck: done source $DIR  git HEAD $HEAD1 (CHANGED during the run, was $HEAD0: the result may mix two trees)"
+      exit 1
+    fi
+  fi
+  # Fallback: no cached golang image available on native macOS
+  echo "gocheck: native macOS detected, but no cached golang:latest Docker image available"
+  echo "gocheck: install Go or use WSL (exit 2: nothing was checked)"
+  exit 2
+fi
+
+# ---- WSL/Windows path: convert to WSL form
 # to a WSL path: X:\a\b, X:/a/b, /x/a/b (Git Bash) and /mnt/x/a/b are all accepted; a Git Bash path such as /tmp/x
 # (not a drive) is first turned into the Windows path by cygpath, so WSL gets the same folder
 case "$(uname -s 2>/dev/null)" in
@@ -40,6 +111,7 @@ case "$DIR" in
     DIR="/mnt/$drive$rest" ;;
   /[a-zA-Z]/*) DIR="/mnt${DIR}" ;;
 esac
+
 BASE="$(grep -v '^\s*#' "$HERE/baseline-failures.txt" 2>/dev/null | sed 's/\s*#.*//' | grep -v '^\s*$' | tr '\n' ' ')"
 # the per-run settings, as shell assignments with every value quoted: they travel inside the command string
 VARS="export WSL_DIR=$(printf '%q' "$DIR") WSL_FAST=$FAST WSL_RUN=$(printf '%q' "$RUN") WSL_BASE=$(printf '%q' "$BASE"); "

@@ -736,6 +736,28 @@ services:
         self.assertIn("-p", compose_cmd, "Custom compose should include -p flag")
         self.assertIn("my-custom", compose_cmd, "Custom compose should use custom project name")
 
+    def test_compose_file_propagates_through_deploy_argv(self):
+        """GREEN: COMPOSE_FILE env var propagates when deploy.py builds compose commands."""
+        fake = FakeDocker()
+        
+        # Test that up_argv includes project name for server compose
+        up_cmd = DP.up_argv("legion-core", "/tmp/override.yml", 
+                           compose_file="docker-compose.server.yml",
+                           compose_project_name="ro-server")
+        # Should include -f docker-compose.server.yml and -p ro-server
+        self.assertIn("-f", up_cmd, "up_argv should include -f flag")
+        self.assertIn("docker-compose.server.yml", up_cmd, "up_argv should include server compose file")
+        self.assertIn("-p", up_cmd, "up_argv should include -p flag for non-default compose")
+        self.assertIn("ro-server", up_cmd, "up_argv should include project name")
+        
+        # Test that default compose file does NOT include -p flag (backward compat)
+        up_cmd_default = DP.up_argv("legion", "/tmp/override.yml",
+                                   compose_file="docker-compose.yml",
+                                   compose_project_name="ro")
+        self.assertIn("-f", up_cmd_default, "up_argv should include -f flag")
+        self.assertIn("docker-compose.yml", up_cmd_default, "up_argv should include default compose file")
+        self.assertNotIn("-p", up_cmd_default, "up_argv should NOT include -p flag for default compose (backward compat)")
+
     def test_guard_sh_uses_compose_file_env(self):
         """GREEN: guard.sh accepts and uses COMPOSE_FILE env var."""
         actual_guard = "/Users/jay.quach/dev/copilot-worktrees/legion/jay-quach-finact-glowing-lamp/tools/deploy/guard.sh"
@@ -745,12 +767,15 @@ services:
             # GREEN: guard.sh now initializes COMPOSE_FILE env var with default
             self.assertIn('COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}', guard_code,
                          "guard.sh should set COMPOSE_FILE env var with default")
-            # GREEN: guard.sh passes -f $COMPOSE_FILE to docker compose commands
+            # GREEN: guard.sh passes -f $COMPOSE_FILE to all docker compose commands
             self.assertIn('-f "$COMPOSE_FILE"', guard_code,
                          "guard.sh should pass -f with $COMPOSE_FILE to docker compose")
-            # GREEN: svc_field function now uses $COMPOSE_FILE
+            # GREEN: svc_field function uses $COMPOSE_FILE
             self.assertIn('docker compose -f "$COMPOSE_FILE"', guard_code,
                          "svc_field should use -f $COMPOSE_FILE")
+            # GREEN: svc_changed function uses -f $COMPOSE_FILE
+            compose_lines = [line for line in guard_code.split('\n') if 'docker compose' in line and '$COMPOSE_FILE' in line]
+            self.assertGreater(len(compose_lines), 1, "guard.sh should use COMPOSE_FILE in multiple places")
 
     def test_rathena_recreate_uses_compose_file_env(self):
         """GREEN: rathena_recreate.sh accepts and uses COMPOSE_FILE env var."""
@@ -761,22 +786,65 @@ services:
             # GREEN: rathena_recreate.sh sources guard.sh which sets COMPOSE_FILE
             self.assertIn('. "$G"', recreate_code,
                          "rathena_recreate.sh should source guard.sh")
-            # GREEN: followers() function now uses -f "$COMPOSE_FILE"
+            # GREEN: followers() function uses -f "$COMPOSE_FILE"
             self.assertIn('docker compose -f "$COMPOSE_FILE"', recreate_code,
                          "followers() should use -f $COMPOSE_FILE")
             # GREEN: Documentation mentions COMPOSE_FILE env var
             self.assertIn('COMPOSE_FILE - docker compose manifest', recreate_code,
                          "rathena_recreate.sh should document COMPOSE_FILE var")
 
-    def test_gocheck_handles_native_mac_gracefully(self):
-        """RED: gocheck.sh must handle native macOS (no WSL) without requiring Go toolchain."""
+    def test_gocheck_mac_fallback_exit_codes(self):
+        """GREEN: gocheck.sh on macOS exits 2 when no golang Docker image (never 0 on missing toolchain)."""
         gocheck_path = "/Users/jay.quach/dev/copilot-worktrees/legion/jay-quach-finact-glowing-lamp/tools/dev/gocheck.sh"
         if os.path.exists(gocheck_path):
             with open(gocheck_path) as f:
                 gocheck_code = f.read()
-            # RED: should detect native Mac and fall back gracefully
-            # Once implemented, should contain native Mac detection logic
-            self.assertIn("WSL", gocheck_code, "gocheck.sh checks for WSL")
+            # GREEN: should detect native macOS and handle gracefully
+            self.assertIn('uname -s', gocheck_code, "gocheck.sh should check OS")
+            self.assertIn('Darwin', gocheck_code, "gocheck.sh should check for macOS (Darwin)")
+            # GREEN: should use docker to run Go checks if available
+            self.assertIn('docker run', gocheck_code, "gocheck.sh should use docker run on macOS")
+            # GREEN: should exit 2 (never pass) when no golang image available
+            self.assertIn('exit 2', gocheck_code, "gocheck.sh should exit 2 when no toolchain")
+    def test_server_compose_dryrun_with_proper_project_isolation(self):
+        """GREEN: dry-run deploy to server compose includes proper project name and compose file."""
+        # Create a minimal server compose fixture with legion-core service
+        server_compose = """
+services:
+  db:
+    image: mariadb:latest
+    container_name: ro-db
+  rathena:
+    image: ro-rathena:latest
+    container_name: ro-rathena
+  legion:
+    image: ro-legion:latest
+    container_name: ro-legion
+    network_mode: "service:rathena"
+  legion-core:
+    image: ro-legion:latest
+    container_name: ro-legion-core
+    network_mode: "service:rathena"
+"""
+        with open(os.path.join(self.root, "docker-compose.server.yml"), "w") as f:
+            f.write(server_compose)
+        
+        fake = FakeDocker()
+        d = DP.Deploy(root=self.root, apply=False, execute_fn=fake, out=self.lines.append,
+                     compose_file="docker-compose.server.yml")
+        
+        # Verify compose_argv includes project name for server compose
+        config_cmd = d.compose_argv("config", "--format", "json")
+        self.assertIn("-f", config_cmd, "Should use -f flag")
+        self.assertIn("docker-compose.server.yml", config_cmd, "Should specify server compose file")
+        self.assertIn("-p", config_cmd, "Should include -p flag for project isolation")
+        self.assertIn("ro-server", config_cmd, "Should use ro-server project name")
+        
+        # Verify service validation works with server compose
+        rc, out = d.run(d.compose_argv("config", "--format", "json"))
+        self.assertEqual(rc, 0, "Config query should succeed")
+        # In a real scenario, this would parse JSON and find services; in tests, FakeDocker returns a simple string
+        self.assertIn("legion", out, "Output should reference services")
 
 
 class TestStaticRules(unittest.TestCase):
