@@ -45,6 +45,10 @@ func regroupNeeded(d int, active bool) bool {
 // progress), and not busy fighting - unless that fight is going badly (in danger). Members on another map are
 // brought over by the travel logic (partyGoalSync), not by a collect walk.
 func needsCollect(leadMap string, lx, ly int, s pubState, committed bool) bool {
+	return needsCollectWithRisk(leadMap, lx, ly, s, committed, false)
+}
+
+func needsCollectWithRisk(leadMap string, lx, ly int, s pubState, committed, rescueRisk bool) bool {
 	sx, sy := livePosOf(s)
 	if !s.Online || s.Errand || s.Map == "" || s.Map != leadMap || sx == 0 && sy == 0 || lx == 0 && ly == 0 {
 		return false
@@ -52,19 +56,245 @@ func needsCollect(leadMap string, lx, ly int, s pubState, committed bool) bool {
 	if !regroupNeeded(dist(lx, ly, sx, sy), committed) {
 		return false
 	}
-	if s.Target != 0 && s.HPFrac >= collectDangerHP {
+	if !rescueRisk && s.Target != 0 && s.HPFrac >= collectDangerHP {
 		return false // busy fighting and doing fine: it walks back after the fight (party.go), nobody comes for it
 	}
 	return true
 }
 
+const (
+	collectRecoveryHPWindow = 5 * time.Second
+	collectRecoveryHPFlat   = 5 * time.Second
+	collectRecoveryHPSpan   = 2 * time.Second
+	collectRecoveryMargin   = 5 * time.Second
+)
+
+type collectRecoveryHPPoint struct {
+	at time.Time
+	hp float64
+}
+
+type collectRecoveryState struct {
+	name, mapName  string
+	bestETA        time.Duration
+	hasETA         bool
+	progressAt     time.Time
+	retryAt        time.Time
+	contactAt      time.Time
+	contactX       int
+	contactY       int
+	hpPoints       [3]collectRecoveryHPPoint
+	hpCount        int
+	lastHP         float64
+	lastHPChangeAt time.Time
+	lastHPObserved time.Time
+	rescueUsed     bool
+}
+
+type collectRecoveryDecision struct {
+	eligible bool
+	keep     bool
+	progress bool
+	stalled  bool
+	risk     bool
+	contact  bool
+	reset    bool
+}
+
+func resetCollectRecoveryHP(s *collectRecoveryState, hp float64, now time.Time) {
+	s.hpPoints = [3]collectRecoveryHPPoint{{at: now, hp: hp}}
+	s.hpCount = 1
+	s.lastHP, s.lastHPChangeAt, s.lastHPObserved = hp, now, now
+	s.rescueUsed = false
+}
+
+func addCollectRecoveryHP(s *collectRecoveryState, hp float64, now time.Time) {
+	if s.hpCount == len(s.hpPoints) {
+		copy(s.hpPoints[:], s.hpPoints[1:])
+		s.hpCount--
+	}
+	s.hpPoints[s.hpCount] = collectRecoveryHPPoint{at: now, hp: hp}
+	s.hpCount++
+	s.lastHP, s.lastHPChangeAt, s.lastHPObserved = hp, now, now
+}
+
+func trimCollectRecoveryHP(s *collectRecoveryState, now time.Time) {
+	for s.hpCount > 1 && now.Sub(s.hpPoints[0].at) > collectRecoveryHPWindow {
+		copy(s.hpPoints[:], s.hpPoints[1:])
+		s.hpCount--
+	}
+}
+
+func classifyCollectRecovery(previous collectRecoveryState, leadMap string, lx, ly int, member pubState,
+	now time.Time, eta time.Duration, etaAvailable bool, collectWindow time.Duration, committed bool,
+) (collectRecoveryState, collectRecoveryDecision) {
+	sx, sy := livePosOf(member)
+	if !member.Online || member.Name == "" || member.Map == "" || member.Map != leadMap ||
+		member.HPFrac <= 0 || sx == 0 && sy == 0 || lx == 0 && ly == 0 {
+		return collectRecoveryState{}, collectRecoveryDecision{reset: true}
+	}
+	if previous.name != "" && (previous.name != member.Name || previous.mapName != member.Map) {
+		previous = collectRecoveryState{}
+	}
+	if previous.name == "" {
+		previous.name, previous.mapName = member.Name, member.Map
+		previous.progressAt = now
+		resetCollectRecoveryHP(&previous, member.HPFrac, now)
+	}
+	if !previous.contactAt.IsZero() && (sx != previous.contactX || sy != previous.contactY) {
+		previous.contactAt, previous.retryAt = time.Time{}, time.Time{}
+	}
+
+	d := collectRecoveryDecision{}
+	distance := dist(lx, ly, sx, sy)
+	if etaAvailable && eta >= 0 && (!previous.hasETA || eta < previous.bestETA) {
+		previous.bestETA, previous.hasETA = eta, true
+		previous.progressAt = now
+		if previous.contactAt.IsZero() {
+			previous.retryAt = time.Time{}
+		}
+		d.progress = true
+	}
+
+	if now.Before(previous.lastHPObserved) ||
+		!previous.lastHPObserved.IsZero() && now.Sub(previous.lastHPObserved) > collectRecoveryHPFlat {
+		resetCollectRecoveryHP(&previous, member.HPFrac, now)
+	} else if member.HPFrac > previous.lastHP {
+		resetCollectRecoveryHP(&previous, member.HPFrac, now)
+	} else if member.HPFrac < previous.lastHP {
+		if !previous.lastHPChangeAt.IsZero() && now.Sub(previous.lastHPChangeAt) > collectRecoveryHPFlat {
+			resetCollectRecoveryHP(&previous, previous.lastHP, now)
+		}
+		addCollectRecoveryHP(&previous, member.HPFrac, now)
+	} else if !previous.lastHPChangeAt.IsZero() && now.Sub(previous.lastHPChangeAt) >= collectRecoveryHPFlat {
+		resetCollectRecoveryHP(&previous, member.HPFrac, now)
+	} else {
+		previous.lastHPObserved = now
+	}
+	trimCollectRecoveryHP(&previous, now)
+
+	if etaAvailable && eta >= 0 && previous.hpCount >= 2 {
+		first, last := previous.hpPoints[0], previous.hpPoints[previous.hpCount-1]
+		span := last.at.Sub(first.at)
+		if span >= collectRecoveryHPSpan && last.hp < first.hp {
+			rate := (first.hp - last.hp) / span.Seconds()
+			projected := member.HPFrac - rate*float64(eta+collectRecoveryMargin)/float64(time.Second)
+			d.risk = rate > 0 && projected <= collectDangerHP
+		}
+	}
+
+	if committed {
+		if d.risk {
+			previous.rescueUsed = true
+		}
+		if distance <= collectStopCells() {
+			previous.contactAt, previous.contactX, previous.contactY = now, sx, sy
+			if etaAvailable {
+				previous.retryAt = now.Add(collectWindow)
+			}
+			d.contact = true
+			return previous, d
+		}
+		d.keep = collectWindow > 0 && now.Sub(previous.progressAt) < collectWindow
+		if !d.keep && etaAvailable {
+			previous.retryAt = now.Add(collectWindow)
+			d.stalled = true
+		}
+		return previous, d
+	}
+
+	if !etaAvailable {
+		d.eligible = true
+		return previous, d
+	}
+	retryBlocked := !previous.retryAt.IsZero() && now.Before(previous.retryAt)
+	d.eligible = !retryBlocked || d.progress && previous.contactAt.IsZero() || d.risk && !previous.rescueUsed
+	return previous, d
+}
+
+func beginCollectRecovery(state collectRecoveryState, member pubState, now time.Time, risk bool, eta time.Duration, etaAvailable bool) collectRecoveryState {
+	state.name, state.mapName = member.Name, member.Map
+	state.bestETA, state.hasETA = 0, etaAvailable && eta >= 0
+	if state.hasETA {
+		state.bestETA = eta
+	}
+	state.progressAt, state.retryAt = now, time.Time{}
+	state.contactAt, state.contactX, state.contactY = time.Time{}, 0, 0
+	if risk {
+		state.rescueUsed = true
+	}
+	return state
+}
+
+func collectionRescueETA(gm *GameMap, lx, ly, mx, my, speedMs int) (time.Duration, bool) {
+	if gm == nil || speedMs <= 0 {
+		return 0, false
+	}
+	if dist(lx, ly, mx, my) <= togetherCells() {
+		return 0, true
+	}
+	path := gm.FindPath(lx, ly, mx, my, 80000)
+	if len(path) == 0 {
+		return 0, false
+	}
+	for i, cell := range path {
+		if dist(cell[0], cell[1], mx, my) <= togetherCells() {
+			return time.Duration(i+1) * time.Duration(speedMs) * time.Millisecond, true
+		}
+	}
+	return time.Duration(len(path)) * time.Duration(speedMs) * time.Millisecond, true
+}
+
+func (b *Bot) observeCollectionRecovery(gm *GameMap, leadMap string, lx, ly int, member pubState, now time.Time, committed bool) (collectRecoveryState, collectRecoveryDecision) {
+	if b.collectRecovery == nil {
+		b.collectRecovery = map[string]collectRecoveryState{}
+	}
+	previous := b.collectRecovery[member.Name]
+	needsETA := committed || !previous.retryAt.IsZero() ||
+		previous.hpCount >= 2 && previous.hpPoints[previous.hpCount-1].hp < previous.hpPoints[0].hp
+	eta, etaAvailable := time.Duration(0), false
+	if needsETA {
+		mx, my := livePosOf(member)
+		eta, etaAvailable = collectionRescueETA(gm, lx, ly, mx, my, b.Speed)
+	}
+	state, decision := classifyCollectRecovery(previous, leadMap, lx, ly, member,
+		now, eta, etaAvailable, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
+	if decision.reset {
+		delete(b.collectRecovery, member.Name)
+	} else {
+		b.collectRecovery[member.Name] = state
+	}
+	return state, decision
+}
+
+func (b *Bot) pruneCollectionRecovery(members []*Bot) {
+	if b.collectRecovery == nil {
+		b.collectRecovery = map[string]collectRecoveryState{}
+	}
+	roster := make(map[string]struct{}, len(members))
+	for _, member := range members {
+		if member != nil {
+			roster[member.charName()] = struct{}{}
+		}
+	}
+	for name := range b.collectRecovery {
+		if _, ok := roster[name]; !ok {
+			delete(b.collectRecovery, name)
+		}
+	}
+}
+
 // chooseCollectTarget picks the nearest new straggler from the candidates that can be collected.
 func chooseCollectTarget(leadMap string, lx, ly int, candidates []pubState) (pubState, bool) {
+	return chooseCollectTargetWithRisk(leadMap, lx, ly, candidates, nil)
+}
+
+func chooseCollectTargetWithRisk(leadMap string, lx, ly int, candidates []pubState, risk map[string]bool) (pubState, bool) {
 	var target pubState
 	bestDist := 99
 	found := false
 	for _, s := range candidates {
-		if !needsCollect(leadMap, lx, ly, s, false) {
+		if !needsCollectWithRisk(leadMap, lx, ly, s, false, risk[s.Name]) {
 			continue
 		}
 		sx, sy := livePosOf(s)

@@ -233,6 +233,7 @@ type Bot struct {
 	tgtID           uint32          // ghost-target watchdog: the target being watched
 	waitSince       time.Time       // party leader: waiting for a straggler since
 	collectName     string          // party leader: the straggler being collected
+	collectRecovery map[string]collectRecoveryState
 	// escort.go: escorted crossings of a dangerous approach map
 	escKey, escSafe, escDanger string    // cached crossingDanger for "map|dest"
 	escWaitAt                  string    // member: waiting at this safe point for an escort (published)
@@ -395,7 +396,8 @@ func NewBot(p *Persona) *Bot {
 		ents: map[uint32]*Entity{}, items: map[uint32]*GroundItem{}, inv: map[int]*InvItem{},
 		skills: map[int]*SkillInfo{}, buffAt: map[string]time.Time{}, cart: map[int]*InvItem{},
 		partyHP: map[uint32][2]int{}, roster: map[string]string{}, wake: make(chan struct{}, 1),
-		equipped: map[uint32]*InvItem{}, gearFailed: map[int]bool{}, bump: make(chan struct{}, 1)}
+		collectRecovery: map[string]collectRecoveryState{},
+		equipped:        map[uint32]*InvItem{}, gearFailed: map[int]bool{}, bump: make(chan struct{}, 1)}
 }
 
 func (b *Bot) send(p []byte) error {
@@ -725,7 +727,7 @@ func (b *Bot) handle(pk []byte) {
 				noteDeathAt(b.MapName)                 // danger.go: real deaths in a 10-minute window
 				b.noteBossDeath(time.Now())            // bossnote.go: a boss killed us here: the spot is shared for 10 min
 				b.noteKiteDeath(now)                   // kite.go (market WP1): a death within a minute of a kiting step
-				noteFarmerDeath(b, now) // farmers.go (WP3): a farmer's death counts toward its metrics
+				noteFarmerDeath(b, now)                // farmers.go (WP3): a farmer's death counts toward its metrics
 				b.deathLog = append(b.deathLog, mapVisit{m: b.MapName, at: time.Now()})
 				leaderNoteDeath(partyLeaderName(b), b.MapName) // party.go: 2 party deaths on a map keep the leader's parties off it 1 h
 				b.diedAt = time.Now()
@@ -912,7 +914,7 @@ func (b *Bot) handle(pk []byte) {
 			}
 			it.Count += int(le.Uint16(pk[4:]))
 			b.Loots++
-			b.meterLoot(it.ItemID, int(le.Uint16(pk[4:]))) // meter.go: market value of the loot
+			b.meterLoot(it.ItemID, int(le.Uint16(pk[4:])))       // meter.go: market value of the loot
 			noteFarmerLoot(b, it.ItemID, int(le.Uint16(pk[4:]))) // farmers.go (WP3): a farmer's loot
 			atomic.AddInt64(&stats.loots, 1)
 		}

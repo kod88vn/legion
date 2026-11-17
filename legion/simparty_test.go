@@ -12,36 +12,48 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
 const (
-	simTick     = 150 * time.Millisecond // one cell per tick: a bot's walk speed (150 ms per cell)
-	simFightFor = 2 * time.Second        // time to kill one monster
-	simRespawn  = 30 * time.Second       // a killed monster comes back somewhere else
-	simMobs     = 40
-	simMapW     = 120
-	simMapH     = 120
-	simMembers  = 4 // plus the leader
-	simMap      = "sim_fild"
+	simTick                 = 150 * time.Millisecond // one cell per tick: a bot's walk speed (150 ms per cell)
+	simFightFor             = 2 * time.Second        // time to kill one monster
+	simRespawn              = 30 * time.Second       // a killed monster comes back somewhere else
+	simHPTrendWindow        = 4 * time.Second
+	simRescueForecastMargin = 5 * time.Second
+	simMobs                 = 40
+	simMapW                 = 120
+	simMapH                 = 120
+	simMembers              = 4 // plus the leader
+	simMap                  = "sim_fild"
 	// ruleTogetherCells: the owner's rule PT06 (docs/rules/parties.md), the yardstick for "apart". Fixed on purpose:
 	// measured against the tunable together_cells, a looser tuning would loosen its own check.
 	ruleTogetherCells = 20
 )
 
+func simTickCount(d time.Duration) int {
+	if d <= 0 {
+		return 0
+	}
+	return int((d-1)/simTick) + 1
+}
+
 // simPolicy: the leader's straggler rule under test.
 type simPolicy int
 
 const (
-	policyEngine simPolicy = iota // today's rule (ai.go): collect any same-region straggler, again and again
-	policyLadder                  // candidate: collect, and a member that stays frozen after the leader reached it is left to catch up
+	policyEngine   simPolicy = iota // today's rule (ai.go): collect any same-region straggler, again and again
+	policyLadder                    // candidate: collect, and a member that stays frozen after the leader reached it is left to catch up
+	policyForecast                  // test-only candidate: rescue before observed HP decline reaches danger
 )
 
-func (p simPolicy) String() string { return [...]string{"engine", "ladder"}[p] }
+func (p simPolicy) String() string { return [...]string{"engine", "ladder", "forecast"}[p] }
 
 // simChaos: how often (mean time per member) things go wrong. Zero = never.
 type simChaos struct {
@@ -65,6 +77,51 @@ type simChaosEvent struct {
 	kind     simEventKind
 	duration time.Duration
 	cellSeed int64
+	subject  int
+	tick     int
+}
+
+type simEventOutcome uint8
+
+const (
+	simEventApplied simEventOutcome = iota + 1
+	simEventBlockedCannotAct
+	simEventBlockedActiveAmbush
+)
+
+func (outcome simEventOutcome) String() string {
+	switch outcome {
+	case simEventApplied:
+		return "applied"
+	case simEventBlockedCannotAct:
+		return "blocked-cannot-act"
+	case simEventBlockedActiveAmbush:
+		return "blocked-active-ambush"
+	default:
+		return "unknown"
+	}
+}
+
+type simEventOutcomeRecord struct {
+	subject  int
+	tick     int
+	kind     simEventKind
+	duration time.Duration
+	cellSeed int64
+	outcome  simEventOutcome
+}
+
+func (record simEventOutcomeRecord) String() string {
+	return fmt.Sprintf("subject %d tick %d kind %d duration %s cell_seed %x outcome %s",
+		record.subject, record.tick, record.kind, record.duration, uint64(record.cellSeed), record.outcome)
+}
+
+func (record simEventOutcomeRecord) sameInput(other simEventOutcomeRecord) bool {
+	return record.subject == other.subject &&
+		record.tick == other.tick &&
+		record.kind == other.kind &&
+		record.duration == other.duration &&
+		record.cellSeed == other.cellSeed
 }
 
 type simInputs struct {
@@ -74,25 +131,32 @@ type simInputs struct {
 }
 
 type simAgent struct {
-	name       string
-	subject    int
-	x, y       int
-	path       [][2]int
-	goal       [2]int
-	replanAt   time.Time
-	frozenTo   time.Time // can't move: a server-side dialog, overweight, a stuck client (rally.go stuckWatch cases)
-	pocketTo   time.Time // sealed in a spot with no way out on foot (another walk region)
-	deadTo     time.Time // dead and offline until respawn
-	fightTo    time.Time
-	fightMob   int
-	regrouping bool
-	lastMoveAt time.Time
-	hp         float64
-	ambushTo   time.Time // in a fight it can't leave (Target set); loses HP while alone
-	waitAt     time.Time // party.go PT32b: holding still for the leader's collect since
-	waitD      int
-	reachedAt  time.Time // ladder: when the leader last stood next to it during a collect
-	leftTo     time.Time // ladder: the leader does not collect it until then
+	name            string
+	subject         int
+	x, y            int
+	path            [][2]int
+	goal            [2]int
+	replanAt        time.Time
+	frozenTo        time.Time // can't move: a server-side dialog, overweight, a stuck client (rally.go stuckWatch cases)
+	pocketTo        time.Time // sealed in a spot with no way out on foot (another walk region)
+	deadTo          time.Time // dead and offline until respawn
+	fightTo         time.Time
+	fightMob        int
+	lastDeathAmbush bool
+	regrouping      bool
+	lastMoveAt      time.Time
+	hp              float64
+	hpHistory       []simHPSample
+	ambushTo        time.Time // in a fight it can't leave (Target set); loses HP while alone
+	waitAt          time.Time // party.go PT32b: holding still for the leader's collect since
+	waitD           int
+	reachedAt       time.Time // ladder: when the leader last stood next to it during a collect
+	leftTo          time.Time // ladder: the leader does not collect it until then
+}
+
+type simHPSample struct {
+	at time.Time
+	hp float64
 }
 
 type simMob struct {
@@ -101,16 +165,59 @@ type simMob struct {
 }
 
 type simResult struct {
-	Kills           int
-	ApartPct        float64       // share of online member time spent beyond together_cells of the leader
-	MobileApar      float64       // the same, counting only members able to walk (not frozen, not sealed in)
-	MaxStall        time.Duration // longest stretch without a party kill
-	CollectPct      float64       // share of leader time spent collecting
-	Deaths          int
-	ScheduledDeaths int
-	AmbushDeaths    int
-	InputHash       uint64
-	InputCount      int
+	Kills              int
+	ApartPct           float64       // share of online member time spent beyond together_cells of the leader
+	MobileApar         float64       // the same, counting only members able to walk (not frozen, not sealed in)
+	MaxStall           time.Duration // longest stretch without a party kill
+	CollectPct         float64       // share of leader time spent collecting
+	Deaths             int
+	ScheduledDeaths    int
+	AmbushDeaths       int
+	InputHash          uint64
+	InputCount         int
+	EventOutcomes      []simEventOutcomeRecord
+	InputMisalignments int
+	AmbushDiagnostics  []simAmbushDiagnostic
+}
+
+type simObservation struct {
+	at                      time.Time
+	memberX, memberY        int
+	leaderX, leaderY        int
+	hp, hpDrop              float64
+	target                  uint32
+	graceRemaining          time.Duration
+	collectNameBeforeAction string
+}
+
+type simAmbushDiagnostic struct {
+	subject, tick          int
+	outcome                simEventOutcome
+	at                     time.Time
+	deferred               bool
+	graceRemaining         time.Duration
+	hp, hpDrop             float64
+	target                 uint32
+	memberX, memberY       int
+	leaderX, leaderY       int
+	distance               int
+	rescueETA              time.Duration
+	rescueETAAvailable     bool
+	collectNameAfterAction string
+	arrivalAt              time.Time
+	arrivalHP              float64
+	terminal               string
+}
+
+func (d simAmbushDiagnostic) String() string {
+	arrival := "pending"
+	if !d.arrivalAt.IsZero() {
+		arrival = d.arrivalAt.Sub(d.at).Round(time.Millisecond).String()
+	}
+	return fmt.Sprintf("subject=%d tick=%d outcome=%s deferred=%t grace=%s hp=%.4f drop4s=%.4f target=%d member=(%d,%d) leader=(%d,%d) distance=%d eta=%s/%t collect=%q arrival=%s arrivalHP=%.4f terminal=%s",
+		d.subject, d.tick, d.outcome, d.deferred, d.graceRemaining, d.hp, d.hpDrop, d.target,
+		d.memberX, d.memberY, d.leaderX, d.leaderY, d.distance, d.rescueETA, d.rescueETAAvailable,
+		d.collectNameAfterAction, arrival, d.arrivalHP, d.terminal)
 }
 
 type simWorld struct {
@@ -128,10 +235,16 @@ type simWorld struct {
 	// leader collect state, as on Bot (collectName / collectAt)
 	collectName string
 	collectAt   time.Time
+	recovery    map[string]collectRecoveryState
 	// metrics
 	kills, apart, online, collecting, ticks int
 	mobile, mobileApart, deaths             int
 	scheduledDeaths, ambushDeaths           int
+	eventOutcomes                           []simEventOutcomeRecord
+	inputMisalignments                      int
+	trackAmbushDiagnostics                  bool
+	ambushDiagnostics                       []simAmbushDiagnostic
+	activeAmbushDiag                        [simMembers]int
 	lastKill                                time.Time
 	maxStall                                time.Duration
 }
@@ -198,7 +311,7 @@ func simRoll(seed int64, subject, tick int, channel uint64) float64 {
 }
 
 func simInputsFor(seed int64, chaos simChaos, d time.Duration) *simInputs {
-	tickCount := int(d/simTick) + 1
+	tickCount := simTickCount(d)
 	inputs := &simInputs{hash: 14695981039346656037}
 	hashValue := func(v uint64) {
 		for i := 0; i < 8; i++ {
@@ -230,6 +343,7 @@ func simInputsFor(seed int64, chaos simChaos, d time.Duration) *simInputs {
 					cellSeed: int64(simKeyed(seed, subject, tick, 106)),
 				}
 			}
+			event.subject, event.tick = subject, tick
 			inputs.events[subject][tick] = event
 			if event.kind != simEventNone {
 				inputs.count++
@@ -246,9 +360,22 @@ func simInputsFor(seed int64, chaos simChaos, d time.Duration) *simInputs {
 
 func (in *simInputs) event(subject, tick int) simChaosEvent {
 	if subject < 0 || subject >= len(in.events) || tick < 0 || tick >= len(in.events[subject]) {
-		return simChaosEvent{}
+		return simChaosEvent{subject: subject, tick: tick}
 	}
 	return in.events[subject][tick]
+}
+
+func (w *simWorld) recordEventOutcome(subject, tick int, event simChaosEvent, outcome simEventOutcome) {
+	if event.subject != subject || event.tick != tick {
+		w.inputMisalignments++
+	}
+	if event.kind == simEventNone {
+		return
+	}
+	w.eventOutcomes = append(w.eventOutcomes, simEventOutcomeRecord{
+		subject: event.subject, tick: event.tick, kind: event.kind, duration: event.duration,
+		cellSeed: event.cellSeed, outcome: outcome,
+	})
 }
 
 func newSimWorld(seed int64, policy simPolicy, inputs *simInputs) *simWorld {
@@ -261,6 +388,7 @@ func newSimWorld(seed int64, policy simPolicy, inputs *simInputs) *simWorld {
 	w.lead = &simAgent{name: "Leader", x: sx, y: sy, lastMoveAt: w.now}
 	for i := 0; i < simMembers; i++ {
 		w.members = append(w.members, &simAgent{name: fmt.Sprintf("Member%d", i+1), subject: i, x: sx + i%2, y: sy + i/2, lastMoveAt: w.now, hp: 1})
+		w.activeAmbushDiag[i] = -1
 	}
 	for i := 0; i < simMobs; i++ {
 		x, y := w.mainCell()
@@ -286,6 +414,28 @@ func (w *simWorld) can(a *simAgent) bool {
 	return !w.now.Before(a.deadTo) && !w.now.Before(a.frozenTo) && !w.now.Before(a.pocketTo)
 }
 
+func (a *simAgent) observeHP(now time.Time) {
+	if n := len(a.hpHistory); n > 0 && a.hpHistory[n-1].hp == a.hp && now.Sub(a.hpHistory[n-1].at) < time.Second {
+		return
+	}
+	a.hpHistory = append(a.hpHistory, simHPSample{at: now, hp: a.hp})
+	i := 0
+	for i < len(a.hpHistory)-1 && now.Sub(a.hpHistory[i].at) > 5*time.Second {
+		i++
+	}
+	a.hpHistory = a.hpHistory[i:]
+}
+
+func (a *simAgent) observedHPDrop(now time.Time, window time.Duration) float64 {
+	top := a.hp
+	for _, sample := range a.hpHistory {
+		if now.Sub(sample.at) <= window && sample.hp > top {
+			top = sample.hp
+		}
+	}
+	return top - a.hp
+}
+
 // pub: what the leader reads about a member (party.go pubState), as published after the member's think.
 func (w *simWorld) pub(a *simAgent) pubState {
 	s := pubState{Name: a.name, Map: simMap, X: a.x, Y: a.y, LX: a.x, LY: a.y, HPFrac: a.hp, Online: !w.now.Before(a.deadTo)}
@@ -293,6 +443,120 @@ func (w *simWorld) pub(a *simAgent) pubState {
 		s.Target = uint32(a.fightMob + 1)
 	}
 	return s
+}
+
+func simRescueETA(gm *GameMap, lx, ly, mx, my int) (time.Duration, bool) {
+	return collectionRescueETA(gm, lx, ly, mx, my, int(simTick/time.Millisecond))
+}
+
+func (w *simWorld) observeCollectionRecovery(m *simAgent, committed bool) (collectRecoveryState, collectRecoveryDecision) {
+	if w.recovery == nil {
+		w.recovery = map[string]collectRecoveryState{}
+	}
+	member := w.pub(m)
+	previous := w.recovery[m.name]
+	needsETA := committed || !previous.retryAt.IsZero() ||
+		previous.hpCount >= 2 && previous.hpPoints[previous.hpCount-1].hp < previous.hpPoints[0].hp
+	eta, etaAvailable := time.Duration(0), false
+	if needsETA {
+		eta, etaAvailable = simRescueETA(w.gm, w.lead.x, w.lead.y, m.x, m.y)
+	}
+	state, decision := classifyCollectRecovery(previous, simMap, w.lead.x, w.lead.y, member,
+		w.now, eta, etaAvailable, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
+	if decision.reset {
+		delete(w.recovery, m.name)
+	} else {
+		w.recovery[m.name] = state
+	}
+	return state, decision
+}
+
+func seedSimCollectionRecovery(w *simWorld, m *simAgent) {
+	var state collectRecoveryState
+	for _, sample := range m.hpHistory {
+		member := w.pub(m)
+		member.HPFrac = sample.hp
+		eta, ok := simRescueETA(w.gm, w.lead.x, w.lead.y, m.x, m.y)
+		state, _ = classifyCollectRecovery(state, simMap, w.lead.x, w.lead.y, member,
+			sample.at, eta, ok, time.Duration(tune().LeaderCollectSec)*time.Second, false)
+	}
+	if w.recovery == nil {
+		w.recovery = map[string]collectRecoveryState{}
+	}
+	w.recovery[m.name] = state
+}
+
+func (w *simWorld) eventOutcomeAt(subject, tick int) (simEventOutcome, bool) {
+	for i := len(w.eventOutcomes) - 1; i >= 0; i-- {
+		record := w.eventOutcomes[i]
+		if record.subject == subject && record.tick == tick {
+			return record.outcome, true
+		}
+	}
+	return 0, false
+}
+
+func (w *simWorld) observed(m *simAgent) simObservation {
+	observation := simObservation{
+		at: w.now, memberX: m.x, memberY: m.y, leaderX: w.lead.x, leaderY: w.lead.y,
+		hp: m.hp, hpDrop: m.observedHPDrop(w.now, simHPTrendWindow), target: w.pub(m).Target,
+		collectNameBeforeAction: w.collectName,
+	}
+	if w.now.Before(m.leftTo) {
+		observation.graceRemaining = m.leftTo.Sub(w.now)
+	}
+	return observation
+}
+
+func (w *simWorld) recordAmbushDiagnostics(before []simObservation) {
+	for i, m := range w.members {
+		event := w.inputs.event(m.subject, w.tick)
+		if event.kind == simEventAmbush {
+			if outcome, ok := w.eventOutcomeAt(m.subject, w.tick); ok {
+				observation := before[i]
+				eta, etaAvailable := simRescueETA(w.gm, observation.leaderX, observation.leaderY, observation.memberX, observation.memberY)
+				diagnostic := simAmbushDiagnostic{
+					subject: m.subject, tick: w.tick, outcome: outcome, at: observation.at,
+					deferred: observation.graceRemaining > 0, graceRemaining: observation.graceRemaining,
+					hp: observation.hp, hpDrop: observation.hpDrop, target: observation.target,
+					memberX: observation.memberX, memberY: observation.memberY,
+					leaderX: observation.leaderX, leaderY: observation.leaderY,
+					distance:  dist(observation.leaderX, observation.leaderY, observation.memberX, observation.memberY),
+					rescueETA: eta, rescueETAAvailable: etaAvailable,
+					collectNameAfterAction: w.collectName,
+				}
+				w.ambushDiagnostics = append(w.ambushDiagnostics, diagnostic)
+				if outcome == simEventApplied {
+					w.activeAmbushDiag[i] = len(w.ambushDiagnostics) - 1
+				}
+			}
+		}
+
+		index := w.activeAmbushDiag[i]
+		if index < 0 {
+			continue
+		}
+		diagnostic := &w.ambushDiagnostics[index]
+		if diagnostic.terminal != "" {
+			continue
+		}
+		if m.lastDeathAmbush && w.now.Before(m.deadTo) {
+			diagnostic.terminal = "ambush-death"
+			w.activeAmbushDiag[i] = -1
+			continue
+		}
+		if diagnostic.arrivalAt.IsZero() && dist(w.lead.x, w.lead.y, m.x, m.y) <= togetherCells() {
+			diagnostic.arrivalAt, diagnostic.arrivalHP = w.now, m.hp
+		}
+		if !m.ambushTo.IsZero() && !w.now.Before(m.ambushTo) {
+			if diagnostic.arrivalAt.IsZero() {
+				diagnostic.terminal = "expired-away"
+			} else {
+				diagnostic.terminal = "reached-party"
+			}
+			w.activeAmbushDiag[i] = -1
+		}
+	}
 }
 
 // sameWalkRegion: nav.go Bot.sameWalkRegion from (x, y).
@@ -361,39 +625,82 @@ func (w *simWorld) leaderThink() {
 	l := w.lead
 	lx, ly := l.x, l.y
 	var tgt *simAgent
-	if w.collectName != "" && w.now.Sub(w.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second {
+	forecastRescue := false
+	committedCollect := false
+	if w.collectName != "" {
 		for _, m := range w.members {
-			if m.name == w.collectName && needsCollect(simMap, lx, ly, w.pub(m), true) && w.sameWalkRegion(lx, ly, m.x, m.y) {
+			if m.name != w.collectName {
+				continue
+			}
+			if w.policy == policyForecast {
+				_, recovery := w.observeCollectionRecovery(m, true)
+				if recovery.keep && needsCollectWithRisk(simMap, lx, ly, w.pub(m), true, recovery.risk) &&
+					w.sameWalkRegion(lx, ly, m.x, m.y) {
+					tgt, forecastRescue = m, recovery.risk
+					committedCollect = true
+					if recovery.progress {
+						w.collectAt = w.now
+					}
+				}
+			} else if w.now.Sub(w.collectAt) < time.Duration(tune().LeaderCollectSec)*time.Second &&
+				needsCollect(simMap, lx, ly, w.pub(m), true) && w.sameWalkRegion(lx, ly, m.x, m.y) {
 				tgt = m
+				committedCollect = true
 			}
 		}
 	}
 	if tgt == nil {
 		w.collectName = ""
 		candidates := make([]pubState, 0, len(w.members))
+		rescueRisk := map[string]bool{}
 		for _, m := range w.members {
-			if w.policy == policyLadder && w.now.Before(m.leftTo) && !memberInDanger(w.pub(m)) {
+			member := w.pub(m)
+			risk := false
+			if w.policy == policyForecast {
+				_, recovery := w.observeCollectionRecovery(m, false)
+				if !recovery.eligible {
+					continue
+				}
+				risk = recovery.risk
+			}
+			if (w.policy == policyLadder || w.policy == policyForecast) &&
+				w.now.Before(m.leftTo) && !memberInDanger(member) && !risk {
 				continue
 			}
-			if w.sameWalkRegion(lx, ly, m.x, m.y) {
-				candidates = append(candidates, w.pub(m))
+			if w.sameWalkRegion(lx, ly, m.x, m.y) &&
+				needsCollectWithRisk(simMap, lx, ly, member, false, risk) {
+				candidates = append(candidates, member)
+				rescueRisk[m.name] = risk
 			}
 		}
-		if selected, ok := chooseCollectTarget(simMap, lx, ly, candidates); ok {
+		var selected pubState
+		var ok bool
+		if w.policy == policyForecast {
+			selected, ok = chooseCollectTargetWithRisk(simMap, lx, ly, candidates, rescueRisk)
+		} else {
+			selected, ok = chooseCollectTarget(simMap, lx, ly, candidates)
+		}
+		if ok {
 			for _, m := range w.members {
 				if m.name == selected.Name {
 					tgt = m
+					forecastRescue = rescueRisk[m.name]
 					break
 				}
 			}
 		}
 		if tgt != nil {
 			w.collectName, w.collectAt = tgt.name, w.now
+			if w.policy == policyForecast {
+				eta, etaAvailable := simRescueETA(w.gm, lx, ly, tgt.x, tgt.y)
+				w.recovery[tgt.name] = beginCollectRecovery(w.recovery[tgt.name], w.pub(tgt), w.now,
+					forecastRescue, eta, etaAvailable)
+			}
 		}
 	}
 	if tgt != nil {
 		w.collecting++
-		if w.policy == policyLadder {
+		if w.policy == policyLadder || w.policy == policyForecast && !forecastRescue && !committedCollect {
 			w.ladder(tgt)
 		}
 		w.walkToward(l, tgt.x, tgt.y)
@@ -455,14 +762,20 @@ func (w *simWorld) memberThink(m *simAgent) {
 
 // inject: chaos for one member this tick.
 func (w *simWorld) inject(m *simAgent) {
+	event := w.inputs.event(m.subject, w.tick)
 	if !w.can(m) {
 		if !w.now.Before(m.pocketTo) && m.x <= 7 && m.y <= 7 { // out of the pocket: stuckWatch's last resort (a wing)
 			m.x, m.y = w.eventCell(m.subject, w.tick, 107)
 			m.path = nil
 		}
+		w.recordEventOutcome(m.subject, w.tick, event, simEventBlockedCannotAct)
 		return
 	}
-	event := w.inputs.event(m.subject, w.tick)
+	w.applyChaosEvent(m, event)
+}
+
+func (w *simWorld) applyChaosEvent(m *simAgent, event simChaosEvent) {
+	outcome := simEventApplied
 	switch event.kind {
 	case simEventFreeze:
 		m.frozenTo = w.now.Add(event.duration)
@@ -476,8 +789,11 @@ func (w *simWorld) inject(m *simAgent) {
 			m.ambushTo = w.now.Add(event.duration)
 			m.x, m.y = w.cellFrom(rand.New(rand.NewSource(event.cellSeed))) // pulled away by the fight (a chase, a mob train)
 			m.path = nil
+		} else {
+			outcome = simEventBlockedActiveAmbush
 		}
 	}
+	w.recordEventOutcome(m.subject, w.tick, event, outcome)
 }
 
 func (w *simWorld) eventCell(subject, tick int, channel uint64) (int, int) {
@@ -495,6 +811,7 @@ func simDeathEvent(seed int64, subject, tick int) simChaosEvent {
 
 func (w *simWorld) kill(m *simAgent, event simChaosEvent, ambush bool) {
 	w.deaths++
+	m.lastDeathAmbush = ambush
 	if ambush {
 		w.ambushDeaths++
 	} else {
@@ -528,6 +845,14 @@ func (w *simWorld) step() {
 	for _, m := range w.members {
 		w.inject(m)
 		w.health(m)
+		m.observeHP(w.now)
+	}
+	var before []simObservation
+	if w.trackAmbushDiagnostics {
+		before = make([]simObservation, len(w.members))
+		for i, m := range w.members {
+			before[i] = w.observed(m)
+		}
 	}
 	w.leaderThink()
 	for _, m := range w.members {
@@ -548,6 +873,9 @@ func (w *simWorld) step() {
 			w.memberThink(m)
 		}
 	}
+	if w.trackAmbushDiagnostics {
+		w.recordAmbushDiagnostics(before)
+	}
 	w.ticks++
 	w.tick++
 	w.now = w.now.Add(simTick)
@@ -558,12 +886,17 @@ func runSim(seed int64, policy simPolicy, chaos simChaos, d time.Duration) simRe
 }
 
 func runSimWithInputs(seed int64, policy simPolicy, inputs *simInputs, d time.Duration) simResult {
+	return runSimWithInputDiagnostics(seed, policy, inputs, d, false)
+}
+
+func runSimWithInputDiagnostics(seed int64, policy simPolicy, inputs *simInputs, d time.Duration, diagnostics bool) simResult {
 	w := newSimWorld(seed, policy, inputs)
+	w.trackAmbushDiagnostics = diagnostics
 	w.lead.fightMob = -1
 	for _, m := range w.members {
 		m.fightMob = -1
 	}
-	for end := w.now.Add(d); w.now.Before(end); {
+	for tick := 0; tick < simTickCount(d); tick++ {
 		w.step()
 	}
 	if st := w.now.Sub(w.lastKill); st > w.maxStall {
@@ -574,11 +907,13 @@ func runSimWithInputs(seed int64, policy simPolicy, inputs *simInputs, d time.Du
 		MobileApar: 100 * float64(w.mobileApart) / float64(max(w.mobile, 1)),
 		CollectPct: 100 * float64(w.collecting) / float64(max(w.ticks, 1)), Deaths: w.deaths,
 		ScheduledDeaths: w.scheduledDeaths, AmbushDeaths: w.ambushDeaths,
-		InputHash: inputs.hash, InputCount: inputs.count}
+		InputHash: inputs.hash, InputCount: inputs.count,
+		EventOutcomes: w.eventOutcomes, InputMisalignments: w.inputMisalignments,
+		AmbushDiagnostics: w.ambushDiagnostics}
 }
 
 // simBatch: many seeds in parallel; results come back in seed order.
-func simBatch(seeds int, policy simPolicy, chaos simChaos, d time.Duration) []simResult {
+func simBatch(seeds int, seedStart int64, policy simPolicy, chaos simChaos, d time.Duration) []simResult {
 	out := make([]simResult, seeds)
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 8)
@@ -587,7 +922,7 @@ func simBatch(seeds int, policy simPolicy, chaos simChaos, d time.Duration) []si
 		sem <- struct{}{}
 		go func(i int) {
 			defer wg.Done()
-			out[i] = runSim(int64(1000+i), policy, chaos, d)
+			out[i] = runSim(seedStart+int64(i), policy, chaos, d)
 			<-sem
 		}(i)
 	}
@@ -595,8 +930,8 @@ func simBatch(seeds int, policy simPolicy, chaos simChaos, d time.Duration) []si
 	return out
 }
 
-func simBatchPaired(seeds int, chaos simChaos, d time.Duration) ([]simResult, []simResult) {
-	engine, ladder := make([]simResult, seeds), make([]simResult, seeds)
+func simBatchPaired(seeds int, seedStart int64, chaos simChaos, d time.Duration) ([]simResult, []simResult, []simResult) {
+	engine, ladder, forecast := make([]simResult, seeds), make([]simResult, seeds), make([]simResult, seeds)
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 8)
 	for i := 0; i < seeds; i++ {
@@ -604,20 +939,21 @@ func simBatchPaired(seeds int, chaos simChaos, d time.Duration) ([]simResult, []
 		sem <- struct{}{}
 		go func(i int) {
 			defer wg.Done()
-			seed := int64(1000 + i)
+			seed := seedStart + int64(i)
 			inputs := simInputsFor(seed, chaos, d)
 			engine[i] = runSimWithInputs(seed, policyEngine, inputs, d)
 			ladder[i] = runSimWithInputs(seed, policyLadder, inputs, d)
+			forecast[i] = runSimWithInputs(seed, policyForecast, inputs, d)
 			<-sem
 		}(i)
 	}
 	wg.Wait()
-	return engine, ladder
+	return engine, ladder, forecast
 }
 
 type simSummary struct {
 	KillsPerHour, ApartPct, MobileApart, CollectPct, DeathsPerHour float64
-	ScheduledDeathsPerHour, AmbushDeathsPerHour                   float64
+	ScheduledDeathsPerHour, AmbushDeathsPerHour                    float64
 	P95Stall                                                       time.Duration
 }
 
@@ -648,6 +984,15 @@ func (s simSummary) String() string {
 		s.KillsPerHour, s.DeathsPerHour, s.ScheduledDeathsPerHour, s.AmbushDeathsPerHour, s.ApartPct, s.MobileApart, s.CollectPct, s.P95Stall.Round(time.Second))
 }
 
+func simAmbushSafetyRejection(baseline, candidate simSummary) string {
+	const maxIncreasePerHour = 0.05
+	if candidate.AmbushDeathsPerHour > baseline.AmbushDeathsPerHour+maxIncreasePerHour {
+		return fmt.Sprintf("ambush deaths/h %.2f exceed baseline %.2f by more than %.2f/h",
+			candidate.AmbushDeathsPerHour, baseline.AmbushDeathsPerHour, maxIncreasePerHour)
+	}
+	return ""
+}
+
 var (
 	chaosCalm   = simChaos{name: "calm"}
 	chaosFrozen = simChaos{name: "frozen", freezeEvery: 20 * time.Minute}
@@ -666,19 +1011,287 @@ func simSize() (int, time.Duration) {
 	return 64, time.Hour
 }
 
+// SIM_SEED_START is a test-only seed-range override; the default preserves the original 1000-based sample.
+func simSeedStart(seeds int) (int64, error) {
+	raw := os.Getenv("SIM_SEED_START")
+	if raw == "" {
+		return 1000, nil
+	}
+	start, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || start < 0 {
+		return 0, fmt.Errorf("SIM_SEED_START must be a non-negative integer: %q", raw)
+	}
+	if seeds < 0 || seeds > 0 && start > int64(1<<63-1)-int64(seeds-1) {
+		return 0, fmt.Errorf("SIM_SEED_START %d with %d seeds overflows the seed range", start, seeds)
+	}
+	return start, nil
+}
+
 // The same seed replays the same hour exactly: a failing seed is a reproducible bug report.
 func TestSimPartyDeterministic(t *testing.T) {
 	a := runSim(7, policyEngine, chaosRough, 20*time.Minute)
 	b := runSim(7, policyEngine, chaosRough, 20*time.Minute)
-	if a != b {
+	if !reflect.DeepEqual(a, b) {
 		t.Fatalf("seed 7 replayed differently: %+v vs %+v", a, b)
+	}
+}
+
+func simObservedRescueFixture(t *testing.T, policy simPolicy) (*simWorld, *simAgent) {
+	t.Helper()
+	w := newSimWorld(19, policy, &simInputs{})
+	m := w.members[0]
+	found := false
+	for y := 1; y < w.gm.H-1 && !found; y++ {
+		for x := 1; x < w.gm.W-1; x++ {
+			eta, ok := simRescueETA(w.gm, w.lead.x, w.lead.y, x, y)
+			if ok && dist(w.lead.x, w.lead.y, x, y) > togetherCells() && eta >= 6*time.Second {
+				m.x, m.y = x, y
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		t.Fatal("fixture could not find a reachable straggler beyond rescue ETA")
+	}
+	m.fightMob = -1
+	m.leftTo = w.now.Add(5 * time.Minute)
+	m.lastMoveAt = w.now.Add(-2 * time.Minute)
+	m.reachedAt = m.lastMoveAt
+	m.ambushTo = w.now.Add(time.Minute)
+	m.hp = 0.8
+	m.hpHistory = []simHPSample{
+		{at: w.now.Add(-4 * time.Second), hp: 1},
+		{at: w.now, hp: m.hp},
+	}
+	seedSimCollectionRecovery(w, m)
+	if got := w.pub(m).Target; got != 0 {
+		t.Fatalf("idle synthetic ambush should expose no target, got %d", got)
+	}
+	return w, m
+}
+
+func TestObservedRescueForecastAction(t *testing.T) {
+	oldPolicy, oldMember := simObservedRescueFixture(t, policyLadder)
+	oldPolicy.leaderThink()
+	if oldPolicy.collectName == oldMember.name {
+		t.Fatal("old ladder unexpectedly rescued the deferred member")
+	}
+
+	w, member := simObservedRescueFixture(t, policyForecast)
+	if member.hp <= collectDangerHP {
+		t.Fatalf("fixture HP %.3f must be above danger threshold %.3f", member.hp, collectDangerHP)
+	}
+	w.leaderThink()
+	if w.collectName != member.name {
+		t.Fatalf("leader did not start rescue before observed HP trend reaches danger; collecting %q", w.collectName)
+	}
+}
+
+func TestObservedRescueForecastRequiresDecliningHP(t *testing.T) {
+	w, member := simObservedRescueFixture(t, policyForecast)
+	member.hpHistory = []simHPSample{
+		{at: w.now.Add(-4 * time.Second), hp: member.hp},
+		{at: w.now, hp: member.hp},
+	}
+	seedSimCollectionRecovery(w, member)
+	w.leaderThink()
+	if w.collectName == member.name {
+		t.Fatal("flat HP history triggered an observed rescue forecast")
+	}
+}
+
+func TestObservedRescueForecastResetsOnHealing(t *testing.T) {
+	w, member := simObservedRescueFixture(t, policyForecast)
+	member.hp = 0.605
+	member.hpHistory = []simHPSample{
+		{at: w.now.Add(-4 * time.Second), hp: 0.65},
+		{at: w.now.Add(-2 * time.Second), hp: 0.6},
+		{at: w.now, hp: member.hp},
+	}
+	seedSimCollectionRecovery(w, member)
+	if got := w.pub(member).Target; got != 0 {
+		t.Fatalf("recovered synthetic ambush should expose no target, got %d", got)
+	}
+	w.leaderThink()
+	if w.collectName == member.name {
+		t.Fatal("healing after a health decline left the member in rescue risk")
+	}
+}
+
+func TestObservedRescueForecastKeepsProgressingLongCollection(t *testing.T) {
+	w, member := simObservedRescueFixture(t, policyForecast)
+	w.leaderThink()
+	if w.collectName != member.name {
+		t.Fatalf("fixture did not start a collection, got %q", w.collectName)
+	}
+	member.leftTo = w.now.Add(5 * time.Minute)
+	startedAt := w.collectAt
+	window := time.Duration(tune().LeaderCollectSec) * time.Second
+
+	for attempt := 1; attempt <= 2; attempt++ {
+		path := w.gm.FindPath(w.lead.x, w.lead.y, member.x, member.y, 80000)
+		if len(path) == 0 {
+			t.Fatal("fixture lost the route to the member")
+		}
+		w.lead.x, w.lead.y = path[0][0], path[0][1]
+		w.now = startedAt.Add(time.Duration(attempt) * (window + time.Second))
+		w.leaderThink()
+		if w.collectName != member.name {
+			t.Fatalf("progressing collection was abandoned after window %d: collecting %q, state %+v, leader=(%d,%d), member=(%d,%d)",
+				attempt, w.collectName, w.recovery[member.name], w.lead.x, w.lead.y, member.x, member.y)
+		}
+	}
+}
+
+func TestObservedRescueForecastWaitsAfterReachingAnImmobileMember(t *testing.T) {
+	w, member := simObservedRescueFixture(t, policyForecast)
+	member.hp = 1
+	member.hpHistory = []simHPSample{{at: w.now, hp: member.hp}}
+	member.leftTo, member.ambushTo = time.Time{}, time.Time{}
+	member.lastMoveAt, member.reachedAt = w.now, time.Time{}
+	for _, other := range w.members {
+		if other != member {
+			other.leftTo = w.now.Add(10 * time.Minute)
+		}
+	}
+	seedSimCollectionRecovery(w, member)
+	w.leaderThink()
+	if w.collectName != member.name {
+		t.Fatalf("fixture did not start a collection, got %q", w.collectName)
+	}
+
+	var contactAt time.Time
+	for tick := 0; tick < 1000; tick++ {
+		w.now = w.now.Add(simTick)
+		w.leaderThink()
+		if w.collectName == "" && dist(w.lead.x, w.lead.y, member.x, member.y) <= collectStopCells() {
+			contactAt = w.now
+			break
+		}
+	}
+	if contactAt.IsZero() {
+		t.Fatalf("leader did not complete the progressing collection: distance=%d leader=(%d,%d) member=(%d,%d) collect=%q recovery=%+v path=%d",
+			dist(w.lead.x, w.lead.y, member.x, member.y), w.lead.x, w.lead.y, member.x, member.y,
+			w.collectName, w.recovery[member.name], len(w.lead.path))
+	}
+
+	window := time.Duration(tune().LeaderCollectSec) * time.Second
+	for elapsed := simTick; elapsed < window; elapsed += simTick {
+		w.now = w.now.Add(simTick)
+		w.leaderThink()
+		if w.collectName == member.name {
+			t.Fatalf("leader restarted collection before the bounded post-contact wait at %s", w.now.Sub(contactAt))
+		}
+	}
+}
+
+func TestSimSeedStartOverrideValidation(t *testing.T) {
+	t.Setenv("SIM_SEED_START", "")
+	if start, err := simSeedStart(547); err != nil || start != 1000 {
+		t.Fatalf("default seed start = %d, %v; want 1000, nil", start, err)
+	}
+	t.Setenv("SIM_SEED_START", "1547")
+	if start, err := simSeedStart(547); err != nil || start != 1547 {
+		t.Fatalf("explicit seed start = %d, %v; want 1547, nil", start, err)
+	}
+	for _, invalid := range []string{"abc", "-1", "9223372036854775807"} {
+		t.Setenv("SIM_SEED_START", invalid)
+		if _, err := simSeedStart(547); err == nil {
+			t.Errorf("SIM_SEED_START=%q was accepted", invalid)
+		}
+	}
+}
+
+func TestSimPartyAmbushDiagnosticsSmallPairedRun(t *testing.T) {
+	const seeds = 8
+	const duration = time.Hour
+	engineRuns, ladderRuns := make([]simResult, seeds), make([]simResult, seeds)
+	outcomeDifferences := 0
+	for i := 0; i < seeds; i++ {
+		seed := int64(1000 + i)
+		inputs := simInputsFor(seed, chaosRough, duration)
+		engineRuns[i] = runSimWithInputDiagnostics(seed, policyEngine, inputs, duration, true)
+		ladderRuns[i] = runSimWithInputDiagnostics(seed, policyLadder, inputs, duration, true)
+		engine, ladder := engineRuns[i], ladderRuns[i]
+		if engine.InputHash != ladder.InputHash || engine.InputCount != ladder.InputCount ||
+			engine.InputMisalignments != 0 || ladder.InputMisalignments != 0 {
+			t.Fatalf("seed %d inputs diverged: engine %016x/%d/%d, ladder %016x/%d/%d",
+				seed, engine.InputHash, engine.InputCount, engine.InputMisalignments,
+				ladder.InputHash, ladder.InputCount, ladder.InputMisalignments)
+		}
+		if len(engine.EventOutcomes) != len(ladder.EventOutcomes) {
+			t.Fatalf("seed %d outcome trace lengths differ: engine %d, ladder %d",
+				seed, len(engine.EventOutcomes), len(ladder.EventOutcomes))
+		}
+		ambushInputs := 0
+		for j := range engine.EventOutcomes {
+			engineEvent, ladderEvent := engine.EventOutcomes[j], ladder.EventOutcomes[j]
+			if !engineEvent.sameInput(ladderEvent) {
+				t.Fatalf("seed %d event %d inputs differ: engine {%s}, ladder {%s}",
+					seed, j, engineEvent, ladderEvent)
+			}
+			if engineEvent.kind == simEventAmbush {
+				ambushInputs++
+			}
+			if engineEvent.outcome != ladderEvent.outcome {
+				outcomeDifferences++
+			}
+		}
+		if len(engine.AmbushDiagnostics) != ambushInputs || len(ladder.AmbushDiagnostics) != ambushInputs {
+			t.Fatalf("seed %d ambush diagnostic counts differ from aligned input trace: events %d, engine %d, ladder %d",
+				seed, ambushInputs, len(engine.AmbushDiagnostics), len(ladder.AmbushDiagnostics))
+		}
+		for _, diagnostic := range engine.AmbushDiagnostics {
+			t.Logf("seed %d engine ambush %s", seed, diagnostic)
+		}
+		for _, diagnostic := range ladder.AmbushDiagnostics {
+			t.Logf("seed %d ladder ambush %s", seed, diagnostic)
+		}
+	}
+	t.Logf("small paired rough run: engine %v; ladder %v; policy-conditioned event outcomes %d",
+		summarize(engineRuns, duration), summarize(ladderRuns, duration), outcomeDifferences)
+}
+
+func TestSimInputsAndExecutionUseHalfOpenTickHorizon(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		ticks    int
+	}{
+		{name: "zero", duration: 0, ticks: 0},
+		{name: "subtick", duration: 1, ticks: 1},
+		{name: "before boundary", duration: simTick - 1, ticks: 1},
+		{name: "at boundary", duration: simTick, ticks: 1},
+		{name: "after boundary", duration: simTick + 1, ticks: 2},
+		{name: "two boundaries", duration: 2 * simTick, ticks: 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputs := simInputsFor(7, simChaos{freezeEvery: simTick}, tt.duration)
+			wantEvents := simMembers * tt.ticks
+			if inputs.count != wantEvents {
+				t.Fatalf("scheduled events = %d, want %d for %d half-open ticks", inputs.count, wantEvents, tt.ticks)
+			}
+			result := runSimWithInputs(7, policyEngine, inputs, tt.duration)
+			if len(result.EventOutcomes) != wantEvents {
+				t.Fatalf("processed events = %d, want %d for %d executed ticks", len(result.EventOutcomes), wantEvents, tt.ticks)
+			}
+			if result.InputCount != len(result.EventOutcomes) {
+				t.Fatalf("scheduled/processed events differ: %d/%d", result.InputCount, len(result.EventOutcomes))
+			}
+		})
 	}
 }
 
 // Invariants of today's rule with nothing going wrong: the party stays together and keeps killing.
 func TestSimPartyCalmInvariants(t *testing.T) {
 	seeds, d := simSize()
-	s := summarize(simBatch(seeds, policyEngine, chaosCalm, d), d)
+	seedStart, err := simSeedStart(seeds)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := summarize(simBatch(seeds, seedStart, policyEngine, chaosCalm, d), d)
 	t.Logf("engine/calm   %v", s)
 	if s.ApartPct > 5 {
 		t.Errorf("members spend %.1f%% of the time beyond together_cells on a calm map (want <= 5%%)", s.ApartPct)
@@ -688,41 +1301,118 @@ func TestSimPartyCalmInvariants(t *testing.T) {
 	}
 }
 
+func TestSimAmbushSafetyGateAcceptsSafeControl(t *testing.T) {
+	baseline := simSummary{AmbushDeathsPerHour: 0.27}
+	safe := simSummary{AmbushDeathsPerHour: 0.32}
+	if got := simAmbushSafetyRejection(baseline, safe); got != "" {
+		t.Fatalf("safe control rejected: %s", got)
+	}
+}
+
+func TestSimAmbushSafetyGateRejectsUnsafeNegativeControl(t *testing.T) {
+	baseline := simSummary{AmbushDeathsPerHour: 0.27}
+	unsafe := simSummary{AmbushDeathsPerHour: 1.32}
+	if got := simAmbushSafetyRejection(baseline, unsafe); !strings.Contains(got, "ambush deaths/h") {
+		t.Fatalf("unsafe negative control was not explicitly rejected: %q", got)
+	}
+}
+
 // A/B on the same seeds: the candidate rule must not change calm play (no regression) and must win back the time a
 // frozen member costs the party.
-func TestSimPartyLadderAB(t *testing.T) {
+func TestSimPartyPolicyCandidatesAB(t *testing.T) {
 	seeds, d := simSize()
+	seedStart, err := simSeedStart(seeds)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, c := range []simChaos{chaosCalm, chaosFrozen, chaosAmbush, chaosRough} {
-		engineRuns, ladderRuns := simBatchPaired(seeds, c, d)
+		engineRuns, ladderRuns, forecastRuns := simBatchPaired(seeds, seedStart, c, d)
+		outcomeDifferences := 0
+		forecastOutcomeDifferences := 0
+		firstOutcomeDifference := ""
 		for i := range engineRuns {
-			if engineRuns[i].InputHash != ladderRuns[i].InputHash || engineRuns[i].InputCount != ladderRuns[i].InputCount {
-				t.Fatalf("%s seed %d A/B chaos schedules diverged: %016x/%d vs %016x/%d", c.name, 1000+i,
-					engineRuns[i].InputHash, engineRuns[i].InputCount, ladderRuns[i].InputHash, ladderRuns[i].InputCount)
+			seed := seedStart + int64(i)
+			if engineRuns[i].InputHash != ladderRuns[i].InputHash ||
+				engineRuns[i].InputHash != forecastRuns[i].InputHash ||
+				engineRuns[i].InputCount != ladderRuns[i].InputCount ||
+				engineRuns[i].InputCount != forecastRuns[i].InputCount {
+				t.Fatalf("%s seed %d A/B chaos schedules diverged: engine %016x/%d, ladder %016x/%d, forecast %016x/%d",
+					c.name, seed,
+					engineRuns[i].InputHash, engineRuns[i].InputCount,
+					ladderRuns[i].InputHash, ladderRuns[i].InputCount,
+					forecastRuns[i].InputHash, forecastRuns[i].InputCount)
 			}
+			if len(engineRuns[i].EventOutcomes) != engineRuns[i].InputCount ||
+				len(ladderRuns[i].EventOutcomes) != ladderRuns[i].InputCount ||
+				len(forecastRuns[i].EventOutcomes) != forecastRuns[i].InputCount ||
+				engineRuns[i].InputMisalignments != 0 || ladderRuns[i].InputMisalignments != 0 ||
+				forecastRuns[i].InputMisalignments != 0 {
+				t.Fatalf("%s seed %d chaos events lack aligned application outcomes: engine %d/%d misaligned %d, ladder %d/%d misaligned %d, forecast %d/%d misaligned %d",
+					c.name, seed,
+					len(engineRuns[i].EventOutcomes), engineRuns[i].InputCount, engineRuns[i].InputMisalignments,
+					len(ladderRuns[i].EventOutcomes), ladderRuns[i].InputCount, ladderRuns[i].InputMisalignments,
+					len(forecastRuns[i].EventOutcomes), forecastRuns[i].InputCount, forecastRuns[i].InputMisalignments)
+			}
+			limit := min(len(engineRuns[i].EventOutcomes), len(ladderRuns[i].EventOutcomes))
+			for j := 0; j < limit; j++ {
+				engineEvent, ladderEvent, forecastEvent := engineRuns[i].EventOutcomes[j],
+					ladderRuns[i].EventOutcomes[j], forecastRuns[i].EventOutcomes[j]
+				if !engineEvent.sameInput(ladderEvent) || !engineEvent.sameInput(forecastEvent) {
+					t.Fatalf("%s seed %d A/B applied different exogenous events: engine {%s}, ladder {%s}, forecast {%s}",
+						c.name, seed, engineEvent, ladderEvent, forecastEvent)
+				}
+				if engineEvent.outcome != ladderEvent.outcome {
+					outcomeDifferences++
+					if firstOutcomeDifference == "" {
+						firstOutcomeDifference = fmt.Sprintf("seed %d engine {%s}, ladder {%s}",
+							seed, engineEvent, ladderEvent)
+					}
+				}
+				if engineEvent.outcome != forecastEvent.outcome {
+					forecastOutcomeDifferences++
+				}
+			}
+		}
+		if outcomeDifferences > 0 {
+			t.Logf("%s: %d policy-conditioned event outcomes differ with aligned inputs; first %s",
+				c.name, outcomeDifferences, firstOutcomeDifference)
 		}
 		e := summarize(engineRuns, d)
 		l := summarize(ladderRuns, d)
+		f := summarize(forecastRuns, d)
 		t.Logf("%-7s engine %v", c.name, e)
 		t.Logf("%-7s ladder %v", c.name, l)
-		if c.name == "calm" && e != l {
-			t.Errorf("ladder changed calm play: %v vs %v", l, e)
+		t.Logf("%-7s forecast %v", c.name, f)
+		t.Logf("%s: forecast policy-conditioned event outcomes %d with aligned inputs", c.name, forecastOutcomeDifferences)
+		checkSimPartyAcceptance(t, c.name, "forecast", e, f)
+	}
+}
+
+func checkSimPartyAcceptance(t *testing.T, chaos, candidateName string, baseline, candidate simSummary) {
+	t.Helper()
+	if chaos == "calm" && baseline != candidate {
+		t.Errorf("%s changed calm play: %v vs %v", candidateName, candidate, baseline)
+	}
+	if candidate.KillsPerHour < baseline.KillsPerHour*0.98 {
+		t.Errorf("%s: %s kills/h %.0f below engine %.0f", chaos, candidateName, candidate.KillsPerHour, baseline.KillsPerHour)
+	}
+	if candidate.DeathsPerHour > baseline.DeathsPerHour*1.1+0.05 {
+		t.Errorf("%s: %s deaths/h %.2f above engine %.2f", chaos, candidateName, candidate.DeathsPerHour, baseline.DeathsPerHour)
+	}
+	if ambushRejection := simAmbushSafetyRejection(baseline, candidate); ambushRejection != "" {
+		t.Errorf("%s: %s failed the ambush safety gate (REJECTED): %s", chaos, candidateName, ambushRejection)
+	}
+	if candidate.MobileApart > baseline.MobileApart+2 {
+		t.Errorf("%s: %s leaves members who can walk apart %.1f%% of the time (engine %.1f%%)", chaos, candidateName, candidate.MobileApart, baseline.MobileApart)
+	}
+	if chaos == "frozen" {
+		if candidate.KillsPerHour < 600 || candidate.KillsPerHour < baseline.KillsPerHour*1.5 {
+			t.Errorf("frozen: %s must restore party liveness (kills/h %.0f vs engine %.0f; want >=600 and >=1.5x)",
+				candidateName, candidate.KillsPerHour, baseline.KillsPerHour)
 		}
-		if l.KillsPerHour < e.KillsPerHour*0.98 {
-			t.Errorf("%s: ladder kills/h %.0f below engine %.0f", c.name, l.KillsPerHour, e.KillsPerHour)
-		}
-		if l.DeathsPerHour > e.DeathsPerHour*1.1+0.05 {
-			t.Errorf("%s: ladder deaths/h %.2f above engine %.2f", c.name, l.DeathsPerHour, e.DeathsPerHour)
-		}
-		if l.MobileApart > e.MobileApart+2 {
-			t.Errorf("%s: ladder leaves members who can walk apart %.1f%% of the time (engine %.1f%%)", c.name, l.MobileApart, e.MobileApart)
-		}
-		if c.name == "frozen" {
-			if l.KillsPerHour < 600 || l.KillsPerHour < e.KillsPerHour*1.5 {
-				t.Errorf("frozen: ladder must restore party liveness (kills/h %.0f vs engine %.0f; want >=600 and >=1.5x)", l.KillsPerHour, e.KillsPerHour)
-			}
-			if l.P95Stall > 5*time.Minute || l.P95Stall > e.P95Stall/2 {
-				t.Errorf("frozen: ladder must reduce long stalls (p95 %v vs engine %v; want <=5m and <=half)", l.P95Stall, e.P95Stall)
-			}
+		if candidate.P95Stall > 5*time.Minute || candidate.P95Stall > baseline.P95Stall/2 {
+			t.Errorf("frozen: %s must reduce long stalls (p95 %v vs engine %v; want <=5m and <=half)",
+				candidateName, candidate.P95Stall, baseline.P95Stall)
 		}
 	}
 }
