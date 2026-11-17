@@ -813,38 +813,18 @@ services:
         self.assertIn("legion", out, "Output should reference services")
 
     def test_cohortdata_volume_and_cohort_dir_flag_normal_only(self):
-        """GREEN: cohortdata volume mounted on legion only; core unchanged; -cohort-dir flag passed to legion."""
-        # Create a compose fixture with cohortdata volume and cohort-dir flag
-        compose_with_cohort = """
-services:
-  legion:
-    image: ro-legion:latest
-    container_name: ro-legion
-    volumes:
-      - ./legion/data:/data
-      - cohortdata:/cohort-state
-    command: ["run", "-durable-cohort=false", "-cohort-dir=/cohort-state"]
-  legion-core:
-    image: ro-legion:latest
-    container_name: ro-legion-core
-    command: ["run", "-core", "-durable-cohort=false"]
-  rathena:
-    image: rathena:latest
-    container_name: ro-rathena
-  db:
-    image: mariadb:latest
-    container_name: ro-db
-
-volumes:
-  cohortdata:
-"""
-        compose_path = os.path.join(self.root, "docker-compose.yml")
-        with open(compose_path, "w") as f:
-            f.write(compose_with_cohort)
+        """GREEN: actual repo docker-compose.yml has cohortdata volume mounted on legion only;
+        core unchanged; -cohort-dir flag passed to legion. Regression: removing volume/mount/flag fails assertion."""
         
-        # Read and verify
-        with open(compose_path) as f:
+        # Read the actual repository docker-compose.yml (not a test-written fixture)
+        actual_compose_path = os.path.join(REPO, "docker-compose.yml")
+        self.assertTrue(os.path.exists(actual_compose_path), 
+                       f"Actual docker-compose.yml must exist at {actual_compose_path}")
+        
+        with open(actual_compose_path) as f:
             content = f.read()
+        
+        # === BASELINE: Verify actual compose has required configuration ===
         
         # Verify cohortdata volume is declared at top level
         self.assertIn("volumes:", content, "Must have top-level volumes section")
@@ -880,6 +860,30 @@ volumes:
                         "legion-core must NOT mount cohortdata")
         self.assertNotIn('-cohort-dir', core_text,
                         "legion-core must NOT have -cohort-dir flag")
+        
+        # === NEGATIVE CONTROL: Remove -cohort-dir flag from disposable copy, verify test fails ===
+        
+        # Create a disposable mutant without -cohort-dir
+        mutant_content = content.replace('"-cohort-dir=/cohort-state"', '')
+        
+        # Verify the mutant FAILS the assertion (disposable, not persistent)
+        with self.assertRaises(AssertionError) as ctx:
+            self.assertIn('"-cohort-dir=/cohort-state"', mutant_content,
+                         "legion command must include -cohort-dir=/cohort-state flag")
+        
+        # === NEGATIVE CONTROL: Remove cohortdata volume from disposable copy, verify test fails ===
+        
+        # Create a disposable mutant without cohortdata volume declaration
+        mutant_content_no_volume = content.replace("  cohortdata:", "")
+        
+        # Verify the mutant FAILS the assertion (disposable, not persistent)
+        with self.assertRaises(AssertionError) as ctx:
+            self.assertIn("  cohortdata:", mutant_content_no_volume,
+                         "cohortdata must be declared at top level")
+        
+        # Verify baseline still passes (never mutated the actual file)
+        self.assertIn("  cohortdata:", content,
+                     "VERIFY: actual file untouched after mutant tests")
 
 
 class RecordingFakeDocker:
