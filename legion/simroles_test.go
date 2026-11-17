@@ -233,6 +233,44 @@ func TestSimPartyFrostWizardUsesBuildSkillAgainstWaterCrowd(t *testing.T) {
 	if skill := int(binary.LittleEndian.Uint16(packet[4:6])); skill != wzVermilion {
 		t.Fatalf("wizard used skill %d, want Lord of Vermilion (%d)", skill, wzVermilion)
 	}
+	castX := int(binary.LittleEndian.Uint16(packet[6:8]))
+	castY := int(binary.LittleEndian.Uint16(packet[8:10]))
+	dx, dy := castX-mage.X, castY-mage.Y
+	if dx < 0 {
+		dx = -dx
+	}
+	if dy < 0 {
+		dy = -dy
+	}
+	if dx > aoeCastRange || dy > aoeCastRange {
+		t.Fatalf("wizard cast at unreachable cell %d,%d from %d,%d", castX, castY, mage.X, mage.Y)
+	}
+	radius := 0
+	for _, spell := range aoeSpells {
+		if spell.id == wzVermilion {
+			radius = spell.radius
+			break
+		}
+	}
+	if radius == 0 {
+		t.Fatal("Lord of Vermilion has no configured area radius")
+	}
+	for id := uint32(simRoleMobID); id < simRoleMobID+3; id++ {
+		mob := mage.ents[id]
+		if mob == nil {
+			t.Fatalf("water crowd fixture is missing monster %d", id)
+		}
+		dx, dy := castX-mob.X, castY-mob.Y
+		if dx < 0 {
+			dx = -dx
+		}
+		if dy < 0 {
+			dy = -dy
+		}
+		if dx > radius || dy > radius {
+			t.Fatalf("wizard cast at %d,%d does not cover water mob %d at %d,%d (radius %d)", castX, castY, id, mob.X, mob.Y, radius)
+		}
+	}
 }
 
 func TestSimPartyTankSkipsCrowdAttackWhenBuildSkillIsUnavailable(t *testing.T) {
