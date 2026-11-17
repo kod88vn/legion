@@ -868,7 +868,7 @@ class RecordingFakeDocker:
     def _create_fake_docker(self):
         """Create fake 'docker' executable that records calls and returns mocked responses."""
         script_path = os.path.join(self.fake_bin, "docker")
-        script = """#!/bin/bash
+        script = """#!/usr/bin/env python3
 import json
 import sys
 import os
@@ -897,8 +897,9 @@ if len(sys.argv) > 2 and sys.argv[1:3] == ['compose', 'ps']:
 if len(sys.argv) > 1 and sys.argv[1] == 'compose':
     sys.exit(0)
 
-# Default success for any other docker command
-sys.exit(0)
+# Unknown command: fail-closed (not fail-open)
+print("Error: unrecognized command: {}".format(sys.argv[1] if len(sys.argv) > 1 else "?"), file=sys.stderr)
+sys.exit(1)
 """
         with open(script_path, 'w') as f:
             f.write(script)
@@ -1074,12 +1075,8 @@ echo "$result"
         """
         # Invoke fake docker with unknown subcommand; should fail, not return 0
         script = """
-set -e
 export PATH="{fake_path}"
-
-# Try unknown docker subcommand (not compose)
-docker unknown-subcommand 2>&1 || true  # Capture exit code
-echo "EXIT:$?"
+docker unknown-subcommand 2>&1
 """.format(fake_path=self.fake_path)
         
         script_path = os.path.join(self.root, "test_unknown_cmd.sh")
@@ -1088,13 +1085,11 @@ echo "EXIT:$?"
         
         try:
             rc, output = self._run_script(script_path)
-            # Extract exit code from last line
-            lines = output.strip().split('\n')
-            exit_line = [l for l in lines if l.startswith('EXIT:')]
-            self.assertTrue(exit_line, f"Could not find exit code in output: {output}")
-            exit_code = int(exit_line[0].split(':')[1])
-            self.assertNotEqual(exit_code, 0, 
-                             "Fake docker unknown-subcommand must return nonzero, not silently succeed (exit 0)")
+            # _run_script returns (returncode, combined_output)
+            self.assertNotEqual(rc, 0, 
+                             f"Fake docker unknown-subcommand must return nonzero, got rc={rc}")
+            self.assertIn("Error: unrecognized command", output,
+                        f"Should contain error message, got: {output}")
         except Exception as e:
             self.fail(f"test_fake_docker_unknown_command_returns_nonzero failed: {e}")
     
