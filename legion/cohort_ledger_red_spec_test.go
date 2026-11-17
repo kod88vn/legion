@@ -41,19 +41,24 @@ func init() {
 		
 		switch operation {
 		case "busy":
-			// Load must fail (parent holds lock), then MayAdmit on SAME (failed) holder must refuse
+			// Load must fail with specific writer-busy flock error (parent holds lock)
 			err := ledger.Load()
 			if err == nil {
-				fmt.Fprintf(os.Stderr, "busy: Load should fail but succeeded\n")
+				fmt.Fprintf(os.Stderr, "busy: Load should fail with writer-busy but succeeded\n")
 				os.Exit(1)
 			}
-			// Load failed; now try MayAdmit on same instance
-			ok, err := ledger.MayAdmit(accountID)
-			if err == nil && ok {
-				fmt.Fprintf(os.Stderr, "busy: MayAdmit should fail or be denied but got ok=true err=nil\n")
+			// Verify error is specific flock busy error (EAGAIN/EWOULDBLOCK), not other failure
+			if !strings.Contains(err.Error(), "another process holds the lock") {
+				fmt.Fprintf(os.Stderr, "busy: Load failed with wrong error (expected flock busy): %v\n", err)
 				os.Exit(1)
 			}
-			// Both checks passed; close and exit success
+			// Load failed with correct flock error; now try MayAdmit on same (failed) instance
+			ok, admitErr := ledger.MayAdmit(accountID)
+			if ok || admitErr == nil {
+				fmt.Fprintf(os.Stderr, "busy: MayAdmit on failed holder should fail/deny but got ok=%v err=%v\n", ok, admitErr)
+				os.Exit(1)
+			}
+			// Both checks passed (Load blocked, MayAdmit refused on same holder); close and exit success
 			closeErr := ledger.Close()
 			if closeErr != nil {
 				fmt.Fprintf(os.Stderr, "busy: Close failed: %v\n", closeErr)
@@ -61,15 +66,51 @@ func init() {
 			}
 			os.Exit(0)
 		case "after-release":
-			// Load succeeds, verify persisted B window + one used slot, grant C on same holder
+			// Load succeeds (lock released), verify persisted B window start + used slot count, grant C on same holder
 			err := ledger.Load()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "after-release: Load failed: %v\n", err)
 				os.Exit(1)
 			}
 			
-			// Verify that B's grant was persisted: exactly one used slot in second window
-			// (This would need access to ledger internals; for now just proceed to admit)
+			// Verify that B's grant was persisted: read actual ledger state
+			// Second window start should equal B's time (fixedTime + 1h), used count exactly 1
+			expectedWindowStart := time.Unix(0, 0)
+			if fixedTimeNano != "" {
+				var nanoTime int64
+				fmt.Sscanf(fixedTimeNano, "%d", &nanoTime)
+				baseTime := time.Unix(0, nanoTime)
+				expectedWindowStart = baseTime.Add(1 * time.Hour)
+			}
+			
+			// Access ledger's internal state to verify persistence
+			// ledger.grants should contain exactly 1 entry in the second window
+			if len(ledger.grants) == 0 {
+				fmt.Fprintf(os.Stderr, "after-release: ledger has no grants (B should be persisted)\n")
+				closeErr := ledger.Close()
+				if closeErr != nil {
+					fmt.Fprintf(os.Stderr, "after-release: Close after no-grants failed: %v\n", closeErr)
+				}
+				os.Exit(1)
+			}
+			// Find second window (grants with timestamp >= expectedWindowStart)
+			secondWindowCount := 0
+			for _, g := range ledger.grants {
+				if g.GrantTime.After(expectedWindowStart.Add(-1*time.Nanosecond)) && 
+				   g.GrantTime.Before(expectedWindowStart.Add(1*time.Hour).Add(1*time.Nanosecond)) {
+					secondWindowCount++
+				}
+			}
+			if secondWindowCount != 1 {
+				fmt.Fprintf(os.Stderr, "after-release: second window has %d grants (expected exactly 1 from B)\n", secondWindowCount)
+				closeErr := ledger.Close()
+				if closeErr != nil {
+					fmt.Fprintf(os.Stderr, "after-release: Close after wrong count failed: %v\n", closeErr)
+				}
+				os.Exit(1)
+			}
+			
+			// Verified B's grant persisted with correct window; now grant C on same holder
 			ok, err := ledger.MayAdmit(accountID)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "after-release: MayAdmit failed: %v\n", err)
@@ -883,10 +924,10 @@ func TestCrossProcessWriterLockViaExec(t *testing.T) {
 		fmt.Sprintf("COHORT_FIXED_TIME=%v", fixedTime.UnixNano()),
 	)
 	child1Out, err := child1Cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("child1 (busy) should exit nonzero but exited 0; output: %s", string(child1Out))
+	if err != nil {
+		t.Fatalf("child1 (busy) should exit 0 but exited nonzero; output: %s", string(child1Out))
 	}
-	t.Logf("child1 correctly failed: Load blocked by F_SETLK, MayAdmit refused on same holder")
+	t.Logf("child1 correctly succeeded: Load failed with flock busy, MayAdmit refused on same holder")
 	
 	// === PHASE 2: Parent advances exactly 1 hour, grants B (using second window) ===
 	timeAtB := fixedTime.Add(1 * time.Hour)
@@ -913,10 +954,10 @@ func TestCrossProcessWriterLockViaExec(t *testing.T) {
 		fmt.Sprintf("COHORT_FIXED_TIME=%v", timeAtB.UnixNano()),
 	)
 	child2Out, err := child2Cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("child2 (busy after rollover) should exit nonzero but exited 0; output: %s", string(child2Out))
+	if err != nil {
+		t.Fatalf("child2 (busy after rollover) should exit 0 but exited nonzero; output: %s", string(child2Out))
 	}
-	t.Logf("child2 correctly failed: Load blocked by F_SETLK even after window rollover, MayAdmit refused")
+	t.Logf("child2 correctly succeeded: Load blocked by F_SETLK even after window rollover, MayAdmit refused")
 	
 	// === PHASE 3: Parent releases lock via Close ===
 	if err := parent.Close(); err != nil {
