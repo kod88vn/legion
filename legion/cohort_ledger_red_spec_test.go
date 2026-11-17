@@ -74,14 +74,13 @@ func init() {
 			}
 			
 			// Verify that B's grant was persisted: read actual ledger state
-			// QuotaWindowStartUTC should match B's time (fixedTime + 1h in UTC)
+			// QuotaWindowStartUTC should match B's time (child3 receives COHORT_FIXED_TIME=B time already)
 			// QuotaGranted should contain exactly 1 entry (B's account from earlier grant)
 			expectedWindowStart := time.Unix(0, 0)
 			if fixedTimeNano != "" {
 				var nanoTime int64
 				fmt.Sscanf(fixedTimeNano, "%d", &nanoTime)
-				baseTime := time.Unix(0, nanoTime)
-				expectedWindowStart = baseTime.Add(1 * time.Hour)
+				expectedWindowStart = time.Unix(0, nanoTime)
 			}
 			
 			// Parse actual persisted window start from ledger state
