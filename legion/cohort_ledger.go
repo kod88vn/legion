@@ -28,6 +28,7 @@ type CohortLedger struct {
 	failClosed          bool // if true, all admissions denied (corrupt state or write failure)
 	ledgerExistedOnLoad bool // true if ledger file existed when we loaded (used to detect deletion/corruption)
 	now                 func() time.Time // optional: for testing. if nil, uses time.Now().UTC()
+	atomicWriter        func(tmpPath, targetPath string) error // testable atomic rename; if nil, uses os.Rename
 }
 
 // cohortState is the persistent JSON structure on disk.
@@ -56,6 +57,7 @@ func NewCohortLedger(dataDir string, enabled bool, maxPerHour int) *CohortLedger
 		failClosed:          false,
 		ledgerExistedOnLoad: false,
 		now:                 nil, // will use time.Now().UTC() by default
+		atomicWriter:        nil, // will use os.Rename by default
 	}
 	return cl
 }
@@ -358,8 +360,15 @@ func (cl *CohortLedger) persistLocked() error {
 		return fmt.Errorf("close temp: %w", err)
 	}
 
-	// Atomic rename
-	if err := os.Rename(tmpPath, cl.ledgerPath); err != nil {
+	// Atomic rename (dispatch to testable atomicWriter or default os.Rename)
+	var renameFunc func(tmpPath, targetPath string) error
+	if cl.atomicWriter != nil {
+		renameFunc = cl.atomicWriter
+	} else {
+		renameFunc = os.Rename
+	}
+	
+	if err := renameFunc(tmpPath, cl.ledgerPath); err != nil {
 		return fmt.Errorf("atomic rename: %w", err)
 	}
 

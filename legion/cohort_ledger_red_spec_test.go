@@ -195,6 +195,67 @@ func TestAtomicWriteCollisionFailsClosed(t *testing.T) {
 	t.Logf("PASS: Atomic write collision detected, fail-closed latched, prior state preserved")
 }
 
+// TEST 2b: Atomic Writer Wrapper Failure Oracle
+// Inject testable writer wrapper at persistLocked call site, force OS error, verify fail-closed on retry.
+func TestAtomicWriterFailureFailsClosedOnRetry(t *testing.T) {
+	dir := t.TempDir()
+	ledger := NewCohortLedger(dir, true, 100)
+	
+	if err := ledger.Load(); err != nil {
+		t.Fatal(err)
+	}
+	defer ledger.Close()
+	
+	// First grant succeeds normally
+	ok, err := ledger.MayAdmit("user1")
+	if !ok || err != nil {
+		t.Fatalf("first grant: ok=%v err=%v", ok, err)
+	}
+	
+	// Capture prior ledger bytes for verification
+	priorBytes, _ := os.ReadFile(ledger.ledgerPath)
+	
+	// Inject writer wrapper that counts invocations and forces error on first call
+	writerInvoked := 0
+	ledger.atomicWriter = func(tmpPath, targetPath string) error {
+		writerInvoked++
+		// Force OS error: create directory at target to cause EISDIR on rename
+		os.Mkdir(targetPath, 0700)
+		return fmt.Errorf("simulated rename error: target is directory")
+	}
+	
+	// Try to admit user2 (will invoke atomicWriter, fail with injected error)
+	ok, err = ledger.MayAdmit("user2")
+	if ok || err == nil {
+		t.Fatalf("atomic writer error should fail: ok=%v err=%v", ok, err)
+	}
+	
+	firstInvocation := writerInvoked
+	if firstInvocation != 1 {
+		t.Fatalf("expected 1 writer invocation, got %d", firstInvocation)
+	}
+	
+	// Verify prior ledger unchanged
+	currentBytes, _ := os.ReadFile(ledger.ledgerPath)
+	if string(currentBytes) != string(priorBytes) {
+		t.Fatal("prior ledger should be unchanged after writer failure")
+	}
+	
+	// Retry MayAdmit on same ledger instance with wrapper still active
+	// Should refuse with NO new writer invocation (failClosed latched)
+	ok, err = ledger.MayAdmit("user3")
+	if ok || err == nil {
+		t.Fatalf("after fail-closed, should deny: ok=%v err=%v", ok, err)
+	}
+	
+	finalInvocation := writerInvoked
+	if finalInvocation != firstInvocation {
+		t.Fatalf("retry should not invoke writer again: before=%d after=%d", firstInvocation, finalInvocation)
+	}
+	
+	t.Logf("PASS: Atomic writer error detected, fail-closed latched, no retry write invoked")
+}
+
 // TEST 3: Production Guard Enforcement with Mutation Testing
 // Byte-identical test: GREEN with guard present, RED with guard removed via mutation.
 // This test validates that CheckCohortAdmission actually blocks admissions.
