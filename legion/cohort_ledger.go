@@ -26,8 +26,7 @@ type CohortLedger struct {
 	state               *cohortState
 	loadAttempted       bool
 	failClosed          bool // if true, all admissions denied (corrupt state or write failure)
-	firstGrantTime      time.Time
-	firstGrantTimeUTC   string
+	ledgerExistedOnLoad bool // true if ledger file existed when we loaded (used to detect deletion/corruption)
 }
 
 // cohortState is the persistent JSON structure on disk.
@@ -42,19 +41,19 @@ type cohortState struct {
 // NewCohortLedger creates a new ledger manager (does not load from disk yet).
 func NewCohortLedger(dataDir string, enabled bool, maxPerHour int) *CohortLedger {
 	cl := &CohortLedger{
-		dataDir:    dataDir,
-		enabled:    enabled,
-		maxPerHour: maxPerHour,
-		ledgerPath: filepath.Join(dataDir, "cohort_ledger.json"),
-		lockPath:   filepath.Join(dataDir, "cohort_ledger.lock"),
+		dataDir:             dataDir,
+		enabled:             enabled,
+		maxPerHour:          maxPerHour,
+		ledgerPath:          filepath.Join(dataDir, "cohort_ledger.json"),
+		lockPath:            filepath.Join(dataDir, "cohort_ledger.lock"),
 		state: &cohortState{
-			SchemaVersion:     2,
-			PermanentEligible: []string{},
+			SchemaVersion:      2,
+			PermanentEligible:  []string{},
 			QuotaWindowStartUTC: "",
-			QuotaGranted:       []string{},
+			QuotaGranted:        []string{},
 		},
-		failClosed:    false,
-		firstGrantTime: time.Time{},
+		failClosed:          false,
+		ledgerExistedOnLoad: false,
 	}
 	return cl
 }
@@ -102,8 +101,10 @@ func (cl *CohortLedger) Load() error {
 	// Lock acquired. Now load and validate persistent state.
 	err = cl.loadAndValidate()
 	if err != nil {
+		// Validation failed. Set fail-closed state but don't error Load() itself,
+		// so the engine can start. MayAdmit() will deny all requests while failClosed is true.
 		cl.failClosed = true
-		return fmt.Errorf("cohort: load validation failed: %w", err)
+		// Don't return error; failClosed will cause MayAdmit() to deny everything
 	}
 
 	return nil
@@ -112,22 +113,47 @@ func (cl *CohortLedger) Load() error {
 // loadAndValidate reads and validates the persisted JSON.
 // On any error (corrupt JSON, schema mismatch, missing fields, invalid timestamps),
 // it fails closed and returns error.
-// If file doesn't exist, initializes fresh state.
+// If file doesn't exist on FIRST load, initializes fresh state (first startup).
+// If file doesn't exist on SUBSEQUENT loads, fails closed (ledger was deleted/corrupted).
 func (cl *CohortLedger) loadAndValidate() error {
 	data, err := os.ReadFile(cl.ledgerPath)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		// First startup: initialize fresh state
-		cl.state = &cohortState{
-			SchemaVersion:     2,
-			PermanentEligible: []string{},
-			QuotaWindowStartUTC: time.Now().UTC().Format(time.RFC3339),
-			QuotaGranted:       []string{},
+		// File missing
+		initMarkerPath := filepath.Join(filepath.Dir(cl.ledgerPath), ".cohort_initialized")
+		_, markerErr := os.Stat(initMarkerPath)
+		
+		if !cl.loadAttempted {
+			// First load: file never existed
+			if markerErr == nil {
+				// Marker exists but ledger doesn't: corruption/deletion
+				return fmt.Errorf("ledger file missing but initialization marker exists (ledger was deleted or corrupted)")
+			}
+			// Marker also doesn't exist: true first load, initialize fresh
+			cl.state = &cohortState{
+				SchemaVersion:      2,
+				PermanentEligible:  []string{},
+				QuotaWindowStartUTC: "", // Will be set on first grant
+				QuotaGranted:        []string{},
+			}
+			cl.ledgerExistedOnLoad = false
+			return nil
+		} else if cl.ledgerExistedOnLoad {
+			// Subsequent load: ledger existed before but now missing
+			return fmt.Errorf("ledger file missing (was present at startup, now deleted or corrupted)")
+		} else if markerErr == nil {
+			// Ledger never existed but marker exists: suspicious corruption
+			return fmt.Errorf("ledger file missing but initialization marker exists (corruption)")
+		} else {
+			// Ledger never existed and marker also doesn't exist: OK
+			return nil
 		}
-		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("read ledger: %w", err)
 	}
+
+	// File exists; mark that we've seen it
+	cl.ledgerExistedOnLoad = true
 
 	// Parse JSON
 	var loaded cohortState
@@ -148,9 +174,6 @@ func (cl *CohortLedger) loadAndValidate() error {
 	}
 
 	// Reject missing/empty required fields
-	if loaded.QuotaWindowStartUTC == "" {
-		return fmt.Errorf("missing quota_window_start_utc")
-	}
 	if loaded.PermanentEligible == nil {
 		return fmt.Errorf("missing permanent_eligible array")
 	}
@@ -158,10 +181,17 @@ func (cl *CohortLedger) loadAndValidate() error {
 		return fmt.Errorf("missing quota_granted array")
 	}
 
-	// Validate timestamp format
-	_, err = time.Parse(time.RFC3339, loaded.QuotaWindowStartUTC)
-	if err != nil {
-		return fmt.Errorf("invalid quota_window_start_utc: %w", err)
+	// QuotaWindowStartUTC can be empty only if QuotaGranted is empty (no grants yet)
+	if loaded.QuotaWindowStartUTC == "" && len(loaded.QuotaGranted) > 0 {
+		return fmt.Errorf("missing quota_window_start_utc with non-empty quota_granted")
+	}
+
+	// Validate timestamp format if present
+	if loaded.QuotaWindowStartUTC != "" {
+		_, err = time.Parse(time.RFC3339, loaded.QuotaWindowStartUTC)
+		if err != nil {
+			return fmt.Errorf("invalid quota_window_start_utc: %w", err)
+		}
 	}
 
 	// Reject duplicates in permanent_eligible
@@ -188,7 +218,6 @@ func (cl *CohortLedger) loadAndValidate() error {
 	}
 
 	cl.state = &loaded
-	cl.firstGrantTimeUTC = loaded.QuotaWindowStartUTC
 
 	return nil
 }
@@ -240,18 +269,27 @@ func (cl *CohortLedger) MayAdmit(accountID string) (bool, error) {
 
 	// Not admitted yet. Check if we can grant a new quota slot.
 
-	// Determine if window should roll: if >=1h since first grant, start new window.
-	windowStart, err := time.Parse(time.RFC3339, cl.state.QuotaWindowStartUTC)
-	if err != nil {
-		cl.failClosed = true
-		return false, fmt.Errorf("cohort: cannot parse window start: %w", err)
+	now := time.Now().UTC()
+
+	// If quota window is empty (no grants yet), this grant starts a new window.
+	// Update window start to NOW so the next 1 hour is measured from this grant time.
+	if len(cl.state.QuotaGranted) == 0 {
+		cl.state.QuotaWindowStartUTC = now.Format(time.RFC3339)
 	}
 
-	now := time.Now().UTC()
-	if now.Sub(windowStart) >= 1*time.Hour {
-		// Time to roll: clear quota_granted, preserve permanent_eligible, reset window start
-		cl.state.QuotaWindowStartUTC = now.Format(time.RFC3339)
-		cl.state.QuotaGranted = []string{}
+	// If >=1h since first grant in current window, roll: clear quota, start new window.
+	if cl.state.QuotaWindowStartUTC != "" {
+		windowStart, err := time.Parse(time.RFC3339, cl.state.QuotaWindowStartUTC)
+		if err != nil {
+			cl.failClosed = true
+			return false, fmt.Errorf("cohort: cannot parse window start: %w", err)
+		}
+
+		if now.Sub(windowStart) >= 1*time.Hour {
+			// Time to roll: clear quota_granted, preserve permanent_eligible, reset window start to NOW
+			cl.state.QuotaWindowStartUTC = now.Format(time.RFC3339)
+			cl.state.QuotaGranted = []string{}
+		}
 	}
 
 	// Check quota
@@ -326,6 +364,13 @@ func (cl *CohortLedger) persistLocked() error {
 
 	if err := dirFile.Sync(); err != nil {
 		return fmt.Errorf("dirSync: %w", err)
+	}
+
+	// Create marker file indicating this cohort ledger has been initialized.
+	// This allows detection of deleted ledger files (corruption/disaster).
+	initMarkerPath := filepath.Join(dir, ".cohort_initialized")
+	if err := os.WriteFile(initMarkerPath, []byte("true"), 0600); err != nil {
+		return fmt.Errorf("write init marker: %w", err)
 	}
 
 	return nil

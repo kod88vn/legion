@@ -211,11 +211,13 @@ func TestActualWriteFailureFailsClosed(t *testing.T) {
 // block the connect call, not just fail in the ledger helper.
 func TestProductionConnectBoundaryDeniedBlocksConnect(t *testing.T) {
 	dir := t.TempDir()
-	cl := NewCohortLedger(dir, true, 1)
-	if err := cl.Load(); err != nil {
+	
+	// Manually initialize cohortGate with maxPerHour=1 for testing
+	cohortGate = NewCohortLedger(dir, true, 1)  // maxPerHour=1 for quota testing
+	if err := cohortGate.Load(); err != nil {
 		t.Fatal(err)
 	}
-	defer cl.Close()
+	defer cohortGate.Close()
 
 	connectCount := 0
 
