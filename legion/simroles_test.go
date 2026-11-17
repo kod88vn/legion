@@ -133,6 +133,60 @@ func simRoleWaterCrowd(t *testing.T, mage *Bot, now time.Time) {
 	mage.ents[simRoleMobID+2] = simRoleMob(simRoleMobID+2, 106, 101, 0, now)
 }
 
+func simRoleClaimScene(t *testing.T, now time.Time) (*Bot, *Bot) {
+	t.Helper()
+	tank, _, mage, _ := simRoleParty(t, "knight")
+	gm := &GameMap{Name: simRoleMap, W: 200, H: 200, cells: make([]byte, 200*200)}
+	oldMap, hadMap := maps[simRoleMap]
+	maps[simRoleMap] = gm
+	t.Cleanup(func() {
+		if hadMap {
+			maps[simRoleMap] = oldMap
+		} else {
+			delete(maps, simRoleMap)
+		}
+	})
+	oldMob, hadMob := mobs[simRoleMobClass]
+	mobs[simRoleMobClass] = &Mob{ID: simRoleMobClass, Name: "Simulation Water Mob", Level: 1, HP: 1000, Exp: 100, Element: "Water"}
+	t.Cleanup(func() {
+		if hadMob {
+			mobs[simRoleMobClass] = oldMob
+		} else {
+			delete(mobs, simRoleMobClass)
+		}
+	})
+	for offset := uint32(0); offset < 3; offset++ {
+		id := simRoleMobID + offset
+		x, y := 101+int(offset), 100
+		tank.ents[id] = simRoleMob(id, x, y, 0, now)
+		mage.ents[id] = simRoleMob(id, x, y, 0, now)
+	}
+	oldItem, hadItem := items[simRoleWeaponID]
+	items[simRoleWeaponID] = &Item{ID: simRoleWeaponID, Type: "Weapon", Loc: 0x22, Sub: "2hSword"}
+	t.Cleanup(func() {
+		if hadItem {
+			items[simRoleWeaponID] = oldItem
+		} else {
+			delete(items, simRoleWeaponID)
+		}
+	})
+	tank.equipped[0x2] = &InvItem{ItemID: simRoleWeaponID, Equipped: true}
+	return tank, mage
+}
+
+func simRoleIsolateClaims(t *testing.T) {
+	t.Helper()
+	claims.mu.Lock()
+	oldClaims := claims.m
+	claims.m = map[string]map[uint32]claim{}
+	claims.mu.Unlock()
+	t.Cleanup(func() {
+		claims.mu.Lock()
+		claims.m = oldClaims
+		claims.mu.Unlock()
+	})
+}
+
 func simRoleMapWithWall(t *testing.T, wallX, y0, y1 int) *GameMap {
 	t.Helper()
 	gm := &GameMap{Name: simRoleMap, W: 200, H: 200, cells: make([]byte, 200*200)}
@@ -271,6 +325,76 @@ func TestSimPartyFrostWizardUsesBuildSkillAgainstWaterCrowd(t *testing.T) {
 			t.Fatalf("wizard cast at %d,%d does not cover water mob %d at %d,%d (radius %d)", castX, castY, id, mob.X, mob.Y, radius)
 		}
 	}
+}
+
+func TestSimPartyMageAoERespectsTankPullClaim(t *testing.T) {
+	now := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	t.Run("tank claim is friendly", func(t *testing.T) {
+		simRoleIsolateClaims(t)
+		tank, mage := simRoleClaimScene(t, now)
+		gm := maps[simRoleMap]
+
+		tank.mu.Lock()
+		acted := tank.partyThink(gm, false, now)
+		target := tank.target
+		tank.mu.Unlock()
+		if !acted || target == 0 {
+			t.Fatalf("tank partyThink = acted %v, target %d; want a production pull target", acted, target)
+		}
+		if holder := claims.holder(simRoleMap, target); holder != tank.aid {
+			t.Fatalf("tank pull claim holder = %d, want tank AID %d", holder, tank.aid)
+		}
+
+		peer := simRoleCapture(t, mage)
+		mage.mu.Lock()
+		cast := mage.aoeCast(mage.ents[target], now)
+		state := mage.State
+		mage.mu.Unlock()
+		if !cast {
+			t.Fatalf("Mage rejected the party tank's live pull claim (state %q)", state)
+		}
+		packet := simRoleReadPacket(t, peer, 10)
+		if opcode := binary.LittleEndian.Uint16(packet); opcode != 0x0366 {
+			t.Fatalf("Mage action opcode = %#x, want ground skill 0x0366", opcode)
+		}
+		if skill := int(binary.LittleEndian.Uint16(packet[4:6])); skill != wzVermilion {
+			t.Fatalf("Mage used skill %d, want Lord of Vermilion (%d)", skill, wzVermilion)
+		}
+		targetMob := mage.ents[target]
+		if targetMob == nil {
+			t.Fatalf("Mage has no entity for tank-claimed monster %d", target)
+		}
+		castX := int(binary.LittleEndian.Uint16(packet[6:8]))
+		castY := int(binary.LittleEndian.Uint16(packet[8:10]))
+		radius := 0
+		for _, spell := range aoeSpells {
+			if spell.id == wzVermilion {
+				radius = spell.radius
+				break
+			}
+		}
+		if radius == 0 || dist(castX, castY, targetMob.X, targetMob.Y) > radius {
+			t.Fatalf("Mage cast at %d,%d does not cover tank-claimed mob %d at %d,%d (radius %d)",
+				castX, castY, target, targetMob.X, targetMob.Y, radius)
+		}
+	})
+
+	t.Run("outsider claim remains foreign", func(t *testing.T) {
+		simRoleIsolateClaims(t)
+		_, mage := simRoleClaimScene(t, now)
+		if !claims.try(simRoleMap, simRoleMobID, 9999, false) {
+			t.Fatal("could not install outsider claim control")
+		}
+		peer := simRoleCapture(t, mage)
+		mage.mu.Lock()
+		cast := mage.aoeCast(mage.ents[simRoleMobID], now)
+		mage.mu.Unlock()
+		if cast {
+			t.Fatal("Mage cast on a cluster containing an outsider-claimed mob")
+		}
+		simRoleExpectNoPacket(t, peer)
+	})
 }
 
 func TestSimPartyTankSkipsCrowdAttackWhenBuildSkillIsUnavailable(t *testing.T) {
