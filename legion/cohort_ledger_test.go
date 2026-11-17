@@ -136,13 +136,24 @@ func TestCohortLedgerV3_FailClosedOnCorruptJSON(t *testing.T) {
 	cl := NewCohortLedger(dir, true, 100)
 	err := cl.Load()
 	if err == nil {
-		t.Fatalf("Load should fail on corrupt JSON")
+		t.Fatalf("Load should return nil but set failClosed on corrupt JSON")
 	}
 
-	// All admissions should be denied (fail-closed)
+	// Verify failClosed is set
+	if !cl.failClosed {
+		t.Errorf("failClosed should be set after corrupt JSON validation error")
+	}
+
+	// All admissions should be denied (fail-closed) with explicit error
 	ok, err := cl.MayAdmit("1")
-	if ok {
-		t.Errorf("fail-closed: account should be denied on corrupt JSON")
+	if ok || err == nil {
+		t.Errorf("fail-closed: MayAdmit must return (false, error); got (ok=%v, err=%v)", ok, err)
+	}
+
+	// Verify Close succeeds
+	closeErr := cl.Close()
+	if closeErr != nil {
+		t.Errorf("Close should succeed: %v", closeErr)
 	}
 }
 
@@ -155,7 +166,7 @@ func TestCohortLedgerV3_FailClosedOnSchemaMismatch(t *testing.T) {
 	state := cohortState{
 		SchemaVersion:      1, // wrong version
 		PermanentEligible:  []string{"1", "2"},
-		QuotaWindowStartUTC: time.Now().UTC().Format(time.RFC3339),
+		QuotaWindowStartUTC: time.Now().UTC().Format(time.RFC3339Nano),
 		QuotaGranted:       []string{},
 	}
 	data, _ := json.Marshal(state)
@@ -164,12 +175,24 @@ func TestCohortLedgerV3_FailClosedOnSchemaMismatch(t *testing.T) {
 	cl := NewCohortLedger(dir, true, 100)
 	err := cl.Load()
 	if err == nil {
-		t.Fatalf("Load should fail on schema mismatch")
+		t.Fatalf("Load should return nil but set failClosed on schema mismatch")
 	}
 
+	// Verify failClosed is set
+	if !cl.failClosed {
+		t.Errorf("failClosed should be set after schema validation error")
+	}
+
+	// All admissions should be denied (fail-closed) with explicit error
 	ok, err := cl.MayAdmit("1")
-	if ok {
-		t.Errorf("fail-closed: account should be denied on schema mismatch")
+	if ok || err == nil {
+		t.Errorf("fail-closed: MayAdmit must return (false, error); got (ok=%v, err=%v)", ok, err)
+	}
+
+	// Verify Close succeeds
+	closeErr := cl.Close()
+	if closeErr != nil {
+		t.Errorf("Close should succeed: %v", closeErr)
 	}
 }
 
@@ -178,22 +201,37 @@ func TestCohortLedgerV3_FailClosedOnMissingFields(t *testing.T) {
 	dir := t.TempDir()
 	ledgerPath := filepath.Join(dir, "cohort_ledger.json")
 
-	// Write JSON with missing quota_window_start_utc
+	// Write JSON with non-empty quota_granted but missing quota_window_start_utc
+	// This violates the invariant: QuotaWindowStartUTC required when QuotaGranted non-empty
 	os.WriteFile(ledgerPath, []byte(`{
 		"schema_version": 2,
-		"permanent_eligible": [],
-		"quota_granted": []
+		"permanent_eligible": ["account1"],
+		"quota_granted": ["account1"]
 	}`), 0644)
 
 	cl := NewCohortLedger(dir, true, 100)
 	err := cl.Load()
 	if err == nil {
-		t.Fatalf("Load should fail on missing fields")
+		t.Fatalf("Load should return nil but set failClosed on missing quota_window_start_utc with non-empty quota_granted")
 	}
 
+	// Verify failClosed is set
+	if !cl.failClosed {
+		t.Errorf("failClosed should be set after missing-field validation error")
+	}
+
+	// All admissions should be denied (fail-closed) with explicit error
 	ok, err := cl.MayAdmit("1")
-	if ok {
-		t.Errorf("fail-closed: account should be denied on missing fields")
+	if ok || err == nil {
+		t.Errorf("fail-closed: MayAdmit must return (false, error); got (ok=%v, err=%v)", ok, err)
+	}
+
+	// Verify Close succeeds
+	closeErr := cl.Close()
+	if closeErr != nil {
+		t.Errorf("Close should succeed: %v", closeErr)
+	}
+}
 	}
 }
 
