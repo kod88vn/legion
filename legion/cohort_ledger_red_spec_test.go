@@ -610,7 +610,7 @@ func TestRestartWithLedgerLossMissingInitializedState(t *testing.T) {
 	}
 	
 	ledgerPath := filepath.Join(dir, "cohort_ledger.json")
-	initPath := filepath.Join(dir, cohortInitMarker)
+	initPath := filepath.Join(dir, ".cohort_initialized")
 	
 	// === 1. INSTANCE 1: Grant A, Close permanently ===
 	ledger1 := NewCohortLedger(dir, true, 2)
@@ -673,12 +673,12 @@ func TestRestartWithLedgerLossMissingInitializedState(t *testing.T) {
 		t.Fatalf("instance2 A after delete: err=nil (expected error)")
 	}
 	errStr := fmt.Sprintf("%v", err)
-	if !strings.Contains(errStr, "no such file") && !strings.Contains(errStr, "ReadFile") {
-		t.Fatalf("instance2 A error missing 'no such file' cause: %v", err)
+	if !strings.Contains(errStr, "ledger file missing") && !strings.Contains(errStr, "deleted or corrupted") {
+		t.Fatalf("instance2 A error missing 'ledger file missing' cause: %v", err)
 	}
 	t.Logf("instance2 A refused with missing-ledger: %v", err)
 	
-	// Fresh D from instance2 must FAIL with missing-ledger cause
+	// Fresh D from instance2 must FAIL (either with missing-ledger or failClosed)
 	ok, err = ledger2.MayAdmit("D")
 	if ok {
 		t.Fatalf("instance2 D after delete: ok=%v (expected false)", ok)
@@ -687,10 +687,11 @@ func TestRestartWithLedgerLossMissingInitializedState(t *testing.T) {
 		t.Fatalf("instance2 D after delete: err=nil (expected error)")
 	}
 	errStr = fmt.Sprintf("%v", err)
-	if !strings.Contains(errStr, "no such file") && !strings.Contains(errStr, "ReadFile") {
-		t.Fatalf("instance2 D error missing 'no such file' cause: %v", err)
+	// After first failed MayAdmit, failClosed latch activates; D receives failClosed error, not missing-ledger
+	if !strings.Contains(errStr, "fail-closed") && !strings.Contains(errStr, "ledger file missing") && !strings.Contains(errStr, "deleted or corrupted") {
+		t.Fatalf("instance2 D error missing expected cause (failClosed or missing-ledger): %v", err)
 	}
-	t.Logf("instance2 D refused with missing-ledger: %v", err)
+	t.Logf("instance2 D refused with failClosed or missing-ledger: %v", err)
 	
 	// Close instance2 (verify success)
 	if err := ledger2.Close(); err != nil {
@@ -698,49 +699,50 @@ func TestRestartWithLedgerLossMissingInitializedState(t *testing.T) {
 	}
 	ledger2 = nil
 	
-	// === 3. INSTANCE 3: Verify initialization marker persists, Load fails ===
+	// === 3. INSTANCE 3: Verify initialization marker persists, Load succeeds but failClosed ===
 	// Check marker exists
 	if _, err := os.Stat(initPath); err != nil {
 		t.Fatalf("initialization marker missing: %v", err)
 	}
 	t.Logf("initialization marker still exists")
 	
-	// Load instance3: must fail because initialized ledger is missing
+	// Load instance3: Load succeeds (returns nil) but sets failClosed because
+	// initialization marker exists but ledger file is missing (corruption)
 	ledger3 := NewCohortLedger(dir, true, 2)
 	ledger3.now = nowFunc
-	if err := ledger3.Load(); err == nil {
-		t.Fatalf("instance3 Load: err=nil (expected error: initialized ledger missing)")
+	if err := ledger3.Load(); err != nil {
+		t.Fatalf("instance3 Load: err=%v (expected nil, failClosed set instead)", err)
 	}
-	loadErrStr := fmt.Sprintf("%v", ledger3.Load())
-	if !strings.Contains(loadErrStr, "no such file") && !strings.Contains(loadErrStr, "ReadFile") {
-		// Load error must cite missing file, not lock/schema/quota
-		t.Logf("instance3 Load error (expected file not found): %v", ledger3.Load())
+	// Verify failClosed was set due to marker/file mismatch
+	if !ledger3.failClosed {
+		t.Fatalf("instance3 failClosed: %v (expected true because marker exists but ledger is missing)", ledger3.failClosed)
 	}
+	t.Logf("instance3 failClosed correctly set (marker exists but ledger missing)")
 	
-	// Even so, attempt A and D (should fail with missing-ledger cause or Load failure)
+	// Even so, attempt A and D (should fail because failClosed is true)
 	ok, err = ledger3.MayAdmit("A")
 	if ok {
-		t.Fatalf("instance3 A: ok=%v (expected false)", ok)
+		t.Fatalf("instance3 A: ok=%v (expected false due to failClosed)", ok)
 	}
-	if err != nil {
-		errStr := fmt.Sprintf("%v", err)
-		if !strings.Contains(errStr, "no such file") && !strings.Contains(errStr, "ReadFile") {
-			t.Logf("instance3 A error (may be Load-time or quota-time): %v", err)
-		}
+	if err == nil {
+		t.Fatalf("instance3 A: err=nil (expected error due to failClosed)")
 	}
-	t.Logf("instance3 A refused")
+	if !strings.Contains(fmt.Sprintf("%v", err), "fail-closed") {
+		t.Fatalf("instance3 A error missing 'fail-closed': %v", err)
+	}
+	t.Logf("instance3 A refused with failClosed: %v", err)
 	
 	ok, err = ledger3.MayAdmit("D")
 	if ok {
-		t.Fatalf("instance3 D: ok=%v (expected false)", ok)
+		t.Fatalf("instance3 D: ok=%v (expected false due to failClosed)", ok)
 	}
-	if err != nil {
-		errStr := fmt.Sprintf("%v", err)
-		if !strings.Contains(errStr, "no such file") && !strings.Contains(errStr, "ReadFile") {
-			t.Logf("instance3 D error (may be Load-time or quota-time): %v", err)
-		}
+	if err == nil {
+		t.Fatalf("instance3 D: err=nil (expected error due to failClosed)")
 	}
-	t.Logf("instance3 D refused")
+	if !strings.Contains(fmt.Sprintf("%v", err), "fail-closed") {
+		t.Fatalf("instance3 D error missing 'fail-closed': %v", err)
+	}
+	t.Logf("instance3 D refused with failClosed: %v", err)
 	
 	// Close instance3 (verify no crash)
 	if err := ledger3.Close(); err != nil {
