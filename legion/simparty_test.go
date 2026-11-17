@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,6 +34,13 @@ const (
 	// measured against the tunable together_cells, a looser tuning would loosen its own check.
 	ruleTogetherCells = 20
 )
+
+func simTickCount(d time.Duration) int {
+	if d <= 0 {
+		return 0
+	}
+	return int((d-1)/simTick) + 1
+}
 
 // simPolicy: the leader's straggler rule under test.
 type simPolicy int
@@ -68,6 +76,49 @@ type simChaosEvent struct {
 	cellSeed int64
 	subject  int
 	tick     int
+}
+
+type simEventOutcome uint8
+
+const (
+	simEventApplied simEventOutcome = iota + 1
+	simEventBlockedCannotAct
+	simEventBlockedActiveAmbush
+)
+
+func (outcome simEventOutcome) String() string {
+	switch outcome {
+	case simEventApplied:
+		return "applied"
+	case simEventBlockedCannotAct:
+		return "blocked-cannot-act"
+	case simEventBlockedActiveAmbush:
+		return "blocked-active-ambush"
+	default:
+		return "unknown"
+	}
+}
+
+type simEventOutcomeRecord struct {
+	subject  int
+	tick     int
+	kind     simEventKind
+	duration time.Duration
+	cellSeed int64
+	outcome  simEventOutcome
+}
+
+func (record simEventOutcomeRecord) String() string {
+	return fmt.Sprintf("subject %d tick %d kind %d duration %s cell_seed %x outcome %s",
+		record.subject, record.tick, record.kind, record.duration, uint64(record.cellSeed), record.outcome)
+}
+
+func (record simEventOutcomeRecord) sameInput(other simEventOutcomeRecord) bool {
+	return record.subject == other.subject &&
+		record.tick == other.tick &&
+		record.kind == other.kind &&
+		record.duration == other.duration &&
+		record.cellSeed == other.cellSeed
 }
 
 type simInputs struct {
@@ -114,8 +165,7 @@ type simResult struct {
 	AmbushDeaths       int
 	InputHash          uint64
 	InputCount         int
-	ConsumedHash       uint64
-	ConsumedCount      int
+	EventOutcomes      []simEventOutcomeRecord
 	InputMisalignments int
 }
 
@@ -138,8 +188,8 @@ type simWorld struct {
 	kills, apart, online, collecting, ticks int
 	mobile, mobileApart, deaths             int
 	scheduledDeaths, ambushDeaths           int
-	consumedHash                            uint64
-	consumedCount, inputMisalignments       int
+	eventOutcomes                           []simEventOutcomeRecord
+	inputMisalignments                      int
 	lastKill                                time.Time
 	maxStall                                time.Duration
 }
@@ -206,7 +256,7 @@ func simRoll(seed int64, subject, tick int, channel uint64) float64 {
 }
 
 func simInputsFor(seed int64, chaos simChaos, d time.Duration) *simInputs {
-	tickCount := int(d/simTick) + 1
+	tickCount := simTickCount(d)
 	inputs := &simInputs{hash: 14695981039346656037}
 	hashValue := func(v uint64) {
 		for i := 0; i < 8; i++ {
@@ -260,30 +310,24 @@ func (in *simInputs) event(subject, tick int) simChaosEvent {
 	return in.events[subject][tick]
 }
 
-func (w *simWorld) recordInput(subject, tick int, event simChaosEvent) {
+func (w *simWorld) recordEventOutcome(subject, tick int, event simChaosEvent, outcome simEventOutcome) {
 	if event.subject != subject || event.tick != tick {
 		w.inputMisalignments++
 	}
 	if event.kind == simEventNone {
 		return
 	}
-	w.consumedCount++
-	for _, v := range [...]uint64{
-		uint64(event.subject), uint64(event.tick), uint64(event.kind), uint64(event.duration), uint64(event.cellSeed),
-	} {
-		for i := 0; i < 8; i++ {
-			w.consumedHash ^= v & 0xff
-			w.consumedHash *= 1099511628211
-			v >>= 8
-		}
-	}
+	w.eventOutcomes = append(w.eventOutcomes, simEventOutcomeRecord{
+		subject: event.subject, tick: event.tick, kind: event.kind, duration: event.duration,
+		cellSeed: event.cellSeed, outcome: outcome,
+	})
 }
 
 func newSimWorld(seed int64, policy simPolicy, inputs *simInputs) *simWorld {
 	rng := rand.New(rand.NewSource(seed))
 	gm, pocket := simGameMap(rng)
 	w := &simWorld{gm: gm, rng: rng, seed: seed, inputs: inputs, policy: policy, pocket: pocket,
-		now: time.Date(2026, 11, 16, 20, 0, 0, 0, time.UTC), consumedHash: 14695981039346656037}
+		now: time.Date(2026, 11, 16, 20, 0, 0, 0, time.UTC)}
 	w.lastKill = w.now
 	sx, sy := w.mainCell()
 	w.lead = &simAgent{name: "Leader", x: sx, y: sy, lastMoveAt: w.now}
@@ -484,14 +528,19 @@ func (w *simWorld) memberThink(m *simAgent) {
 // inject: chaos for one member this tick.
 func (w *simWorld) inject(m *simAgent) {
 	event := w.inputs.event(m.subject, w.tick)
-	w.recordInput(m.subject, w.tick, event)
 	if !w.can(m) {
 		if !w.now.Before(m.pocketTo) && m.x <= 7 && m.y <= 7 { // out of the pocket: stuckWatch's last resort (a wing)
 			m.x, m.y = w.eventCell(m.subject, w.tick, 107)
 			m.path = nil
 		}
+		w.recordEventOutcome(m.subject, w.tick, event, simEventBlockedCannotAct)
 		return
 	}
+	w.applyChaosEvent(m, event)
+}
+
+func (w *simWorld) applyChaosEvent(m *simAgent, event simChaosEvent) {
+	outcome := simEventApplied
 	switch event.kind {
 	case simEventFreeze:
 		m.frozenTo = w.now.Add(event.duration)
@@ -505,8 +554,11 @@ func (w *simWorld) inject(m *simAgent) {
 			m.ambushTo = w.now.Add(event.duration)
 			m.x, m.y = w.cellFrom(rand.New(rand.NewSource(event.cellSeed))) // pulled away by the fight (a chase, a mob train)
 			m.path = nil
+		} else {
+			outcome = simEventBlockedActiveAmbush
 		}
 	}
+	w.recordEventOutcome(m.subject, w.tick, event, outcome)
 }
 
 func (w *simWorld) eventCell(subject, tick int, channel uint64) (int, int) {
@@ -592,7 +644,7 @@ func runSimWithInputs(seed int64, policy simPolicy, inputs *simInputs, d time.Du
 	for _, m := range w.members {
 		m.fightMob = -1
 	}
-	for end := w.now.Add(d); w.now.Before(end); {
+	for tick := 0; tick < simTickCount(d); tick++ {
 		w.step()
 	}
 	if st := w.now.Sub(w.lastKill); st > w.maxStall {
@@ -604,7 +656,7 @@ func runSimWithInputs(seed int64, policy simPolicy, inputs *simInputs, d time.Du
 		CollectPct: 100 * float64(w.collecting) / float64(max(w.ticks, 1)), Deaths: w.deaths,
 		ScheduledDeaths: w.scheduledDeaths, AmbushDeaths: w.ambushDeaths,
 		InputHash: inputs.hash, InputCount: inputs.count,
-		ConsumedHash: w.consumedHash, ConsumedCount: w.consumedCount, InputMisalignments: w.inputMisalignments}
+		EventOutcomes: w.eventOutcomes, InputMisalignments: w.inputMisalignments}
 }
 
 // simBatch: many seeds in parallel; results come back in seed order.
@@ -709,8 +761,39 @@ func simSize() (int, time.Duration) {
 func TestSimPartyDeterministic(t *testing.T) {
 	a := runSim(7, policyEngine, chaosRough, 20*time.Minute)
 	b := runSim(7, policyEngine, chaosRough, 20*time.Minute)
-	if a != b {
+	if !reflect.DeepEqual(a, b) {
 		t.Fatalf("seed 7 replayed differently: %+v vs %+v", a, b)
+	}
+}
+
+func TestSimInputsAndExecutionUseHalfOpenTickHorizon(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		ticks    int
+	}{
+		{name: "zero", duration: 0, ticks: 0},
+		{name: "subtick", duration: 1, ticks: 1},
+		{name: "before boundary", duration: simTick - 1, ticks: 1},
+		{name: "at boundary", duration: simTick, ticks: 1},
+		{name: "after boundary", duration: simTick + 1, ticks: 2},
+		{name: "two boundaries", duration: 2 * simTick, ticks: 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputs := simInputsFor(7, simChaos{freezeEvery: simTick}, tt.duration)
+			wantEvents := simMembers * tt.ticks
+			if inputs.count != wantEvents {
+				t.Fatalf("scheduled events = %d, want %d for %d half-open ticks", inputs.count, wantEvents, tt.ticks)
+			}
+			result := runSimWithInputs(7, policyEngine, inputs, tt.duration)
+			if len(result.EventOutcomes) != wantEvents {
+				t.Fatalf("processed events = %d, want %d for %d executed ticks", len(result.EventOutcomes), wantEvents, tt.ticks)
+			}
+			if result.InputCount != len(result.EventOutcomes) {
+				t.Fatalf("scheduled/processed events differ: %d/%d", result.InputCount, len(result.EventOutcomes))
+			}
+		})
 	}
 }
 
@@ -727,15 +810,19 @@ func TestSimPartyCalmInvariants(t *testing.T) {
 	}
 }
 
-func TestSimAmbushSafetyVerdict(t *testing.T) {
+func TestSimAmbushSafetyGateAcceptsSafeControl(t *testing.T) {
 	baseline := simSummary{AmbushDeathsPerHour: 0.27}
 	safe := simSummary{AmbushDeathsPerHour: 0.32}
-	unsafe := simSummary{AmbushDeathsPerHour: 1.32}
 	if got := simAmbushSafetyRejection(baseline, safe); got != "" {
-		t.Fatalf("safe control unexpectedly rejected: %s", got)
+		t.Fatalf("safe control rejected: %s", got)
 	}
+}
+
+func TestSimAmbushSafetyGateRejectsUnsafeNegativeControl(t *testing.T) {
+	baseline := simSummary{AmbushDeathsPerHour: 0.27}
+	unsafe := simSummary{AmbushDeathsPerHour: 1.32}
 	if got := simAmbushSafetyRejection(baseline, unsafe); !strings.Contains(got, "ambush deaths/h") {
-		t.Fatalf("unsafe control not explicitly rejected: %q", got)
+		t.Fatalf("unsafe negative control was not explicitly rejected: %q", got)
 	}
 }
 
@@ -745,22 +832,39 @@ func TestSimPartyLadderAB(t *testing.T) {
 	seeds, d := simSize()
 	for _, c := range []simChaos{chaosCalm, chaosFrozen, chaosAmbush, chaosRough} {
 		engineRuns, ladderRuns := simBatchPaired(seeds, c, d)
+		outcomeDifferences := 0
+		firstOutcomeDifference := ""
 		for i := range engineRuns {
 			if engineRuns[i].InputHash != ladderRuns[i].InputHash || engineRuns[i].InputCount != ladderRuns[i].InputCount {
 				t.Fatalf("%s seed %d A/B chaos schedules diverged: %016x/%d vs %016x/%d", c.name, 1000+i,
 					engineRuns[i].InputHash, engineRuns[i].InputCount, ladderRuns[i].InputHash, ladderRuns[i].InputCount)
 			}
-			if engineRuns[i].ConsumedCount != engineRuns[i].InputCount ||
-				ladderRuns[i].ConsumedCount != ladderRuns[i].InputCount ||
+			if len(engineRuns[i].EventOutcomes) != engineRuns[i].InputCount ||
+				len(ladderRuns[i].EventOutcomes) != ladderRuns[i].InputCount ||
 				engineRuns[i].InputMisalignments != 0 || ladderRuns[i].InputMisalignments != 0 {
-				t.Fatalf("%s seed %d chaos inputs not consumed at their scheduled subject/tick: engine %d/%d misaligned %d, ladder %d/%d misaligned %d",
-					c.name, 1000+i, engineRuns[i].ConsumedCount, engineRuns[i].InputCount, engineRuns[i].InputMisalignments,
-					ladderRuns[i].ConsumedCount, ladderRuns[i].InputCount, ladderRuns[i].InputMisalignments)
+				t.Fatalf("%s seed %d chaos events lack aligned application outcomes: engine %d/%d misaligned %d, ladder %d/%d misaligned %d",
+					c.name, 1000+i, len(engineRuns[i].EventOutcomes), engineRuns[i].InputCount, engineRuns[i].InputMisalignments,
+					len(ladderRuns[i].EventOutcomes), ladderRuns[i].InputCount, ladderRuns[i].InputMisalignments)
 			}
-			if engineRuns[i].ConsumedHash != ladderRuns[i].ConsumedHash {
-				t.Fatalf("%s seed %d A/B consumed different chaos events: %016x vs %016x", c.name, 1000+i,
-					engineRuns[i].ConsumedHash, ladderRuns[i].ConsumedHash)
+			limit := min(len(engineRuns[i].EventOutcomes), len(ladderRuns[i].EventOutcomes))
+			for j := 0; j < limit; j++ {
+				engineEvent, ladderEvent := engineRuns[i].EventOutcomes[j], ladderRuns[i].EventOutcomes[j]
+				if !engineEvent.sameInput(ladderEvent) {
+					t.Fatalf("%s seed %d A/B applied different exogenous events: engine {%s}, ladder {%s}",
+						c.name, 1000+i, engineEvent, ladderEvent)
+				}
+				if engineEvent.outcome != ladderEvent.outcome {
+					outcomeDifferences++
+					if firstOutcomeDifference == "" {
+						firstOutcomeDifference = fmt.Sprintf("seed %d engine {%s}, ladder {%s}",
+							1000+i, engineEvent, ladderEvent)
+					}
+				}
 			}
+		}
+		if outcomeDifferences > 0 {
+			t.Logf("%s: %d policy-conditioned event outcomes differ with aligned inputs; first %s",
+				c.name, outcomeDifferences, firstOutcomeDifference)
 		}
 		e := summarize(engineRuns, d)
 		l := summarize(ladderRuns, d)
@@ -775,15 +879,8 @@ func TestSimPartyLadderAB(t *testing.T) {
 		if l.DeathsPerHour > e.DeathsPerHour*1.1+0.05 {
 			t.Errorf("%s: ladder deaths/h %.2f above engine %.2f", c.name, l.DeathsPerHour, e.DeathsPerHour)
 		}
-		ambushRejection := simAmbushSafetyRejection(e, l)
-		if c.name == "rough" {
-			if ambushRejection == "" {
-				t.Errorf("rough: ladder candidate was not rejected by the ambush safety gate")
-			} else {
-				t.Logf("rough ladder candidate REJECTED: %s", ambushRejection)
-			}
-		} else if ambushRejection != "" {
-			t.Errorf("%s: ladder candidate rejected by the ambush safety gate: %s", c.name, ambushRejection)
+		if ambushRejection := simAmbushSafetyRejection(e, l); ambushRejection != "" {
+			t.Errorf("%s: candidate failed the ambush safety gate (REJECTED): %s", c.name, ambushRejection)
 		}
 		if l.MobileApart > e.MobileApart+2 {
 			t.Errorf("%s: ladder leaves members who can walk apart %.1f%% of the time (engine %.1f%%)", c.name, l.MobileApart, e.MobileApart)
