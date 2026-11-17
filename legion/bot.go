@@ -1500,6 +1500,7 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		return
 	}
 	defer b.running.Store(false)
+	backoff := 5 * time.Second
 	for {
 		select {
 		case <-stop:
@@ -1573,7 +1574,10 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			return b.connect(loginAddr)
 		})
 		<-loginGate // release login slot after admit+connect attempt (success or failure)
-		if cohortErr != nil || !attempted {
+		
+		// Handle admission denial vs. connect errors distinctly
+		if !attempted {
+			// Quota denial: not admitted (attempted=false means callback wasn't invoked)
 			release() // release onlineSlots
 			b.mu.Lock()
 			if cohortErr != nil {
@@ -1591,6 +1595,30 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 			}
 			continue
 		}
+		
+		// Callback was invoked (attempted=true); check if it returned an error
+		if cohortErr != nil {
+			// Connect error: callback was invoked but returned error
+			release() // release onlineSlots
+			b.mu.Lock()
+			b.LastErr, b.State = cohortErr.Error(), "login failed"
+			b.mu.Unlock()
+			atomic.AddInt64(&stats.loginFail, 1)
+			if lead && mapServerFull(cohortErr) && makeRoomFor(b) { // leaderroom.go: a slot holder steps aside
+				backoff = 10 * time.Second
+			}
+			select {
+			case <-stop:
+				return
+			case <-time.After(backoff + time.Duration(b.rng.Intn(5000))*time.Millisecond):
+			}
+			if backoff < 2*time.Minute && !(serverStarting(cohortErr) && backoff >= 20*time.Second) { // loginready.go
+				backoff *= 2
+			}
+			continue
+		}
+		
+		backoff = 5 * time.Second
 		atomic.AddInt64(&stats.online, 1)
 		// session routine: sociable players hang around town after logging in; everyone heads back to town
 		// shortly before they log off

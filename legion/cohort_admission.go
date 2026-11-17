@@ -35,7 +35,9 @@ func CheckCohortAdmission(accountID uint32) (admitted bool, err error) {
 // This is the production seam for testable admission enforcement.
 // Returns:
 //   - (true, nil) if admitted AND connect callback succeeded
-//   - (false, error) if denied or error (callback NOT invoked)
+//   - (true, error) if admitted but connect callback returned error (callback WAS invoked)
+//   - (false, nil) if denied due to quota exhaustion
+//   - (false, error) if denied due to other gate error
 func attemptCohortConnect(accountID uint32, connect func() error) (attempted bool, err error) {
 	admitted, err := CheckCohortAdmission(accountID)
 	if !admitted || err != nil {
@@ -43,10 +45,7 @@ func attemptCohortConnect(accountID uint32, connect func() error) (attempted boo
 	}
 	// Guard passed; now invoke connect callback
 	err = connect()
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return true, err // return true to signal callback WAS invoked, regardless of error
 }
 
 // formatAccountID converts a numeric account ID to string for ledger lookup.
