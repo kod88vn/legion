@@ -626,6 +626,59 @@ func TestSharedWorldCheckpointResumeMatchesContinuousDays(t *testing.T) {
 	}
 }
 
+func TestSharedWorldCheckpointResumePreservesActiveStock(t *testing.T) {
+	const seed = int64(20261117)
+	continuous := newSWWorld(seed)
+	resumed := newSWWorld(seed)
+	for day := 0; day < 3; day++ {
+		if err := continuous.runDay(); err != nil {
+			t.Fatalf("continuous day %d: %v", day+1, err)
+		}
+		if day < 2 {
+			if err := resumed.runDay(); err != nil {
+				t.Fatalf("pre-checkpoint day %d: %v", day+1, err)
+			}
+		}
+	}
+	if err := resumed.audit(); err != nil {
+		t.Fatalf("day-2 pre-checkpoint audit: %v", err)
+	}
+	stockAtCheckpoint := resumed.stockByItem()
+	totalStock := 0
+	for _, quantity := range stockAtCheckpoint {
+		totalStock += quantity
+	}
+	if totalStock == 0 {
+		t.Fatal("day-2 checkpoint has no active shared stock")
+	}
+	completedAtCheckpoint := swProgressAt(resumed).Completed
+
+	var err error
+	resumed, err = resumed.checkpoint()
+	if err != nil {
+		t.Fatalf("day-2 checkpoint: %v", err)
+	}
+	if err := resumed.audit(); err != nil {
+		t.Fatalf("day-2 resumed checkpoint audit: %v", err)
+	}
+	if !reflect.DeepEqual(stockAtCheckpoint, resumed.stockByItem()) {
+		t.Fatalf("active shared stock changed across checkpoint: before=%v after=%v",
+			stockAtCheckpoint, resumed.stockByItem())
+	}
+	if err := resumed.runDay(); err != nil {
+		t.Fatalf("resumed day 3: %v", err)
+	}
+	if resumed.Days[2].Purchases == 0 ||
+		swProgressAt(resumed).Completed <= completedAtCheckpoint {
+		t.Fatalf("resumed day 3 made no goal progress: purchases=%d before=%d after=%d",
+			resumed.Days[2].Purchases, completedAtCheckpoint, swProgressAt(resumed).Completed)
+	}
+	if !reflect.DeepEqual(continuous, resumed) {
+		t.Fatalf("active-stock checkpoint differs from uninterrupted day 3\ncontinuous=%+v\nresumed=%+v",
+			continuous.Days, resumed.Days)
+	}
+}
+
 func TestSharedWorldOutOfSampleSeedProgresses(t *testing.T) {
 	const seed = int64(38122)
 	w := newSWWorld(seed)
