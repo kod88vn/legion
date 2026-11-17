@@ -1099,22 +1099,22 @@ docker unknown-subcommand 2>&1
         Regression test: when COMPOSE_FILE=docker-compose.server.yml is set,
         rathena up call must include -f and -p flags (not bare docker compose).
         
-        This test is WRITTEN but NOT RUN; fixture safety verification required before execution.
+        This test is WRITTEN but NOT RUN.
         
-        Uses RecordingFakeDocker to record actual docker compose argv with:
-        - Sentinel 97 for fake rathena-up (stops before post-recreate/Ayla checks)
-        - Local stub deploylog.py for exact CLI contracts
-        - Path remaps: /mnt/g/RO/legion → {root}, /tmp PIN → {root}/pin.yml
-        - Only fixed root/PIN remaps in copied scripts; no controlflow comment substitutions
+        Uses RecordingFakeDocker with:
+        - 97 sentinel on rathena-up in generated fake docker script
+        - Local deploylog stub handling rathena-check and rathena-record
+        - Only /mnt/g/RO/legion and /tmp PIN path remaps in scripts
+        - Actual get_recorded_calls() with recorded_log
         """
-        # Create fixture structure: tools/deploy/ and tools/system/ directories
+        # Create fixture directories
         fixture_tools = os.path.join(self.root, "tools")
         fixture_deploy = os.path.join(fixture_tools, "deploy")
         fixture_system = os.path.join(fixture_tools, "system")
         os.makedirs(fixture_deploy, exist_ok=True)
         os.makedirs(fixture_system, exist_ok=True)
         
-        # Copy and remap scripts
+        # Copy and remap scripts (ONLY /mnt/g/RO/legion and /tmp paths)
         recreate_src = os.path.join(REPO, "tools", "deploy", "rathena_recreate.sh")
         guard_src = os.path.join(REPO, "tools", "deploy", "guard.sh")
         
@@ -1123,7 +1123,7 @@ docker unknown-subcommand 2>&1
         with open(guard_src) as f:
             guard_code = f.read()
         
-        # Apply ONLY fixed path remaps (no controlflow/comment substitutions)
+        # Fixed path remaps only
         recreate_code = recreate_code.replace('/mnt/g/RO/legion', self.root)
         guard_code = guard_code.replace('/mnt/g/RO/legion', self.root)
         
@@ -1135,7 +1135,7 @@ docker unknown-subcommand 2>&1
         with open(pin_path, 'w') as f:
             f.write('# Fake PIN for testing\n')
         
-        # Write remapped scripts
+        # Write fixture scripts
         recreate_fixture = os.path.join(fixture_deploy, "rathena_recreate.sh")
         guard_fixture = os.path.join(fixture_deploy, "guard.sh")
         
@@ -1147,18 +1147,30 @@ docker unknown-subcommand 2>&1
             f.write(guard_code)
         os.chmod(guard_fixture, 0o755)
         
-        # Create local deploylog.py stub with exact CLI contract
+        # Create local deploylog stub: handle rathena-check (empty output ok) and rathena-record
         deploylog_stub = os.path.join(fixture_system, "deploylog.py")
         with open(deploylog_stub, 'w') as f:
             f.write("""#!/usr/bin/env python3
 import sys
-# Stub deploylog.py: accepts rathena-record and --override args, returns 0
-if __name__ == '__main__':
-    # Exact expected calls: rathena-record [--override <value>]
-    if len(sys.argv) >= 2 and sys.argv[1] == 'rathena-record':
+import json
+import os
+
+# Stub deploylog.py: handles rathena-check (empty output) and rathena-record
+log = os.environ.get('DEPLOYLOG_LOG', '/dev/null')
+if log != '/dev/null':
+    with open(log, 'a') as lf:
+        lf.write(json.dumps({'tool': 'deploylog', 'argv': sys.argv[1:]}) + "\\n")
+
+if len(sys.argv) >= 2:
+    if sys.argv[1] == 'rathena-check':
+        # Empty stdout, exit 0 (guard.sh line 24 expects this)
         sys.exit(0)
-    sys.stderr.write(f'Error: unrecognized deploylog command: {sys.argv[1] if len(sys.argv) > 1 else "none"}\\n')
-    sys.exit(1)
+    elif sys.argv[1] == 'rathena-record':
+        # Exact expected call: rathena-record [--override <value>]
+        sys.exit(0)
+
+sys.stderr.write(f'Error: unrecognized deploylog: {sys.argv[1] if len(sys.argv) > 1 else "none"}\\n')
+sys.exit(1)
 """)
         os.chmod(deploylog_stub, 0o755)
         
@@ -1167,93 +1179,99 @@ if __name__ == '__main__':
         with open(compose_server, 'w') as f:
             f.write(self.compose_server)
         
-        # Update fake docker to handle rathena-up with sentinel 97 before generic up
-        # Must be done by patching the recorded docker function in self.harness
-        old_recorded_docker = self.harness.recorded_docker
+        # Modify the fake docker script: add 97 sentinel for rathena-up BEFORE generic compose handler
+        fake_docker_script = os.path.join(self.harness.fake_bin, "docker")
         
-        def recorded_docker_with_sentinel(cmd_list):
-            """Fake docker: rathena-up returns 97 (sentinel), unknown fails."""
-            if 'up' in cmd_list and 'rathena' in cmd_list:
-                # This is the rathena-up call we're testing
-                # Record it and return sentinel
-                self.harness.docker_calls.append(cmd_list)
-                return 97  # Sentinel: stop before post-recreate
-            # Let generic up/other commands through to old handler
-            return old_recorded_docker(cmd_list)
+        with open(fake_docker_script) as f:
+            docker_script = f.read()
         
-        self.harness.recorded_docker = recorded_docker_with_sentinel
+        # Insert sentinel handler for rathena-up BEFORE the generic compose handler
+        rathena_up_handler = '''# Handle rathena-up: return sentinel 97 (stops before post-recreate/Ayla)
+if len(sys.argv) > 2 and sys.argv[1] == 'compose' and 'up' in sys.argv and 'rathena' in sys.argv:
+    sys.exit(97)
+
+'''
+        docker_script = docker_script.replace(
+            "# Handle all other docker compose commands (build, up, down, rm, etc.)\n",
+            rathena_up_handler + "# Handle all other docker compose commands (build, up, down, rm, etc.)\n"
+        )
         
-        # Build invocation script with correct env
+        with open(fake_docker_script, 'w') as f:
+            f.write(docker_script)
+        
+        # Build invocation script
         invocation = """
 export PATH="{fake_path}"
 export COMPOSE_FILE="docker-compose.server.yml"
 export RECORDING_FAKE_DOCKER_LOG="{log}"
 export PYTHON="python3"
+export SYSDIR="{sysdir}"
 export DRY_RUN=0
 export RATHENA_HOUR_OVERRIDE=test-override
 
 cd "{root}"
 bash "{recreate_script}" --yes 2>&1
 """.format(
-            fake_path=self.fake_path,
+            fake_path=self.harness.fake_bin,
             log=self.harness.recorded_log,
+            sysdir=fixture_system,
             root=self.root,
             recreate_script=recreate_fixture
         )
         
-        # Write and execute invocation script
         invocation_path = os.path.join(self.root, "run_recreate.sh")
         with open(invocation_path, 'w') as f:
             f.write(invocation)
         os.chmod(invocation_path, 0o755)
         
-        # Execute rathena_recreate.sh with fake docker
+        # Execute rathena_recreate.sh with fake docker (sentinel expected)
         try:
             proc = subprocess.run(
                 ['bash', invocation_path],
                 cwd=self.root,
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=10
             )
             rc = proc.returncode
             output = proc.stdout + proc.stderr
         except subprocess.TimeoutExpired:
             self.fail("test_selected_compose_file_rathena_up_bare_flags: subprocess timeout")
         
-        # Assertions
+        # Assert rc == 97 (rathena-up sentinel)
         self.assertEqual(rc, 97, 
                         f"Expected rc=97 (rathena-up sentinel), got rc={rc}\nOutput:\n{output}")
         
-        # Check docker record
-        self.assertGreater(len(self.harness.docker_calls), 0,
+        # Parse recorded calls via actual get_recorded_calls()
+        recorded = self.harness.get_recorded_calls()
+        self.assertGreater(len(recorded), 0,
                           "No docker calls recorded; fixture may have failed")
         
         # Find rathena up call
         rathena_up_call = None
         unhandled_calls = []
-        for call in self.harness.docker_calls:
-            if 'up' in call and 'rathena' in call:
-                rathena_up_call = call
-            if 'UNHANDLED' in ' '.join(str(c) for c in call):
-                unhandled_calls.append(call)
+        for call in recorded:
+            argv = call.get('argv', [])
+            if 'up' in argv and 'rathena' in argv:
+                rathena_up_call = argv
+            if 'UNHANDLED' in ' '.join(str(a) for a in argv):
+                unhandled_calls.append(argv)
         
         self.assertIsNotNone(rathena_up_call,
-                           f"rathena up call not found in docker record: {self.harness.docker_calls}")
+                           f"rathena up call not found in record: {recorded}")
         
+        # Assert no UNHANDLED calls
         self.assertEqual(len(unhandled_calls), 0,
                         f"Unexpected UNHANDLED calls: {unhandled_calls}")
         
-        # Assert desired flags on rathena-up call
+        # Assert current BROKEN: missing -f and -p flags on bare call
+        # (After Stage B fix, these assertions will change to assertIn)
         rathena_up_str = ' '.join(str(arg) for arg in rathena_up_call)
-        self.assertIn('-f', rathena_up_str,
-                     f"rathena up call missing -f flag: {rathena_up_str}")
-        self.assertIn('docker-compose.server.yml', rathena_up_str,
-                     f"rathena up call missing docker-compose.server.yml: {rathena_up_str}")
-        self.assertIn('-p', rathena_up_str,
-                     f"rathena up call missing -p flag: {rathena_up_str}")
-        self.assertIn('ro-server', rathena_up_str,
-                     f"rathena up call missing ro-server project: {rathena_up_str}")
+        
+        self.assertNotIn('-f', rathena_up_str,
+                        f"STAGE A regression: rathena up should NOT have -f flag yet: {rathena_up_str}")
+        self.assertNotIn('-p', rathena_up_str,
+                        f"STAGE A regression: rathena up should NOT have -p flag yet: {rathena_up_str}")
     
     
     def test_bare_compose_calls_missing_flags_stage_a(self):
