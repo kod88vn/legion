@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,6 +14,56 @@ import (
 // === DETERMINISTIC RED-CHECKPOINT TESTS ===
 // These tests demonstrate specific failure modes with exact clock control and deterministic I/O.
 // Tests run BYTE-IDENTICAL against production code (GREEN) and mutated code (RED via mutation testing).
+
+// === SUBPROCESS HELPER MODE ===
+// When invoked with cohort.helper flag, runs as subprocess helper for cross-process lock testing.
+// Helper mode communicates via marker files in the provided directory.
+func init() {
+	// Check for helper mode via environment variable (simpler than flag parsing in subprocess)
+	if os.Getenv("COHORT_HELPER_MODE") != "" {
+		dir := os.Getenv("COHORT_TEST_DIR")
+		accountID := os.Getenv("COHORT_ACCOUNT_ID")
+		operation := os.Getenv("COHORT_OPERATION")
+		
+		if dir == "" || accountID == "" || operation == "" {
+			fmt.Fprintf(os.Stderr, "helper mode: missing env vars\n")
+			os.Exit(1)
+		}
+		
+		// Perform operation (Load or MayAdmit) and report results via marker file
+		ledger := NewCohortLedger(dir, true, 2)
+		
+		// Write startup marker
+		startMarkerPath := filepath.Join(dir, fmt.Sprintf("%s_started.txt", accountID))
+		os.WriteFile(startMarkerPath, []byte("started"), 0644)
+		
+		switch operation {
+		case "load":
+			err := ledger.Load()
+			resultMarkerPath := filepath.Join(dir, fmt.Sprintf("%s_load_result.txt", accountID))
+			if err != nil {
+				os.WriteFile(resultMarkerPath, []byte(fmt.Sprintf("failed: %v", err)), 0644)
+				os.Exit(1)
+			}
+			os.WriteFile(resultMarkerPath, []byte("success"), 0644)
+		case "admit":
+			ok, err := ledger.MayAdmit(accountID)
+			resultMarkerPath := filepath.Join(dir, fmt.Sprintf("%s_admit_result.txt", accountID))
+			if err != nil {
+				os.WriteFile(resultMarkerPath, []byte(fmt.Sprintf("failed: %v", err)), 0644)
+				os.Exit(1)
+			}
+			if !ok {
+				os.WriteFile(resultMarkerPath, []byte("denied"), 0644)
+				os.Exit(1)
+			}
+			os.WriteFile(resultMarkerPath, []byte("granted"), 0644)
+		}
+		
+		ledger.Close()
+		os.Exit(0)
+	}
+}
 
 // TEST 1: Exact Clock 1-Hour Window Boundary and Second Window Rollover
 // Construct at t0 with fractional seconds, first grant at t0+59m, verify blocked/allowed at exact boundaries.
@@ -744,9 +796,9 @@ func TestRestartWithLedgerLossMissingInitializedState(t *testing.T) {
 	}
 	t.Logf("instance3 D refused with failClosed: %v", err)
 	
-	// Close instance3 (verify no crash)
+	// Close instance3 (must succeed - fail-closed design)
 	if err := ledger3.Close(); err != nil {
-		t.Logf("instance3 Close error (expected if ledger state invalid): %v", err)
+		t.Fatalf("instance3 Close must succeed: %v", err)
 	}
 	
 	t.Logf("PASS: Restart with ledger loss: missing ledger state detected, initialization marker retained")
@@ -763,60 +815,139 @@ func TestRestartWithLedgerLossMissingInitializedState(t *testing.T) {
 func TestCrossProcessWriterLockViaExec(t *testing.T) {
 	dir := t.TempDir()
 	
-	// Parent process loads and acquires flock
+	// Parent process loads and acquires flock (quota=2)
 	parent := NewCohortLedger(dir, true, 2)
 	if err := parent.Load(); err != nil {
 		t.Fatalf("parent Load: %v", err)
 	}
-	t.Logf("parent loaded and acquired flock")
+	defer parent.Close()
+	t.Logf("parent loaded and acquired F_SETLK flock on cohort_ledger.lock")
 	
-	// Verify lock file exists
-	lockPath := filepath.Join(dir, "cohort_ledger.lock")
-	if _, err := os.Stat(lockPath); err != nil {
-		t.Fatalf("lock file should exist: %v", err)
-	}
-	t.Logf("lock file verified: %s", lockPath)
-	
-	// Mark that parent is ready (holds lock)
-	readyMarkerPath := filepath.Join(dir, "parent_ready.txt")
-	os.WriteFile(readyMarkerPath, []byte("parent holds lock"), 0644)
-	
-	// Parent advances to t0+59m and grants A
-	nowFunc := func() time.Time {
-		return time.Date(2026, 11, 17, 13, 30, 55, 500000000, time.UTC).Add(59 * 60 * time.Second)
-	}
-	parent.now = nowFunc
+	// Parent grants A (uses slot 1 of 2)
 	ok, err := parent.MayAdmit("accountA")
 	if !ok || err != nil {
-		t.Fatalf("parent grant A: ok=%v err=%v", ok, err)
+		t.Fatalf("parent grant A failed: ok=%v err=%v", ok, err)
 	}
-	t.Logf("parent granted A")
+	t.Logf("parent granted A (slot 1/2)")
 	
-	// Parent releases lock
+	// === PHASE 1: Child1 attempts Load while parent holds lock - must fail with writer-busy ===
+	child1Cmd := exec.CommandContext(context.Background(),
+		os.Args[0],
+		"-test.run", "^$", // Disable normal tests; only run helper mode
+	)
+	child1Cmd.Env = append(os.Environ(),
+		"COHORT_HELPER_MODE=1",
+		fmt.Sprintf("COHORT_TEST_DIR=%s", dir),
+		"COHORT_ACCOUNT_ID=child1",
+		"COHORT_OPERATION=load",
+	)
+	_, _ = child1Cmd.CombinedOutput()
+	child1Result := filepath.Join(dir, "child1_load_result.txt")
+	child1ResultBytes, err := os.ReadFile(child1Result)
+	if err != nil {
+		t.Fatalf("child1 load: result marker not written: %v", err)
+	}
+	child1ResultText := string(child1ResultBytes)
+	t.Logf("child1 Load attempt while parent holds lock: %s", child1ResultText)
+	
+	// Verify child1 Load failed with writer-busy error (F_SETLK nonblocking failed)
+	if !strings.Contains(child1ResultText, "another process holds the lock") {
+		t.Fatalf("child1 should fail with 'another process holds the lock' but got: %s", child1ResultText)
+	}
+	t.Logf("child1 correctly refused with writer-busy (F_SETLK nonblocking lock contention)")
+	
+	// === PHASE 2: Parent advances 1 hour, grants B, then child2 still fails (lock still held) ===
+	// Inject fake clock to advance to exactly grant+1h
+	parent.now = func() time.Time {
+		return time.Date(2026, 11, 17, 13, 30, 55, 500000000, time.UTC).Add(1 * time.Hour)
+	}
+	ok, err = parent.MayAdmit("accountB")
+	if !ok || err != nil {
+		t.Fatalf("parent grant B after +1h: ok=%v err=%v", ok, err)
+	}
+	t.Logf("parent granted B (slot 2/2) after advancing 1 hour")
+	
+	// Child2 attempts Load while parent still holds lock (after rollover)
+	child2Cmd := exec.CommandContext(context.Background(),
+		os.Args[0],
+		"-test.run", "^$",
+	)
+	child2Cmd.Env = append(os.Environ(),
+		"COHORT_HELPER_MODE=1",
+		fmt.Sprintf("COHORT_TEST_DIR=%s", dir),
+		"COHORT_ACCOUNT_ID=child2",
+		"COHORT_OPERATION=load",
+	)
+	_, _ = child2Cmd.CombinedOutput()
+	child2Result := filepath.Join(dir, "child2_load_result.txt")
+	child2ResultBytes, err := os.ReadFile(child2Result)
+	if err != nil {
+		t.Fatalf("child2 load: result marker not written: %v", err)
+	}
+	child2ResultText := string(child2ResultBytes)
+	t.Logf("child2 Load attempt after rollover while parent holds lock: %s", child2ResultText)
+	
+	if !strings.Contains(child2ResultText, "another process holds the lock") {
+		t.Fatalf("child2 should fail with writer-busy after rollover but got: %s", child2ResultText)
+	}
+	t.Logf("child2 correctly refused with writer-busy even after rollover")
+	
+	// === PHASE 3: Parent releases lock, child3 loads successfully and uses slot 1 ===
 	if err := parent.Close(); err != nil {
 		t.Fatalf("parent Close: %v", err)
 	}
-	t.Logf("parent closed, lock released")
+	t.Logf("parent closed, F_SETLK lock released")
 	
-	// Mark that lock is released (cleanup marker)
-	lockReleasedMarkerPath := filepath.Join(dir, "lock_released.txt")
-	os.WriteFile(lockReleasedMarkerPath, []byte("lock released"), 0644)
-	
-	// Now new contender can load
-	contender := NewCohortLedger(dir, true, 2)
-	contender.now = nowFunc
-	if err := contender.Load(); err != nil {
-		t.Fatalf("contender Load after parent Close: %v", err)
+	// Child3 attempts Load after parent Close - should succeed (lock released)
+	child3Cmd := exec.CommandContext(context.Background(),
+		os.Args[0],
+		"-test.run", "^$",
+	)
+	child3Cmd.Env = append(os.Environ(),
+		"COHORT_HELPER_MODE=1",
+		fmt.Sprintf("COHORT_TEST_DIR=%s", dir),
+		"COHORT_ACCOUNT_ID=child3",
+		"COHORT_OPERATION=load",
+	)
+	_, _ = child3Cmd.CombinedOutput()
+	child3Result := filepath.Join(dir, "child3_load_result.txt")
+	child3ResultBytes, err := os.ReadFile(child3Result)
+	if err != nil {
+		t.Fatalf("child3 load: result marker not written: %v", err)
 	}
-	defer contender.Close()
-	t.Logf("contender loaded after lock released")
+	child3ResultText := string(child3ResultBytes)
+	t.Logf("child3 Load attempt after parent Close: %s", child3ResultText)
 	
-	// Contender grants B
-	ok, err = contender.MayAdmit("accountB")
-	if !ok || err != nil {
-		t.Fatalf("contender grant B: ok=%v err=%v", ok, err)
+	if child3ResultText != "success" {
+		t.Fatalf("child3 should load successfully after lock released but got: %s", child3ResultText)
 	}
-	t.Logf("contender granted B")
+	t.Logf("child3 loaded successfully after parent released lock")
 	
-	t.Logf("PASS: Cross-process writer lock: flock coordinates between parent and contender")
+	// Child3 admits C (uses remaining slot)
+	child3AdmitCmd := exec.CommandContext(context.Background(),
+		os.Args[0],
+		"-test.run", "^$",
+	)
+	child3AdmitCmd.Env = append(os.Environ(),
+		"COHORT_HELPER_MODE=1",
+		fmt.Sprintf("COHORT_TEST_DIR=%s", dir),
+		"COHORT_ACCOUNT_ID=child3",
+		"COHORT_OPERATION=admit",
+	)
+	_, _ = child3AdmitCmd.CombinedOutput()
+	child3AdmitResult := filepath.Join(dir, "child3_admit_result.txt")
+	child3AdmitResultBytes, err := os.ReadFile(child3AdmitResult)
+	if err != nil {
+		t.Fatalf("child3 admit: result marker not written: %v", err)
+	}
+	child3AdmitResultText := string(child3AdmitResultBytes)
+	t.Logf("child3 MayAdmit(child3): %s", child3AdmitResultText)
+	
+	if child3AdmitResultText != "granted" {
+		t.Fatalf("child3 should be granted admission slot but got: %s", child3AdmitResultText)
+	}
+	t.Logf("child3 granted admission (slot 1/2 available from parent's quota)")
+	
+	t.Logf("PASS: Cross-process writer lock via flock: child1/child2 blocked while parent holds F_SETLK lock, child3 succeeds after parent Close releases lock")
 }
+
