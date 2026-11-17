@@ -154,6 +154,7 @@ services:
     network_mode: "service:rathena"
     volumes:
       - ./legion/data:/data
+      - cohortdata:/cohort-state
       - ./rathena/npc-custom:/rathena/npc/custom-local:ro   # Legion reads the custom shops (legion_shops.txt)
       - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro   # srvwarps.go: the npc files the server loads (delnpc)
       - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro   # kafraload.go: the server's Kafra teleport table
@@ -163,7 +164,8 @@ services:
     # profiles log in/out on their own daily schedules; at most LEGION_MAX_ONLINE are online at once
     # the owner's core test party runs in legion-core (below), so deploying this service never logs it out
     # -durable-cohort: when true, enable durable admission ledger across container restarts (default: false)
-    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
+    # -cohort-dir: path to durable admission ledger storage (requires LEGION_DURABLE_COHORT=true; filled by admission author)
+    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}", "-cohort-dir=/cohort-state"]
     restart: unless-stopped
 
   legion-core:
@@ -219,3 +221,4 @@ services:
 
 volumes:
   dbdata:
+  cohortdata:

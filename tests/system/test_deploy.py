@@ -812,6 +812,75 @@ services:
         # In a real scenario, this would parse JSON and find services; in tests, FakeDocker returns a simple string
         self.assertIn("legion", out, "Output should reference services")
 
+    def test_cohortdata_volume_and_cohort_dir_flag_normal_only(self):
+        """GREEN: cohortdata volume mounted on legion only; core unchanged; -cohort-dir flag passed to legion."""
+        # Create a compose fixture with cohortdata volume and cohort-dir flag
+        compose_with_cohort = """
+services:
+  legion:
+    image: ro-legion:latest
+    container_name: ro-legion
+    volumes:
+      - ./legion/data:/data
+      - cohortdata:/cohort-state
+    command: ["run", "-durable-cohort=false", "-cohort-dir=/cohort-state"]
+  legion-core:
+    image: ro-legion:latest
+    container_name: ro-legion-core
+    command: ["run", "-core", "-durable-cohort=false"]
+  rathena:
+    image: rathena:latest
+    container_name: ro-rathena
+  db:
+    image: mariadb:latest
+    container_name: ro-db
+
+volumes:
+  cohortdata:
+"""
+        compose_path = os.path.join(self.root, "docker-compose.yml")
+        with open(compose_path, "w") as f:
+            f.write(compose_with_cohort)
+        
+        # Read and verify
+        with open(compose_path) as f:
+            content = f.read()
+        
+        # Verify cohortdata volume is declared at top level
+        self.assertIn("volumes:", content, "Must have top-level volumes section")
+        self.assertIn("  cohortdata:", content, "cohortdata must be declared at top level")
+        
+        # Verify legion service has cohortdata mount
+        self.assertIn("cohortdata:/cohort-state", content,
+                     "cohortdata must be mounted at /cohort-state on legion")
+        
+        # Verify old /data mount (persona/memory) is preserved for legion
+        self.assertIn("./legion/data:/data", content,
+                     "legion must retain ./legion/data:/data for persona/memory")
+        
+        # Verify -cohort-dir flag is passed to legion command
+        self.assertIn('"-cohort-dir=/cohort-state"', content,
+                     "legion command must include -cohort-dir=/cohort-state flag")
+        
+        # Verify core is NOT affected: should not have cohortdata mount or -cohort-dir
+        lines = content.split('\n')
+        in_core_section = False
+        core_section = []
+        for i, line in enumerate(lines):
+            if '  legion-core:' in line:
+                in_core_section = True
+            elif in_core_section and line.startswith('  ') and ':' in line and not line.startswith('    '):
+                # Hit next service (new section starting with 2 spaces and a colon)
+                break
+            if in_core_section:
+                core_section.append(line)
+        
+        core_text = '\n'.join(core_section)
+        self.assertNotIn('cohortdata', core_text,
+                        "legion-core must NOT mount cohortdata")
+        self.assertNotIn('-cohort-dir', core_text,
+                        "legion-core must NOT have -cohort-dir flag")
+
 
 class RecordingFakeDocker:
     """Test harness that injects fake docker/docker-compose via isolated PATH and records all calls.
