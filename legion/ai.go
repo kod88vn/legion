@@ -1810,19 +1810,17 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 		if !found {
 			b.collectLagClear(b.collectName) // the collect that was running has ended: its lag grace is spent
 			b.collectName = ""
-			bd := 99
+			candidates := make([]pubState, 0, len(p.Members))
 			for _, m := range p.Members {
 				if m == b {
 					continue
 				}
 				if s, ok := peek(m.P.Name); ok && (!strong || memberInDanger(s)) && needsCollect(b.MapName, lx, ly, s, false) && b.sameWalkRegion(gm, s.X, s.Y) && !leftAloneOnTrip(p, s) && // together.go: beyond together_cells, not busy fighting; a strong party's members walk to us themselves
 					!bossSpotNear(b.MapName, s.X, s.Y, 12, b.powerLv()) { // nav.go: not across a river (the member goes round); bossnote.go: not into a boss spot
-					sx, sy := livePosOf(s)
-					if d := dist(lx, ly, sx, sy); d < bd {
-						tgt, bd, found = s, d, true
-					}
+					candidates = append(candidates, s)
 				}
 			}
+			tgt, found = chooseCollectTarget(b.MapName, lx, ly, candidates)
 			// AY23 (engine parties): a lagging member gets about 10 s to catch up on its own before the leader goes back
 			if found && ovEngineParty(p) && !memberInDanger(tgt) && !b.collectLagDue(tgt.Name, now) {
 				found = false
