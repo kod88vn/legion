@@ -1024,10 +1024,10 @@ services:
         self.fake_path = self.harness.inject_path()
 
     def test_derive_project_name_dot_case_broken_on_340(self):
-        """STAGE A BASELINE: derive_project_name outputs ro-docker-compose.server (BROKEN).
+        """STAGE A: derive_project_name DESIRED behavior — outputs ro-server (not ro-docker-compose.server).
         
-        Expected on 340484a: guard.sh derive_project_name docker-compose.server.yml → ro-docker-compose.server
-        Expected after Stage B: guard.sh derive_project_name docker-compose.server.yml → ro-server
+        DESIRED: guard.sh derive_project_name docker-compose.server.yml → ro-server
+        Current (340484a): outputs ro-docker-compose.server (BROKEN — this test FAILS on 340, PASSES after Stage B fix)
         """
         # Read the actual guard.sh from repository
         guard_path = os.path.join(REPO, "tools", "deploy", "guard.sh")
@@ -1035,12 +1035,12 @@ services:
             guard_code = f.read()
         
         # Extract derive_project_name function
-        # Current (broken) logic: basename removes .yml, then tries to strip "docker-compose-" prefix (which fails on dot)
+        # Desired logic: strip .yml suffix, check if base == "docker-compose" (default) or extract suffix after "docker-compose"
         # Look for the function definition
         self.assertIn("derive_project_name", guard_code, "guard.sh should have derive_project_name function")
         
-        # On 340484a: the function uses basename and prefix stripping that fails on dots
-        # We verify by running it in subprocess with fake docker available
+        # Invoke actual guard.sh derive_project_name function with fake docker PATH (fail-closed)
+        # Test must invoke actual function, not copied logic or fabricated strings
         script = """
 set -e
 export PATH="{fake_path}"
@@ -1058,12 +1058,12 @@ echo "$result"
         try:
             rc, output = self._run_script(script_path)
             project = output.strip()
-            # STAGE A: Expect broken output on 340484a
-            self.assertEqual(project, "ro-docker-compose.server", 
-                           "STAGE A: derive_project_name should output broken ro-docker-compose.server on frozen 340")
+            # ASSERT DESIRED: ro-server (not broken ro-docker-compose.server)
+            self.assertEqual(project, "ro-server", 
+                           "derive_project_name must output ro-server for docker-compose.server.yml (not ro-docker-compose.server)")
         except Exception as e:
-            # If script fails, we're likely on a fixed version; skip this stage A test gracefully
-            self.skipTest(f"Cannot verify stage A broken behavior: {e}")
+            # Script execution failure counts as test failure (proves bug on current implementation)
+            self.fail(f"derive_project_name docker-compose.server.yml execution failed: {e}")
     
     def test_bare_compose_calls_missing_flags_stage_a(self):
         """STAGE A: rathena_recreate.sh has bare docker compose calls without -f/-p (BROKEN).
