@@ -310,6 +310,46 @@ func simProgressExpectedSkills(plan *Build) map[int]int {
 	return out
 }
 
+func simProgressNextStatGoal(plan *Build, stats [6]int) int {
+	for _, goal := range plan.Stats {
+		if stats[goal.Stat] < min(goal.Value, 99) {
+			return goal.Stat
+		}
+	}
+	return -1
+}
+
+func simProgressNextSkillGoal(plan *Build, skills map[int]int) int {
+	goals := append(append([]SkillGoal(nil), noviceSkills...), plan.Skills...)
+	for _, goal := range goals {
+		if skills[goal.ID] < goal.Lv {
+			return goal.ID
+		}
+	}
+	return -1
+}
+
+func simProgressAssertCheckpointSkills(t *testing.T, cohort *simProgressCohort) {
+	t.Helper()
+	for _, actor := range cohort.Actors {
+		plan := builds[actor.BuildID]
+		if actor.SkillSpent != simProgressNoviceSkillPoints() {
+			t.Fatalf("seed %d actor %d (%s): checkpoint skill points spent %d, want synthetic novice allocation %d",
+				cohort.Seed, actor.ID, actor.BuildID, actor.SkillSpent, simProgressNoviceSkillPoints())
+		}
+		hasLearnedSkill := false
+		for _, level := range actor.Skills {
+			hasLearnedSkill = hasLearnedSkill || level > 0
+		}
+		if !hasLearnedSkill {
+			t.Fatalf("seed %d actor %d (%s): checkpoint restored no learned skill state", cohort.Seed, actor.ID, actor.BuildID)
+		}
+		if actor.SkillSpent >= simProgressSkillPoints(plan) {
+			t.Fatalf("seed %d actor %d (%s): checkpoint has no remaining planned skill progress", cohort.Seed, actor.ID, actor.BuildID)
+		}
+	}
+}
+
 func simProgressSkillPoints(plan *Build) int {
 	total := 0
 	for _, level := range simProgressExpectedSkills(plan) {
@@ -327,7 +367,8 @@ func simProgressNoviceSkillPoints() int {
 }
 
 // Level and point totals are synthetic observations; pointTotal is read from the pinned statpoint fixture, not XP simulation.
-func simProgressApplyStatWindow(actor *simProgressActor, level, pointTotal int) (int, bool) {
+func simProgressApplyStatWindow(t *testing.T, actor *simProgressActor, level, pointTotal int) (int, bool) {
+	t.Helper()
 	actor.BaseLevel = level
 	actor.StatPointsLeft = pointTotal - actor.StatSpent
 	if actor.StatPointsLeft < 0 {
@@ -337,6 +378,10 @@ func simProgressApplyStatWindow(actor *simProgressActor, level, pointTotal int) 
 	for {
 		bot := simProgressBot(actor)
 		decision := bot.planStat()
+		if want := simProgressNextStatGoal(builds[actor.BuildID], actor.Stats); decision != want {
+			t.Fatalf("seed actor %d (%s): ordered stat decision %d with state %v, want first unmet planned stat %d",
+				actor.ID, actor.BuildID, decision, actor.Stats, want)
+		}
 		if decision < 0 {
 			break
 		}
@@ -357,13 +402,18 @@ func simProgressApplyStatWindow(actor *simProgressActor, level, pointTotal int) 
 	return actions, true
 }
 
-func simProgressApplySkills(actor *simProgressActor, observation simProgressObservation) int {
+func simProgressApplySkills(t *testing.T, actor *simProgressActor, observation simProgressObservation) int {
+	t.Helper()
 	actor.Class, actor.JobLevel = observation.Class, observation.JobLevel
 	actor.SkillPtsLeft = observation.SkillPts - actor.SkillSpent
 	actions := 0
 	for actor.SkillPtsLeft > 0 {
 		bot := simProgressBot(actor)
 		decision := bot.planSkill()
+		if want := simProgressNextSkillGoal(builds[actor.BuildID], actor.Skills); decision != want {
+			t.Fatalf("seed actor %d (%s): ordered skill decision %d with state %v, want first unmet planned skill %d",
+				actor.ID, actor.BuildID, decision, actor.Skills, want)
+		}
 		if decision < 0 {
 			break
 		}
@@ -412,7 +462,7 @@ func simProgressRun(t *testing.T, cohort *simProgressCohort, statPoints map[int]
 			}
 			classWindow.Actors++
 			before := actor.StatActions
-			actions, ok := simProgressApplyStatWindow(actor, level, statPoints[level])
+			actions, ok := simProgressApplyStatWindow(t, actor, level, statPoints[level])
 			if !ok {
 				t.Fatalf("seed %d actor %d (%s): stat point total %d below spent %d at level %d", cohort.Seed, actor.ID, actor.BuildID, statPoints[level], actor.StatSpent, level)
 			}
@@ -425,6 +475,25 @@ func simProgressRun(t *testing.T, cohort *simProgressCohort, statPoints map[int]
 				classWindow.StatStalled++
 			}
 			classWindow.StatActions += actions
+			if level == 40 {
+				window.JobLevel = 10 // synthetic job-level and skill-point observation, not an XP/job-level formula
+				before := actor.SkillActions
+				skillActions := simProgressApplySkills(t, actor, simProgressObservation{
+					BaseLevel: level,
+					JobLevel:  window.JobLevel,
+					Class:     builds[actor.BuildID].Class,
+					SkillPts:  simProgressNoviceSkillPoints(),
+				})
+				window.SkillActions += skillActions
+				if skillActions > 0 {
+					window.SkillActive++
+					classWindow.SkillActive++
+				} else if actor.SkillActions == before && actor.SkillSpent < simProgressSkillPoints(builds[actor.BuildID]) {
+					window.SkillStalled++
+					classWindow.SkillStalled++
+				}
+				classWindow.SkillActions += skillActions
+			}
 		}
 		window.Classes = simProgressClassWindowList(classes)
 		cohort.Windows = append(cohort.Windows, window)
@@ -443,7 +512,7 @@ func simProgressRun(t *testing.T, cohort *simProgressCohort, statPoints map[int]
 			classWindow.Actors++
 			plan := builds[actor.BuildID]
 			before := actor.SkillActions
-			actions := simProgressApplySkills(actor, simProgressObservation{
+			actions := simProgressApplySkills(t, actor, simProgressObservation{
 				BaseLevel: 99,
 				JobLevel:  50, // synthetic final-class observation; skill points below are test input, not a level-up formula
 				Class:     plan.Class,
@@ -528,7 +597,19 @@ func TestStatSkillProgressCohort(t *testing.T) {
 	if err := json.Unmarshal(checkpoint, &resumed); err != nil {
 		t.Fatalf("restore active checkpoint: %v", err)
 	}
+	simProgressAssertCheckpointSkills(t, &resumed)
+	skillActionsAtCheckpoint := 0
+	for _, actor := range resumed.Actors {
+		skillActionsAtCheckpoint += actor.SkillActions
+	}
 	simProgressRun(t, &resumed, statPointTable, 99)
+	skillActionsAfterResume := 0
+	for _, actor := range resumed.Actors {
+		skillActionsAfterResume += actor.SkillActions
+	}
+	if skillActionsAfterResume <= skillActionsAtCheckpoint {
+		t.Fatalf("resumed cohort made no skill progress: actions before=%d after=%d", skillActionsAtCheckpoint, skillActionsAfterResume)
+	}
 	if !reflect.DeepEqual(train, resumed) {
 		t.Fatal("active checkpoint/resume differs from uninterrupted cohort")
 	}
