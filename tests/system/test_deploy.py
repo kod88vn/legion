@@ -1024,46 +1024,47 @@ services:
         self.fake_path = self.harness.inject_path()
 
     def test_derive_project_name_dot_case_broken_on_340(self):
-        """STAGE A: derive_project_name DESIRED behavior — outputs ro-server (not ro-docker-compose.server).
+        """STAGE A: derive_project_name behavior — three cases (subtests).
         
-        DESIRED: guard.sh derive_project_name docker-compose.server.yml → ro-server
-        Current (340484a): outputs ro-docker-compose.server (BROKEN — this test FAILS on 340, PASSES after Stage B fix)
+        Case 1 (existing): docker-compose.yml → ro (default, should PASS)
+        Case 2 (existing hyphen): docker-compose-server.yml → ro-server (should PASS)
+        Case 3 (new dot case, BROKEN on 340): docker-compose.server.yml → ro-server (should FAIL on 340, PASS after Stage B fix)
         """
-        # Read the actual guard.sh from repository
         guard_path = os.path.join(REPO, "tools", "deploy", "guard.sh")
         with open(guard_path) as f:
             guard_code = f.read()
-        
-        # Extract derive_project_name function
-        # Desired logic: strip .yml suffix, check if base == "docker-compose" (default) or extract suffix after "docker-compose"
-        # Look for the function definition
         self.assertIn("derive_project_name", guard_code, "guard.sh should have derive_project_name function")
         
-        # Invoke actual guard.sh derive_project_name function with fake docker PATH (fail-closed)
-        # Test must invoke actual function, not copied logic or fabricated strings
-        script = """
+        # Three test cases: (input_file, expected_output, case_name)
+        cases = [
+            ("docker-compose.yml", "ro", "default yml"),
+            ("docker-compose-server.yml", "ro-server", "hyphen variant"),
+            ("docker-compose.server.yml", "ro-server", "dot variant (broken on 340)"),
+        ]
+        
+        for input_file, expected_output, case_name in cases:
+            with self.subTest(case=case_name, file=input_file):
+                # Invoke actual guard.sh derive_project_name function with fake docker PATH (fail-closed)
+                script = """
 set -e
 export PATH="{fake_path}"
 source "{guard_sh}"
 
-result=$(derive_project_name "docker-compose.server.yml")
+result=$(derive_project_name "{input_file}")
 echo "$result"
-""".format(fake_path=self.fake_path, guard_sh=os.path.join(REPO, "tools", "deploy", "guard.sh"))
-        
-        # Write test script to temp file and execute
-        script_path = os.path.join(self.root, "test_derive.sh")
-        with open(script_path, 'w') as f:
-            f.write(script)
-        
-        try:
-            rc, output = self._run_script(script_path)
-            project = output.strip()
-            # ASSERT DESIRED: ro-server (not broken ro-docker-compose.server)
-            self.assertEqual(project, "ro-server", 
-                           "derive_project_name must output ro-server for docker-compose.server.yml (not ro-docker-compose.server)")
-        except Exception as e:
-            # Script execution failure counts as test failure (proves bug on current implementation)
-            self.fail(f"derive_project_name docker-compose.server.yml execution failed: {e}")
+""".format(fake_path=self.fake_path, guard_sh=guard_path, input_file=input_file)
+                
+                script_path = os.path.join(self.root, f"test_derive_{case_name.replace(' ', '_')}.sh")
+                with open(script_path, 'w') as f:
+                    f.write(script)
+                
+                try:
+                    rc, output = self._run_script(script_path)
+                    project = output.strip()
+                    self.assertEqual(project, expected_output,
+                                   f"derive_project_name must output {expected_output} for {input_file}")
+                except Exception as e:
+                    self.fail(f"derive_project_name {input_file} execution failed: {e}")
     
     def test_bare_compose_calls_missing_flags_stage_a(self):
         """STAGE A: rathena_recreate.sh has bare docker compose calls without -f/-p (BROKEN).
