@@ -7,6 +7,20 @@ import (
 	"time"
 )
 
+func TestCollectBoundaryMatchesPT06(t *testing.T) {
+	member := func(x int) pubState {
+		return pubState{Name: "m", Map: "pay_fild04", X: x, Y: 100, Online: true, HPFrac: 1}
+	}
+
+	got, ok := chooseCollectTarget("pay_fild04", 100, 100, []pubState{member(120), member(121)})
+	if !ok || got.X != 121 {
+		t.Fatalf("PT06 boundary selection = (%d, %v), want 21-cell member", got.X, ok)
+	}
+	if got, ok = chooseCollectTarget("pay_fild04", 100, 100, []pubState{member(120)}); ok {
+		t.Fatalf("PT06 must not collect at exactly 20 cells, got %+v", got)
+	}
+}
+
 // QA 2026-11-14 07:31: 11 of 14 collecting bot leaders were collecting a member within 20 cells or busy fighting,
 // and members 10-20 cells away waited "coming to get me". together.go is the one rule both sides use.
 func TestTogetherRule(t *testing.T) {

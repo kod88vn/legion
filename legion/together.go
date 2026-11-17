@@ -58,6 +58,23 @@ func needsCollect(leadMap string, lx, ly int, s pubState, committed bool) bool {
 	return true
 }
 
+// chooseCollectTarget picks the nearest new straggler from the candidates that can be collected.
+func chooseCollectTarget(leadMap string, lx, ly int, candidates []pubState) (pubState, bool) {
+	var target pubState
+	bestDist := 99
+	found := false
+	for _, s := range candidates {
+		if !needsCollect(leadMap, lx, ly, s, false) {
+			continue
+		}
+		sx, sy := livePosOf(s)
+		if d := dist(lx, ly, sx, sy); d < bestDist {
+			target, bestDist, found = s, d, true
+		}
+	}
+	return target, found
+}
+
 // leftAloneOnTrip (AY23, engine parties only): a member on a town run is left to come back on its own - no collect
 // walk and no rally wait for it. A member in danger (losing a fight) is still collected: the run never leaves her to
 // die. Off for every other party (the old behaviour).
