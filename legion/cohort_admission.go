@@ -27,7 +27,7 @@ func CheckCohortAdmission(accountID uint32) (admitted bool, err error) {
 	}
 
 	accIDStr := formatAccountID(accountID)
-	ok, _, err := cohortGate.MayAdmit(accIDStr)
+	ok, err := cohortGate.MayAdmit(accIDStr)
 	return ok, err
 }
 
