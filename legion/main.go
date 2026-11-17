@@ -103,7 +103,7 @@ func resolveCohortDir(dataDir, cohortDir string) (string, error) {
 		_, ledgerErr := os.Stat(ledgerPath)
 		if ledgerErr == nil {
 			// Ledger exists in dataDir
-			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: legacy cohort ledger exists at %q (remove it manually or omit -cohort-dir to use default)", dataDir, ledgerPath)
+			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: legacy cohort ledger exists at %q", dataDir, ledgerPath)
 		} else if ledgerErr != nil && !os.IsNotExist(ledgerErr) {
 			// Unexpected error reading ledger metadata
 			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: metadata error on %q: %v", dataDir, ledgerPath, ledgerErr)
@@ -113,7 +113,7 @@ func resolveCohortDir(dataDir, cohortDir string) (string, error) {
 		_, markerErr := os.Stat(markerPath)
 		if markerErr == nil {
 			// Marker exists in dataDir
-			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: legacy cohort initialization marker exists at %q (remove it manually or omit -cohort-dir to use default)", dataDir, markerPath)
+			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: legacy cohort initialization marker exists at %q", dataDir, markerPath)
 		} else if markerErr != nil && !os.IsNotExist(markerErr) {
 			// Unexpected error reading marker metadata
 			return "", fmt.Errorf("cohort: cannot redirect away from -data=%q: metadata error on %q: %v", dataDir, markerPath, markerErr)
@@ -229,10 +229,20 @@ func main() {
 		meterRestoreLoad() // meterpersist.go: kills/min, zeny/h and time budgets from before the restart
 		loginGate = make(chan struct{}, *logins)
 		onlineSlots = make(chan struct{}, slotCapacity(*maxOnline, *reserve)) // leaderroom.go
-		resolvedCohortDir, err := resolveCohortDir(*dataDir, *cohortDir)
-		if err != nil {
-			log.Fatalf("cohort directory: %v", err)
+		
+		// Resolve cohort directory only when feature is enabled
+		var resolvedCohortDir string
+		if *durationCohort {
+			var err error
+			resolvedCohortDir, err = resolveCohortDir(*dataDir, *cohortDir)
+			if err != nil {
+				log.Fatalf("cohort directory: %v", err)
+			}
+		} else {
+			// Feature disabled: use dataDir as fallback (no-op for disabled gate)
+			resolvedCohortDir = *dataDir
 		}
+		
 		if err := InitCohortGate(resolvedCohortDir, *durationCohort); err != nil {
 			log.Fatalf("cohort gate init: %v", err)
 		}
