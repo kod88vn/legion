@@ -1,0 +1,97 @@
+# rAthena server only (db + rathena), on the repo's own PACKETVER 20210107 build: the one the Legion engine speaks.
+# No Docker Hub rAthena image is built in the 20210107 packet window (rAthena thresholds 20201118 < v < 20210203);
+# the official rathena/rathena images are 20211103, where the map server rejects Legion's 19-byte 0x0436.
+#
+# Build the image once (the corporate Zscaler proxy needs its CA inside the build; -j2 avoids running out of memory):
+#   docker build -t ubuntu-zscaler:24.04 <dir with Dockerfile: FROM ubuntu:24.04 + zscaler.crt + update-ca-certificates>
+#   sed 's/make -j"$(nproc)" server/make -j2 server/' rathena/Dockerfile > /tmp/rathena.Dockerfile
+#   docker buildx build --load -f /tmp/rathena.Dockerfile \
+#     --build-context ubuntu:24.04=docker-image://ubuntu-zscaler:24.04 \
+#     --build-arg PACKETVER=20210107 -t ro-rathena:20210107re rathena
+# Start:  docker compose -f docker-compose.server.yml up -d
+# Engine: docker compose -f docker-compose.server.yml --profile legion up -d legion   (see legion/README.md, Re-seed)
+name: ro-server
+
+services:
+  db:
+    image: mariadb:11.4
+    container_name: ro-db
+    environment:
+      MARIADB_ROOT_PASSWORD: ragnarok
+      MARIADB_DATABASE: ragnarok
+      MARIADB_USER: ragnarok
+      MARIADB_PASSWORD: ragnarok
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./rathena/sql/legion_notice.sql:/docker-entrypoint-initdb.d/legion_notice.sql:ro   # MarketCrier table, first start only
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    restart: unless-stopped
+
+  rathena:
+    image: ro-rathena:20210107re   # schema + seed import on first run, and exit-on-any-server-death: rathena/start.sh
+    container_name: ro-rathena
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./rathena/conf/import:/rathena/conf/import
+      - ./rathena/sql/seed.sql:/seed.sql:ro
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro
+      - ./rathena/conf/channels.conf:/rathena/conf/channels.conf:ro
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
+    ports:
+      - "127.0.0.1:6900:6900"   # login
+      - "127.0.0.1:6121:6121"   # char
+      - "127.0.0.1:5121:5121"   # map
+      - "127.0.0.1:8090:8090"   # Legion API/dashboard (legion shares this network namespace)
+    tty: true
+    restart: unless-stopped
+
+  legion:
+    profiles: ["legion"]
+    build: ./legion   # FROM ro-rathena:20210107re for game data, so build the server image first
+    image: ro-legion:latest
+    container_name: ro-legion
+    depends_on:
+      - rathena
+    network_mode: "service:rathena"
+    volumes:
+      - ./legion/data:/data
+      - cohortdata:/cohort-state
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
+      - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro
+    command: ["run", "-n", "${LEGION_BOTS:-100}", "-max-online", "${LEGION_MAX_ONLINE:-100}", "-schedule", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}", "-cohort-dir=/cohort-state"]
+    restart: unless-stopped
+
+  legion-core:
+    profiles: ["legion"]
+    image: ro-legion:latest
+    container_name: ro-legion-core
+    depends_on:
+      - rathena
+    network_mode: "service:rathena"
+    volumes:
+      - ./legion/data:/data
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
+      - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro
+      - ./openkore-ayla/logs:/ayla:ro
+    command: ["run", "-core", "-schedule", "-durable-cohort=false"]
+    restart: unless-stopped
+
+volumes:
+  dbdata:
+  cohortdata:

@@ -1,0 +1,71 @@
+//===== rAthena Script =======================================
+//= Champion Monster Spawn Script
+//===== By: ==================================================
+//= nanakiwurtz
+//===== Current Version: =====================================
+//= 1.2
+//===== Compatible With: =====================================
+//= rAthena Project
+//===== Additional Comments: =================================
+//= 1.0 First version
+//= 1.1 Correct Spawn by Navigation's mob data. [attackjom]
+//= 1.2 Correct respawn times and prontera field spawns [Playtester]
+//============================================================
+
+ama_dun03,0,0	monster	Furious Shinobi	2664,2,180000
+ayo_dun02,0,0	monster	Furious Tamruan	2639,2,180000
+bra_dun02,0,0	monster	Solid Iara	2795,3,180000
+c_tower1,0,0	monster	Solid Rideword	2682,2,180000
+gef_dun00,0,0	monster	Furious Hunter Fly	2797,1,180000
+gef_dun03,0,0	monster	Solid Wind Ghost	2614,1,180000
+gef_fild05,0,0	monster	Swift Creamy	2863,2,180000
+gef_fild10,0,0	monster	Furious Orc Warrior	2722,2,180000
+gef_fild11,0,0	monster	Swift Goblin	2814,3,180000
+gefenia01,0,0	monster	Swift False Angel	2834,2,180000
+gl_knt01,0,0	monster	Solid Raydric	2691,2,180000
+gl_knt02,0,0	monster	Swift Raydric	2690,2,180000
+gl_prison1,0,0	monster	Furious Injustice	2792,2,180000
+gl_step,0,0	monster	Solid Wind Ghost	2614,2,180000
+gon_dun03,0,0	monster	Elusive Evil Nymph	2617,2,180000
+in_sphinx3,0,0	monster	Elusive Marduk	2763,1,180000
+in_sphinx4,0,0	monster	Swift Minorous	2749,1,180000
+iz_dun01,0,0	monster	Solid Vadon	2628,2,180000
+iz_dun04,0,0	monster	Furious Merman	2757,2,180000
+lhz_dun02,0,0	monster	Laurell Weinder Ringleader	2692,3,180000
+mjo_dun02,0,0	monster	Solid Martin	2760,2,180000
+mjolnir_03,0,0	monster	Side Winder Ringleader	2663,2,180000
+mjolnir_09,0,0	monster	Swift Savage Babe	2671,2,180000
+moc_fild01,0,0	monster	Muka Ringleader	2741,3,180000
+moc_fild02,0,0	monster	Elusive Peco Peco	2718,2,180000
+moc_fild07,0,0	monster	Drops Ringleader	2845,3,180000
+moc_fild11,0,0	monster	Furious Baby Desert Wolf	2856,3,180000
+moc_pryd05,0,0	monster	Elusive Minorous	2748,2,180000
+moc_prydn1,0,0	monster	Furious Minorous	2747,2,180000
+mosk_fild02,0,0	monster	Solid Side Winder	2662,1,180000
+orcsdun02,0,0	monster	Swift Orc Skeleton	2724,2,180000
+pay_dun01,0,0	monster	Furious Soldier Skeleton	2649,2,180000
+pay_dun02,0,0	monster	Soldier Skeleton Ringleader	2648,3,180000
+pay_dun03,0,0	monster	Swift Sohee	2651,2,180000
+pay_dun04,0,0	monster	Furious Dokebi	2851,2,180000
+pay_fild02,0,0	monster	Boa Ringleader	2653,3,180000
+pay_fild03,0,0	monster	Fabre Ringleader	2836,3,180000
+pay_fild04,0,0	monster	Elusive Poporing	2703,2,180000
+pay_fild10,0,0	monster	Swift Greatest General	2809,2,180000
+prt_fild01,0,0	monster	Lunatic Ringleader	2771,2,180000
+prt_fild05,0,0	monster	Elusive Hornet	2798,2,180000
+prt_fild06,0,0	monster	Solid Fabre	2835,2,180000
+prt_fild08,0,0	monster	Solid Lunatic	2770,1,180000
+prt_fild11,0,0	monster	Elusive Goblin	2813,3,180000
+prt_maze02,0,0	monster	Furious Poporing	2702,2,180000
+prt_maze03,0,0	monster	Poporing Ringleader	2701,2,180000
+prt_sewb1,0,0	monster	Elusive Familiar	2833,1,180000
+ra_fild01,0,0	monster	Baby Desert Wolf Ringleader	2855,2,180000
+ra_fild05,0,0	monster	Solid Kobold	2785,3,180000
+ra_fild06,0,0	monster	Swift Kobold Archer	2784,3,180000
+teg_dun02,0,0	monster	Furious Wickebine Tres	2782,2,180000,0
+tha_t01,0,0	monster	Swift Rideword	2681,2,180000
+treasure_n2,0,0	monster	Weak Skeleton Ringleader	2619,2,180000
+treasure02,0,0	monster	Swift Sailor Skeleton	2676,1,180000
+um_fild02,0,0	monster	Furious Wootan Fighter	2611,1,180000
+um_fild03,0,0	monster	Solid Parasite	2720,1,180000
+um_fild04,0,0	monster	Furious Wild Rose	2616,1,180000

@@ -1,0 +1,49 @@
+//===== rAthena Script =======================================
+//= Prontera Fields Monster Spawn Script
+//===== By: ==================================================
+//= Athena (1.0)
+//===== Current Version: =====================================
+//= 1.8
+//===== Additional Comments: =================================
+//= 1.2 fixed some map name typos [Lupus]
+//= 1.3 Official kRO 10.1 spawns [Playtester]
+//= 1.4 More accurate spawns [Playtester]
+//= 1.5 Updated to Renewal spawns.
+//= 1.6 Added Prontera Field 8 duplicates. [Euphy]
+//= 1.7 Correct Spawn by Navigation's mob data. [attackjom]
+//= 1.8 Official 18.1 Field 8 spawns, duplicates removed [Playtester]
+//============================================================
+
+//==================================================
+// prt_fild00 - Prontera Field
+//==================================================
+prt_fild00,0,0	monster	Savage Babe	1167,26,5000
+prt_fild01,0,0	monster	Lunatic	1063,196,5000
+prt_fild01,0,0	monster	Fabre	1007,42,5000
+prt_fild02,0,0	monster	Creamy	1018,40,5000
+prt_fild02,0,0	monster	Poporing	1031,40,5000
+prt_fild03,0,0	monster	Poporing	1031,38,5000
+prt_fild05,0,0	monster	Hornet	1004,199,5000
+prt_fild06,0,0	monster	Fabre	1007,149,5000
+prt_fild06,0,0	monster	Lunatic	1063,32,5000
+prt_fild07,0,0	monster	Savage Babe	1167,67,5000
+prt_fild08,0,0	monster	Lunatic	1063,20,5000
+prt_fild08,0,0	monster	Fabre	1007,10,5000
+prt_fild08,305,233,10,10	monster	Lunatic	1063,2,15000
+prt_fild08,305,233,10,10	monster	Fabre	1007,2,15000
+prt_fild08,271,249,20,20	monster	Lunatic	1063,5,15000
+prt_fild08,271,249,20,20	monster	Fabre	1007,5,15000
+prt_fild08,228,230,30,30	monster	Lunatic	1063,10,10000
+prt_fild08,246,263,50,50	monster	Lunatic	1063,10,10000
+prt_fild08,190,237,50,50	monster	Lunatic	1063,10,10000
+prt_fild08,100,256,50,50	monster	Lunatic	1063,10,10000
+prt_fild08,70,164,70,70	monster	Fabre	1007,20,10000
+prt_fild08,144,147,70,70	monster	Fabre	1007,20,10000
+prt_fild08,263,79,90,90	monster	Fabre	1007,20,10000
+prt_fild10,0,0	monster	Poporing	1031,22,5000
+prt_fild11,0,0	monster	Goblin	1126,60,5000
+prt_fild11,0,0	monster	Rotar Zairo	1392,50,5000
+prt_fild11,0,0	monster	Goblin Archer	1258,50,5000
+prt_fild11,0,0	monster	Goblin	1125,10,5000
+prt_fild11,0,0	monster	Goblin	1123,10,5000
+prt_fild11,0,0	monster	Goblin	1122,10,5000
