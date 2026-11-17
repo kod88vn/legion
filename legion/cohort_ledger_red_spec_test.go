@@ -66,7 +66,7 @@ func init() {
 			}
 			os.Exit(0)
 		case "after-release":
-			// Load succeeds (lock released), verify persisted B window start + used slot count, grant C on same holder
+			// Load succeeds (lock released), verify persisted B window start + grant count, grant C on same holder
 			err := ledger.Load()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "after-release: Load failed: %v\n", err)
@@ -74,7 +74,8 @@ func init() {
 			}
 			
 			// Verify that B's grant was persisted: read actual ledger state
-			// Second window start should equal B's time (fixedTime + 1h), used count exactly 1
+			// QuotaWindowStartUTC should match B's time (fixedTime + 1h in UTC)
+			// QuotaGranted should contain exactly 1 entry (B's account from earlier grant)
 			expectedWindowStart := time.Unix(0, 0)
 			if fixedTimeNano != "" {
 				var nanoTime int64
@@ -83,34 +84,59 @@ func init() {
 				expectedWindowStart = baseTime.Add(1 * time.Hour)
 			}
 			
-			// Access ledger's internal state to verify persistence
-			// ledger.grants should contain exactly 1 entry in the second window
-			if len(ledger.grants) == 0 {
-				fmt.Fprintf(os.Stderr, "after-release: ledger has no grants (B should be persisted)\n")
+			// Parse actual persisted window start from ledger state
+			if ledger.state == nil {
+				fmt.Fprintf(os.Stderr, "after-release: ledger.state is nil after Load\n")
 				closeErr := ledger.Close()
 				if closeErr != nil {
-					fmt.Fprintf(os.Stderr, "after-release: Close after no-grants failed: %v\n", closeErr)
-				}
-				os.Exit(1)
-			}
-			// Find second window (grants with timestamp >= expectedWindowStart)
-			secondWindowCount := 0
-			for _, g := range ledger.grants {
-				if g.GrantTime.After(expectedWindowStart.Add(-1*time.Nanosecond)) && 
-				   g.GrantTime.Before(expectedWindowStart.Add(1*time.Hour).Add(1*time.Nanosecond)) {
-					secondWindowCount++
-				}
-			}
-			if secondWindowCount != 1 {
-				fmt.Fprintf(os.Stderr, "after-release: second window has %d grants (expected exactly 1 from B)\n", secondWindowCount)
-				closeErr := ledger.Close()
-				if closeErr != nil {
-					fmt.Fprintf(os.Stderr, "after-release: Close after wrong count failed: %v\n", closeErr)
+					fmt.Fprintf(os.Stderr, "after-release: Close after nil state failed: %v\n", closeErr)
 				}
 				os.Exit(1)
 			}
 			
-			// Verified B's grant persisted with correct window; now grant C on same holder
+			// QuotaWindowStartUTC is RFC3339Nano string; parse it
+			persistedWindowStart, err := time.Parse(time.RFC3339Nano, ledger.state.QuotaWindowStartUTC)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "after-release: failed to parse QuotaWindowStartUTC '%s': %v\n", ledger.state.QuotaWindowStartUTC, err)
+				closeErr := ledger.Close()
+				if closeErr != nil {
+					fmt.Fprintf(os.Stderr, "after-release: Close after parse error failed: %v\n", closeErr)
+				}
+				os.Exit(1)
+			}
+			
+			// Verify window start matches expected (B's time)
+			if !persistedWindowStart.Equal(expectedWindowStart) {
+				fmt.Fprintf(os.Stderr, "after-release: QuotaWindowStartUTC mismatch: got %s, expected %s\n", 
+					persistedWindowStart.Format(time.RFC3339Nano), expectedWindowStart.Format(time.RFC3339Nano))
+				closeErr := ledger.Close()
+				if closeErr != nil {
+					fmt.Fprintf(os.Stderr, "after-release: Close after window mismatch failed: %v\n", closeErr)
+				}
+				os.Exit(1)
+			}
+			
+			// Verify exactly 1 grant persisted (from B's earlier grant at fixedTime+1h)
+			if len(ledger.state.QuotaGranted) != 1 {
+				fmt.Fprintf(os.Stderr, "after-release: QuotaGranted has %d entries (expected exactly 1 from B)\n", len(ledger.state.QuotaGranted))
+				closeErr := ledger.Close()
+				if closeErr != nil {
+					fmt.Fprintf(os.Stderr, "after-release: Close after quota count mismatch failed: %v\n", closeErr)
+				}
+				os.Exit(1)
+			}
+			
+			// Verify the granted account is "accountB" (from parent's earlier grant)
+			if ledger.state.QuotaGranted[0] != "accountB" {
+				fmt.Fprintf(os.Stderr, "after-release: QuotaGranted[0]=%s (expected 'accountB')\n", ledger.state.QuotaGranted[0])
+				closeErr := ledger.Close()
+				if closeErr != nil {
+					fmt.Fprintf(os.Stderr, "after-release: Close after account mismatch failed: %v\n", closeErr)
+				}
+				os.Exit(1)
+			}
+			
+			// All verification passed; now grant C on same holder
 			ok, err := ledger.MayAdmit(accountID)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "after-release: MayAdmit failed: %v\n", err)
