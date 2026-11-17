@@ -74,6 +74,7 @@ P=$(grep -c "^--- PASS" test.log) || P=0; F=$(grep -c "^--- FAIL" test.log) || F
 echo "tests: pass=$P fail=$F skip=$S"
 TOT=$(grep -cE "^--- (PASS|FAIL|SKIP)" test.log) || TOT=0
 if [ "$TOT" -eq 0 ]; then echo "tests: NO TESTS RAN (-run '"$(printf '%q' "$RUN")"' matched nothing, or the engine has no tests): nothing was checked"; rc=1; fi
+if [ "$F" -gt 0 ]; then echo "FAILING: test failures detected"; rc=1; fi
 grep -E "^(FAIL|ok|panic:)|build failed|\[setup failed\]" test.log | head -10 || true
 exit $rc
 '
