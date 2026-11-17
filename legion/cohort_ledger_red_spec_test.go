@@ -13,12 +13,12 @@ import (
 // Tests run BYTE-IDENTICAL against production code (GREEN) and mutated code (RED via mutation testing).
 
 // TEST 1: Exact Clock 1-Hour Window Boundary
-// Construct at t0, first grant at t0+59m, verify blocked/allowed at exact boundaries.
+// Construct at t0 with fractional seconds, first grant at t0+59m, verify blocked/allowed at exact boundaries.
 func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 	dir := t.TempDir()
 	
-	// Fixed test time: 2026-11-17T13:30:55Z
-	baseTime := time.Date(2026, 11, 17, 13, 30, 55, 0, time.UTC)
+	// Fixed test time with fractional seconds: 2026-11-17T13:30:55.5Z
+	baseTime := time.Date(2026, 11, 17, 13, 30, 55, 500000000, time.UTC)
 	tick := 0
 	
 	nowFunc := func() time.Time {
@@ -73,9 +73,22 @@ func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 		t.Fatalf("at grant+59m59s: should be blocked (less than 1h), got ok=%v err=%v", ok, err)
 	}
 	
-	// grant+1h (exactly): Window rolls, new cohort opens
-	tick = 59*60 + 60*60
+	// grant+1h−1ns: Still in window, should be blocked (edge case just before boundary)
+	nowFunc = func() time.Time {
+		return baseTime.Add(time.Duration(59*60 + 60*60) * time.Second).Add(-1 * time.Nanosecond)
+	}
+	ledger.now = nowFunc
 	ok, err = ledger.MayAdmit("user4")
+	if ok || err == nil {
+		t.Fatalf("at grant+1h−1ns: should be blocked (not yet 1h), got ok=%v err=%v", ok, err)
+	}
+	
+	// grant+1h (exactly): Window rolls, new cohort opens
+	nowFunc = func() time.Time {
+		return baseTime.Add(time.Duration(59*60 + 60*60) * time.Second)
+	}
+	ledger.now = nowFunc
+	ok, err = ledger.MayAdmit("user5")
 	if !ok || err != nil {
 		t.Fatalf("at grant+1h (exactly): should allow new grant, got ok=%v err=%v", ok, err)
 	}
