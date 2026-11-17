@@ -1569,8 +1569,28 @@ func (b *Bot) run(loginAddr string, stop <-chan struct{}) {
 		b.saleRoom, b.saleTried = "", false
 		b.mu.Unlock()
 		loginGate <- struct{}{} // limit concurrent logins
-		err := b.connect(loginAddr)
+		// Check durable cohort admission gate (if enabled).
+		admittedToCohort, cohortErr := CheckCohortAdmission(b.aid)
 		<-loginGate
+		if cohortErr != nil || !admittedToCohort {
+			release()
+			b.mu.Lock()
+			if cohortErr != nil {
+				b.LastErr = "cohort gate error: " + cohortErr.Error()
+			} else {
+				b.LastErr = "cohort gate: quota exhausted (100/hour exceeded)"
+			}
+			b.State = "login blocked (cohort gate)"
+			b.mu.Unlock()
+			atomic.AddInt64(&stats.loginFail, 1)
+			select {
+			case <-stop:
+				return
+			case <-time.After(1 * time.Minute): // back off before retrying next window
+			}
+			continue
+		}
+		err := b.connect(loginAddr)
 		if err != nil {
 			release()
 			b.mu.Lock()

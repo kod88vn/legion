@@ -39,6 +39,7 @@ var (
 	verbose   = flag.Bool("v", false, "verbose logging")
 	maxOnline = flag.Int("max-online", 1000, "max concurrent sessions (profiles beyond this wait for a slot)")
 	reserve   = flag.Int("reserve", 40, "online slots kept free under -max-online for guild leaders, pinned players, legion-core, Ayla and humans (the map server holds ~1013 clients: rAthena select() build, FD_SETSIZE 1024)")
+	durationCohort = flag.Bool("durable-cohort", false, "enable durable hourly cohort admission gate (100 new bots per hour)")
 )
 
 func loadGameData() {
@@ -183,6 +184,9 @@ func main() {
 		meterRestoreLoad() // meterpersist.go: kills/min, zeny/h and time budgets from before the restart
 		loginGate = make(chan struct{}, *logins)
 		onlineSlots = make(chan struct{}, slotCapacity(*maxOnline, *reserve)) // leaderroom.go
+		if err := InitCohortGate(*dataDir, *durationCohort); err != nil {
+			log.Fatalf("cohort gate init: %v", err)
+		}
 		memDir = filepath.Join(*dataDir, "memory")
 		for _, p := range all { // every Legion character, also those another instance runs (bot vs human)
 			for _, c := range p.Chars {
