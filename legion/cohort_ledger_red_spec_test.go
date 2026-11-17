@@ -12,8 +12,9 @@ import (
 // These tests demonstrate specific failure modes with exact clock control and deterministic I/O.
 // Tests run BYTE-IDENTICAL against production code (GREEN) and mutated code (RED via mutation testing).
 
-// TEST 1: Exact Clock 1-Hour Window Boundary
+// TEST 1: Exact Clock 1-Hour Window Boundary and Second Window Rollover
 // Construct at t0 with fractional seconds, first grant at t0+59m, verify blocked/allowed at exact boundaries.
+// Then extend through second window: second grant at grant+1h, test second window's deny/allow at edge.
 func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 	dir := t.TempDir()
 	
@@ -93,7 +94,52 @@ func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 		t.Fatalf("at grant+1h (exactly): should allow new grant, got ok=%v err=%v", ok, err)
 	}
 	
-	t.Logf("PASS: Exact clock window boundary verified (grant at t0+59m, next cohort at grant+1h)")
+	// Record second window start (after first rollover)
+	ledger.mu.Lock()
+	secondWindowStart := ledger.state.QuotaWindowStartUTC
+	ledger.mu.Unlock()
+	
+	secondGrantTime, err := time.Parse(time.RFC3339Nano, secondWindowStart)
+	if err != nil {
+		t.Fatalf("invalid second window start: %v", err)
+	}
+	
+	expectedSecondWindowStart := baseTime.Add(time.Duration(59*60 + 60*60) * time.Second)
+	if secondGrantTime != expectedSecondWindowStart {
+		t.Fatalf("second window start not anchored to second grant time: got %s, expected %s", secondGrantTime, expectedSecondWindowStart)
+	}
+	
+	// secondGrant+59m59s: Still in second window, should be blocked
+	nowFunc = func() time.Time {
+		return baseTime.Add(time.Duration(59*60 + 60*60 + 59*60 + 59) * time.Second)
+	}
+	ledger.now = nowFunc
+	ok, err = ledger.MayAdmit("user6")
+	if ok || err == nil {
+		t.Fatalf("at secondGrant+59m59s: should be blocked (less than 1h), got ok=%v err=%v", ok, err)
+	}
+	
+	// secondGrant+1h−1ns: Still in second window, should be blocked (edge case just before boundary)
+	nowFunc = func() time.Time {
+		return baseTime.Add(time.Duration(59*60 + 2*60*60) * time.Second).Add(-1 * time.Nanosecond)
+	}
+	ledger.now = nowFunc
+	ok, err = ledger.MayAdmit("user7")
+	if ok || err == nil {
+		t.Fatalf("at secondGrant+1h−1ns: should be blocked (not yet 1h), got ok=%v err=%v", ok, err)
+	}
+	
+	// secondGrant+1h (exactly): Third window rolls, new cohort opens
+	nowFunc = func() time.Time {
+		return baseTime.Add(time.Duration(59*60 + 2*60*60) * time.Second)
+	}
+	ledger.now = nowFunc
+	ok, err = ledger.MayAdmit("user8")
+	if !ok || err != nil {
+		t.Fatalf("at secondGrant+1h (exactly): should allow new grant, got ok=%v err=%v", ok, err)
+	}
+	
+	t.Logf("PASS: Exact clock window boundary verified (1st and 2nd window, fractional-second precision preserved)")
 }
 
 // TEST 2: Atomic Write Collision (Rename Target Already Exists as Directory)
