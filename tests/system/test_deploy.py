@@ -1190,7 +1190,13 @@ sys.exit(1)
             docker_script = f.read()
         
         # Insert handlers BEFORE generic compose handler
-        handlers_code = '''# Handle DB health inspection (pre-target call)
+        handlers_code = '''# Handle compose config --format json (followers extraction)
+if len(sys.argv) > 2 and sys.argv[1] == 'compose' and 'config' in sys.argv and '--format' in sys.argv and 'json' in sys.argv:
+    # Return minimal valid compose config (no followers for this fixture)
+    print(json.dumps({"version": "3.8", "services": {"db": {}, "rathena": {}, "legion": {}, "legion-core": {}}}))
+    sys.exit(0)
+
+# Handle DB health inspection (pre-target call)
 if len(sys.argv) > 2 and sys.argv[1] == 'inspect':
     if '-f' in sys.argv and 'State.Health.Status' in ' '.join(sys.argv):
         print("healthy")
@@ -1226,7 +1232,7 @@ sys.exit(1)'''
         
         # Build invocation script
         invocation = """
-export PATH="{fake_path}"
+export PATH="{fake_path}:$PATH"
 export COMPOSE_FILE="docker-compose.server.yml"
 export RECORDING_FAKE_DOCKER_LOG="{log}"
 export PYTHON="python3"
