@@ -1617,7 +1617,7 @@ services:
                 continue
             if in_core:
                 # Another top-level service starts with 2 spaces followed by name:
-                if line.startswith('  ') and not line.startswith('    ') and ':' in line and line.strip():
+                if line.startswith('  ') and not line.startswith('    ') and line.strip():
                     if 'legion-core' not in line:
                         break
                 core_lines.append(line)
@@ -1625,6 +1625,243 @@ services:
         core_content = '\n'.join(core_lines)
         self.assertIn('-durable-cohort=false', core_content,
                      "server compose core must have hardcoded false")
+
+
+class TestComposeFilePropagationMultipleCases(unittest.TestCase):
+    """TEST-ONLY checkpoint: three cases for COMPOSE_FILE threading via compose_args.
+    
+    WRITE NOT RUN: static preflight only before first execution.
+    Reuse contained fixture infrastructure (no new framework).
+    Three cases: selected server, COMPOSE_FILE unset (legacy), selected server with --build.
+    """
+    
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.fake = RecordingFakeDocker(self.root)
+        self.fixture_compose = os.path.join(self.root, "docker-compose.yml")
+        self.fixture_server_compose = os.path.join(self.root, "docker-compose.server.yml")
+        
+        # Default fixture compose (used when COMPOSE_FILE unset)
+        with open(self.fixture_compose, 'w') as f:
+            json.dump({"services": {}}, f)
+        
+        # Server compose (used when COMPOSE_FILE=docker-compose.server.yml)
+        with open(self.fixture_server_compose, 'w') as f:
+            json.dump({"services": {}}, f)
+        
+        # Copy guard.sh and recreate.sh to fixture with path remaps
+        guard_src = os.path.join(REPO, "tools", "deploy", "guard.sh")
+        with open(guard_src) as f:
+            guard_code = f.read()
+        self.fixture_guard = os.path.join(self.root, "guard.sh")
+        # Remap /mnt/g/RO/legion to fixture root
+        guard_code = guard_code.replace("/mnt/g/RO/legion", self.root)
+        with open(self.fixture_guard, 'w') as f:
+            f.write(guard_code)
+        
+        recreate_src = os.path.join(REPO, "tools", "deploy", "rathena_recreate.sh")
+        with open(recreate_src) as f:
+            recreate_code = f.read()
+        self.fixture_recreate = os.path.join(self.root, "rathena_recreate.sh")
+        # Remap /mnt/g/RO/legion to fixture root, and /tmp PIN to fixture scratch
+        recreate_code = recreate_code.replace("/mnt/g/RO/legion", self.root)
+        recreate_code = recreate_code.replace("/tmp/rathena_recreate_pin.yml", 
+                                             os.path.join(self.root, "pin.yml"))
+        # Remap deploylog helper to stub
+        recreate_code = recreate_code.replace('"$PYTHON" "$SYSDIR/deploylog.py"',
+                                             'python3 -c "import sys; sys.exit(0)"')
+        with open(self.fixture_recreate, 'w') as f:
+            f.write(recreate_code)
+        os.chmod(self.fixture_recreate, 0o755)
+        
+        # Set up local deploylog stub that handles rathena-check/record
+        self.sysdir = os.path.join(self.root, "tools", "system")
+        os.makedirs(self.sysdir, exist_ok=True)
+        deploylog_stub = os.path.join(self.sysdir, "deploylog.py")
+        with open(deploylog_stub, 'w') as f:
+            f.write("""#!/usr/bin/env python3
+import sys
+if len(sys.argv) > 1 and sys.argv[1] in ('rathena-check', 'rathena-record'):
+    sys.exit(0)
+sys.exit(1)
+""")
+        os.chmod(deploylog_stub, 0o755)
+    
+    def tearDown(self):
+        shutil.rmtree(self.root)
+    
+    def _run_recreate_case(self, env_overrides=None, args=None):
+        """Run recreate.sh in fixture, return recorded docker calls."""
+        env = os.environ.copy()
+        env['PATH'] = f"{self.fake.fake_bin}:{env['PATH']}"
+        env['RECORDING_FAKE_DOCKER_LOG'] = self.fake.recorded_log
+        env['DRY_RUN'] = '1'  # Plan only
+        
+        if env_overrides:
+            env.update(env_overrides)
+        
+        # Explicitly unset COMPOSE_FILE if not in overrides and 'unset' case
+        if 'COMPOSE_FILE' not in (env_overrides or {}):
+            env.pop('COMPOSE_FILE', None)
+        
+        cmd = ['bash', self.fixture_recreate] + (args or [])
+        try:
+            subprocess.run(cmd, env=env, cwd=self.root, capture_output=True, 
+                          timeout=10, check=False)
+        except subprocess.TimeoutExpired:
+            self.fail("recreate script exceeded 10s timeout")
+        
+        return self.fake.get_recorded_calls()
+    
+    def test_selected_server_compose_threads_flags(self):
+        """Case 1: COMPOSE_FILE=docker-compose.server.yml threads -f/-p through db-up and rathena-up."""
+        # Explicit override file changed condition to force db-up
+        with open(os.path.join(self.root, "guard.sh")) as f:
+            guard_code = f.read()
+        # Inject svc_changed to report db changed, triggering db-up
+        guard_with_changed = guard_code.replace(
+            "svc_changed() {",
+            "svc_changed() { if [ \"$1\" = db ]; then echo 'db config changed'; return 0; fi; "
+        )
+        with open(os.path.join(self.root, "guard.sh"), 'w') as f:
+            f.write(guard_with_changed)
+        
+        calls = self._run_recreate_case(
+            env_overrides={'COMPOSE_FILE': 'docker-compose.server.yml'}
+        )
+        
+        # Find up db call and verify -f/-p
+        db_up = None
+        rathena_up = None
+        for call in calls:
+            argv = call.get('argv', [])
+            if 'up' in argv and 'db' in argv:
+                db_up = argv
+            elif 'up' in argv and 'rathena' in argv:
+                rathena_up = argv
+        
+        # Verify db-up has -f and -p
+        self.assertIsNotNone(db_up, "db-up call not recorded")
+        self.assertIn('-f', db_up, f"db-up missing -f token: {db_up}")
+        f_idx = db_up.index('-f')
+        self.assertEqual(db_up[f_idx + 1], 'docker-compose.server.yml',
+                        f"db-up -f not followed by docker-compose.server.yml: {db_up}")
+        self.assertIn('-p', db_up, f"db-up missing -p token: {db_up}")
+        p_idx = db_up.index('-p')
+        self.assertEqual(db_up[p_idx + 1], 'ro-server',
+                        f"db-up -p not followed by ro-server: {db_up}")
+        
+        # Verify rathena-up has -f and -p (this is the TARGET call)
+        self.assertIsNotNone(rathena_up, "rathena-up call not recorded")
+        self.assertIn('-f', rathena_up, f"rathena-up missing -f token: {rathena_up}")
+        f_idx = rathena_up.index('-f')
+        self.assertEqual(rathena_up[f_idx + 1], 'docker-compose.server.yml',
+                        f"rathena-up -f not followed by docker-compose.server.yml: {rathena_up}")
+        self.assertIn('-p', rathena_up, f"rathena-up missing -p token: {rathena_up}")
+        p_idx = rathena_up.index('-p')
+        self.assertEqual(rathena_up[p_idx + 1], 'ro-server',
+                        f"rathena-up -p not followed by ro-server: {rathena_up}")
+    
+    def test_compose_file_unset_uses_legacy_no_flags(self):
+        """Case 2: COMPOSE_FILE unset (legacy) => bare docker compose, NO -f/-p on db-up/rathena-up.
+        
+        Config lookups and follower invocation may still use -f/-p per their own code.
+        Only the bare build/db/rathena/ps calls should have NO flags when unset.
+        """
+        # Force db-up via svc_changed
+        with open(os.path.join(self.root, "guard.sh")) as f:
+            guard_code = f.read()
+        guard_with_changed = guard_code.replace(
+            "svc_changed() {",
+            "svc_changed() { if [ \"$1\" = db ]; then echo 'db config changed'; return 0; fi; "
+        )
+        with open(os.path.join(self.root, "guard.sh"), 'w') as f:
+            f.write(guard_with_changed)
+        
+        # Explicitly unset COMPOSE_FILE; don't pass it in env_overrides
+        calls = self._run_recreate_case(env_overrides={})
+        
+        # Find db-up and rathena-up; verify NO -f or -p
+        db_up = None
+        rathena_up = None
+        for call in calls:
+            argv = call.get('argv', [])
+            if 'up' in argv and 'db' in argv:
+                db_up = argv
+            elif 'up' in argv and 'rathena' in argv:
+                rathena_up = argv
+        
+        # db-up should NOT have -f or -p (legacy absence preserved)
+        self.assertIsNotNone(db_up, "db-up call not recorded")
+        self.assertNotIn('-f', db_up,
+                        f"LEGACY CASE: db-up should NOT have -f flag: {db_up}")
+        self.assertNotIn('-p', db_up,
+                        f"LEGACY CASE: db-up should NOT have -p flag: {db_up}")
+        
+        # rathena-up should NOT have -f or -p (legacy absence preserved)
+        self.assertIsNotNone(rathena_up, "rathena-up call not recorded")
+        self.assertNotIn('-f', rathena_up,
+                        f"LEGACY CASE: rathena-up should NOT have -f flag: {rathena_up}")
+        self.assertNotIn('-p', rathena_up,
+                        f"LEGACY CASE: rathena-up should NOT have -p flag: {rathena_up}")
+    
+    def test_selected_server_with_build(self):
+        """Case 3: COMPOSE_FILE=docker-compose.server.yml with --build.
+        
+        Verifies build-rathena, db-up, and rathena-up all receive -f/-p.
+        """
+        # Force db-up via svc_changed
+        with open(os.path.join(self.root, "guard.sh")) as f:
+            guard_code = f.read()
+        guard_with_changed = guard_code.replace(
+            "svc_changed() {",
+            "svc_changed() { if [ \"$1\" = db ]; then echo 'db config changed'; return 0; fi; "
+        )
+        with open(os.path.join(self.root, "guard.sh"), 'w') as f:
+            f.write(guard_with_changed)
+        
+        calls = self._run_recreate_case(
+            env_overrides={'COMPOSE_FILE': 'docker-compose.server.yml'},
+            args=['--build']
+        )
+        
+        # Find build, db-up, rathena-up calls
+        build_call = None
+        db_up = None
+        rathena_up = None
+        for call in calls:
+            argv = call.get('argv', [])
+            if 'build' in argv and 'rathena' in argv:
+                build_call = argv
+            elif 'up' in argv and 'db' in argv:
+                db_up = argv
+            elif 'up' in argv and 'rathena' in argv:
+                rathena_up = argv
+        
+        # Verify build-rathena has -f and -p
+        self.assertIsNotNone(build_call, "build-rathena call not recorded")
+        self.assertIn('-f', build_call, f"build-rathena missing -f token: {build_call}")
+        f_idx = build_call.index('-f')
+        self.assertEqual(build_call[f_idx + 1], 'docker-compose.server.yml',
+                        f"build-rathena -f not followed by docker-compose.server.yml: {build_call}")
+        self.assertIn('-p', build_call, f"build-rathena missing -p token: {build_call}")
+        p_idx = build_call.index('-p')
+        self.assertEqual(build_call[p_idx + 1], 'ro-server',
+                        f"build-rathena -p not followed by ro-server: {build_call}")
+        
+        # Verify db-up has -f and -p
+        self.assertIsNotNone(db_up, "db-up call not recorded")
+        self.assertIn('-f', db_up, f"db-up missing -f token: {db_up}")
+        f_idx = db_up.index('-f')
+        self.assertEqual(db_up[f_idx + 1], 'docker-compose.server.yml',
+                        f"db-up -f not followed by docker-compose.server.yml: {db_up}")
+        
+        # Verify rathena-up has -f and -p
+        self.assertIsNotNone(rathena_up, "rathena-up call not recorded")
+        self.assertIn('-f', rathena_up, f"rathena-up missing -f token: {rathena_up}")
+        f_idx = rathena_up.index('-f')
+        self.assertEqual(rathena_up[f_idx + 1], 'docker-compose.server.yml',
+                        f"rathena-up -f not followed by docker-compose.server.yml: {rathena_up}")
 
 
 class TestStaticRules(unittest.TestCase):
