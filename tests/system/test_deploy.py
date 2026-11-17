@@ -1099,44 +1099,45 @@ docker unknown-subcommand 2>&1
         Regression test: when COMPOSE_FILE=docker-compose.server.yml is set,
         rathena up call must include -f and -p flags (not bare docker compose).
         
-        This test is WRITTEN but NOT RUN; fixture containment and path safety
-        verification required before execution.
+        This test is WRITTEN but NOT RUN; fixture safety verification required before execution.
         
-        Uses RecordingFakeDocker to record actual docker compose argv.
+        Uses RecordingFakeDocker to record actual docker compose argv with:
+        - Sentinel 97 for fake rathena-up (stops before post-recreate/Ayla checks)
+        - Local stub deploylog.py for exact CLI contracts
+        - Path remaps: /mnt/g/RO/legion → {root}, /tmp PIN → {root}/pin.yml
+        - Only fixed root/PIN remaps in copied scripts; no controlflow comment substitutions
         """
-        # Copy rathena_recreate.sh and guard.sh to fixture root; remap absolute paths
+        # Create fixture structure: tools/deploy/ and tools/system/ directories
+        fixture_tools = os.path.join(self.root, "tools")
+        fixture_deploy = os.path.join(fixture_tools, "deploy")
+        fixture_system = os.path.join(fixture_tools, "system")
+        os.makedirs(fixture_deploy, exist_ok=True)
+        os.makedirs(fixture_system, exist_ok=True)
+        
+        # Copy and remap scripts
         recreate_src = os.path.join(REPO, "tools", "deploy", "rathena_recreate.sh")
         guard_src = os.path.join(REPO, "tools", "deploy", "guard.sh")
         
-        # Create fixture copies with path remapping
         with open(recreate_src) as f:
             recreate_code = f.read()
         with open(guard_src) as f:
             guard_code = f.read()
         
-        # Remap /mnt/g/RO/legion -> self.root
+        # Apply ONLY fixed path remaps (no controlflow/comment substitutions)
         recreate_code = recreate_code.replace('/mnt/g/RO/legion', self.root)
         guard_code = guard_code.replace('/mnt/g/RO/legion', self.root)
         
-        # Remap /tmp paths for PIN
         pin_path = os.path.join(self.root, "pin.yml")
         recreate_code = recreate_code.replace('/tmp/rathena_recreate_pin.yml', pin_path)
         guard_code = guard_code.replace('/tmp/rathena_recreate_pin.yml', pin_path)
         
-        # Create minimal PIN file (image override)
+        # Create minimal PIN file
         with open(pin_path, 'w') as f:
             f.write('# Fake PIN for testing\n')
         
-        # Stub deploylog.py and helper invocations
-        recreate_code = recreate_code.replace(
-            '"$PYTHON" "$SYSDIR/deploylog.py"',
-            '# STUBBED: deploylog.py (testing only)'
-        )
-        
-        # Write fixture scripts
-        recreate_fixture = os.path.join(self.root, "tools", "deploy", "rathena_recreate.sh")
-        guard_fixture = os.path.join(self.root, "tools", "deploy", "guard.sh")
-        os.makedirs(os.path.dirname(recreate_fixture), exist_ok=True)
+        # Write remapped scripts
+        recreate_fixture = os.path.join(fixture_deploy, "rathena_recreate.sh")
+        guard_fixture = os.path.join(fixture_deploy, "guard.sh")
         
         with open(recreate_fixture, 'w') as f:
             f.write(recreate_code)
@@ -1146,42 +1147,113 @@ docker unknown-subcommand 2>&1
             f.write(guard_code)
         os.chmod(guard_fixture, 0o755)
         
+        # Create local deploylog.py stub with exact CLI contract
+        deploylog_stub = os.path.join(fixture_system, "deploylog.py")
+        with open(deploylog_stub, 'w') as f:
+            f.write("""#!/usr/bin/env python3
+import sys
+# Stub deploylog.py: accepts rathena-record and --override args, returns 0
+if __name__ == '__main__':
+    # Exact expected calls: rathena-record [--override <value>]
+    if len(sys.argv) >= 2 and sys.argv[1] == 'rathena-record':
+        sys.exit(0)
+    sys.stderr.write(f'Error: unrecognized deploylog command: {sys.argv[1] if len(sys.argv) > 1 else "none"}\\n')
+    sys.exit(1)
+""")
+        os.chmod(deploylog_stub, 0o755)
+        
         # Create docker-compose.server.yml in fixture root
         compose_server = os.path.join(self.root, "docker-compose.server.yml")
         with open(compose_server, 'w') as f:
             f.write(self.compose_server)
         
-        # Stub fake docker to handle rathena-up: record call, return sentinel 97
-        # Record format: docker compose up [flags] --no-deps --force-recreate rathena
-        # Expected: should have -f docker-compose.server.yml -p ro-server
-        script = """
-set -e
+        # Update fake docker to handle rathena-up with sentinel 97 before generic up
+        # Must be done by patching the recorded docker function in self.harness
+        old_recorded_docker = self.harness.recorded_docker
+        
+        def recorded_docker_with_sentinel(cmd_list):
+            """Fake docker: rathena-up returns 97 (sentinel), unknown fails."""
+            if 'up' in cmd_list and 'rathena' in cmd_list:
+                # This is the rathena-up call we're testing
+                # Record it and return sentinel
+                self.harness.docker_calls.append(cmd_list)
+                return 97  # Sentinel: stop before post-recreate
+            # Let generic up/other commands through to old handler
+            return old_recorded_docker(cmd_list)
+        
+        self.harness.recorded_docker = recorded_docker_with_sentinel
+        
+        # Build invocation script with correct env
+        invocation = """
 export PATH="{fake_path}"
-export COMPOSE_FILE="{compose_file}"
+export COMPOSE_FILE="docker-compose.server.yml"
 export RECORDING_FAKE_DOCKER_LOG="{log}"
+export PYTHON="python3"
 export DRY_RUN=0
 export RATHENA_HOUR_OVERRIDE=test-override
 
 cd "{root}"
-bash "{recreate_script}" --yes 2>&1 | head -20
+bash "{recreate_script}" --yes 2>&1
 """.format(
             fake_path=self.fake_path,
-            compose_file=os.path.basename(compose_server),  # docker-compose.server.yml
             log=self.harness.recorded_log,
             root=self.root,
             recreate_script=recreate_fixture
         )
         
-        script_path = os.path.join(self.root, "test_selected_compose.sh")
-        with open(script_path, 'w') as f:
-            f.write(script)
+        # Write and execute invocation script
+        invocation_path = os.path.join(self.root, "run_recreate.sh")
+        with open(invocation_path, 'w') as f:
+            f.write(invocation)
+        os.chmod(invocation_path, 0o755)
         
-        # Test body is in comments below; actual execution requires Sonnet preflight
-        self.skipTest(
-            "STAGE B PREP: Actual-script regression test WRITTEN but NOT RUN. "
-            "Requires fixture safety verification and sentinel response in fake docker. "
-            f"Test script: {script_path}, log: {self.harness.recorded_log}"
-        )
+        # Execute rathena_recreate.sh with fake docker
+        try:
+            proc = subprocess.run(
+                ['bash', invocation_path],
+                cwd=self.root,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            rc = proc.returncode
+            output = proc.stdout + proc.stderr
+        except subprocess.TimeoutExpired:
+            self.fail("test_selected_compose_file_rathena_up_bare_flags: subprocess timeout")
+        
+        # Assertions
+        self.assertEqual(rc, 97, 
+                        f"Expected rc=97 (rathena-up sentinel), got rc={rc}\nOutput:\n{output}")
+        
+        # Check docker record
+        self.assertGreater(len(self.harness.docker_calls), 0,
+                          "No docker calls recorded; fixture may have failed")
+        
+        # Find rathena up call
+        rathena_up_call = None
+        unhandled_calls = []
+        for call in self.harness.docker_calls:
+            if 'up' in call and 'rathena' in call:
+                rathena_up_call = call
+            if 'UNHANDLED' in ' '.join(str(c) for c in call):
+                unhandled_calls.append(call)
+        
+        self.assertIsNotNone(rathena_up_call,
+                           f"rathena up call not found in docker record: {self.harness.docker_calls}")
+        
+        self.assertEqual(len(unhandled_calls), 0,
+                        f"Unexpected UNHANDLED calls: {unhandled_calls}")
+        
+        # Assert desired flags on rathena-up call
+        rathena_up_str = ' '.join(str(arg) for arg in rathena_up_call)
+        self.assertIn('-f', rathena_up_str,
+                     f"rathena up call missing -f flag: {rathena_up_str}")
+        self.assertIn('docker-compose.server.yml', rathena_up_str,
+                     f"rathena up call missing docker-compose.server.yml: {rathena_up_str}")
+        self.assertIn('-p', rathena_up_str,
+                     f"rathena up call missing -p flag: {rathena_up_str}")
+        self.assertIn('ro-server', rathena_up_str,
+                     f"rathena up call missing ro-server project: {rathena_up_str}")
     
     
     def test_bare_compose_calls_missing_flags_stage_a(self):
