@@ -326,6 +326,7 @@ func simProgressNoviceSkillPoints() int {
 	return total
 }
 
+// Level and point totals are synthetic observations; pointTotal is read from the pinned statpoint fixture, not XP simulation.
 func simProgressApplyStatWindow(actor *simProgressActor, level, pointTotal int) (int, bool) {
 	actor.BaseLevel = level
 	actor.StatPointsLeft = pointTotal - actor.StatSpent
@@ -430,7 +431,7 @@ func simProgressRun(t *testing.T, cohort *simProgressCohort, statPoints map[int]
 		cohort.NextWindow = i + 1
 	}
 	if stopAt >= 99 {
-		window := simProgressWindow{BaseLevel: 99, JobLevel: 1, Actors: len(cohort.Actors)}
+		window := simProgressWindow{BaseLevel: 99, JobLevel: 50, Actors: len(cohort.Actors)}
 		classes := map[int]*simProgressClassWindow{}
 		for i := range cohort.Actors {
 			actor := &cohort.Actors[i]
