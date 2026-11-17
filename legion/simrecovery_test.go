@@ -60,6 +60,7 @@ func simRecoveryTarget(action []byte) (uint32, bool) {
 
 func TestSimPartyRecoveryStuckMemberFarmsBeforeBoundedRetry(t *testing.T) {
 	leader := simRoleBot("RecoveryHunter", "hunter_blitz", simRoleHunterAID, 100, 100)
+	leader.Speed = 150
 	tank := simRoleBot("RecoveryKnight", "knight", simRoleTankAID, 102, 100)
 	stuck := simRoleBot("RecoveryWizard", "wizard_frost", simRoleMageAID, 130, 100)
 	priest := simRoleBot("RecoveryPriest", "priest_me", simRolePriestAID, 101, 100)
@@ -69,6 +70,9 @@ func TestSimPartyRecoveryStuckMemberFarmsBeforeBoundedRetry(t *testing.T) {
 		simRolePublish(member, 1)
 	}
 	gm := simRecoveryMap(t)
+	if eta, ok := collectionRescueETA(gm, leader.X, leader.Y, stuck.X, stuck.Y, leader.Speed); !ok || eta <= 0 {
+		t.Fatalf("the accepted recovery scene needs a real path and ETA, got %s/%t", eta, ok)
+	}
 	peer := simRoleCapture(t, leader)
 	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
 	leader.buffAt["leadsay"] = now.Add(time.Hour)
@@ -162,8 +166,43 @@ func TestSimPartyRecoveryStuckMemberFarmsBeforeBoundedRetry(t *testing.T) {
 	}
 }
 
+func TestSimPartyRecoveryWithoutETAKeepsExistingSelectionBehavior(t *testing.T) {
+	leader := simRoleBot("RecoveryHunterNoETA", "hunter_blitz", simRoleHunterAID, 100, 100)
+	tank := simRoleBot("RecoveryKnightNoETA", "knight", simRoleTankAID, 102, 100)
+	stuck := simRoleBot("RecoveryWizardNoETA", "wizard_frost", simRoleMageAID, 130, 100)
+	priest := simRoleBot("RecoveryPriestNoETA", "priest_me", simRolePriestAID, 101, 100)
+	stuck.BaseLv, stuck.P.BaseLevel = 40, 40
+	stickParty(t, leader, tank, stuck, priest)
+	for _, member := range []*Bot{leader, tank, stuck, priest} {
+		simRolePublish(member, 1)
+	}
+	gm := simRecoveryMap(t)
+	if eta, ok := collectionRescueETA(gm, leader.X, leader.Y, stuck.X, stuck.Y, leader.Speed); ok {
+		t.Fatalf("zero-speed control unexpectedly has a justified ETA: %s", eta)
+	}
+
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	leader.mu.Lock()
+	leader.hunt(gm, true, now)
+	initialCollect := leader.collectName
+	leader.mu.Unlock()
+	if initialCollect != stuck.charName() {
+		t.Fatalf("initial collect = %q, want %q", initialCollect, stuck.charName())
+	}
+
+	expiry := now.Add(time.Duration(tune().LeaderCollectSec)*time.Second + time.Second)
+	leader.mu.Lock()
+	leader.hunt(gm, true, expiry)
+	collect := leader.collectName
+	leader.mu.Unlock()
+	if collect != stuck.charName() {
+		t.Fatalf("without a justified ETA, selection changed to %q; want existing same-member retry %q", collect, stuck.charName())
+	}
+}
+
 func TestSimPartyRecoveryStallSelectsAnotherEligibleMember(t *testing.T) {
 	leader := simRoleBot("RecoveryHunter", "hunter_blitz", simRoleHunterAID, 100, 100)
+	leader.Speed = 150
 	tank := simRoleBot("RecoveryKnight", "knight", simRoleTankAID, 102, 100)
 	stuck := simRoleBot("RecoveryWizard", "wizard_frost", simRoleMageAID, 130, 100)
 	priest := simRoleBot("RecoveryPriest", "priest_me", simRolePriestAID, 101, 100)

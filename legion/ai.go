@@ -1860,7 +1860,10 @@ func (b *Bot) hunt(gm *GameMap, moving bool, now time.Time) {
 			}
 			if found {
 				b.collectName, b.collectAt = tgt.Name, now
-				b.collectRecovery[tgt.Name] = beginCollectRecovery(b.collectRecovery[tgt.Name], lx, ly, tgt, now, rescueRisk[tgt.Name])
+				mx, my := livePosOf(tgt)
+				eta, etaAvailable := collectionRescueETA(gm, lx, ly, mx, my, b.Speed)
+				b.collectRecovery[tgt.Name] = beginCollectRecovery(b.collectRecovery[tgt.Name], tgt, now,
+					rescueRisk[tgt.Name], eta, etaAvailable)
 				if now.After(b.buffAt["leadsay"]) { // at most one call-out every 2 minutes
 					b.buffAt["leadsay"] = now.Add(2 * time.Minute)
 					typing := b.P.Typing

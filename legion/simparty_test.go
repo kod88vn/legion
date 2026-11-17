@@ -454,15 +454,15 @@ func (w *simWorld) observeCollectionRecovery(m *simAgent, committed bool) (colle
 		w.recovery = map[string]collectRecoveryState{}
 	}
 	member := w.pub(m)
-	state, decision := classifyCollectRecovery(w.recovery[m.name], simMap, w.lead.x, w.lead.y, member,
-		w.now, 0, false, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
-	if state.hpCount >= 2 && state.hpPoints[state.hpCount-1].hp < state.hpPoints[0].hp {
-		eta, ok := simRescueETA(w.gm, w.lead.x, w.lead.y, m.x, m.y)
-		if ok {
-			state, decision = classifyCollectRecovery(state, simMap, w.lead.x, w.lead.y, member,
-				w.now, eta, true, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
-		}
+	previous := w.recovery[m.name]
+	needsETA := committed || !previous.retryAt.IsZero() ||
+		previous.hpCount >= 2 && previous.hpPoints[previous.hpCount-1].hp < previous.hpPoints[0].hp
+	eta, etaAvailable := time.Duration(0), false
+	if needsETA {
+		eta, etaAvailable = simRescueETA(w.gm, w.lead.x, w.lead.y, m.x, m.y)
 	}
+	state, decision := classifyCollectRecovery(previous, simMap, w.lead.x, w.lead.y, member,
+		w.now, eta, etaAvailable, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
 	if decision.reset {
 		delete(w.recovery, m.name)
 	} else {
@@ -692,7 +692,9 @@ func (w *simWorld) leaderThink() {
 		if tgt != nil {
 			w.collectName, w.collectAt = tgt.name, w.now
 			if w.policy == policyForecast {
-				w.recovery[tgt.name] = beginCollectRecovery(w.recovery[tgt.name], lx, ly, w.pub(tgt), w.now, forecastRescue)
+				eta, etaAvailable := simRescueETA(w.gm, lx, ly, tgt.x, tgt.y)
+				w.recovery[tgt.name] = beginCollectRecovery(w.recovery[tgt.name], w.pub(tgt), w.now,
+					forecastRescue, eta, etaAvailable)
 			}
 		}
 	}

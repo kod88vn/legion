@@ -78,16 +78,53 @@ func TestCollectRecoveryStaleHealthTrendKeepsRetryBound(t *testing.T) {
 	}
 }
 
+func TestCollectRecoveryDoesNotApplyTimerRetryWithoutReachableETA(t *testing.T) {
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 1}
+	window := 90 * time.Second
+	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
+		now, 0, false, window, false)
+	state = beginCollectRecovery(state, member, now, false, 0, false)
+
+	expiry := now.Add(window + time.Second)
+	state, expired := classifyCollectRecovery(state, member.Map, 100, 100, member,
+		expiry, 0, false, window, true)
+	if expired.keep || expired.stalled || !state.retryAt.IsZero() {
+		t.Fatalf("unreachable member received timer-only stall suppression: decision=%+v retryAt=%s", expired, state.retryAt)
+	}
+
+	_, candidate := classifyCollectRecovery(state, member.Map, 100, 100, member,
+		expiry, 0, false, window, false)
+	if !candidate.eligible {
+		t.Fatalf("unreachable member did not retain existing retry behavior: decision=%+v", candidate)
+	}
+}
+
+func TestCollectRecoveryUsesRouteETAForDetourProgress(t *testing.T) {
+	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
+	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 1}
+	window := 90 * time.Second
+	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
+		now, time.Minute, true, window, false)
+	state = beginCollectRecovery(state, member, now, false, time.Minute, true)
+
+	state, progress := classifyCollectRecovery(state, member.Map, 99, 100, member,
+		now.Add(30*time.Second), 50*time.Second, true, window, true)
+	if !progress.progress || !progress.keep || state.bestETA != 50*time.Second {
+		t.Fatalf("shorter route ETA did not preserve collection progress: decision=%+v state=%+v", progress, state)
+	}
+}
+
 func TestCollectRecoveryContactWaitEndsOnMovementOrRetryDeadline(t *testing.T) {
 	now := time.Date(2026, 11, 17, 5, 0, 0, 0, time.UTC)
 	member := pubState{Name: "Wizard", Map: "pay_fild04", X: 130, Y: 100, LX: 130, LY: 100, Online: true, HPFrac: 1}
 	window := 90 * time.Second
 	state, _ := classifyCollectRecovery(collectRecoveryState{}, member.Map, 100, 100, member,
 		now, 0, false, window, false)
-	state = beginCollectRecovery(state, 114, 100, member, now, false)
+	state = beginCollectRecovery(state, member, now, false, 0, false)
 
 	state, contact := classifyCollectRecovery(state, member.Map, 114, 100, member,
-		now.Add(time.Second), 0, false, window, true)
+		now.Add(time.Second), 0, true, window, true)
 	retryAt := now.Add(time.Second + window)
 	if !contact.contact || contact.keep || !state.retryAt.Equal(retryAt) {
 		t.Fatalf("contact did not start a bounded wait: decision=%+v retryAt=%s", contact, state.retryAt)
@@ -95,21 +132,21 @@ func TestCollectRecoveryContactWaitEndsOnMovementOrRetryDeadline(t *testing.T) {
 	contactState := state
 
 	state, waiting := classifyCollectRecovery(state, member.Map, 115, 100, member,
-		now.Add(2*time.Second), 0, false, window, false)
-	if !waiting.progress || waiting.eligible {
-		t.Fatalf("leader progress bypassed the stationary contact wait: decision=%+v", waiting)
+		now.Add(2*time.Second), 0, true, window, false)
+	if waiting.eligible {
+		t.Fatalf("stationary contact wait ended before movement or deadline: decision=%+v", waiting)
 	}
 
 	moved := member
 	moved.X, moved.LX = member.X+1, member.LX+1
 	state, movement := classifyCollectRecovery(state, member.Map, 115, 100, moved,
-		now.Add(3*time.Second), 0, false, window, false)
+		now.Add(3*time.Second), 0, true, window, false)
 	if !movement.eligible || !state.retryAt.IsZero() {
 		t.Fatalf("member movement did not release the contact wait: decision=%+v retryAt=%s", movement, state.retryAt)
 	}
 
 	if _, deadline := classifyCollectRecovery(contactState, member.Map, 114, 100, member,
-		retryAt, 0, false, window, false); !deadline.eligible {
+		retryAt, 0, true, window, false); !deadline.eligible {
 		t.Fatal("legitimate retry remained blocked after the bounded wait")
 	}
 }

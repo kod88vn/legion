@@ -76,8 +76,8 @@ type collectRecoveryHPPoint struct {
 
 type collectRecoveryState struct {
 	name, mapName  string
-	bestDistance   int
-	hasDistance    bool
+	bestETA        time.Duration
+	hasETA         bool
 	progressAt     time.Time
 	retryAt        time.Time
 	contactAt      time.Time
@@ -138,8 +138,7 @@ func classifyCollectRecovery(previous collectRecoveryState, leadMap string, lx, 
 	}
 	if previous.name == "" {
 		previous.name, previous.mapName = member.Name, member.Map
-		previous.bestDistance = dist(lx, ly, sx, sy)
-		previous.hasDistance, previous.progressAt = true, now
+		previous.progressAt = now
 		resetCollectRecoveryHP(&previous, member.HPFrac, now)
 	}
 	if !previous.contactAt.IsZero() && (sx != previous.contactX || sy != previous.contactY) {
@@ -148,11 +147,9 @@ func classifyCollectRecovery(previous collectRecoveryState, leadMap string, lx, 
 
 	d := collectRecoveryDecision{}
 	distance := dist(lx, ly, sx, sy)
-	if !previous.hasDistance {
-		previous.bestDistance, previous.hasDistance = distance, true
+	if etaAvailable && eta >= 0 && (!previous.hasETA || eta < previous.bestETA) {
+		previous.bestETA, previous.hasETA = eta, true
 		previous.progressAt = now
-	} else if distance < previous.bestDistance {
-		previous.bestDistance, previous.progressAt = distance, now
 		if previous.contactAt.IsZero() {
 			previous.retryAt = time.Time{}
 		}
@@ -192,27 +189,35 @@ func classifyCollectRecovery(previous collectRecoveryState, leadMap string, lx, 
 		}
 		if distance <= collectStopCells() {
 			previous.contactAt, previous.contactX, previous.contactY = now, sx, sy
-			previous.retryAt = now.Add(collectWindow)
+			if etaAvailable {
+				previous.retryAt = now.Add(collectWindow)
+			}
 			d.contact = true
 			return previous, d
 		}
 		d.keep = collectWindow > 0 && now.Sub(previous.progressAt) < collectWindow
-		if !d.keep {
+		if !d.keep && etaAvailable {
 			previous.retryAt = now.Add(collectWindow)
 			d.stalled = true
 		}
 		return previous, d
 	}
 
+	if !etaAvailable {
+		d.eligible = true
+		return previous, d
+	}
 	retryBlocked := !previous.retryAt.IsZero() && now.Before(previous.retryAt)
 	d.eligible = !retryBlocked || d.progress && previous.contactAt.IsZero() || d.risk && !previous.rescueUsed
 	return previous, d
 }
 
-func beginCollectRecovery(state collectRecoveryState, lx, ly int, member pubState, now time.Time, risk bool) collectRecoveryState {
-	sx, sy := livePosOf(member)
+func beginCollectRecovery(state collectRecoveryState, member pubState, now time.Time, risk bool, eta time.Duration, etaAvailable bool) collectRecoveryState {
 	state.name, state.mapName = member.Name, member.Map
-	state.bestDistance, state.hasDistance = dist(lx, ly, sx, sy), true
+	state.bestETA, state.hasETA = 0, etaAvailable && eta >= 0
+	if state.hasETA {
+		state.bestETA = eta
+	}
 	state.progressAt, state.retryAt = now, time.Time{}
 	state.contactAt, state.contactX, state.contactY = time.Time{}, 0, 0
 	if risk {
@@ -244,16 +249,16 @@ func (b *Bot) observeCollectionRecovery(gm *GameMap, leadMap string, lx, ly int,
 	if b.collectRecovery == nil {
 		b.collectRecovery = map[string]collectRecoveryState{}
 	}
-	state, decision := classifyCollectRecovery(b.collectRecovery[member.Name], leadMap, lx, ly, member,
-		now, 0, false, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
-	if state.hpCount >= 2 && state.hpPoints[state.hpCount-1].hp < state.hpPoints[0].hp {
+	previous := b.collectRecovery[member.Name]
+	needsETA := committed || !previous.retryAt.IsZero() ||
+		previous.hpCount >= 2 && previous.hpPoints[previous.hpCount-1].hp < previous.hpPoints[0].hp
+	eta, etaAvailable := time.Duration(0), false
+	if needsETA {
 		mx, my := livePosOf(member)
-		eta, ok := collectionRescueETA(gm, lx, ly, mx, my, b.Speed)
-		if ok {
-			state, decision = classifyCollectRecovery(state, leadMap, lx, ly, member,
-				now, eta, true, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
-		}
+		eta, etaAvailable = collectionRescueETA(gm, lx, ly, mx, my, b.Speed)
 	}
+	state, decision := classifyCollectRecovery(previous, leadMap, lx, ly, member,
+		now, eta, etaAvailable, time.Duration(tune().LeaderCollectSec)*time.Second, committed)
 	if decision.reset {
 		delete(b.collectRecovery, member.Name)
 	} else {
