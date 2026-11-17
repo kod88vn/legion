@@ -73,5 +73,20 @@ services:
     command: ["run", "-n", "${LEGION_BOTS:-100}", "-max-online", "${LEGION_MAX_ONLINE:-100}", "-schedule"]
     restart: unless-stopped
 
-volumes:
-  dbdata:
+  legion-core:
+    profiles: ["legion"]
+    image: ro-legion:latest
+    container_name: ro-legion-core
+    depends_on:
+      - rathena
+    network_mode: "service:rathena"
+    volumes:
+      - ./legion/data:/data
+      - ./rathena/npc-custom:/rathena/npc/custom-local:ro
+      - ./rathena/npc-custom/scripts_custom.conf:/rathena/npc/scripts_custom.conf:ro
+      - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro
+      - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
+      - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro
+      - ./openkore-ayla/logs:/ayla:ro
+    command: ["run", "-core", "-schedule"]
+    restart: unless-stopped

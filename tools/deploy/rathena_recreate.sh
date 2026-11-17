@@ -7,7 +7,12 @@
 #               add --build to rebuild the ro-rathena image first (rathena/ source or build args changed)
 #               followers keep their RUNNING image (pinned); --use-compose-image if a running image is gone
 #
-# Services with network_mode "service:rathena" (docker-compose.yml): openkore-ayla, openkore, legion-core, legion
+# Environment variables:
+#   COMPOSE_FILE - docker compose manifest to use (default: docker-compose.yml)
+#   RATHENA_WAIT - seconds to wait for rathena map-server startup (default: 240)
+#   AYLA_WAIT - seconds to wait for Ayla to log back in (default: 300)
+#
+# Services with network_mode "service:rathena" (from COMPOSE_FILE): openkore-ayla, openkore, legion-core, legion
 # (+ mastermind, profile "fallback", only if its container exists). When rathena is recreated they keep the dead
 # namespace of the old container (offline, no error), so they are force-recreated right after it, Ayla first.
 # Never sends anything to Ayla's OpenKore (in particular never ai / ai off / ai manual): only container recreates.
@@ -36,7 +41,7 @@ AYLA_WAIT=${AYLA_WAIT:-300}         # s for Ayla back in game
 
 # Followers in recreate order (Ayla first). Taken from the compose file, so a new service:rathena user is not missed.
 followers() {
-  docker compose config --format json | python3 -c '
+  docker compose -f "$COMPOSE_FILE" config --format json | python3 -c '
 import json,sys
 svcs=json.load(sys.stdin)["services"]
 f=[n for n,s in svcs.items() if s.get("network_mode","") == "service:rathena"]

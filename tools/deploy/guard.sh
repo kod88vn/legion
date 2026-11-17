@@ -3,8 +3,10 @@
 # The Legion batch deploy is tools/deploy/deploy.py (PR47, tested); it checks db and rathena itself and never recreates them.
 #
 # DRY_RUN=1  -> run every check, print the recreate commands instead of running them (nothing is changed).
+# COMPOSE_FILE -> docker compose manifest to use (default: docker-compose.yml)
 
 DRY_RUN=${DRY_RUN:-0}
+COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
 
 # ---- rathena gate (tools/system/deploylog.py) -----------------------------------------------------------------------
 GUARD_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -28,12 +30,12 @@ run() {
   "$@"
 }
 
-# Is the service's container out of date vs docker-compose.yml (config hash or image)? Prints the reason.
+# Is the service's container out of date vs docker-compose file (config hash or image)? Prints the reason.
 svc_changed() {
   local svc=$1 cname want have
   cname=$(svc_field "$svc" container_name); [ -n "$cname" ] || cname="ro-$svc"
   if ! docker inspect "$cname" >/dev/null 2>&1; then echo "$svc: container $cname does not exist"; return 0; fi
-  want=$(docker compose config --hash "$svc" 2>/dev/null | awk '{print $2}')
+  want=$(docker compose -f "$COMPOSE_FILE" config --hash "$svc" 2>/dev/null | awk '{print $2}')
   have=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.config-hash"}}' "$cname")
   if [ -z "$want" ]; then echo "$svc: could not compute compose config hash"; return 0; fi
   if [ "$want" != "$have" ]; then echo "$svc: compose config hash changed (running ${have:0:12}, compose ${want:0:12})"; return 0; fi
@@ -55,7 +57,7 @@ svc_image_drift() {
 }
 
 svc_field() {  # svc_field SERVICE KEY -> value of a top-level key of the service in the resolved compose config
-  docker compose config --format json 2>/dev/null \
+  docker compose -f "$COMPOSE_FILE" config --format json 2>/dev/null \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"].get(sys.argv[1],{}).get(sys.argv[2],""))' "$1" "$2" 2>/dev/null || true
 }
 
