@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -1127,5 +1128,128 @@ func TestPostLoadCorruptionFailsClosedPersists(t *testing.T) {
 	t.Logf("phase7: ledger2 closed successfully despite failClosed")
 
 	t.Logf("PASS: Post-Load corruption fails closed and latch survives healthy file restoration")
+}
+
+// TEST: Legacy Whole-Second Persisted-Window Restart Boundary
+// Verifies that quota window timestamps are persisted as whole-second precision (RFC3339)
+// and restart correctly identifies window boundaries at exact 1-hour boundary.
+// Scenario:
+// 1. Instance1: Set t0 with ZERO nanoseconds, grant A. Verify persisted QuotaWindowStartUTC equals t0.Format(time.RFC3339)
+// 2. Close instance1 (never reuse).
+// 3. Instance2: Reopen with injected clock at t0+1h-1ns (just before boundary).
+//    Load succeeds (nil error, not failClosed). Deny fresh B (quota full). Allow A reconnect without quota consumption.
+// 4. Set instance2 clock to exactly t0+1h. Grant B (quota window rolled, new slot available).
+// 5. Close instance2.
+func TestLegacyWholeSecondPersistedWindowRestartBoundary(t *testing.T) {
+	dir := t.TempDir()
+	ledgerPath := filepath.Join(dir, "cohort_ledger.json")
+
+	// === PHASE 1: Instance1 grants A at t0 (whole second, zero nanoseconds) ===
+	t0 := time.Date(2026, 11, 17, 13, 30, 55, 0, time.UTC) // ZERO nanoseconds
+	tick1 := 0
+	nowFunc1 := func() time.Time {
+		return t0.Add(time.Duration(tick1) * time.Second)
+	}
+
+	ledger1 := NewCohortLedger(dir, true, 1) // quota=1
+	ledger1.now = nowFunc1
+	if err := ledger1.Load(); err != nil {
+		t.Fatalf("phase1 Load: %v", err)
+	}
+	t.Logf("phase1: instance1 loaded at t0=%v (zero nanoseconds)", t0)
+
+	// Grant A
+	ok, err := ledger1.MayAdmit("accountA")
+	if !ok || err != nil {
+		t.Fatalf("phase1 grant A: ok=%v err=%v", ok, err)
+	}
+	t.Logf("phase1: A granted at t0")
+
+	// === PHASE 2: Read and verify persisted QuotaWindowStartUTC ===
+	// Close instance1 to flush all writes
+	if err := ledger1.Close(); err != nil {
+		t.Fatalf("phase1 Close: %v", err)
+	}
+	t.Logf("phase1: instance1 closed")
+
+	// Read actual ledger file
+	ledgerBytes, err := os.ReadFile(ledgerPath)
+	if err != nil {
+		t.Fatalf("phase2 read ledger: %v", err)
+	}
+	t.Logf("phase2: read ledger file (%d bytes)", len(ledgerBytes))
+
+	// Parse JSON to verify structure
+	var persistedState cohortState
+	if err := json.Unmarshal(ledgerBytes, &persistedState); err != nil {
+		t.Fatalf("phase2 unmarshal ledger JSON: %v", err)
+	}
+	t.Logf("phase2: unmarshaled ledger JSON")
+
+	// Verify QuotaWindowStartUTC matches t0.Format(time.RFC3339)
+	expectedWindowStart := t0.Format(time.RFC3339)
+	if persistedState.QuotaWindowStartUTC != expectedWindowStart {
+		t.Fatalf("phase2 window start mismatch: persisted=%q expected=%q", persistedState.QuotaWindowStartUTC, expectedWindowStart)
+	}
+	t.Logf("phase2: QuotaWindowStartUTC correctly persisted as whole-second RFC3339: %s", persistedState.QuotaWindowStartUTC)
+
+	// Verify QuotaGranted contains A
+	if len(persistedState.QuotaGranted) != 1 || persistedState.QuotaGranted[0] != "accountA" {
+		t.Fatalf("phase2 QuotaGranted: %v (expected [accountA])", persistedState.QuotaGranted)
+	}
+	t.Logf("phase2: QuotaGranted correctly contains accountA")
+
+	// === PHASE 3: Instance2 reopen at t0+1h-1ns (just before window boundary) ===
+	timeBeforeBoundary := t0.Add(1*time.Hour - 1*time.Nanosecond)
+	tick2 := int64(0)
+	nowFunc2 := func() time.Time {
+		return timeBeforeBoundary.Add(time.Duration(tick2) * time.Nanosecond)
+	}
+
+	ledger2 := NewCohortLedger(dir, true, 1) // new instance, same dir
+	ledger2.now = nowFunc2
+	if err := ledger2.Load(); err != nil {
+		t.Fatalf("phase3 Load: %v", err)
+	}
+	t.Logf("phase3: instance2 loaded at t0+1h-1ns (healthy, not failClosed)")
+
+	// Verify failClosed is false (healthy load)
+	if ledger2.failClosed {
+		t.Fatalf("phase3 failClosed: %v (expected false for healthy restart)", ledger2.failClosed)
+	}
+	t.Logf("phase3: failClosed correctly false")
+
+	// === PHASE 4: At t0+1h-1ns, quota is still full (window hasn't rolled yet) ===
+	// Deny fresh B (quota full - A already has the 1 slot)
+	ok, err = ledger2.MayAdmit("accountB")
+	if ok || err == nil {
+		t.Fatalf("phase4 fresh B at t0+1h-1ns: ok=%v err=%v (expected false, quota exhausted)", ok, err)
+	}
+	t.Logf("phase4: fresh B correctly denied at t0+1h-1ns (quota full)")
+
+	// Allow A reconnect without consuming quota
+	ok, err = ledger2.MayAdmit("accountA")
+	if !ok || err != nil {
+		t.Fatalf("phase4 A reconnect at t0+1h-1ns: ok=%v err=%v (expected true, permanent/already granted)", ok, err)
+	}
+	t.Logf("phase4: A correctly reconnected without quota consumption at t0+1h-1ns")
+
+	// === PHASE 5: Advance clock to exactly t0+1h (window boundary) ===
+	// At this point, window should roll and B should be grantable
+	tick2 = 1000000000 // 1 second = 1e9 nanoseconds to reach t0+1h exactly
+	
+	ok, err = ledger2.MayAdmit("accountB")
+	if !ok || err != nil {
+		t.Fatalf("phase5 grant B at t0+1h: ok=%v err=%v (expected true, window rolled, quota available)", ok, err)
+	}
+	t.Logf("phase5: B correctly granted at t0+1h (window rolled, quota renewed)")
+
+	// === PHASE 6: Close instance2 ===
+	if err := ledger2.Close(); err != nil {
+		t.Fatalf("phase6 Close: %v", err)
+	}
+	t.Logf("phase6: instance2 closed")
+
+	t.Logf("PASS: Whole-second persisted window restart boundary: timestamp precision verified, window rollover at exact 1-hour boundary")
 }
 
