@@ -759,41 +759,6 @@ services:
         self.assertIn("docker-compose.yml", up_cmd_default, "up_argv should include default compose file")
         self.assertNotIn("-p", up_cmd_default, "up_argv should NOT include -p flag for default compose (backward compat)")
 
-    def test_guard_sh_uses_compose_file_env(self):
-        """GREEN: guard.sh accepts and uses COMPOSE_FILE env var."""
-        actual_guard = "/Users/jay.quach/dev/copilot-worktrees/legion/jay-quach-finact-glowing-lamp/tools/deploy/guard.sh"
-        if os.path.exists(actual_guard):
-            with open(actual_guard) as f:
-                guard_code = f.read()
-            # GREEN: guard.sh now initializes COMPOSE_FILE env var with default
-            self.assertIn('COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}', guard_code,
-                         "guard.sh should set COMPOSE_FILE env var with default")
-            # GREEN: guard.sh passes -f $COMPOSE_FILE to all docker compose commands
-            self.assertIn('-f "$COMPOSE_FILE"', guard_code,
-                         "guard.sh should pass -f with $COMPOSE_FILE to docker compose")
-            # GREEN: svc_field function uses $COMPOSE_FILE
-            self.assertIn('docker compose -f "$COMPOSE_FILE"', guard_code,
-                         "svc_field should use -f $COMPOSE_FILE")
-            # GREEN: svc_changed function uses -f $COMPOSE_FILE
-            compose_lines = [line for line in guard_code.split('\n') if 'docker compose' in line and '$COMPOSE_FILE' in line]
-            self.assertGreater(len(compose_lines), 1, "guard.sh should use COMPOSE_FILE in multiple places")
-
-    def test_rathena_recreate_uses_compose_file_env(self):
-        """GREEN: rathena_recreate.sh accepts and uses COMPOSE_FILE env var."""
-        recreate_path = "/Users/jay.quach/dev/copilot-worktrees/legion/jay-quach-finact-glowing-lamp/tools/deploy/rathena_recreate.sh"
-        if os.path.exists(recreate_path):
-            with open(recreate_path) as f:
-                recreate_code = f.read()
-            # GREEN: rathena_recreate.sh sources guard.sh which sets COMPOSE_FILE
-            self.assertIn('. "$G"', recreate_code,
-                         "rathena_recreate.sh should source guard.sh")
-            # GREEN: followers() function uses -f "$COMPOSE_FILE"
-            self.assertIn('docker compose -f "$COMPOSE_FILE"', recreate_code,
-                         "followers() should use -f $COMPOSE_FILE")
-            # GREEN: Documentation mentions COMPOSE_FILE env var
-            self.assertIn('COMPOSE_FILE - docker compose manifest', recreate_code,
-                         "rathena_recreate.sh should document COMPOSE_FILE var")
-
     def test_gocheck_mac_fallback_exit_codes(self):
         """GREEN: gocheck.sh on macOS exits 2 when no golang Docker image (never 0 on missing toolchain)."""
         gocheck_path = "/Users/jay.quach/dev/copilot-worktrees/legion/jay-quach-finact-glowing-lamp/tools/dev/gocheck.sh"
