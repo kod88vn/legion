@@ -162,7 +162,8 @@ services:
       - ./openkore-ayla/logs:/ayla:ro   # Ayla's own stats (statusout.pl -> status.json) for the party dashboard
     # profiles log in/out on their own daily schedules; at most LEGION_MAX_ONLINE are online at once
     # the owner's core test party runs in legion-core (below), so deploying this service never logs it out
-    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}"]
+    # To enable durable hourly cohort admission (100 bots/hour), set DURABLE_COHORT_ENABLED=true in .env
+    command: ["run", "-n", "${LEGION_BOTS:-4000}", "-max-online", "${LEGION_MAX_ONLINE:-1000}", "-schedule", "-stagger", "40ms", "-exclude", "${LEGION_CORE:-Zendancer84,Zen.fox,xXRinfangXx,vex_x18}", "${DURABLE_COHORT_FLAG:-}"]
     restart: unless-stopped
 
   legion-core:

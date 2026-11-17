@@ -1,0 +1,3297 @@
+# This file is a part of rAthena.
+#   Copyright(C) 2024 rAthena Development Team
+#   https://rathena.org - https://github.com/rathena
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+###########################################################################
+# Monster Database
+###########################################################################
+#
+# Monster Settings
+#
+###########################################################################
+# - Id                      Monster ID.
+#   AegisName               Server name to reference the monster in scripts and lookups, should use no spaces.
+#   Name                    Name in English.
+#   JapaneseName            Name in Japanese. (Default: 'Name' value)
+#   Level                   Level. (Default: 1)
+#   Hp                      Total HP. (Default: 1)
+#   Sp                      Total SP. (Default: 1)
+#   BaseExp                 Base experience gained. (Default: 0)
+#   JobExp                  Job experience gained. (Default: 0)
+#   MvpExp                  MVP experience gained. (Default: 0)
+#   Attack                  Minimum attack in pre-renewal and base attack in renewal. (Default: 0)
+#   Attack2                 Maximum attack in pre-renewal and base magic attack in renewal. (Default: 0)
+#   Defense                 Physical defense of the monster, reduces melee and ranged physical attack/skill damage. (Default: 0)
+#   MagicDefense            Magic defense of the monster, reduces magical skill damage. (Default: 0)
+#   Resistance              Physical resistance of the monster, reduces melee and ranged physical attack/skill damage. (Default: 0)
+#   MagicResistance         Magic resistance of the monster, reduces magical skill damage. (Default: 0)
+#   Str                     Strength which affects attack. (Default: 1)
+#   Agi                     Agility which affects flee. (Default: 1)
+#   Vit                     Vitality which affects defense. (Default: 1)
+#   Int                     Intelligence which affects magic attack. (Default: 1)
+#   Dex                     Dexterity which affects hit rate. (Default: 1)
+#   Luk                     Luck which affects perfect dodge/lucky flee/perfect flee/lucky dodge rate. (Default: 1)
+#   AttackRange             Attack range. (Default: 0)
+#   SkillRange              Skill cast range. (Default: 0)
+#   ChaseRange              Chase range. (Default: 0)
+#   Size                    Size. (Default: Small)
+#   Race                    Race. (Default: Formless)
+#   RaceGroups:             List of secondary groups the monster may be part of. (Optional)
+#     <group>: <value>      Group to toggle.
+#   Element                 Element. (Default: Neutral)
+#   ElementLevel            Level of element. (Default: 1)
+#   WalkSpeed               Walk speed. (Default: DEFAULT_WALK_SPEED)
+#   AttackDelay             Attack speed. (Default: 0)
+#   AttackMotion            Attack animation speed. (Default: 0)
+#   ClientAttackMotion      Client attack speed. (Default: AttackMotion)
+#   DamageMotion            Damage animation speed. (Default: 0)
+#   DamageTaken             Rate at which the monster will receive incoming damage. (Default: 100)
+#   GroupId                 Monster group ID. (Default: 0)
+#   Title                   Monster title. (Default: None)
+#   Ai                      Aegis monster type AI behavior. (Default: 06)
+#   Class                   Aegis monster class. (Default: Normal)
+#   Modes:                  List of unique behavior not defined by AI, Class, or Attribute. (Optional)
+#     <mode>: <value>       Mode to toggle.
+#   MvpDrops:               List of possible MVP prize items. Max of MAX_MVP_DROP. (Optional)
+#     - Item                Item name.
+#       Rate                Drop rate of item.
+#       RandomOptionGroup   Random Option Group applied to item on drop. (Default: None)
+#       Index               Index used for overwriting item. (Optional)
+#   Drops:                  List of possible normal item drops. Max of MAX_MOB_DROP. (Optional)
+#     - Item                Item name.
+#       Rate                Drop rate of item.
+#       StealProtected      If the item is shielded from TF_STEAL. (Default: false)
+#       RandomOptionGroup   Random Option Group applied to item on drop. (Default: None)
+#       Index               Index used for overwriting item. (Optional)
+###########################################################################
+
+Header:
+  Type: MOB_DB
+  Version: 5
+
+Body:
+  - Id: 1004
+    AegisName: HORNET
+    Name: Hornet
+    Level: 11
+    Hp: 85
+    BaseExp: 158
+    Defense: 7
+    Race: Insect
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 01
+    Drops:
+      - Item: Main_Gauche_
+        Rate: 20
+#       RandomOptionGroup: 30L
+  - Id: 1005
+    AegisName: FARMILIAR
+    Name: Familiar
+    Level: 24
+    Hp: 330
+    BaseExp: 200
+    Defense: 26
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 01
+    Drops:
+      - Item: Falchion_
+        Rate: 10
+#       RandomOptionGroup: 30L
+  - Id: 1007
+    AegisName: FABRE
+    Name: Fabre
+    Level: 6
+    Hp: 59
+    BaseExp: 158
+    Defense: 24
+    Race: Insect
+    Element: Earth
+    WalkSpeed: 400
+    Ai: 01
+    Drops:
+      - Item: Club_
+        Rate: 80
+#       RandomOptionGroup: 30L
+      - Item: Club
+        Rate: 200
+#       RandomOptionGroup: 30L
+  - Id: 1009
+    AegisName: CONDOR
+    Name: Condor
+    Level: 12
+    Hp: 105
+    BaseExp: 160
+    Defense: 7
+    Race: Brute
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 01
+    Drops:
+      - Item: Bow_
+        Rate: 100
+  - Id: 1016
+    AegisName: ARCHER_SKELETON
+    Name: Archer Skeleton
+    Level: 50
+    Hp: 1458
+    BaseExp: 436
+    Defense: 47
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 300
+    Ai: 05
+    Drops:
+      - Item: Great_Bow_
+        Rate: 18
+  - Id: 1018
+    AegisName: CREAMY
+    Name: Creamy
+    Level: 23
+    Hp: 247
+    BaseExp: 196
+    Defense: 28
+    Race: Insect
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 01
+    Drops:
+      - Item: Silk_Robe_
+        Rate: 20
+#       RandomOptionGroup: 30L
+  - Id: 1019
+    AegisName: PECOPECO
+    Name: Peco Peco
+    Level: 25
+    Hp: 354
+    BaseExp: 204
+    Defense: 48
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 03
+    Drops:
+      - Item: Wand
+        Rate: 50
+#       RandomOptionGroup: 30L
+  - Id: 1023
+    AegisName: ORK_WARRIOR
+    Name: Orc Warrior
+    Level: 44
+    Hp: 1047
+    BaseExp: 361
+    Defense: 52
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Battle_Axe_
+        Rate: 5
+  - Id: 1025
+    AegisName: SNAKE
+    Name: Boa
+    Level: 18
+    Hp: 203
+    BaseExp: 183
+    Defense: 9
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Katana_
+        Rate: 20
+#       RandomOptionGroup: 30L
+  - Id: 1026
+    AegisName: MUNAK
+    Name: Munak
+    Level: 58
+    Hp: 2002
+    BaseExp: 548
+    Defense: 77
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Adventure_Suit
+        Rate: 50
+  - Id: 1028
+    AegisName: SOLDIER_SKELETON
+    Name: Soldier Skeleton
+    Level: 34
+    Hp: 691
+    BaseExp: 284
+    Defense: 53
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 1
+      - Item: Stiletto
+        Rate: 25
+  - Id: 1031
+    AegisName: POPORING
+    Name: Poporing
+    Level: 30
+    Hp: 489
+    BaseExp: 229
+    Defense: 36
+    Race: Plant
+    Element: Poison
+    WalkSpeed: 300
+    Ai: 02
+    Drops:
+      - Item: Main_Gauche
+        Rate: 20
+#       RandomOptionGroup: 30L
+  - Id: 1035
+    AegisName: HUNTER_FLY
+    Name: Hunter Fly
+    Level: 63
+    Hp: 1902
+    BaseExp: 588
+    Defense: 46
+    Race: Insect
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Damascus_
+        Rate: 1
+  - Id: 1037
+    AegisName: SIDE_WINDER
+    Name: Side Winder
+    Level: 70
+    Hp: 2698
+    BaseExp: 677
+    Defense: 101
+    Race: Brute
+    Element: Poison
+    WalkSpeed: 200
+    Ai: 19
+    Drops:
+      - Item: Tsurugi_
+        Rate: 1
+  - Id: 1038
+    AegisName: OSIRIS
+    Name: Osiris
+    Level: 68
+    Hp: 1175840
+    BaseExp: 122760
+    MvpExp: 61380
+    Defense: 172
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 100
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Jamadhar_
+        Rate: 300
+  - Id: 1044
+    AegisName: OBEAUNE
+    Name: Obeaune
+    Level: 53
+    Hp: 1776
+    BaseExp: 446
+    Defense: 48
+    Race: Fish
+    Element: Water
+    WalkSpeed: 200
+    Ai: 19
+    Drops:
+      - Item: Saint_Robe_
+        Rate: 5
+  - Id: 1046
+    AegisName: DOPPELGANGER
+    Name: Doppelganger
+    Level: 77
+    Hp: 380000
+    BaseExp: 172260
+    MvpExp: 86130
+    Defense: 246
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 100
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Plate_Armor_
+        Rate: 125
+  - Id: 1053
+    AegisName: THIEF_BUG_
+    Name: Thief Bug Female
+    Level: 28
+    Hp: 475
+    BaseExp: 219
+    Defense: 28
+    Race: Insect
+    Element: Dark
+    WalkSpeed: 200
+    Ai: 07
+    Drops:
+      - Item: Blade_
+        Rate: 8
+#       RandomOptionGroup: 30L
+  - Id: 1054
+    AegisName: THIEF_BUG__
+    Name: Thief Bug Male
+    Level: 30
+    Hp: 537
+    BaseExp: 229
+    Defense: 40
+    Race: Insect
+    Element: Dark
+    WalkSpeed: 300
+    Ai: 13
+    Drops:
+      - Item: Slayer_
+        Rate: 5
+#       RandomOptionGroup: 30L
+      - Item: Katana
+        Rate: 25
+#       RandomOptionGroup: 30L
+  - Id: 1055
+    AegisName: MUKA
+    Name: Muka
+    Level: 23
+    Hp: 337
+    BaseExp: 205
+    Defense: 28
+    Race: Plant
+    Element: Earth
+    WalkSpeed: 300
+    Ai: 01
+    Drops:
+      - Item: Guisarme
+        Rate: 25
+#       RandomOptionGroup: 30L
+  - Id: 1063
+    AegisName: LUNATIC
+    Name: Lunatic
+    Level: 3
+    Hp: 48
+    BaseExp: 150
+    Defense: 18
+    Race: Brute
+    Element: Neutral
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Sword_
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 1065
+    AegisName: STROUF
+    Name: Strouf
+    Level: 61
+    Hp: 2746
+    BaseExp: 564
+    Defense: 67
+    Race: Fish
+    Element: Water
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 1
+  - Id: 1066
+    AegisName: VADON
+    Name: Vadon
+    Level: 45
+    Hp: 1091
+    BaseExp: 352
+    Defense: 54
+    Race: Fish
+    Element: Water
+    WalkSpeed: 300
+    Ai: 17
+    Drops:
+      - Item: Padded_Armor_
+        Rate: 3
+  - Id: 1069
+    AegisName: SWORD_FISH
+    Name: Swordfish
+    Level: 57
+    Hp: 2203
+    BaseExp: 488
+    Defense: 52
+    Race: Fish
+    Element: Water
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Katana_
+        Rate: 13
+  - Id: 1071
+    AegisName: PIRATE_SKEL
+    Name: Pirate Skeleton
+    Level: 48
+    Hp: 1351
+    BaseExp: 416
+    Defense: 53
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Falchion
+        Rate: 125
+  - Id: 1076
+    AegisName: SKELETON
+    Name: Skeleton
+    Level: 27
+    Hp: 445
+    BaseExp: 235
+    Defense: 21
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 17
+    Drops:
+      - Item: Mace_
+        Rate: 80
+#       RandomOptionGroup: 30L
+  - Id: 1106
+    AegisName: DESERT_WOLF
+    Name: Desert Wolf
+    Level: 103
+    Hp: 10244
+    BaseExp: 1585
+    Defense: 114
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 13
+    Drops:
+      - Item: Katar_
+        Rate: 1
+      - Item: Mink_Coat
+        Rate: 1
+  - Id: 1107
+    AegisName: DESERT_WOLF_B
+    Name: Baby Desert Wolf
+    Level: 14
+    Hp: 113
+    BaseExp: 164
+    Defense: 13
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 300
+    Ai: 01
+    Drops:
+      - Item: Adventurere's_Suit_
+        Rate: 40
+#       RandomOptionGroup: 30L
+      - Item: Cotton_Shirt
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 1110
+    AegisName: DOKEBI
+    Name: Dokebi
+    Level: 68
+    Hp: 2561
+    BaseExp: 651
+    Defense: 85
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 250
+    Ai: 17
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 1
+  - Id: 1112
+    AegisName: DRAKE
+    Name: Drake
+    Level: 91
+    Hp: 804500
+    BaseExp: 309096
+    MvpExp: 154548
+    Defense: 279
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 400
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Saber_
+        Rate: 300
+      - Item: Ring_Pommel_Saber_
+        Rate: 475
+      - Item: Hae_Dong_Gum_
+        Rate: 200
+  - Id: 1113
+    AegisName: DROPS
+    Name: Drops
+    Level: 2
+    Hp: 46
+    BaseExp: 150
+    Defense: 16
+    Race: Plant
+    Element: Fire
+    WalkSpeed: 400
+    Ai: 02
+    Drops:
+      - Item: Rod_
+        Index: 1
+        Rate: 80
+#       RandomOptionGroup: 30L
+  - Id: 1120
+    AegisName: GHOSTRING
+    Name: Ghostring
+    Level: 90
+    Hp: 26700
+    BaseExp: 2368
+    Defense: 88
+    Race: Demon
+    Element: Ghost
+    WalkSpeed: 300
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 25
+  - Id: 1122
+    AegisName: GOBLIN_1
+    Name: Goblin
+    Level: 48
+    Hp: 1107
+    BaseExp: 379
+    Defense: 56
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 100
+    Ai: 21
+    Drops:
+      - Item: Dirk_
+        Rate: 5
+  - Id: 1123
+    AegisName: GOBLIN_2
+    Name: Goblin
+    Level: 44
+    Hp: 943
+    BaseExp: 344
+    Defense: 52
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 150
+    Ai: 19
+    Drops:
+      - Item: Flail_
+        Rate: 5
+  - Id: 1125
+    AegisName: GOBLIN_4
+    Name: Goblin
+    Level: 49
+    Hp: 1277
+    BaseExp: 407
+    Defense: 70
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 13
+    Drops:
+      - Item: Smasher_
+        Rate: 5
+  - Id: 1126
+    AegisName: GOBLIN_5
+    Name: Goblin
+    Level: 56
+    Hp: 1877
+    BaseExp: 477
+    Defense: 64
+    Race: Demihuman
+    Element: Water
+    WalkSpeed: 300
+    Ai: 13
+    Drops:
+      - Item: Wand_
+        Rate: 8
+  - Id: 1130
+    AegisName: JAKK
+    Name: Jakk
+    Level: 63
+    Hp: 1901
+    BaseExp: 588
+    Defense: 90
+    Race: Formless
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 21
+    Drops:
+      - Item: Tights_
+        Rate: 3
+  - Id: 1133
+    AegisName: KOBOLD_1
+    Name: Kobold
+    Level: 107
+    Hp: 13522
+    BaseExp: 1845
+    Defense: 103
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 13
+    Drops:
+      - Item: Gladius_
+        Rate: 1
+  - Id: 1136
+    AegisName: KOBOLD_4
+    Name: Kobold
+    Level: 31
+    Hp: 10
+    BaseExp: 4582500
+    Defense: 1
+    Race: Demihuman
+    Element: Poison
+    WalkSpeed: 200
+    Ai: 13
+    Class: Boss
+    Drops:
+      - Item: Hammer_
+        Rate: 3
+      - Item: Axe
+        Rate: 75
+  - Id: 1137
+    AegisName: KOBOLD_5
+    Name: Kobold
+    Level: 31
+    Hp: 10
+    BaseExp: 4582500
+    Defense: 1
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 300
+    Ai: 13
+    Class: Boss
+    Drops:
+      - Item: Morning_Star_
+        Rate: 3
+      - Item: Club
+        Rate: 75
+  - Id: 1140
+    AegisName: MARDUK
+    Name: Marduk
+    Level: 73
+    Hp: 3099
+    BaseExp: 766
+    Defense: 66
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 300
+    Ai: 19
+    Drops:
+      - Item: Staff_
+        Rate: 5
+  - Id: 1142
+    AegisName: MARINE_SPHERE
+    Name: Marine Sphere
+    Level: 51
+    Hp: 1831
+    BaseExp: 426
+    Defense: 41
+    Race: Plant
+    Element: Water
+    WalkSpeed: 800
+    Ai: 06
+    Drops:
+      - Item: Chain_
+        Rate: 5
+  - Id: 1145
+    AegisName: MARTIN
+    Name: Martin
+    Level: 39
+    Hp: 769
+    BaseExp: 307
+    Defense: 58
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 300
+    Ai: 01
+    Drops:
+      - Item: Jur_
+        Rate: 5
+  - Id: 1149
+    AegisName: MINOROUS
+    Name: Minorous
+    Level: 58
+    Hp: 1729
+    BaseExp: 499
+    Defense: 100
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 19
+    Drops:
+      - Item: Two_Handed_Axe_
+        Rate: 1
+      - Item: Axe
+        Rate: 100
+  - Id: 1152
+    AegisName: ORC_SKELETON
+    Name: Orc Skeleton
+    Level: 53
+    Hp: 1699
+    BaseExp: 490
+    Defense: 82
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Buster_
+        Rate: 5
+  - Id: 1163
+    AegisName: RAYDRIC
+    Name: Raydric
+    Level: 115
+    Hp: 21981
+    BaseExp: 2246
+    Defense: 89
+    Race: Demihuman
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 19
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 1
+      - Item: Two_Hand_Sword_
+        Rate: 1
+  - Id: 1167
+    AegisName: SAVAGE_BABE
+    Name: Savage Babe
+    Level: 14
+    Hp: 127
+    BaseExp: 172
+    Defense: 22
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 400
+    Ai: 01
+    Drops:
+      - Item: Axe_
+        Rate: 50
+#       RandomOptionGroup: 30L
+  - Id: 1170
+    AegisName: SOHEE
+    Name: Sohee
+    Level: 64
+    Hp: 2528
+    BaseExp: 600
+    Defense: 61
+    Race: Demon
+    Element: Water
+    WalkSpeed: 250
+    Ai: 17
+    Drops:
+      - Item: Stiletto_
+        Rate: 3
+  - Id: 1184
+    AegisName: FABRE_
+    Name: Fabre
+    Level: 1
+    Hp: 30
+    BaseExp: 1
+    Race: Insect
+    Element: Earth
+    WalkSpeed: 400
+    Ai: 04
+    Drops:
+      - Item: Club_
+        Rate: 40
+#       RandomOptionGroup: 30L
+      - Item: Club
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 1195
+    AegisName: RIDEWORD
+    Name: Rideword
+    Level: 74
+    Hp: 2855
+    BaseExp: 780
+    Defense: 61
+    Race: Formless
+    Element: Neutral
+    WalkSpeed: 150
+    Ai: 21
+    Drops:
+      - Item: Book_Of_Billows
+        Rate: 2
+  - Id: 1200
+    AegisName: ZHERLTHSH
+    Name: Zealotus
+    Level: 105
+    Hp: 61350
+    BaseExp: 4666
+    Defense: 91
+    Race: Demihuman
+    Element: Neutral
+    WalkSpeed: 200
+    Ai: 13
+    Drops:
+      - Item: Tights_
+        Rate: 4
+  - Id: 1205
+    AegisName: EXECUTIONER
+    Name: Executioner
+    Level: 101
+    Hp: 40200
+    BaseExp: 2916
+    Defense: 97
+    Race: Formless
+    Element: Dark
+    WalkSpeed: 200
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Lapier_
+        Rate: 40
+      - Item: Scimiter_
+        Rate: 30
+  - Id: 1220
+    AegisName: M_DESERT_WOLF
+    Name: Desert Wolf
+    Level: 103
+    Hp: 9447
+    BaseExp: 209
+    Defense: 114
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 21
+    Drops:
+      - Item: Katar_
+        Rate: 3
+      - Item: Mink_Coat
+        Rate: 1
+  - Id: 1229
+    AegisName: META_FABRE
+    Name: Fabre
+    Level: 2
+    Hp: 63
+    BaseExp: 1
+    Race: Insect
+    Element: Earth
+    WalkSpeed: 400
+    Ai: 01
+    Drops:
+      - Item: Club_
+        Rate: 40
+#       RandomOptionGroup: 30L
+      - Item: Club
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 1231
+    AegisName: META_CREAMY
+    Name: Creamy
+    Level: 16
+    Hp: 595
+    BaseExp: 43
+    Race: Insect
+    Element: Wind
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Silk_Robe_
+        Rate: 5
+#       RandomOptionGroup: 30L
+  - Id: 1235
+    AegisName: SMOKING_ORC
+    Name: Smoking Orc
+    Level: 24
+    Hp: 1400
+    BaseExp: 117
+    Defense: 16
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 13
+    Drops:
+      - Item: Battle_Axe_
+        Rate: 5
+#       RandomOptionGroup: 30L
+      - Item: Axe
+        Rate: 50
+#       RandomOptionGroup: 30L
+  - Id: 1257
+    AegisName: INJUSTICE
+    Name: Injustice
+    Level: 95
+    Hp: 8087
+    BaseExp: 1292
+    Defense: 76
+    Race: Undead
+    Element: Dark
+    WalkSpeed: 400
+    Ai: 21
+    Drops:
+      - Item: Padded_Armor_
+        Rate: 3
+      - Item: Plate_Armor
+        Rate: 1
+  - Id: 1258
+    AegisName: GOBLIN_ARCHER
+    Name: Goblin Archer
+    Level: 55
+    Hp: 1487
+    BaseExp: 466
+    Defense: 69
+    Race: Demihuman
+    Element: Poison
+    WalkSpeed: 200
+    Ai: 05
+    Drops:
+      - Item: Composite_Bow_
+        Rate: 13
+  - Id: 1261
+    AegisName: WILD_ROSE
+    Name: Wild Rose
+    Level: 70
+    Hp: 2160
+    BaseExp: 677
+    Defense: 75
+    Race: Brute
+    Element: Wind
+    WalkSpeed: 100
+    Ai: 02
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 1
+  - Id: 1263
+    AegisName: WIND_GHOST
+    Name: Wind Ghost
+    Level: 80
+    Hp: 3631
+    BaseExp: 869
+    Defense: 64
+    Race: Demon
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 21
+    Drops:
+      - Item: Arc_Wand_
+        Rate: 4
+  - Id: 1264
+    AegisName: MERMAN
+    Name: Merman
+    Level: 60
+    Hp: 2324
+    BaseExp: 521
+    Defense: 62
+    Race: Demihuman
+    Element: Water
+    WalkSpeed: 220
+    Ai: 21
+    Drops:
+      - Item: Plate_Armor_
+        Rate: 1
+      - Item: Trident
+        Rate: 2
+  - Id: 1268
+    AegisName: BLOODY_KNIGHT
+    Name: Bloody Knight
+    Level: 116
+    Hp: 68500
+    BaseExp: 4776
+    Defense: 122
+    Race: Formless
+    Element: Dark
+    WalkSpeed: 250
+    Ai: 21
+    Drops:
+      - Item: Plate_Armor_
+        Rate: 3
+  - Id: 1272
+    AegisName: DARK_LORD
+    Name: Dark Lord
+    Level: 96
+    Hp: 1190900
+    BaseExp: 428544
+    MvpExp: 214272
+    Defense: 330
+    Race: Demon
+    Element: Undead
+    WalkSpeed: 100
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Mage_Coat
+        Rate: 150
+  - Id: 1276
+    AegisName: RAYDRIC_ARCHER
+    Name: Raydric Archer
+    Level: 82
+    Hp: 4809
+    BaseExp: 970
+    Defense: 63
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 200
+    Ai: 05
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 1
+      - Item: Arbalest_
+        Rate: 2
+  - Id: 1277
+    AegisName: GREATEST_GENERAL
+    Name: Greatest General
+    Level: 55
+    Hp: 1405
+    BaseExp: 466
+    Defense: 114
+    Race: Formless
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 10
+    Drops:
+      - Item: Club
+        Rate: 50
+  - Id: 1282
+    AegisName: KOBOLD_ARCHER
+    Name: Kobold Archer
+    Level: 108
+    Hp: 11472
+    BaseExp: 1866
+    Defense: 84
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 05
+    Drops:
+      - Item: CrossBow_
+        Rate: 3
+  - Id: 1366
+    AegisName: LAVA_GOLEM
+    Name: Lava Golem
+    Level: 103
+    Hp: 10244
+    BaseExp: 1585
+    Defense: 299
+    Race: Formless
+    Element: Fire
+    WalkSpeed: 400
+    Ai: 19
+    Drops:
+      - Item: Plate_Armor_
+        Rate: 1
+  - Id: 1371
+    AegisName: FAKE_ANGEL
+    Name: False Angel
+    Level: 105
+    Hp: 10431
+    BaseExp: 1625
+    Defense: 106
+    Race: Angel
+    Element: Holy
+    WalkSpeed: 160
+    Ai: 04
+    Drops:
+      - Item: Carrot_Whip
+        Rate: 10
+  - Id: 1377
+    AegisName: ELDER
+    Name: Elder
+    Level: 92
+    Hp: 7780
+    BaseExp: 1238
+    Defense: 72
+    Race: Demihuman
+    Element: Neutral
+    WalkSpeed: 165
+    Ai: 04
+    Drops:
+      - Item: Wizardy_Staff
+        Rate: 1
+  - Id: 1388
+    AegisName: ARCHANGELING
+    Name: Arc Angeling
+    Level: 84
+    Hp: 25100
+    BaseExp: 1789
+    Defense: 92
+    Race: Angel
+    Element: Holy
+    WalkSpeed: 180
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Plate_Armor_
+        Rate: 2
+  - Id: 1389
+    AegisName: DRACULA
+    Name: Dracula
+    Level: 75
+    Hp: 350000
+    BaseExp: 171864
+    MvpExp: 85932
+    Defense: 252
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 145
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Wizardy_Staff
+        Rate: 15
+  - Id: 1392
+    AegisName: ROTAR_ZAIRO
+    Name: Rotar Zairo
+    Level: 48
+    Hp: 1290
+    BaseExp: 379
+    Defense: 57
+    Race: Formless
+    Element: Wind
+    WalkSpeed: 155
+    Ai: 05
+    Drops:
+      - Item: Padded_Armor
+        Rate: 1
+  - Id: 1401
+    AegisName: SHINOBI
+    Name: Shinobi
+    Level: 95
+    Hp: 8087
+    BaseExp: 1292
+    Defense: 49
+    Race: Demihuman
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 21
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 1
+  - Id: 1416
+    AegisName: WICKED_NYMPH
+    Name: Evil Nymph
+    Level: 97
+    Hp: 9832
+    BaseExp: 1330
+    Defense: 46
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 200
+    Ai: 21
+    Drops:
+      - Item: Oriental_Lute
+        Rate: 5
+  - Id: 1499
+    AegisName: WOOTAN_FIGHTER
+    Name: Wootan Fighter
+    Level: 67
+    Hp: 2120
+    BaseExp: 638
+    Defense: 103
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Waghnakh
+        Rate: 2
+  - Id: 1500
+    AegisName: PARASITE
+    Name: Parasite
+    Level: 76
+    Hp: 3155
+    BaseExp: 809
+    Defense: 63
+    Race: Plant
+    Element: Wind
+    WalkSpeed: 400
+    Ai: 10
+    Drops:
+      - Item: Bladed_Whip
+        Rate: 1
+  - Id: 1511
+    AegisName: AMON_RA
+    Name: Amon Ra
+    Level: 69
+    Hp: 1009000
+    BaseExp: 120060
+    MvpExp: 60030
+    Defense: 213
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 170
+    Ai: 10
+    Class: Boss
+    Drops:
+      - Item: Tablet
+        Rate: 5
+  - Id: 1519
+    AegisName: CHUNG_E
+    Name: Green Maiden
+    Level: 49
+    Hp: 23900
+    BaseExp: 1078
+    Defense: 8
+    Race: Demihuman
+    Element: Neutral
+    WalkSpeed: 170
+    Ai: 04
+    Drops:
+      - Item: Hora_
+        Rate: 5
+  - Id: 1584
+    AegisName: TAMRUAN
+    Name: Tamruan
+    Level: 73
+    Hp: 3717
+    BaseExp: 766
+    Defense: 63
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 140
+    Ai: 13
+    Drops:
+      - Item: Bastard_Sword_
+        Rate: 4
+      - Item: Chain_Mail_
+        Rate: 2
+  - Id: 1652
+    AegisName: YGNIZEM
+    Name: Egnigem Cenia
+    Level: 136
+    Hp: 40327
+    BaseExp: 3699
+    Defense: 224
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 145
+    Ai: 04
+    Drops:
+      - Item: Saber_
+        Rate: 10
+      - Item: Plate_Armor_
+        Rate: 1
+  - Id: 1654
+    AegisName: ARMAIA
+    Name: Armeyer Dinze
+    Level: 134
+    Hp: 46878
+    BaseExp: 3182
+    Defense: 199
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 120
+    Ai: 04
+    Drops:
+      - Item: Buster_
+        Rate: 25
+  - Id: 1655
+    AegisName: EREND
+    Name: Errende Ebecee
+    Level: 133
+    Hp: 42764
+    BaseExp: 3159
+    Defense: 106
+    Race: Demihuman
+    Element: Holy
+    WalkSpeed: 130
+    Ai: 04
+    Drops:
+      - Item: Morning_Star_
+        Rate: 25
+  - Id: 1656
+    AegisName: KAVAC
+    Name: Kavach Icarus
+    Level: 135
+    Hp: 43079
+    BaseExp: 3467
+    Defense: 86
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Kakkung_
+        Rate: 1
+  - Id: 1688
+    AegisName: LADY_TANEE
+    Name: Lady Tanee
+    Level: 80
+    Hp: 360000
+    BaseExp: 183744
+    MvpExp: 91872
+    Defense: 241
+    Race: Plant
+    Element: Wind
+    WalkSpeed: 100
+    Ai: 10
+    Class: Boss
+    Drops:
+      - Item: Kakkung_
+        Rate: 3000
+  - Id: 1734
+    AegisName: KIEL_
+    Name: Kiel D-01
+    Level: 125
+    Hp: 2502000
+    BaseExp: 1170000
+    MvpExp: 585000
+    Defense: 314
+    Race: Formless
+    Element: Dark
+    WalkSpeed: 130
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Survival_Rod_
+        Rate: 250
+  - Id: 1754
+    AegisName: SKEGGIOLD
+    Name: Skeggiold
+    Level: 131
+    Hp: 53290
+    BaseExp: 3609
+    Defense: 85
+    Race: Angel
+    Element: Holy
+    WalkSpeed: 250
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Silk_Robe_
+        Index: 5
+        Rate: 50
+  - Id: 1755
+    AegisName: SKEGGIOLD_
+    Name: Skeggiold
+    Level: 131
+    Hp: 52280
+    BaseExp: 3607
+    Defense: 80
+    Race: Angel
+    Element: Holy
+    WalkSpeed: 250
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Silk_Robe_
+        Index: 5
+        Rate: 50
+  - Id: 1817
+    AegisName: EVENT_DETALE
+    Name: Detardeurus
+    Level: 99
+    Hp: 8880000
+    BaseExp: 2430000
+    Defense: 104
+    Race: Angel
+    Element: Ghost
+    WalkSpeed: 100
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Wizardy_Staff
+        Rate: 250
+  - Id: 1854
+    AegisName: E_MUKA
+    Name: Muka
+    Level: 17
+    Hp: 610
+    BaseExp: 123
+    Defense: 8
+    Race: Plant
+    Element: Earth
+    WalkSpeed: 300
+    Ai: 01
+    Drops:
+      - Item: Guisarme
+        Rate: 25
+#       RandomOptionGroup: 30L
+  - Id: 1862
+    AegisName: E_MARTIN
+    Name: Martin
+    Level: 18
+    Hp: 1109
+    BaseExp: 60
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 300
+    Drops:
+      - Item: Jur_
+        Rate: 5
+#       RandomOptionGroup: 30L
+  - Id: 1957
+    AegisName: ENTWEIHEN
+    Name: Entweihen Crothen
+    Level: 90
+    Hp: 2400500
+    BaseExp: 786500
+    Defense: 171
+    Race: Demon
+    Element: Dark
+    Ai: 10
+    Class: Boss
+    Drops:
+      - Item: Survival_Rod_
+        Rate: 4500
+  - Id: 1970
+    AegisName: E_OBEAUNE
+    Name: Obeune
+    Level: 31
+    Hp: 3952
+    BaseExp: 579
+    Race: Fish
+    Element: Water
+    WalkSpeed: 200
+    Ai: 19
+    Drops:
+      - Item: Saint_Robe_
+        Rate: 10
+  - Id: 1971
+    AegisName: E_VADON
+    Name: Vadon
+    Level: 19
+    Hp: 5000
+    BaseExp: 121
+    Defense: 32
+    Race: Fish
+    Element: Water
+    WalkSpeed: 300
+    Ai: 17
+    Drops:
+      - Item: Padded_Armor_
+        Rate: 5
+#       RandomOptionGroup: 30L
+  - Id: 2069
+    AegisName: IARA
+    Name: Iara
+    Level: 79
+    Hp: 4262
+    BaseExp: 854
+    Race: Fish
+    Element: Water
+    WalkSpeed: 200
+    Ai: 17
+    Drops:
+      - Item: Mage_Coat
+        Rate: 1
+  - Id: 2071
+    AegisName: HEADLESS_MULE
+    Name: Headless Mule
+    Level: 80
+    Hp: 3268
+    BaseExp: 869
+    Defense: 33
+    Race: Demon
+    Element: Fire
+    WalkSpeed: 165
+    Ai: 04
+    Drops:
+      - Item: Plate_Armor_
+        Index: 1
+        Rate: 3
+      - Item: Plate_Armor_
+        Index: 5
+        Rate: 1
+  - Id: 2074
+    AegisName: CURUPIRA
+    Name: Curupira
+    Level: 68
+    Hp: 2561
+    BaseExp: 683
+    Defense: 42
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 250
+    Ai: 07
+    Drops:
+      - Item: Mace_
+        Rate: 50
+  - Id: 2075
+    AegisName: E_VADON_X
+    Name: Ragunta
+    Level: 1
+    Hp: 300
+    Defense: 42
+    Race: Formless
+    Element: Neutral
+    WalkSpeed: 150
+    Class: Boss
+    Drops:
+      - Item: Padded_Armor_
+        Index: 3
+        Rate: 3
+#       RandomOptionGroup: 30L
+  - Id: 2097
+    AegisName: E_DRACULA
+    Name: Dracula
+    Level: 75
+    Hp: 350000
+    BaseExp: 1105
+    MvpExp: 502
+    Defense: 152
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 145
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Wizardy_Staff
+        Rate: 3
+  - Id: 2098
+    AegisName: E_DOPPELGANGER
+    Name: Doppelganger
+    Level: 77
+    Hp: 380000
+    BaseExp: 1105
+    MvpExp: 502
+    Defense: 246
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 100
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Plate_Armor_
+        Rate: 125
+  - Id: 2102
+    AegisName: E_DARK_LORD
+    Name: Dark Lord
+    Level: 96
+    Hp: 1190900
+    BaseExp: 1206
+    Defense: 330
+    Race: Demon
+    Element: Undead
+    WalkSpeed: 100
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Mage_Coat
+        Rate: 150
+  - Id: 2174
+    AegisName: MD_VADON
+    Name: Deep Sea Vadon
+    Level: 95
+    Hp: 120000
+    BaseExp: 750
+    Defense: 154
+    Race: Fish
+    Element: Water
+    WalkSpeed: 300
+    Ai: 20
+    Class: Boss
+    Drops:
+      - Item: Padded_Armor_
+        Rate: 3
+  - Id: 2184
+    AegisName: MD_OBEAUNE
+    Name: Deep Sea Obeaune
+    Level: 151
+    Hp: 700000
+    BaseExp: 1100
+    Defense: 68
+    Race: Demon
+    Element: Water
+    WalkSpeed: 200
+    Ai: 20
+    Class: Boss
+    Drops:
+      - Item: Saint_Robe_
+        Rate: 5
+  - Id: 2246
+    AegisName: Q_WOOTAN_FIGHTER
+    Name: Wootan Fighter
+    Level: 95
+    Hp: 9000
+    BaseExp: 1400
+    Defense: 103
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Waghnakh
+        Rate: 8
+  - Id: 2292
+    AegisName: E_HORN
+    Name: Horn
+    Level: 0
+    Hp: 0
+    Race: Formless
+    Element: Neutral
+    Drops:
+      - Item: Oriental_Lute
+        Rate: 500
+  - Id: 2296
+    AegisName: E_KILLER_MANTIS
+    Name: Killer Mantis
+    Level: 0
+    Hp: 0
+    Race: Formless
+    Element: Neutral
+    Drops:
+      - Item: Kakkung_
+        Rate: 200
+  - Id: 2297
+    AegisName: E_GIANT_HONET
+    Name: Giant Hornet
+    Level: 0
+    Hp: 0
+    Race: Formless
+    Element: Neutral
+    Drops:
+      - Item: Oriental_Lute
+        Rate: 200
+  - Id: 2353
+    AegisName: N_MINOROUS
+    Name: Minorous (Nightmare)
+    Level: 121
+    Hp: 27346
+    BaseExp: 3047
+    Defense: 131
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 21
+    Drops:
+      - Item: Two_Handed_Axe_
+        Rate: 2
+  - Id: 2362
+    AegisName: N_AMON_RA
+    Name: Amon Ra (Nightmare)
+    Level: 145
+    Hp: 2515784
+    BaseExp: 1626487
+    MvpExp: 813243
+    Defense: 367
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 170
+    Ai: 10
+    Class: Boss
+    Drops:
+      - Item: Tablet
+        Rate: 10
+  - Id: 2405
+    AegisName: WEAK_SKELETON
+    Name: Weak Skeleton
+    Level: 18
+    Hp: 223
+    BaseExp: 192
+    Defense: 12
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Mace_
+        Rate: 40
+#       RandomOptionGroup: 30L
+  - Id: 2406
+    AegisName: WEAK_SKEL_SOLDIER
+    Name: Weak Soldier Skeleton
+    Level: 23
+    Hp: 337
+    BaseExp: 215
+    Defense: 28
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 1
+#       RandomOptionGroup: 30L
+      - Item: Stiletto
+        Rate: 10
+#       RandomOptionGroup: 30L
+  - Id: 2407
+    AegisName: SAILOR_SKELETON
+    Name: Sailor Skeleton
+    Level: 19
+    Hp: 243
+    BaseExp: 195
+    Defense: 12
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Falchion
+        Rate: 60
+#       RandomOptionGroup: 30L
+  - Id: 2415
+    AegisName: L_SEYREN
+    Name: Knight Seyren
+    Level: 98
+    Hp: 13260
+    BaseExp: 1475
+    Defense: 149
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Chain_Mail
+        Rate: 20
+      - Item: Chain_Mail_
+        Rate: 5
+  - Id: 2417
+    AegisName: L_HARWORD
+    Name: Blacksmith Howard
+    Level: 98
+    Hp: 11803
+    BaseExp: 1375
+    Defense: 117
+    Race: Demihuman
+    Element: Water
+    WalkSpeed: 160
+    Ai: 04
+    Drops:
+      - Item: Two_Handed_Axe_
+        Rate: 50
+  - Id: 2418
+    AegisName: L_SHECIL
+    Name: Hunter Cecil
+    Level: 98
+    Hp: 8835
+    BaseExp: 1375
+    Defense: 68
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 160
+    Ai: 04
+    Drops:
+      - Item: Tights_
+        Rate: 5
+  - Id: 2420
+    AegisName: L_MAGALETA
+    Name: Priest Margaretha
+    Level: 98
+    Hp: 9192
+    BaseExp: 1075
+    Defense: 97
+    Race: Demihuman
+    Element: Holy
+    WalkSpeed: 160
+    Ai: 20
+    Drops:
+      - Item: Saint_Robe_
+        Rate: 20
+  - Id: 2421
+    AegisName: L_YGNIZEM
+    Name: Crusader Egnigem
+    Level: 98
+    Hp: 13440
+    BaseExp: 948
+    Defense: 136
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 155
+    Ai: 04
+    Drops:
+      - Item: Flamberge
+        Rate: 50
+      - Item: Plate_Armor
+        Rate: 20
+      - Item: Plate_Armor_
+        Rate: 5
+  - Id: 2422
+    AegisName: L_WHIKEBAIN
+    Name: Rogue Wickebine
+    Level: 98
+    Hp: 11712
+    BaseExp: 870
+    Defense: 125
+    Race: Demihuman
+    Element: Poison
+    WalkSpeed: 130
+    Ai: 19
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 5
+  - Id: 2424
+    AegisName: L_KAVAC
+    Name: Bard Kavach
+    Level: 98
+    Hp: 12637
+    BaseExp: 886
+    Defense: 94
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 160
+    Ai: 19
+    Drops:
+      - Item: Tights_
+        Rate: 5
+  - Id: 2425
+    AegisName: L_DANCER
+    Name: Dancer Josephina
+    Level: 98
+    Hp: 12637
+    BaseExp: 986
+    Defense: 94
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 160
+    Ai: 19
+    Drops:
+      - Item: Tights_
+        Rate: 5
+  - Id: 2426
+    AegisName: L_RAWREL
+    Name: Sage Laurell
+    Level: 98
+    Hp: 9868
+    BaseExp: 940
+    Defense: 83
+    Race: Demihuman
+    Element: Ghost
+    WalkSpeed: 160
+    Ai: 19
+    Drops:
+      - Item: Bible
+        Rate: 50
+  - Id: 2427
+    AegisName: L_EREND
+    Name: Monk Errende
+    Level: 98
+    Hp: 11168
+    BaseExp: 905
+    Defense: 116
+    Race: Demihuman
+    Element: Holy
+    WalkSpeed: 140
+    Ai: 19
+    Drops:
+      - Item: Saint_Robe_
+        Rate: 20
+  - Id: 2428
+    AegisName: G_L_SEYREN
+    Name: Knight Seyren
+    Level: 98
+    Hp: 13260
+    Defense: 149
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Chain_Mail
+        Rate: 500
+      - Item: Chain_Mail_
+        Rate: 5
+  - Id: 2430
+    AegisName: G_L_HARWORD
+    Name: Blacksmith Howard
+    Level: 98
+    Hp: 11803
+    Defense: 117
+    Race: Demihuman
+    Element: Water
+    WalkSpeed: 160
+    Ai: 04
+    Drops:
+      - Item: Two_Handed_Axe_
+        Rate: 100
+  - Id: 2431
+    AegisName: G_L_SHECIL
+    Name: Hunter Cecil
+    Level: 98
+    Hp: 8835
+    Defense: 68
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 160
+    Ai: 04
+    Drops:
+      - Item: Tights_
+        Rate: 5
+  - Id: 2434
+    AegisName: G_L_YGNIZEM
+    Name: Crusader Egnigem
+    Level: 98
+    Hp: 13440
+    Defense: 136
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 155
+    Ai: 04
+    Drops:
+      - Item: Plate_Armor
+        Rate: 500
+      - Item: Plate_Armor_
+        Rate: 5
+      - Item: Flamberge
+        Rate: 100
+  - Id: 2435
+    AegisName: G_L_WHIKEBAIN
+    Name: Rogue Wickebine
+    Level: 98
+    Hp: 11712
+    Defense: 125
+    Race: Demihuman
+    Element: Poison
+    WalkSpeed: 130
+    Ai: 19
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 5
+  - Id: 2437
+    AegisName: G_L_KAVAC
+    Name: Bard Kavach
+    Level: 98
+    Hp: 12637
+    Defense: 94
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 160
+    Ai: 19
+    Drops:
+      - Item: Tights_
+        Rate: 5
+  - Id: 2438
+    AegisName: G_L_DANCER
+    Name: Dancer Josephina
+    Level: 98
+    Hp: 12637
+    Defense: 94
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 160
+    Ai: 19
+    Drops:
+      - Item: Tights_
+        Rate: 5
+  - Id: 2439
+    AegisName: G_L_RAWREL
+    Name: Sage Laurell
+    Level: 98
+    Hp: 9868
+    Defense: 83
+    Race: Demihuman
+    Element: Ghost
+    WalkSpeed: 160
+    Ai: 19
+    Drops:
+      - Item: Bible
+        Rate: 100
+  - Id: 2468
+    AegisName: MG_RAYDRIC
+    Name: Corrupted Palace Guard
+    Level: 135
+    Hp: 184080
+    BaseExp: 8153
+    Defense: 89
+    Race: Undead
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Plate_Armor
+        Rate: 5
+  - Id: 2471
+    AegisName: MG_KHALITZBURG
+    Name: Suffering Khalitzburg
+    Level: 143
+    Hp: 236851
+    BaseExp: 8771
+    Defense: 125
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 350
+    Ai: 04
+    Class: Boss
+    Drops:
+      - Item: Lapier
+        Rate: 300
+  - Id: 2472
+    AegisName: MG_BLOODY_KNIGHT
+    Name: Bloody Knight
+    Level: 143
+    Hp: 246751
+    BaseExp: 10224
+    Defense: 122
+    Race: Undead
+    Element: Dark
+    WalkSpeed: 250
+    Ai: 04
+    Class: Boss
+    Drops:
+      - Item: Two_Hand_Sword
+        Rate: 100
+  - Id: 2611
+    AegisName: C4_WOOTAN_FIGHTER
+    Name: Furious Wootan Fighter
+    Level: 67
+    Hp: 10600
+    BaseExp: 3190
+    Defense: 103
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Waghnakh
+        Rate: 10
+  - Id: 2614
+    AegisName: C2_WIND_GHOST
+    Name: Solid Wind Ghost
+    Level: 80
+    Hp: 36310
+    BaseExp: 4345
+    Defense: 64
+    Race: Demon
+    Element: Wind
+    WalkSpeed: 180
+    Ai: 21
+    Drops:
+      - Item: Arc_Wand_
+        Rate: 20
+  - Id: 2616
+    AegisName: C4_WILD_ROSE
+    Name: Furious Wild Rose
+    Level: 70
+    Hp: 10800
+    BaseExp: 3385
+    Defense: 75
+    Race: Brute
+    Element: Wind
+    WalkSpeed: 100
+    Ai: 02
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 5
+  - Id: 2617
+    AegisName: C5_WICKED_NYMPH
+    Name: Elusive Evil Nymph
+    Level: 97
+    Hp: 49160
+    BaseExp: 6650
+    Defense: 46
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 200
+    Ai: 21
+    Drops:
+      - Item: Oriental_Lute
+        Rate: 25
+  - Id: 2619
+    AegisName: C3_WEAK_SKELETON
+    Name: Weak Skeleton Ringleader
+    Level: 18
+    Hp: 1115
+    BaseExp: 960
+    Defense: 12
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Mace_
+        Rate: 200
+#       RandomOptionGroup: 30L
+  - Id: 2628
+    AegisName: C2_VADON
+    Name: Solid Vadon
+    Level: 45
+    Hp: 10910
+    BaseExp: 1760
+    Defense: 54
+    Race: Fish
+    Element: Water
+    WalkSpeed: 360
+    Ai: 17
+    Drops:
+      - Item: Padded_Armor_
+        Rate: 15
+  - Id: 2639
+    AegisName: C4_TAMRUAN
+    Name: Furious Tamruan
+    Level: 73
+    Hp: 18585
+    BaseExp: 3830
+    Defense: 63
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 140
+    Ai: 13
+    Drops:
+      - Item: Bastard_Sword_
+        Rate: 20
+      - Item: Chain_Mail_
+        Rate: 10
+  - Id: 2648
+    AegisName: C3_SOLDIER_SKELETON
+    Name: Soldier Skeleton Ringlea
+    Level: 34
+    Hp: 3455
+    BaseExp: 1420
+    Defense: 53
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 5
+      - Item: Stiletto
+        Rate: 125
+  - Id: 2649
+    AegisName: C4_SOLDIER_SKELETON
+    Name: Furious Soldier Skeleton
+    Level: 34
+    Hp: 3455
+    BaseExp: 1420
+    Defense: 53
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 5
+      - Item: Stiletto
+        Rate: 125
+  - Id: 2651
+    AegisName: C1_SOHEE
+    Name: Swift Sohee
+    Level: 64
+    Hp: 12640
+    BaseExp: 3000
+    Defense: 61
+    Race: Demon
+    Element: Water
+    WalkSpeed: 187
+    Ai: 17
+    Drops:
+      - Item: Stiletto_
+        Rate: 15
+  - Id: 2653
+    AegisName: C3_SNAKE
+    Name: Boa Ringleader
+    Level: 18
+    Hp: 1015
+    BaseExp: 915
+    Defense: 9
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Katana_
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 2662
+    AegisName: C2_SIDE_WINDER
+    Name: Solid Side Winder
+    Level: 70
+    Hp: 26980
+    BaseExp: 3385
+    Defense: 101
+    Race: Brute
+    Element: Poison
+    WalkSpeed: 240
+    Ai: 19
+    Drops:
+      - Item: Tsurugi_
+        Rate: 5
+  - Id: 2663
+    AegisName: C3_SIDE_WINDER
+    Name: Side Winder Ringleader
+    Level: 70
+    Hp: 13490
+    BaseExp: 3385
+    Defense: 101
+    Race: Brute
+    Element: Poison
+    WalkSpeed: 200
+    Ai: 19
+    Drops:
+      - Item: Tsurugi_
+        Rate: 5
+  - Id: 2664
+    AegisName: C4_SHINOBI
+    Name: Furious Shinobi
+    Level: 95
+    Hp: 40435
+    BaseExp: 6460
+    Defense: 49
+    Race: Demihuman
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 21
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 5
+  - Id: 2671
+    AegisName: C1_SAVAGE_BABE
+    Name: Swift Savage Babe
+    Level: 14
+    Hp: 635
+    BaseExp: 860
+    Defense: 22
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 300
+    Ai: 01
+    Drops:
+      - Item: Axe_
+        Rate: 250
+#       RandomOptionGroup: 30L
+  - Id: 2676
+    AegisName: C1_SAILOR_SKELETON
+    Name: Swift Sailor Skeleton
+    Level: 48
+    Hp: 13510
+    BaseExp: 290
+    Defense: 53
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 150
+    Ai: 01
+    Drops:
+      - Item: Falchion
+        Rate: 300
+  - Id: 2681
+    AegisName: C1_RIDEWORD
+    Name: Swift Rideword
+    Level: 74
+    Hp: 14275
+    BaseExp: 3900
+    Defense: 61
+    Race: Formless
+    Element: Neutral
+    WalkSpeed: 112
+    Ai: 21
+    Drops:
+      - Item: Book_Of_Billows
+        Rate: 10
+  - Id: 2682
+    AegisName: C2_RIDEWORD
+    Name: Solid Rideword
+    Level: 74
+    Hp: 28550
+    BaseExp: 3900
+    Defense: 61
+    Race: Formless
+    Element: Neutral
+    WalkSpeed: 180
+    Ai: 21
+    Drops:
+      - Item: Book_Of_Billows
+        Rate: 10
+  - Id: 2690
+    AegisName: C1_RAYDRIC
+    Name: Swift Raydric
+    Level: 115
+    Hp: 109905
+    BaseExp: 11230
+    Defense: 89
+    Race: Demihuman
+    Element: Dark
+    WalkSpeed: 112
+    Ai: 19
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 5
+      - Item: Two_Hand_Sword_
+        Rate: 5
+  - Id: 2691
+    AegisName: C2_RAYDRIC
+    Name: Solid Raydric
+    Level: 115
+    Hp: 219810
+    BaseExp: 11230
+    Defense: 89
+    Race: Demihuman
+    Element: Dark
+    WalkSpeed: 180
+    Ai: 19
+    Drops:
+      - Item: Chain_Mail_
+        Rate: 5
+      - Item: Two_Hand_Sword_
+        Rate: 5
+  - Id: 2692
+    AegisName: C3_RAWREL
+    Name: Laurell Weinder Ringlead
+    Level: 133
+    Hp: 201410
+    BaseExp: 14625
+    Defense: 76
+    Race: Demihuman
+    Element: Ghost
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Silk_Robe_
+        Rate: 25
+  - Id: 2701
+    AegisName: C3_POPORING
+    Name: Poporing Ringleader
+    Level: 30
+    Hp: 2445
+    BaseExp: 1145
+    Defense: 36
+    Race: Plant
+    Element: Poison
+    WalkSpeed: 300
+    Ai: 02
+    Drops:
+      - Item: Main_Gauche
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 2702
+    AegisName: C4_POPORING
+    Name: Furious Poporing
+    Level: 30
+    Hp: 2445
+    BaseExp: 1145
+    Defense: 36
+    Race: Plant
+    Element: Poison
+    WalkSpeed: 300
+    Ai: 02
+    Drops:
+      - Item: Main_Gauche
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 2703
+    AegisName: C5_POPORING
+    Name: Elusive Poporing
+    Level: 30
+    Hp: 2445
+    BaseExp: 1145
+    Defense: 36
+    Race: Plant
+    Element: Poison
+    WalkSpeed: 300
+    Ai: 02
+    Drops:
+      - Item: Main_Gauche
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 2718
+    AegisName: C5_PECOPECO
+    Name: Elusive Peco Peco
+    Level: 25
+    Hp: 1770
+    BaseExp: 1020
+    Defense: 48
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 03
+    Drops:
+      - Item: Wand
+        Rate: 250
+#       RandomOptionGroup: 30L
+  - Id: 2720
+    AegisName: C2_PARASITE
+    Name: Solid Parasite
+    Level: 76
+    Hp: 31550
+    BaseExp: 4045
+    Defense: 63
+    Race: Plant
+    Element: Wind
+    WalkSpeed: 480
+    Ai: 10
+    Drops:
+      - Item: Bladed_Whip
+        Rate: 5
+  - Id: 2722
+    AegisName: C4_ORK_WARRIOR
+    Name: Furious Orc Warrior
+    Level: 44
+    Hp: 5235
+    BaseExp: 1805
+    Defense: 52
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Battle_Axe_
+        Rate: 25
+  - Id: 2724
+    AegisName: C1_ORC_SKELETON
+    Name: Swift Orc Skeleton
+    Level: 53
+    Hp: 8495
+    BaseExp: 2450
+    Defense: 82
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Buster_
+        Rate: 25
+  - Id: 2741
+    AegisName: C3_MUKA
+    Name: Muka Ringleader
+    Level: 23
+    Hp: 1685
+    BaseExp: 1025
+    Defense: 28
+    Race: Plant
+    Element: Earth
+    WalkSpeed: 300
+    Ai: 01
+    Drops:
+      - Item: Guisarme
+        Rate: 125
+#       RandomOptionGroup: 30L
+  - Id: 2747
+    AegisName: C4_MINOROUS
+    Name: Furious Minorous
+    Level: 58
+    Hp: 8645
+    BaseExp: 2495
+    Defense: 100
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 19
+    Drops:
+      - Item: Two_Handed_Axe_
+        Rate: 5
+      - Item: Axe
+        Rate: 500
+  - Id: 2748
+    AegisName: C5_MINOROUS
+    Name: Elusive Minorous
+    Level: 58
+    Hp: 8645
+    BaseExp: 2495
+    Defense: 100
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 19
+    Drops:
+      - Item: Two_Handed_Axe_
+        Rate: 5
+      - Item: Axe
+        Rate: 500
+  - Id: 2749
+    AegisName: C1_MINOROUS
+    Name: Swift Minorous
+    Level: 58
+    Hp: 8645
+    BaseExp: 2495
+    Defense: 100
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 150
+    Ai: 19
+    Drops:
+      - Item: Two_Handed_Axe_
+        Rate: 5
+      - Item: Axe
+        Rate: 500
+  - Id: 2757
+    AegisName: C4_MERMAN
+    Name: Furious Merman
+    Level: 60
+    Hp: 11620
+    BaseExp: 2605
+    Defense: 62
+    Race: Demihuman
+    Element: Water
+    WalkSpeed: 220
+    Ai: 21
+    Drops:
+      - Item: Plate_Armor_
+        Rate: 5
+      - Item: Trident
+        Rate: 10
+  - Id: 2760
+    AegisName: C2_MARTIN
+    Name: Solid Martin
+    Level: 39
+    Hp: 7690
+    BaseExp: 1535
+    Defense: 58
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 360
+    Ai: 01
+    Drops:
+      - Item: Jur_
+        Rate: 25
+  - Id: 2763
+    AegisName: C5_MARDUK
+    Name: Elusive Marduk
+    Level: 73
+    Hp: 15495
+    BaseExp: 3830
+    Defense: 66
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 300
+    Ai: 19
+    Drops:
+      - Item: Staff_
+        Rate: 25
+  - Id: 2770
+    AegisName: C2_LUNATIC
+    Name: Solid Lunatic
+    Level: 3
+    Hp: 480
+    BaseExp: 750
+    Defense: 18
+    Race: Brute
+    Element: Neutral
+    WalkSpeed: 240
+    Ai: 01
+    Drops:
+      - Item: Sword_
+        Rate: 500
+#       RandomOptionGroup: 30L
+  - Id: 2771
+    AegisName: C3_LUNATIC
+    Name: Lunatic Ringleader
+    Level: 3
+    Hp: 240
+    BaseExp: 750
+    Defense: 18
+    Race: Brute
+    Element: Neutral
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Sword_
+        Rate: 500
+#       RandomOptionGroup: 30L
+  - Id: 2782
+    AegisName: C4_L_WHIKEBAIN
+    Name: Furious Wickebine Tres
+    Level: 98
+    Hp: 58560
+    BaseExp: 4350
+    Defense: 125
+    Race: Demihuman
+    Element: Poison
+    WalkSpeed: 130
+    Ai: 19
+    Drops:
+      - Item: Thief_Clothes_
+        Rate: 25
+  - Id: 2784
+    AegisName: C1_KOBOLD_ARCHER
+    Name: Swift Kobold Archer
+    Level: 108
+    Hp: 57360
+    BaseExp: 9330
+    Defense: 84
+    Race: Demihuman
+    Element: Fire
+    WalkSpeed: 150
+    Ai: 05
+    Drops:
+      - Item: CrossBow_
+        Rate: 15
+  - Id: 2785
+    AegisName: C2_KOBOLD_1
+    Name: Solid Kobold
+    Level: 107
+    Hp: 135220
+    BaseExp: 9225
+    Defense: 103
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 180
+    Ai: 13
+    Drops:
+      - Item: Gladius_
+        Rate: 5
+  - Id: 2792
+    AegisName: C4_INJUSTICE
+    Name: Furious Injustice
+    Level: 95
+    Hp: 40435
+    BaseExp: 6460
+    Defense: 76
+    Race: Undead
+    Element: Dark
+    WalkSpeed: 400
+    Ai: 21
+    Drops:
+      - Item: Padded_Armor_
+        Rate: 15
+      - Item: Plate_Armor
+        Rate: 5
+  - Id: 2795
+    AegisName: C2_IARA
+    Name: Solid Iara
+    Level: 79
+    Hp: 42620
+    BaseExp: 4270
+    Race: Fish
+    Element: Water
+    WalkSpeed: 240
+    Ai: 17
+    Drops:
+      - Item: Mage_Coat
+        Rate: 5
+  - Id: 2797
+    AegisName: C4_HUNTER_FLY
+    Name: Furious Hunter Fly
+    Level: 63
+    Hp: 9510
+    BaseExp: 2940
+    Defense: 46
+    Race: Insect
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Damascus_
+        Rate: 5
+  - Id: 2798
+    AegisName: C5_HORNET
+    Name: Elusive Hornet
+    Level: 11
+    Hp: 425
+    BaseExp: 790
+    Defense: 7
+    Race: Insect
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 01
+    Drops:
+      - Item: Main_Gauche_
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 2809
+    AegisName: C1_GREATEST_GENERAL
+    Name: Swift Greatest General
+    Level: 55
+    Hp: 7025
+    BaseExp: 2330
+    Defense: 114
+    Race: Formless
+    Element: Fire
+    WalkSpeed: 150
+    Ai: 10
+    Drops:
+      - Item: Club
+        Rate: 250
+  - Id: 2813
+    AegisName: C5_GOBLIN_1
+    Name: Elusive Goblin
+    Level: 48
+    Hp: 5535
+    BaseExp: 1895
+    Defense: 56
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 100
+    Ai: 21
+    Drops:
+      - Item: Dirk_
+        Rate: 25
+  - Id: 2814
+    AegisName: C1_GOBLIN_1
+    Name: Swift Goblin
+    Level: 48
+    Hp: 5535
+    BaseExp: 1895
+    Defense: 56
+    Race: Demihuman
+    Element: Wind
+    WalkSpeed: 75
+    Ai: 21
+    Drops:
+      - Item: Dirk_
+        Rate: 25
+  - Id: 2833
+    AegisName: C5_FARMILIAR
+    Name: Elusive Familiar
+    Level: 24
+    Hp: 1650
+    BaseExp: 1000
+    Defense: 26
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 01
+    Drops:
+      - Item: Falchion_
+        Rate: 50
+#       RandomOptionGroup: 30L
+  - Id: 2834
+    AegisName: C1_FAKE_ANGEL
+    Name: Swift False Angel
+    Level: 105
+    Hp: 52155
+    BaseExp: 8125
+    Defense: 106
+    Race: Angel
+    Element: Holy
+    WalkSpeed: 120
+    Ai: 04
+    Drops:
+      - Item: Carrot_Whip
+        Rate: 50
+  - Id: 2835
+    AegisName: C2_FABRE
+    Name: Solid Fabre
+    Level: 6
+    Hp: 590
+    BaseExp: 790
+    Defense: 24
+    Race: Insect
+    Element: Earth
+    WalkSpeed: 480
+    Ai: 01
+    Drops:
+      - Item: Club_
+        Rate: 400
+#       RandomOptionGroup: 30L
+      - Item: Club
+        Rate: 1000
+#       RandomOptionGroup: 30L
+  - Id: 2836
+    AegisName: C3_FABRE
+    Name: Fabre Ringleader
+    Level: 6
+    Hp: 295
+    BaseExp: 790
+    Defense: 24
+    Race: Insect
+    Element: Earth
+    WalkSpeed: 400
+    Ai: 01
+    Drops:
+      - Item: Club_
+        Rate: 400
+#       RandomOptionGroup: 30L
+      - Item: Club
+        Rate: 1000
+#       RandomOptionGroup: 30L
+  - Id: 2845
+    AegisName: C3_DROPS
+    Name: Drops Ringleader
+    Level: 2
+    Hp: 230
+    BaseExp: 750
+    Defense: 16
+    Race: Plant
+    Element: Fire
+    WalkSpeed: 400
+    Ai: 02
+    Drops:
+      - Item: Rod_
+        Index: 1
+        Rate: 400
+#       RandomOptionGroup: 30L
+  - Id: 2851
+    AegisName: C4_DOKEBI
+    Name: Furious Dokebi
+    Level: 68
+    Hp: 12805
+    BaseExp: 3255
+    Defense: 85
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 250
+    Ai: 17
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 5
+  - Id: 2855
+    AegisName: C3_DESERT_WOLF_B
+    Name: Baby Desert Wolf Ringlea
+    Level: 14
+    Hp: 565
+    BaseExp: 820
+    Defense: 13
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 300
+    Ai: 13
+    Drops:
+      - Item: Adventurere's_Suit_
+        Rate: 200
+#       RandomOptionGroup: 30L
+      - Item: Cotton_Shirt
+        Rate: 500
+#       RandomOptionGroup: 30L
+  - Id: 2856
+    AegisName: C4_DESERT_WOLF_B
+    Name: Furious Baby Desert Wolf
+    Level: 14
+    Hp: 565
+    BaseExp: 820
+    Defense: 13
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 300
+    Ai: 13
+    Drops:
+      - Item: Adventurere's_Suit_
+        Rate: 200
+#       RandomOptionGroup: 30L
+      - Item: Cotton_Shirt
+        Rate: 500
+#       RandomOptionGroup: 30L
+  - Id: 2863
+    AegisName: C1_CREAMY
+    Name: Swift Creamy
+    Level: 23
+    Hp: 1235
+    BaseExp: 980
+    Defense: 28
+    Race: Insect
+    Element: Wind
+    WalkSpeed: 112
+    Ai: 01
+    Drops:
+      - Item: Silk_Robe_
+        Rate: 100
+#       RandomOptionGroup: 30L
+  - Id: 2920
+    AegisName: ARC_ELDER
+    Name: Arc Elder
+    Level: 168
+    Hp: 293640
+    BaseExp: 18172
+    Defense: 105
+    Race: Demihuman
+    Element: Neutral
+    WalkSpeed: 165
+    Ai: 04
+    Drops:
+      - Item: Wizardy_Staff
+        Rate: 1
+  - Id: 2923
+    AegisName: OWL_MARQUEES
+    Name: Owl Marquis
+    Level: 170
+    Hp: 630000
+    BaseExp: 43494
+    Defense: 127
+    Race: Demon
+    Element: Neutral
+    WalkSpeed: 175
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Kakkung_
+        Rate: 1
+  - Id: 3175
+    AegisName: E1_ROTAR_ZAIRO
+    Name: Rotar Zairo
+    Level: 113
+    Hp: 15900
+    BaseExp: 1591
+    Defense: 95
+    Race: Formless
+    Element: Wind
+    WalkSpeed: 155
+    Ai: 19
+    Drops:
+      - Item: Padded_Armor
+        Rate: 1
+  - Id: 3386
+    AegisName: MIN_FABRE
+    Name: Fabre
+    Level: 100
+    Hp: 25000
+    BaseExp: 1200
+    Defense: 148
+    Race: Insect
+    Element: Earth
+    WalkSpeed: 400
+    Ai: 04
+    Drops:
+      - Item: Club_
+        Rate: 80
+      - Item: Club
+        Rate: 200
+  - Id: 3388
+    AegisName: MIN_CONDOR
+    Name: Condor
+    Level: 101
+    Hp: 40000
+    BaseExp: 1300
+    Defense: 150
+    Race: Brute
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Bow_
+        Rate: 100
+  - Id: 3391
+    AegisName: MIN_POPORING
+    Name: Poporing
+    Level: 101
+    Hp: 40000
+    BaseExp: 1300
+    Defense: 153
+    Race: Plant
+    Element: Poison
+    WalkSpeed: 300
+    Ai: 04
+    Drops:
+      - Item: Main_Gauche
+        Rate: 20
+  - Id: 3393
+    AegisName: MIN_DOKEBI
+    Name: Dokebi
+    Level: 102
+    Hp: 55000
+    BaseExp: 1400
+    Defense: 155
+    Race: Demon
+    Element: Dark
+    WalkSpeed: 250
+    Ai: 04
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 1
+  - Id: 3397
+    AegisName: MIN_SNAKE
+    Name: Boa
+    Level: 103
+    Hp: 70000
+    BaseExp: 1500
+    Defense: 159
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Katana_
+        Rate: 20
+  - Id: 3400
+    AegisName: MIN_MUKA
+    Name: Muka
+    Level: 104
+    Hp: 85000
+    BaseExp: 1600
+    Defense: 162
+    Race: Plant
+    Element: Earth
+    WalkSpeed: 300
+    Ai: 04
+    Drops:
+      - Item: Guisarme
+        Rate: 25
+  - Id: 3401
+    AegisName: MIN_PECOPECO
+    Name: Peco Peco
+    Level: 104
+    Hp: 85000
+    BaseExp: 1600
+    Defense: 163
+    Race: Brute
+    Element: Fire
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Wand
+        Rate: 50
+  - Id: 3427
+    AegisName: MIN_OSIRIS
+    Name: Infinite Osiris
+    Level: 103
+    Hp: 2850000
+    BaseExp: 100000
+    MvpExp: 100000
+    Defense: 172
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 100
+    Ai: 21
+    Class: Boss
+    Drops:
+      - Item: Jamadhar_
+        Rate: 300
+  - Id: 3443
+    AegisName: TAFFY
+    Name: Taffy
+    Level: 145
+    Hp: 100000
+    BaseExp: 6000
+    Defense: 125
+    Race: Brute
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 01
+    Drops:
+      - Item: Coat
+        Rate: 30
+  - Id: 3637
+    AegisName: MD_SKELETON_60
+    Name: Skeleton
+    Level: 60
+    Hp: 2120
+    BaseExp: 1380
+    Defense: 31
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 8
+  - Id: 3638
+    AegisName: MD_SKELETON_80
+    Name: Skeleton
+    Level: 80
+    Hp: 4070
+    BaseExp: 2500
+    Defense: 41
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 32
+  - Id: 3639
+    AegisName: MD_SKELETON_100
+    Name: Skeleton
+    Level: 100
+    Hp: 16430
+    BaseExp: 3370
+    Defense: 51
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 80
+  - Id: 3640
+    AegisName: MD_SKELETON_120
+    Name: Skeleton
+    Level: 120
+    Hp: 31790
+    BaseExp: 6220
+    Defense: 61
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 320
+  - Id: 3641
+    AegisName: MD_SKELETON_140
+    Name: Skeleton
+    Level: 140
+    Hp: 72040
+    BaseExp: 16750
+    Defense: 71
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 320
+  - Id: 3642
+    AegisName: MD_SKELETON_160
+    Name: Skeleton
+    Level: 160
+    Hp: 135210
+    BaseExp: 29190
+    Defense: 81
+    Race: Undead
+    Element: Undead
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Sword_Mace_
+        Rate: 320
+  - Id: 3643
+    AegisName: MD_FARMILIAR_60
+    Name: Familiar
+    Level: 60
+    Hp: 2050
+    BaseExp: 1240
+    Defense: 26
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Saber_
+        Rate: 10
+  - Id: 3644
+    AegisName: MD_FARMILIAR_80
+    Name: Familiar
+    Level: 80
+    Hp: 3990
+    BaseExp: 2380
+    Defense: 30
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Saber_
+        Rate: 40
+  - Id: 3645
+    AegisName: MD_FARMILIAR_100
+    Name: Familiar
+    Level: 100
+    Hp: 15830
+    BaseExp: 3320
+    Defense: 34
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Saber_
+        Rate: 80
+  - Id: 3646
+    AegisName: MD_FARMILIAR_120
+    Name: Familiar
+    Level: 120
+    Hp: 29660
+    BaseExp: 6390
+    Defense: 38
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Saber_
+        Rate: 100
+  - Id: 3647
+    AegisName: MD_FARMILIAR_140
+    Name: Familiar
+    Level: 140
+    Hp: 68920
+    BaseExp: 16610
+    Defense: 42
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Saber_
+        Rate: 100
+  - Id: 3648
+    AegisName: MD_FARMILIAR_160
+    Name: Familiar
+    Level: 160
+    Hp: 127820
+    BaseExp: 29020
+    Defense: 46
+    Race: Brute
+    Element: Dark
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Saber_
+        Rate: 100
+  - Id: 3813
+    AegisName: MD_DROPS
+    Name: Enriched Drops
+    Level: 35
+    Hp: 1095
+    BaseExp: 377
+    Defense: 10
+    Race: Formless
+    Element: Fire
+    WalkSpeed: 300
+    Ai: 02
+    Drops:
+      - Item: Rod_
+        Index: 1
+        Rate: 80
+  - Id: 3814
+    AegisName: MD_POPORING
+    Name: Enriched Poporing
+    Level: 36
+    Hp: 1167
+    BaseExp: 384
+    Defense: 10
+    Race: Formless
+    Element: Wind
+    WalkSpeed: 300
+    Ai: 02
+    Drops:
+      - Item: Main_Gauche
+        Rate: 20
+  - Id: 20256
+    AegisName: ILL_TEDDY_BEAR_Y
+    Name: Yellow Teddy Bear
+    Level: 155
+    Hp: 294044
+    BaseExp: 19384
+    Defense: 200
+    Race: Formless
+    Element: Wind
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Survival_Rod_
+        Rate: 50
+  - Id: 20271
+    AegisName: ILL_STALACTIC_GOLEM
+    Name: Ancient Stalactic Golem
+    Level: 167
+    Hp: 725400
+    BaseExp: 79214
+    Defense: 412
+    Race: Formless
+    Element: Neutral
+    WalkSpeed: 150
+    Ai: 04
+    Drops:
+      - Item: Tablet
+        Rate: 10
+  - Id: 20275
+    AegisName: ILL_WOOTAN_SHOOTER
+    Name: Ancient Wootan Shooter
+    Level: 164
+    Hp: 702100
+    BaseExp: 76669
+    Defense: 142
+    Race: Demihuman
+    Element: Earth
+    WalkSpeed: 200
+    Ai: 05
+    Drops:
+      - Item: Hunter_Bow
+        Rate: 10
+  - Id: 20802
+    AegisName: ILL_OBEAUNE
+    Name: Deep Sea Obeaune
+    Level: 149
+    Hp: 340238
+    BaseExp: 30621
+    Defense: 255
+    Race: Fish
+    Element: Water
+    WalkSpeed: 200
+    Ai: 04
+    Drops:
+      - Item: Saint_Robe
+        Rate: 10

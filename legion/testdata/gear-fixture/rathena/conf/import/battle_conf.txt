@@ -1,0 +1,3 @@
+item_rate_equip: 500
+item_rate_equip_boss: 500
+item_rate_equip_mvp: 500
