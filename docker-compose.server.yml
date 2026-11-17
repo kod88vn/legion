@@ -70,7 +70,7 @@ services:
       - ./rathena/npc-custom/functions_kafras.txt:/rathena/npc/kafras/functions_kafras.txt:ro
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro
-    command: ["run", "-n", "${LEGION_BOTS:-100}", "-max-online", "${LEGION_MAX_ONLINE:-100}", "-schedule", "-durable-cohort", "${LEGION_DURABLE_COHORT:-false}"]
+    command: ["run", "-n", "${LEGION_BOTS:-100}", "-max-online", "${LEGION_MAX_ONLINE:-100}", "-schedule", "-durable-cohort=${LEGION_DURABLE_COHORT:-false}"]
     restart: unless-stopped
 
   legion-core:
@@ -88,5 +88,5 @@ services:
       - ./rathena/db-import/item_db.yml:/rathena/db/import/item_db.yml:ro
       - ./rathena/conf/import/battle_conf.txt:/rathena/conf/import/battle_conf.txt:ro
       - ./openkore-ayla/logs:/ayla:ro
-    command: ["run", "-core", "-schedule", "-durable-cohort", "${LEGION_DURABLE_COHORT:-false}"]
+    command: ["run", "-core", "-schedule", "-durable-cohort=false"]
     restart: unless-stopped
