@@ -4,6 +4,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
       git ca-certificates perl make g++ scons python3 libreadline-dev libncurses-dev zlib1g-dev \
       libcurl4-openssl-dev libtime-hires-perl libcompress-raw-zlib-perl libdigest-sha-perl \
       libhtml-parser-perl libjson-perl libtext-balanced-perl libnet-ssleay-perl procps tini \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 RUN git init /openkore && cd /openkore \
     && git remote add origin https://github.com/OpenKore/openkore.git \
