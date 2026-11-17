@@ -65,9 +65,16 @@ derive_project_name() {  # derive_project_name COMPOSE_FILE -> project name for 
   local cf="${1:-docker-compose.yml}"
   # Default compose (docker-compose.yml) gets no -p flag for backward compat
   if [ "$cf" = "docker-compose.yml" ]; then echo "ro"; return 0; fi
-  # Other files: strip docker-compose- prefix and .yml suffix, prepend ro-
+  # Other files: strip .yml suffix, extract suffix after docker-compose (hyphen or dot)
   local base=$(basename "$cf" .yml)
-  base=${base#docker-compose-}  # remove prefix if present
-  echo "ro-$base"
+  if [ "$base" = "docker-compose" ]; then echo "ro"; return 0; fi
+  # Remove docker-compose- (hyphen) first, fallback to docker-compose. (dot)
+  if [[ "$base" =~ ^docker-compose-(.+)$ ]]; then
+    echo "ro-${BASH_REMATCH[1]}"
+  elif [[ "$base" =~ ^docker-compose\.(.+)$ ]]; then
+    echo "ro-${BASH_REMATCH[1]}"
+  else
+    echo "ro-$base"
+  fi
 }
 
