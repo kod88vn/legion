@@ -25,7 +25,7 @@ func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 		return baseTime.Add(time.Duration(tick) * time.Second)
 	}
 	
-	ledger := NewCohortLedger(dir, true, 100)
+	ledger := NewCohortLedger(dir, true, 1)
 	ledger.now = nowFunc
 	
 	if err := ledger.Load(); err != nil {
@@ -59,7 +59,7 @@ func TestExactClockFirstGrantWindowBoundary(t *testing.T) {
 		t.Fatalf("window start not anchored to grant time: got %s, expected %s", grantTime, expectedWindowStart)
 	}
 	
-	// t0+60m (grant+1m): Still in window, should be blocked (no more quota)
+	// t0+60m (grant+1m): Still in window, should be blocked (quota=1 exhausted by user1)
 	tick = 60 * 60
 	ok, err = ledger.MayAdmit("user2")
 	if ok || err == nil {
